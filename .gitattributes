@@ -1,0 +1,3 @@
+pylife/_version.py export-subst
+
+*.ipynb filter=jupyter_clean

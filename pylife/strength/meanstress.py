@@ -1,0 +1,271 @@
+# -*- coding: utf-8 -*-
+
+
+'''
+Meanstress routines
+===================
+
+Mean stress transformation methods
+----------------------------------
+
+* FKM Goodman
+* Five Segment Correction
+
+'''
+
+# Copyright (c) 2019 - for information on the respective copyright owner
+# see the NOTICE file and/or the repository
+# https://github.com/boschresearch/pylife
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+__author__ = "Johannes Mueller, Lena Rapp"
+__maintainer__ = "Johannes Mueller"
+
+import numpy as np
+import pandas as pd
+
+import pylife
+from pylife.stress import stresssignal
+
+
+@pd.api.extensions.register_dataframe_accessor("meanstress_mesh")
+class MeanstressMesh(stresssignal.CyclicStressAccessor):
+
+    def FKM_goodman(self, haigh, R_goal):
+        haigh.FKM_Goodman
+        Sa = self._obj.sigma_a.to_numpy()
+        Sm = self._obj.sigma_m.to_numpy()
+        Sa_transformed = FKM_goodman(Sa, Sm, haigh.M, haigh.M2, R_goal)
+        return pd.DataFrame({'sigma_a': Sa_transformed, 'R': np.ones_like(Sa_transformed) * R_goal},
+                            index=self._obj.index)
+
+@pd.api.extensions.register_dataframe_accessor("meanstress_hist")
+class MeanstressHist:
+
+    def __init__(self, df):
+        if df.index.names == ['from', 'to']:
+            f = df.index.get_level_values('from').mid
+            t = df.index.get_level_values('to').mid
+            self._Sa = np.abs(f-t)/2.
+            self._Sm = (f+t)/2.
+            self._binsize_x = df.index.get_level_values('from').length.min()
+            self._binsize_y = df.index.get_level_values('to').length.min()
+        elif df.index.names == ['range', 'mean']:
+            self._Sa = df.index.get_level_values('range').mid / 2.
+            self._Sm = df.index.get_level_values('mean').mid
+            self._binsize_x = df.index.get_level_values('range').length.min()
+            self._binsize_y = df.index.get_level_values('mean').length.min()
+        else:
+            raise AttributeError("MeanstressHist needs index names either ['from', 'to'] or ['range', 'mean']")
+
+        self._df = df
+
+    def FKM_goodman(self, haigh, R_goal):
+        haigh.FKM_Goodman
+        Dsig = FKM_goodman(self._Sa, self._Sm, haigh.M, haigh.M2, R_goal) * 2.
+        Dsig_max = Dsig.max()
+        binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
+        bincount = int(np.ceil(Dsig_max / binsize))
+        binsize = Dsig_max / (bincount - 0.5)
+        new_idx = pd.IntervalIndex.from_breaks(np.linspace(0, Dsig_max, bincount), name="range")
+        result = pd.DataFrame(data=np.zeros(bincount-1), index=new_idx, columns=['frequency'])
+        for i, intv in enumerate(new_idx):
+            cond = np.logical_and(Dsig >= intv.left, Dsig < intv.right)
+            result.loc[intv, 'frequency'] = np.int(np.sum(self._df.values[cond]))
+
+        return result
+
+@pd.api.extensions.register_dataframe_accessor("FKM_Goodman")
+@pd.api.extensions.register_series_accessor("FKM_Goodman")
+class FKMGoodman:
+    def __init__(self, pandas_obj):
+        self._validate(pandas_obj)
+        self._obj = pandas_obj
+
+    def _validate(self, obj):
+        pylife.signal.fail_if_key_missing(obj, ['M', 'M2'])
+
+class MeanstressFiveSlope:
+    def __init__(self, **kwargs):
+        self.M0 = kwargs['M0']
+        self.M1 = kwargs['M1']
+        self.M2 = kwargs['M2']
+        self.M3 = kwargs['M3']
+        self.M4 = kwargs['M4']
+        self.R_12 = kwargs['R12']
+        self.R_23 = kwargs['R23']
+        self.R_goal = kwargs['R_goal']
+
+    def __call__(self, Sa, Sm):
+        return Five_Segment_Correction(Sa, Sm, self.R_goal, self.M0, self.M1, self.M2, self.M3, self.M4, self.R_12, self.R_23)
+
+
+def FKM_goodman(Sa, Sm, M, M2, R_goal):
+    ''' Performs a mean stress transformation to R_goal according to the FKM-Goodman model
+
+    :param Sa: the stress amplitude
+    :param Sm: the mean stress
+    :param M: the mean stress sensitivity between R=-inf and R=0
+    :param M2: the mean stress sensitivity beyond R=0
+    :param R_goal: the R-value to transform to
+
+    :returns: the transformed stress amplitude
+    '''
+
+    if R_goal == 1:
+        raise ValueError('R_goal = 1 is invalid input')
+
+    old_err_state = np.seterr(divide='ignore')
+
+    R = np.divide(Sm-Sa, Sm+Sa)
+
+    ignored_states = np.seterr(**old_err_state)
+
+    c = np.where(R <= 0.)
+    c2 = np.where((R > 0.) & (R < 1.))
+
+    M = np.broadcast_to(M, Sa.shape)
+    M2 = np.broadcast_to(M2, Sa.shape)
+
+    Ma = np.zeros_like(Sa)
+    Ma[c] = M[c]
+    Ma[c2] = M2[c2]
+
+    S0 = np.zeros_like(Sa)
+    Sinf = np.zeros_like(Sa)
+
+    r1 = np.where(R < 1.)
+    r2 = np.where(R > 1.)
+
+    S0[r1] = (Sa[r1]+Sm[r1]*Ma[r1])/(1.+Ma[r1])
+    Sinf[r1] = S0[r1]*(1.+M[r1])/(1.-M[r1])
+
+    Sinf[r2] = Sa[r2]
+    S0[r2] = Sinf[r2]*(1.-M[r2])/(1.+M[r2])
+
+    if R_goal == 0.0:
+        return S0
+
+    elif R_goal == -1.:
+        return S0*(1.+M)
+
+    elif R_goal == "-inf" or R_goal > 1.:
+        return Sinf
+
+    elif R_goal < 0.0:
+        Mf = M
+
+    else:
+        Mf = M2
+
+    return S0*(1.+Mf)*(1.-Mf/(Mf+(1.-R_goal)/(1.+R_goal)))
+
+
+def Five_Segment_Correction(Sa, Sm, R_goal, M, M1, M2, M3, M4, R_12, R_23):
+    ''' Performs a mean stress transformation to R_goal according to the
+        Five Segment Mean Stress Correction
+
+    :param Sa: the stress amplitude
+    :param Sm: the mean stress
+    :param R_goal: the R-value to transform to
+    :param M: the mean stress sensitivity between R=-inf and R=0
+    :param M1: the mean stress sensitivity between R=0 and R=R_12
+    :param M2: the mean stress sensitivity betwenn R=R_12 and R=R_23
+    :param M3: the mean stress sensitivity between R=R_23 and R=1
+    :param M4: the mean stress sensitivity beyond R=1
+    :param R_12: R-value between M1 and M2
+    :param R_23: R-value between M2 and M3
+
+    :returns: the transformed stress amplitude
+    '''
+
+    if R_goal == 1:
+        raise ValueError('R_goal = 1 is invalid input')
+
+    old_err_state = np.seterr(divide='ignore')
+
+    R = np.divide(Sm-Sa, Sm+Sa)
+
+    ignored_states = np.seterr(**old_err_state)
+
+    c4 = np.where(R > 1.)
+    c = np.where(R <= 0.)
+    c1 = np.where((R > 0.) & (R <= R_12))
+    c2 = np.where((R > R_12) & (R <= R_23))
+    c3 = np.where((R > R_23) & (R < 1.))
+
+    Ma = np.zeros_like(Sa)
+    Ma[c4] = M4
+    Ma[c] = M
+    Ma[c1] = M1
+    Ma[c2] = M2
+    Ma[c3] = M3
+
+    S_inf = np.zeros_like(Sa)
+    S_0 = np.zeros_like(Sa)
+    S_12 = np.zeros_like(Sa)
+    S_23 = np.zeros_like(Sa)
+
+    B_12 = (1.+R_12)/(1.-R_12)
+    B_23 = (1.+R_23)/(1.-R_23)
+    B_goal = (1.+R_goal)/(1.-R_goal)
+
+    r4 = c4
+    r = np.append(c, c1)
+    r23 = np.append(c2, c3)
+
+    S_inf[r4] = (Sa[r4]+Sm[r4]*Ma[r4])/(1.-Ma[r4])
+    S_0[r4] = S_inf[r4]*(1.-M)/(1.+M)
+    S_12[r4] = S_0[r4]*(1.+M1)/(1.+M1*B_12)
+    S_23[r4] = S_12[r4]*(1.+M2*B_12)/(1.+M2*B_23)
+
+    S_0[r] = (Sa[r]+Sm[r]*Ma[r])/(1.+Ma[r])
+    S_inf[r] = S_0[r]*(1.+M)/(1.-M)
+    S_12[r] = S_0[r]*(1.+M1)/(1.+M1*B_12)
+    S_23[r] = S_12[r]*(1.+M2*B_12)/(1.+M2*B_23)
+
+    S_23[r23] = (Sa[r23]+Sm[r23]*Ma[r23])/(1.+Ma[r23]*B_23)
+    S_12[r23] = S_23[r23]*(1.+M2*B_23)/(1.+M2*B_12)
+    S_0[r23] = S_12[r23]*(1.+M1*B_12)/(1.+M1)
+    S_inf[r23] = S_0[r23]*(1.+M)/(1.-M)
+
+    if R_goal == 0.0:
+        return S_0
+
+    elif R_goal == -1.:
+        return S_0*(1.+M)
+
+    elif R_goal == "-inf":
+        return S_inf
+
+    elif R_goal == R_12:
+        return S_12
+
+    elif R_goal == R_23:
+        return S_23
+
+    elif R_goal < 0.0:
+        return S_0*(1.+M)*(1.-M/(M+1./B_goal))
+
+    elif R_goal > 0.0 and R_goal < R_12:
+        return S_0*(1.+M1)*(1.-M1/(M1+1./B_goal))
+
+    elif R_goal > R_12 and R_goal < R_23:
+        return S_23*(1.+M2*B_23)/(1.+M2*B_goal)
+
+    elif R_goal > R_23 and R_goal < 1.:
+        return S_23*(1.+M3*B_23)/(1.+M3*B_goal)
+
+    elif R_goal > 1.:
+        return S_inf*(1.-M4)*(1.-M4/(M4+1./B_goal))
