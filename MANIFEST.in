@@ -1,0 +1,4 @@
+include versioneer.py
+include pylife/_version.py
+include README.md
+include LICENSE
