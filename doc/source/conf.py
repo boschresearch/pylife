@@ -32,6 +32,7 @@ extensions = [
     ]
 
 napoleon_numpy_docstring = True
+nbsphinx_timeout = -1
 
 intersphinx_mapping = {
     'pandas':  ('https://pandas.pydata.org/pandas-docs/stable/', None),
