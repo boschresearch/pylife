@@ -39,6 +39,8 @@ intersphinx_mapping = {
     'matplotlib': ('http://matplotlib.sourceforge.net/', None)
 }
 
+nbsphinx_allow_errors = True
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
