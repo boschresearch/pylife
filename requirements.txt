@@ -5,7 +5,7 @@ scipy
 pandas
 cython
 mystic
-pytables
+tables
 jupyter
 matplotlib
 xlrd
