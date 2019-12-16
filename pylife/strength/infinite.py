@@ -47,7 +47,7 @@ class InfiniteSecurityAccessor(stresssignal.CyclicStressAccessor):
             quotient of strength and existing stress
 
         """
-        woehler_data.woehler
+        #woehler_data.woehler
         wd = woehler_data
         std_dev = 0.39015207303618954*np.log10(wd.strength_scatter)
         allowed_stress = 10**stats.norm.ppf(allowed_failure_probability,

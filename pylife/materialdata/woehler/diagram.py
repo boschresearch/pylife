@@ -49,40 +49,18 @@ class PlotWoehlerCurve:
         if title.startswith('Probability plot'):
             self.probability_plot(WoehlerCurve, title)
         elif title == 'Plot':
-            self.calc_woehlercurve(WoehlerCurve, method)
+            self.calc_woehlercurve_from_curve(WoehlerCurve, method)
         else:
-            self.calc_woehlercurve(WoehlerCurve, method)
-#            if title.startswith('Probability plot of the finite zone'):
-#                self.probability_plot(WoehlerCurve, title)
-#            else:
+            self.calc_woehlercurve_from_curve(WoehlerCurve, method)
+            '''
+            if title.startswith('Probability plot of the finite zone'):
+                self.probability_plot(WoehlerCurve, title)
+            else:
+            '''
             self.base_plot(WoehlerCurve, title, method)
-            self.edit_WL_diagram()
+            self.edit_WL_diagram_from_curve()
 
-
-    def calc_woehlercurve(self, WoehlerCurve, method):
-        """ Basquin curve equation
-
-        http://www.ux.uis.no/~hirpa/6KdB/ME/S-N%20diagram.pdf
-        """
-        if method == 'Mali':
-            k = WoehlerCurve.Mali_5p_result['k_1']
-            S0 = WoehlerCurve.Mali_5p_result['SD_50']
-            N0 = WoehlerCurve.Mali_5p_result['ND_50']
-        else:
-            k = WoehlerCurve.k
-            S0 = 1
-            N0 = WoehlerCurve.N0
-        y_min = WoehlerCurve.loads_max*1.2
-        y_max = WoehlerCurve.loads_min*0.8
-
-        y = np.linspace(y_max, y_min, num=100)
-        x = N0*(y/S0)**(-k)
-        self.wl_curve = np.array([y, x]).transpose()
-
-        return self.wl_curve
-
-
-    def shift_woehlercurve_pf(WL50, WoehlerCurve, pa_goal, method):
+    def shift_woehlercurve_pf(self, WL50, WoehlerCurve, pa_goal, method):
         """ Shift the Basquin-curve according to the failure probability value (obtain the 10-90 % curves)"""
         if method == 'Mali':
             TN = WoehlerCurve.Mali_5p_result['1/TN']
@@ -127,13 +105,13 @@ class PlotWoehlerCurve:
                 plt.plot(self.xlim_WL, np.ones(len(self.xlim_WL))*WoehlerCurve.Sa_shift,'g')
 
             elif title == 'Deviation TN':
-                plt.plot(PlotWoehlerCurve.shift_woehlercurve_pf(WL50=self.wl_curve,
+                plt.plot(self.shift_woehlercurve_pf(WL50=self.wl_curve,
                                                                 WoehlerCurve=WoehlerCurve, pa_goal=0.1,
                                                                 method=method)[:, 1],
                         self.wl_curve[:, 0], 'r', linewidth=1.5,
                         linestyle='--', label=u'WL, $P_A$=10% u. 90%'
                         )
-                plt.plot(PlotWoehlerCurve.shift_woehlercurve_pf(WL50=self.wl_curve,
+                plt.plot(self.shift_woehlercurve_pf(WL50=self.wl_curve,
                                                                 WoehlerCurve=WoehlerCurve, pa_goal=0.9,
                                                                 method=method)[:, 1],
                          self.wl_curve[:, 0], 'r', linewidth=1.5, linestyle='--'
@@ -157,17 +135,23 @@ class PlotWoehlerCurve:
 
     def edit_WL_diagram(self):
         """ Transforming the axis to accommodate the data in the logrithmic scale """
-        plt.xlim(self.xlim_WL)
-        plt.ylim(self.ylim_WL)
+        self.edit_WL_diagram(self.fig, self.amp, self.ld_typ, self.unit, self.xlim_WL, self.ylim_WL)
+         
+    def edit_WL_diagram(self, figure, amp, ld_typ, unit, xlim='auto', ylim='auto'):
+        """ Transforming the axis to accommodate the data in the logrithmic scale """
+        if xlim != 'auto':
+            plt.xlim(xlim)
+        if ylim != 'auto':
+            plt.ylim(ylim)
 
         plt.xscale('log')
         plt.yscale('log')
         plt.grid()
-        plt.xlabel('Number of cycles', fontsize = 11)
-        plt.ylabel(self.amp+' ('+self.ld_typ+') in '+self.unit+'(log scaled)')
-        plt.legend(loc='upper right', fontsize=11)
-        self.fig.tight_layout()
-        matplotlib.rcParams.update({'font.size': 11})
+        plt.xlabel('Number of cycles')
+        plt.ylabel(amp+' ('+ld_typ+') in '+unit+' (log scaled)')
+        plt.legend(loc='upper right', fontsize=12)
+        figure.tight_layout()
+        matplotlib.rcParams.update({'font.size': 12})        
 
 
     def probability_plot(self, WoehlerCurve, title):
@@ -233,7 +217,7 @@ class PlotWoehlerCurve:
         self.fig.tight_layout()
 
 
-    def runout_zone_method(WoehlerCurve, method, slope_chosen):
+    def runout_zone_method(self, WoehlerCurve, method, slope_chosen):
 
         #print('\n------ Method for runout-zone -------')
         if method == 'Mali':
@@ -263,7 +247,7 @@ class PlotWoehlerCurve:
         return SD50, ND50, TS
 
 
-    def final_curve_plot(WoehlerCurve, SD50, ND50, TS, slope, method,
+    def final_curve_plot(self, WoehlerCurve, SD50, ND50, TS, slope, method,
                          amp, ld_typ, unit, xlim_WL, ylim_WL, default_diag):
         WC_data = WoehlerCurve
         if default_diag == 1:
@@ -304,7 +288,7 @@ class PlotWoehlerCurve:
                  label=u'Runout')
 
 
-        WL_50 = calc_woehlercurve(k=k_1, N0=ND50, S0=SD50, y_min=SD50, y_max=WC_data.loads_max*1.2)
+        WL_50 = self.calc_woehlercurve(k=k_1, N0=ND50, S0=SD50, y_min=SD50, y_max=WC_data.loads_max*1.2)
 
         # Werte für Wöhlerlinie
         SD10 = SD50 / (10**(-stats.norm.ppf(0.1)*np.log10(TS)/2.56))
@@ -314,28 +298,28 @@ class PlotWoehlerCurve:
             WL_50 = np.append(WL_50, np.array([[SD50, 1E9]]), axis=0)
 
 
-            WL_10 = calc_woehlercurve(k=k_1, N0=ND50, S0=SD50, y_min=SD10, y_max=WC_data.loads_max*1.2)
-            WL_10 = PlotWoehlerCurve.shift_woehlercurve_pf(WL50=WL_10, WoehlerCurve=WC_data, pa_goal=0.1, method=method)
+            WL_10 = self.calc_woehlercurve(k=k_1, N0=ND50, S0=SD50, y_min=SD10, y_max=WC_data.loads_max*1.2)
+            WL_10 = self.shift_woehlercurve_pf(WL50=WL_10, WoehlerCurve=WC_data, pa_goal=0.1, method=method)
             WL_10 = np.append(WL_10, np.array([[SD10, 1E9]]), axis=0)
 
-            WL_90 = calc_woehlercurve(k=k_1, N0=ND50, S0=SD50, y_min=SD90, y_max=WC_data.loads_max*1.2)
-            WL_90 = PlotWoehlerCurve.shift_woehlercurve_pf(WL50=WL_90, WoehlerCurve=WC_data, pa_goal=0.9, method=method)
+            WL_90 = self.calc_woehlercurve(k=k_1, N0=ND50, S0=SD50, y_min=SD90, y_max=WC_data.loads_max*1.2)
+            WL_90 = self.shift_woehlercurve_pf(WL50=WL_90, WoehlerCurve=WC_data, pa_goal=0.9, method=method)
             WL_90 = np.append(WL_90, np.array([[SD90, 1E9]]), axis=0)
 
         else:
-            WL_50_new = calc_woehlercurve(k=slope, N0=ND50, S0=SD50, y_min=ylim_WL[0], y_max=SD50)
+            WL_50_new = self.calc_woehlercurve(k=slope, N0=ND50, S0=SD50, y_min=ylim_WL[0], y_max=SD50)
             WL_50 = np.append(WL_50, WL_50_new, axis=0)
 
-            WL_10 = calc_woehlercurve(k=k_1, N0=ND50, S0=SD50, y_min=SD10, y_max=WC_data.loads_max*1.2)
-            WL_10 = PlotWoehlerCurve.shift_woehlercurve_pf(WL50=WL_10, WoehlerCurve=WC_data, pa_goal=0.1, method=method)
+            WL_10 = self.calc_woehlercurve(k=k_1, N0=ND50, S0=SD50, y_min=SD10, y_max=WC_data.loads_max*1.2)
+            WL_10 = self.shift_woehlercurve_pf(WL50=WL_10, WoehlerCurve=WC_data, pa_goal=0.1, method=method)
             ND10 = WL_10[-1,-1]
-            WL_10_new = calc_woehlercurve(k=slope, N0=ND10, S0=SD10, y_min=ylim_WL[0], y_max=SD10)
+            WL_10_new = self.calc_woehlercurve(k=slope, N0=ND10, S0=SD10, y_min=ylim_WL[0], y_max=SD10)
             WL_10 = np.append(WL_10, WL_10_new, axis=0)
 
-            WL_90 = calc_woehlercurve(k=k_1, N0=ND50, S0=SD50,y_min=SD90, y_max=WC_data.loads_max*1.2)
-            WL_90 = PlotWoehlerCurve.shift_woehlercurve_pf(WL50=WL_90, WoehlerCurve=WC_data, pa_goal=0.9, method=method)
+            WL_90 = self.calc_woehlercurve(k=k_1, N0=ND50, S0=SD50,y_min=SD90, y_max=WC_data.loads_max*1.2)
+            WL_90 = self.shift_woehlercurve_pf(WL50=WL_90, WoehlerCurve=WC_data, pa_goal=0.9, method=method)
             ND90 = WL_90[-1,-1]
-            WL_90_new = calc_woehlercurve(k=slope, N0=ND90, S0=SD90, y_min=ylim_WL[0], y_max=SD90)
+            WL_90_new = self.calc_woehlercurve(k=slope, N0=ND90, S0=SD90, y_min=ylim_WL[0], y_max=SD90)
             WL_90 = np.append(WL_90, WL_90_new, axis=0)
 
         plt.plot(WL_50[:, 1], WL_50[:, 0], 'r', linewidth=2., label=u'WC, $P_A$=50%')
@@ -346,7 +330,7 @@ class PlotWoehlerCurve:
         # add_DL_labels(fig,data) #Anzahl der Durchläufer auf einem Niveau markieren
         plt.title(u'Woehler-Diagram')
 
-        edit_WL_diagram(fig, amp, ld_typ, unit, xlim=xlim_WL, ylim=ylim_WL)
+        self.edit_WL_diagram(fig, amp, ld_typ, unit, xlim=xlim_WL, ylim=ylim_WL)
 
         text = '$k_1$ = '+str(np.round(k_1,decimals=2)) + '\n'
         text += '$k_2$ = '+str(np.round(slope,decimals=2)) + '\n'
@@ -361,30 +345,32 @@ class PlotWoehlerCurve:
                  verticalalignment='bottom',horizontalalignment='left',
                  transform=ax.transAxes, bbox={'facecolor':'grey', 'alpha':0.2, 'pad':10})
 
+    def calc_woehlercurve_from_curve(self, WoehlerCurve, method):
+        """ Basquin curve equation
 
-def edit_WL_diagram(figure, amp, ld_typ, unit, xlim='auto', ylim='auto'):
-    """ Transforming the axis to accommodate the data in the logrithmic scale """
-    if xlim != 'auto':
-        plt.xlim(xlim)
-    if ylim != 'auto':
-        plt.ylim(ylim)
+        http://www.ux.uis.no/~hirpa/6KdB/ME/S-N%20diagram.pdf
+        """
+        if method == 'Mali':
+            k = WoehlerCurve.Mali_5p_result['k_1']
+            S0 = WoehlerCurve.Mali_5p_result['SD_50']
+            N0 = WoehlerCurve.Mali_5p_result['ND_50']
+        else:
+            k = WoehlerCurve.k
+            S0 = 1
+            N0 = WoehlerCurve.N0
+        y_min = WoehlerCurve.loads_max*1.2
+        y_max = WoehlerCurve.loads_min*0.8
 
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.grid()
-    plt.xlabel('Number of cycles')
-    plt.ylabel(amp+' ('+ld_typ+') in '+unit+' (log scaled)')
-    plt.legend(loc='upper right', fontsize=12)
-    figure.tight_layout()
-    matplotlib.rcParams.update({'font.size': 12})
+        self.wl_curve = self.calc_woehlercurve(k, N0, S0, y_min, y_max)
 
+        return self.wl_curve
+    
+    def calc_woehlercurve(self, k, N0, S0, y_min, y_max):
+        """ Basquin curve equation
 
-def calc_woehlercurve(k, N0, S0, y_min, y_max):
-    """ Basquin curve equation
+        http://www.ux.uis.no/~hirpa/6KdB/ME/S-N%20diagram.pdf
+        """
+        y = np.linspace(y_max, y_min, num=100)
+        x = N0*(y/S0)**(-k)
 
-    http://www.ux.uis.no/~hirpa/6KdB/ME/S-N%20diagram.pdf
-    """
-    y = np.linspace(y_max, y_min, num=100)
-    x = N0*(y/S0)**(-k)
-
-    return np.array([y, x]).transpose()
+        return np.array([y, x]).transpose()

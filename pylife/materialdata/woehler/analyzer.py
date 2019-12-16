@@ -34,22 +34,7 @@ class WoehlerCurve:
         self.param_fix = param_fix
         self.param_estim = param_estim
         self.load_cycle_limit = load_cycle_limit
-
-        self.__data_sort()
-
-        self.__slope()
-        self.__deviation()
-
-        if len(self.ld_lvls_inf[0])<2:
-            self.Probit_result = {}
-        else:
-            self.__probit()
-            self.__probit_procedure()
-
-        self.__maximum_like_procedure()
-        self.__maximum_like_procedure_2_param()
-
-
+        
     def __data_sort(self):
 
         self.loads_max = self.data.loads.max()
@@ -116,7 +101,7 @@ class WoehlerCurve:
         self.N_shift = self.fractures.cycles * ((self.Sa_shift/self.fractures.loads)**(-self.k))
         self.N_shift = np.sort(self.N_shift)
 
-        self.fp = _rossow_fail_prob(self.N_shift)
+        self.fp = self.rossow_fail_prob(self.N_shift)
         self.u = stats.norm.ppf(self.fp)
 
         self.a_pa, self.b_pa, _, _, _ = stats.linregress(np.log10(self.N_shift), self.u)
@@ -145,7 +130,6 @@ class WoehlerCurve:
         # Average endurance load cycle
         ND50_probit = 10**(self.b_wl+self.a_wl*np.log10(SD50_probit))
 
-        self.Probit_result = {}
         self.Probit_result = {'SD_50':SD50_probit, '1/TS':TS_probit,'ND_50':ND50_probit}
 
 
@@ -240,21 +224,36 @@ class WoehlerCurve:
         for k in self.param_fix:
             self.p_opt.pop(k)
             self.dict_bound.pop(k)
-
-        var_opt = my.scipy_optimize.fmin(_func_wrapper, [*self.p_opt.values()],
-                                         bounds=[*self.dict_bound.values()],
-                                         args=([*self.p_opt], self.param_fix, self.fractures, self.zone_inf,
-                                               self.load_cycle_limit
-                                               ),
-                                         disp=True,
-                                         maxiter=1e4,
-                                         maxfun=1e4,
-                                         )
-
         self.Mali_5p_result = {}
-        self.Mali_5p_result.update(self.param_fix)
-        self.Mali_5p_result.update(zip([*self.p_opt], var_opt))
+        if self.dict_bound: 
+            var_opt = my.scipy_optimize.fmin(self.mali_sum_lolli_wrapper, [*self.p_opt.values()],
+                                            bounds=[*self.dict_bound.values()],
+                                            args=([*self.p_opt], self.param_fix, self.fractures, self.zone_inf,
+                                                self.load_cycle_limit
+                                                ),
+                                            disp=True,
+                                            maxiter=1e4,
+                                            maxfun=1e4,
+                                            )
+            self.Mali_5p_result.update(self.param_fix)
+            self.Mali_5p_result.update(zip([*self.p_opt], var_opt))
+        else:
+            print('You need to have at least one parameter empty!')
 
+    def calc_woehler_curve_parameters(self):
+        self.__data_sort()
+
+        self.__slope()
+        self.__deviation()
+
+        if len(self.ld_lvls_inf[0])<2:
+            self.Probit_result = {}
+        else:
+            self.__probit()
+            self.__probit_procedure()
+
+        self.__maximum_like_procedure()
+        self.__maximum_like_procedure_2_param()
 
     def __maximum_like_procedure_2_param(self):
         ''' This maximum likelihood procedure estimates the load endurance limit SD50_mali_2_param and the
@@ -265,168 +264,164 @@ class WoehlerCurve:
         SD_start = self.fatg_lim
         TS_start = 1.2
 
-        var = optimize.fmin(Mali_SD_TS, [SD_start, TS_start],
+        var = optimize.fmin(self.Mali_SD_TS, [SD_start, TS_start],
                                            args=(self.zone_inf, self.load_cycle_limit),
                                            disp=False)
 
         ND50 = 10**(self.b_wl + self.a_wl*np.log10(var[0]))
-        self.Mali_2p_result = {}
         self.Mali_2p_result = {'SD_50':var[0], '1/TS':var[1],'ND_50':ND50}
 
 
+    def mali_sum_lolli(self, SD, TS, k, N_E, TN, fractures, zone_inf, load_cycle_limit):
+        """
+        Produces the likelihood functions that are needed to compute the parameters of the woehler curve.
+        The likelihood functions are represented by probability and cummalative distribution functions.
+        The likelihood function of a runout is 1-Li(fracture). The functions are added together, and the
+        negative value is returned to the optimizer.
 
-def mali_sum_lolli(SD, TS, k, N_E, TN, fractures, zone_inf, load_cycle_limit):
-    """
-    Produces the likelihood functions that are needed to compute the parameters of the woehler curve.
-    The likelihood functions are represented by probability and cummalative distribution functions.
-    The likelihood function of a runout is 1-Li(fracture). The functions are added together, and the
-    negative value is returned to the optimizer.
+        Parameters
+        ----------
+        SD:
+            Endurnace limit start value to be optimzed, unless the user fixed it.
+        TS:
+            The scatter in load direction 1/TS to be optimzed, unless the user fixed it.
+        k:
+            The slope k_1 to be optimzed, unless the user fixed it.
+        N_E:
+            Load-cycle endurance start value to be optimzed, unless the user fixed it.
+        TN:
+            The scatter in load-cycle direction 1/TN to be optimzed, unless the user fixed it.
+        fractures:
+            The data that our log-likelihood function takes in. This data represents the fractured data.
+        zone_inf:
+            The data that our log-likelihood function takes in. This data is found in the infinite zone.
+        load_cycle_limit:
+            The dependent variable that our model requires, in order to seperate the fractures from the
+            runouts.
 
-    Parameters
-    ----------
-    SD:
-        Endurnace limit start value to be optimzed, unless the user fixed it.
-    TS:
-        The scatter in load direction 1/TS to be optimzed, unless the user fixed it.
-    k:
-        The slope k_1 to be optimzed, unless the user fixed it.
-    N_E:
-        Load-cycle endurance start value to be optimzed, unless the user fixed it.
-    TN:
-        The scatter in load-cycle direction 1/TN to be optimzed, unless the user fixed it.
-    fractures:
-        The data that our log-likelihood function takes in. This data represents the fractured data.
-    zone_inf:
-        The data that our log-likelihood function takes in. This data is found in the infinite zone.
-    load_cycle_limit:
-        The dependent variable that our model requires, in order to seperate the fractures from the
-        runouts.
+        Returns
+        -------
+        neg_sum_lolli :
+            Sum of the log likelihoods. The negative value is taken since optimizers in statistical
+            packages usually work by minimizing the result of a function. Performing the maximum likelihood
+            estimate of a function is the same as minimizing the negative log likelihood of the function.
 
-    Returns
-    -------
-    neg_sum_lolli :
-        Sum of the log likelihoods. The negative value is taken since optimizers in statistical
-        packages usually work by minimizing the result of a function. Performing the maximum likelihood
-        estimate of a function is the same as minimizing the negative log likelihood of the function.
+        """
+        # Likelihood functions of the fractured data
+        x_ZF = np.log10(fractures.cycles * ((fractures.loads/SD)**(k)))
+        Mu_ZF = np.log10(N_E)
+        Sigma_ZF = np.log10(TN)/2.5631031311
+        Li_ZF = stats.norm.pdf(x_ZF, Mu_ZF, abs(Sigma_ZF))
+        LLi_ZF = np.log(Li_ZF)
 
-    """
-    # Likelihood functions of the fractured data
-    x_ZF = np.log10(fractures.cycles * ((fractures.loads/SD)**(k)))
-    Mu_ZF = np.log10(N_E)
-    Sigma_ZF = np.log10(TN)/2.5631031311
-    Li_ZF = stats.norm.pdf(x_ZF, Mu_ZF, abs(Sigma_ZF))
-    LLi_ZF = np.log(Li_ZF)
+        # Likelihood functions of the data found in the infinite zone
+        std_log = np.log10(TS)/2.5631031311
+        runouts = ma.masked_where(zone_inf.cycles >= load_cycle_limit, zone_inf.cycles)
+        t = runouts.mask.astype(int)
+        Li_DF = stats.norm.cdf(np.log10(zone_inf.loads/SD), loc=np.log10(1), scale=abs(std_log))
+        LLi_DF = np.log(t+(1-2*t)*Li_DF)
 
-    # Likelihood functions of the data found in the infinite zone
-    std_log = np.log10(TS)/2.5631031311
-    runouts = ma.masked_where(zone_inf.cycles >= load_cycle_limit, zone_inf.cycles)
-    t = runouts.mask.astype(int)
-    Li_DF = stats.norm.cdf(np.log10(zone_inf.loads/SD), loc=np.log10(1), scale=abs(std_log))
-    LLi_DF = np.log(t+(1-2*t)*Li_DF)
+        sum_lolli = LLi_DF.sum() + LLi_ZF.sum()
+        neg_sum_lolli = -sum_lolli
 
-    sum_lolli = LLi_DF.sum() + LLi_ZF.sum()
-    neg_sum_lolli = -sum_lolli
+        return neg_sum_lolli
 
-    return neg_sum_lolli
+    def Mali_SD_TS(self, variables, zone_inf, load_cycle_limit):
+        """
+        Produces the likelihood functions that are needed to compute the endurance limit and the scatter
+        in load direction. The likelihood functions are represented by a cummalative distribution function.
+        The likelihood function of a runout is 1-Li(fracture).
 
+        Parameters
+        ----------
+        variables:
+            The start values to be optimized. (Endurance limit SD, Scatter in load direction 1/TS)
+        zone_inf:
+            The data that our log-likelihood function takes in. This data is found in the infinite zone.
+        load_cycle_limit:
+            The dependent variable that our model requires, in order to seperate the fractures from the
+            runouts.
 
-def Mali_SD_TS(variables, zone_inf, load_cycle_limit):
-    """
-    Produces the likelihood functions that are needed to compute the endurance limit and the scatter
-    in load direction. The likelihood functions are represented by a cummalative distribution function.
-    The likelihood function of a runout is 1-Li(fracture).
+        Returns
+        -------
+        neg_sum_lolli :
+            Sum of the log likelihoods. The negative value is taken since optimizers in statistical
+            packages usually work by minimizing the result of a function. Performing the maximum likelihood
+            estimate of a function is the same as minimizing the negative log likelihood of the function.
 
-    Parameters
-    ----------
-    variables:
-        The start values to be optimized. (Endurance limit SD, Scatter in load direction 1/TS)
-    zone_inf:
-        The data that our log-likelihood function takes in. This data is found in the infinite zone.
-    load_cycle_limit:
-        The dependent variable that our model requires, in order to seperate the fractures from the
-        runouts.
+        """
 
-    Returns
-    -------
-    neg_sum_lolli :
-        Sum of the log likelihoods. The negative value is taken since optimizers in statistical
-        packages usually work by minimizing the result of a function. Performing the maximum likelihood
-        estimate of a function is the same as minimizing the negative log likelihood of the function.
+        SD = variables[0]
+        TS = variables[1]
 
-    """
+        std_log = np.log10(TS)/2.5631031311
+        runouts = ma.masked_where(zone_inf.cycles >= load_cycle_limit, zone_inf.cycles)
+        t = runouts.mask.astype(int)
+        Li_DF = stats.norm.cdf(np.log10(zone_inf.loads/SD), loc=np.log10(1), scale=abs(std_log))
+        LLi_DF = np.log(t+(1-2*t)*Li_DF)
 
-    SD = variables[0]
-    TS = variables[1]
+        sum_lolli = LLi_DF.sum()
+        neg_sum_lolli = -sum_lolli
 
-    std_log = np.log10(TS)/2.5631031311
-    runouts = ma.masked_where(zone_inf.cycles >= load_cycle_limit, zone_inf.cycles)
-    t = runouts.mask.astype(int)
-    Li_DF = stats.norm.cdf(np.log10(zone_inf.loads/SD), loc=np.log10(1), scale=abs(std_log))
-    LLi_DF = np.log(t+(1-2*t)*Li_DF)
-
-    sum_lolli = LLi_DF.sum()
-    neg_sum_lolli = -sum_lolli
-
-    return neg_sum_lolli
+        return neg_sum_lolli
 
 
-def _rossow_fail_prob(x):
-    """ Failure Probability estimation formula of Rossow
+    def rossow_fail_prob(self, x):
+        """ Failure Probability estimation formula of Rossow
 
-    'Statistics of Metal Fatigue in Engineering' page 16
+        'Statistics of Metal Fatigue in Engineering' page 16
 
-    https://books.google.de/books?isbn=3752857722
-    """
-    i = np.arange(len(x))+1
-    pa = (3.*(i)-1.)/(3.*len(x)+1.)
+        https://books.google.de/books?isbn=3752857722
+        """
+        i = np.arange(len(x))+1
+        pa = (3.*(i)-1.)/(3.*len(x)+1.)
 
-    return pa
-
-
-def bayes_inf_crit(LLi, dict_opt, n_data_pt):
-    ''' Bayesian Information Criterion: is a criterion for model selection among a finite set of models;
-    the model with the lowest BIC is preferred.
-    https://www.statisticshowto.datasciencecentral.com/bayesian-information-criterion/
-    '''
-
-    param_est = len([*dict_opt.values()])
-    bic = (-2*LLi)+(param_est*np.log(n_data_pt))
-    return bic
+        return pa
 
 
-def life_cyc_eval(WoehlerCurve, method):
+    def bayes_inf_crit(self, LLi, dict_opt, n_data_pt):
+        ''' Bayesian Information Criterion: is a criterion for model selection among a finite set of models;
+        the model with the lowest BIC is preferred.
+        https://www.statisticshowto.datasciencecentral.com/bayesian-information-criterion/
+        '''
 
-    if method == 'Mali':
-        # Allowed load amplitude with a certain load and 50% failure probability
-        N_allowed_50 = WoehlerCurve.ND50_mali*(WoehlerCurve.Load_ampl_goal/
-                                               WoehlerCurve.Param_SD50_mali)**(-WoehlerCurve.Param_k_mali)
-        # Allowed load relative to the goal failure probability
-        N_allowed_pa_goal = (N_allowed_50/(10**(-stats.norm.ppf(WoehlerCurve.Pa_goal)*
-                                                np.log10(WoehlerCurve.Param_TN_mali)/2.56
-                                               )
-                                          )
-                            )
-    else:
-        N_allowed_50 = WoehlerCurve.ND50_mali*(WoehlerCurve.Load_ampl_goal/
-                                                            WoehlerCurve.SD50_probit)**(-WoehlerCurve.k)
-
-        N_allowed_pa_goal = (N_allowed_50/(10**(-stats.norm.ppf(WoehlerCurve.Pa_goal)*
-                                                np.log10(WoehlerCurve.TN)/2.56
-                                               )
-                                          )
-                            )
-
-    return N_allowed_50, N_allowed_pa_goal
+        param_est = len([*dict_opt.values()])
+        bic = (-2*LLi)+(param_est*np.log(n_data_pt))
+        return bic
 
 
-def _func_wrapper(var_args, var_keys, fix_args, fractures, zone_inf, load_cycle_limit):
-    ''' 1) Finds the start values to be optimized. The rest of the paramters are fixed by the user.
-        2) Calls function mali_sum_lolli to calculate the maximum likelihood of the current
-        variable states.
-    '''
-    args = {}
-    args.update(fix_args)
-    args.update(zip(var_keys, var_args))
+    def life_cyc_eval(self, method):
 
-    return mali_sum_lolli(args['SD_50'], args['1/TS'], args['k_1'], args['ND_50'],
-                                      args['1/TN'], fractures, zone_inf, load_cycle_limit)
+        if method == 'Mali':
+            # Allowed load amplitude with a certain load and 50% failure probability
+            N_allowed_50 = self.ND50_mali*(self.Load_ampl_goal/
+                                                   self.Param_SD50_mali)**(-self.Param_k_mali)
+            # Allowed load relative to the goal failure probability
+            N_allowed_pa_goal = (N_allowed_50/(10**(-stats.norm.ppf(self.Pa_goal)*
+                                                    np.log10(self.Param_TN_mali)/2.56
+                                                   )
+                                              )
+                                )
+        else:
+            N_allowed_50 = self.ND50_mali*(self.Load_ampl_goal/
+                                                                self.SD50_probit)**(-WoehlerCurve.k)
+
+            N_allowed_pa_goal = (N_allowed_50/(10**(-stats.norm.ppf(self.Pa_goal)*
+                                                    np.log10(self.TN)/2.56
+                                                   )
+                                              )
+                                )
+
+        return N_allowed_50, N_allowed_pa_goal
+
+    def mali_sum_lolli_wrapper(self, var_args, var_keys, fix_args, fractures, zone_inf, load_cycle_limit):
+        ''' 1) Finds the start values to be optimized. The rest of the paramters are fixed by the user.
+            2) Calls function mali_sum_lolli to calculate the maximum likelihood of the current
+            variable states.
+        '''
+        args = {}
+        args.update(fix_args)
+        args.update(zip(var_keys, var_args))
+
+        return self.mali_sum_lolli(args['SD_50'], args['1/TS'], args['k_1'], args['ND_50'],
+                                          args['1/TN'], fractures, zone_inf, load_cycle_limit)
