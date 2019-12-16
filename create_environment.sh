@@ -14,14 +14,23 @@ fi
 
 python_version=`head -1 requirements.txt`
 
-conda create -p _venv \"$python_version\" pip --yes
-conda activate ./_venv
+echo $python_version
 
-sed '1d' requirements.txt | \
+conda create -p _venv --file ./requirements_CONDA.txt
+echo "Environment created"
+
+conda activate ./_venv
+echo "Environment activated"
+
+cat requirements_PIP.txt | \
 while read req ; do
-    conda install $req --yes || pip install $req
+	echo $req
+    pip install $req
 done
 
+echo "Pip packages installed"
+
 conda deactivate
+echo "Environment deactivated"
 
 shopt -q login_shell && read -n1 -r -p "Press any key to continue..." key
