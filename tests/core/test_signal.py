@@ -1,66 +1,67 @@
+import sys, os, copy
+sys.path.insert(0, os.path.abspath('.'))
 
 import pytest
 import pandas as pd
 
-from pylife import signal
-
+import pylife.core.signal as signal
 
 foo_bar_baz = pd.DataFrame({'foo': [1.0], 'bar': [1.0], 'baz': [1.0]})
-
+val = signal.SignalValidator()
 
 def test_missing_keys_none():
-    assert signal.get_missing_keys(foo_bar_baz, ['foo', 'bar']) == []
-
+    assert val._get_missing_keys(foo_bar_baz, ['foo', 'bar']) == []
 
 def test_missing_keys_one():
-    assert signal.get_missing_keys(foo_bar_baz, ['foo', 'foobar']) == ['foobar']
+    assert val._get_missing_keys(foo_bar_baz, ['foo', 'foobar']) == ['foobar']
 
 
 def test_missing_keys_two():
-    assert set(signal.get_missing_keys(foo_bar_baz, ['foo', 'foobar', 'barfoo'])) == set(['foobar', 'barfoo'])
-
+    assert set(val._get_missing_keys(foo_bar_baz, ['foo', 'foobar', 'barfoo'])) == set(['foobar', 'barfoo'])
 
 @pd.api.extensions.register_dataframe_accessor('test_accessor_none')
 class AccessorNone(signal.PylifeSignal):
-    def _validate(self, obj):
-        signal.fail_if_key_missing(obj, ['foo', 'bar'])
-
+    def __init__(self, pandas_obj):
+        self._validator = signal.SignalValidator()
+        self._validate(pandas_obj, self._validator)
+        self._obj = pandas_obj
+        
+    def _validate(self, obj, validator):
+        validator.fail_if_key_missing(obj, ['foo', 'bar'])
+		
     def already_here(self):
-        pass
+        pass		
 
 @pd.api.extensions.register_dataframe_accessor('test_accessor_one')
 class AccessorOne:
     def __init__(self, pandas_obj):
-        self._validate(pandas_obj)
+        self._validator = signal.SignalValidator()
+        self._validate(pandas_obj, self._validator)
         self._obj = pandas_obj
 
-    def _validate(self, obj):
-        signal.fail_if_key_missing(obj, ['foo', 'foobar'])
-
+    def _validate(self, obj, validator):
+        validator.fail_if_key_missing(obj, ['foo', 'foobar'])
 
 @pd.api.extensions.register_dataframe_accessor('test_accessor_two')
 class AccessorTwo:
     def __init__(self, pandas_obj):
-        self._validate(pandas_obj)
+        self._validator = signal.SignalValidator()
+        self._validate(pandas_obj, self._validator)
         self._obj = pandas_obj
 
-    def _validate(self, obj):
-        signal.fail_if_key_missing(obj, ['foo', 'foobar', 'barfoo'])
-
+    def _validate(self, obj, validator):
+        validator.fail_if_key_missing(obj, ['foo', 'foobar', 'barfoo'])
 
 def test_fail_if_missing_keys_none():
     foo_bar_baz.test_accessor_none
-
 
 def test_fail_if_missing_keys_one():
     with pytest.raises(AttributeError, match=r'^AccessorOne.*foobar'):
         foo_bar_baz.test_accessor_one
 
-
 def test_fail_if_missing_keys_two():
     with pytest.raises(AttributeError, match=r'^AccessorTwo.*(foobar|barfoo).*(barfoo|foobar)'):
         foo_bar_baz.test_accessor_two
-
 
 def test_register_method():
     @signal.register_method(AccessorNone, 'foo_method')

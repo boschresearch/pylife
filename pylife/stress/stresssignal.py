@@ -46,8 +46,8 @@ class StressTensorVoigtAccessor(signal.PylifeSignal):
     --------
     For an example see :class:`equistress.StressTensorEquistressAccessor`.
     '''
-    def _validate(self, obj):
-        signal.fail_if_key_missing(obj, ['S11', 'S22', 'S33', 'S12', 'S13', 'S23'])
+    def _validate(self, obj, validator):
+        validator.fail_if_key_missing(obj, ['S11', 'S22', 'S33', 'S12', 'S13', 'S23'])
 
 
 @pd.api.extensions.register_dataframe_accessor("cyclic_stress")
@@ -71,18 +71,18 @@ class CyclicStressAccessor(signal.PylifeSignal):
     ----
     Handle also input data with lower and upper stress.
     '''
-    def _validate(self, obj):
+    def _validate(self, obj, validator):
+
         if 'sigma_a' in obj.columns and 'R' in obj.columns:
             obj['sigma_m'] = obj['sigma_a']*(1.+obj.R)/(1.-obj.R)
-            return True
-        if 'sigma_a' in obj.columns and 'sigma_m' in obj.columns:
-            return True
-        if 'sigma_a' in obj.columns:
+        elif 'sigma_a' in obj.columns and 'sigma_m' not in obj.columns:
             obj['sigma_m'] = np.zeros_like(obj['sigma_a'].to_numpy())
-        raise AttributeError("No suitable columns for cyclic stress")
+        else:
+            validator.fail_if_key_missing(obj, ['sigma_m', 'sigma_a'])
+        return True 
 
     def constant_R(self, R):
-        ''' Stets `sigma_m` in a way that `R` is a constant value.
+        ''' Sets `sigma_m` in a way that `R` is a constant value.
 
         Parameters
         ----------

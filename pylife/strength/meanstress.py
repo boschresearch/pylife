@@ -37,6 +37,7 @@ import pandas as pd
 
 import pylife
 from pylife.stress import stresssignal
+from pylife.core import signal
 
 
 @pd.api.extensions.register_dataframe_accessor("meanstress_mesh")
@@ -46,7 +47,7 @@ class MeanstressMesh(stresssignal.CyclicStressAccessor):
         haigh.FKM_Goodman
         Sa = self._obj.sigma_a.to_numpy()
         Sm = self._obj.sigma_m.to_numpy()
-        Sa_transformed = FKM_goodman(Sa, Sm, haigh.M, haigh.M2, R_goal)
+        Sa_transformed = haigh.FKM_Goodman.FKM_goodman(Sa, Sm, R_goal)
         return pd.DataFrame({'sigma_a': Sa_transformed, 'R': np.ones_like(Sa_transformed) * R_goal},
                             index=self._obj.index)
 
@@ -73,7 +74,7 @@ class MeanstressHist:
 
     def FKM_goodman(self, haigh, R_goal):
         haigh.FKM_Goodman
-        Dsig = FKM_goodman(self._Sa, self._Sm, haigh.M, haigh.M2, R_goal) * 2.
+        Dsig = haigh.FKM_Goodman.FKM_goodman(self._Sa, self._Sm, R_goal) * 2.
         Dsig_max = Dsig.max()
         binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
         bincount = int(np.ceil(Dsig_max / binsize))
@@ -90,11 +91,72 @@ class MeanstressHist:
 @pd.api.extensions.register_series_accessor("FKM_Goodman")
 class FKMGoodman:
     def __init__(self, pandas_obj):
-        self._validate(pandas_obj)
+        self._validator = signal.SignalValidator()
+        self._validate(pandas_obj, self._validator)
         self._obj = pandas_obj
 
-    def _validate(self, obj):
-        pylife.signal.fail_if_key_missing(obj, ['M', 'M2'])
+    def _validate(self, obj, validator):
+        validator.fail_if_key_missing(obj, ['M', 'M2'])
+
+    def FKM_goodman(self, Sa, Sm, R_goal):
+        ''' Performs a mean stress transformation to R_goal according to the FKM-Goodman model
+
+        :param Sa: the stress amplitude
+        :param Sm: the mean stress
+        :param M: the mean stress sensitivity between R=-inf and R=0
+        :param M2: the mean stress sensitivity beyond R=0
+        :param R_goal: the R-value to transform to
+
+        :returns: the transformed stress amplitude
+        '''
+
+        if R_goal == 1:
+            raise ValueError('R_goal = 1 is invalid input')
+
+        old_err_state = np.seterr(divide='ignore')
+
+        R = np.divide(Sm - Sa, Sm + Sa)
+
+        ignored_states = np.seterr(**old_err_state)
+
+        c = np.where(R <= 0.)
+        c2 = np.where((R > 0.) & (R < 1.))
+
+        M_ext = np.broadcast_to(self._obj.M, Sa.shape)
+        M2_ext = np.broadcast_to(self._obj.M2, Sa.shape)
+
+        Ma = np.zeros_like(Sa)
+        Ma[c] = M_ext[c]
+        Ma[c2] = M2_ext[c2]
+
+        S0 = np.zeros_like(Sa)
+        Sinf = np.zeros_like(Sa)
+
+        r1 = np.where(R < 1.)
+        r2 = np.where(R > 1.)
+
+        S0[r1] = (Sa[r1] + Sm[r1] * Ma[r1]) / (1. + Ma[r1])
+        Sinf[r1] = S0[r1]*(1. + M_ext[r1]) / (1. - M_ext[r1])
+
+        Sinf[r2] = Sa[r2]
+        S0[r2] = Sinf[r2] * (1. - M_ext[r2])/(1. + M_ext[r2])
+
+        if R_goal == 0.0:
+            return S0
+
+        elif R_goal == -1.:
+            return S0*(1. + M_ext)
+
+        elif R_goal == "-inf" or R_goal > 1.:
+            return Sinf
+
+        elif R_goal < 0.0:
+            Mf = M_ext
+
+        else:
+            Mf = M_ext
+
+        return S0*(1.+Mf)*(1.-Mf/(Mf+(1.-R_goal)/(1.+R_goal)))
 
 class MeanstressFiveSlope:
     def __init__(self, **kwargs):
@@ -109,68 +171,6 @@ class MeanstressFiveSlope:
 
     def __call__(self, Sa, Sm):
         return Five_Segment_Correction(Sa, Sm, self.R_goal, self.M0, self.M1, self.M2, self.M3, self.M4, self.R_12, self.R_23)
-
-
-def FKM_goodman(Sa, Sm, M, M2, R_goal):
-    ''' Performs a mean stress transformation to R_goal according to the FKM-Goodman model
-
-    :param Sa: the stress amplitude
-    :param Sm: the mean stress
-    :param M: the mean stress sensitivity between R=-inf and R=0
-    :param M2: the mean stress sensitivity beyond R=0
-    :param R_goal: the R-value to transform to
-
-    :returns: the transformed stress amplitude
-    '''
-
-    if R_goal == 1:
-        raise ValueError('R_goal = 1 is invalid input')
-
-    old_err_state = np.seterr(divide='ignore')
-
-    R = np.divide(Sm-Sa, Sm+Sa)
-
-    ignored_states = np.seterr(**old_err_state)
-
-    c = np.where(R <= 0.)
-    c2 = np.where((R > 0.) & (R < 1.))
-
-    M = np.broadcast_to(M, Sa.shape)
-    M2 = np.broadcast_to(M2, Sa.shape)
-
-    Ma = np.zeros_like(Sa)
-    Ma[c] = M[c]
-    Ma[c2] = M2[c2]
-
-    S0 = np.zeros_like(Sa)
-    Sinf = np.zeros_like(Sa)
-
-    r1 = np.where(R < 1.)
-    r2 = np.where(R > 1.)
-
-    S0[r1] = (Sa[r1]+Sm[r1]*Ma[r1])/(1.+Ma[r1])
-    Sinf[r1] = S0[r1]*(1.+M[r1])/(1.-M[r1])
-
-    Sinf[r2] = Sa[r2]
-    S0[r2] = Sinf[r2]*(1.-M[r2])/(1.+M[r2])
-
-    if R_goal == 0.0:
-        return S0
-
-    elif R_goal == -1.:
-        return S0*(1.+M)
-
-    elif R_goal == "-inf" or R_goal > 1.:
-        return Sinf
-
-    elif R_goal < 0.0:
-        Mf = M
-
-    else:
-        Mf = M2
-
-    return S0*(1.+Mf)*(1.-Mf/(Mf+(1.-R_goal)/(1.+R_goal)))
-
 
 def Five_Segment_Correction(Sa, Sm, R_goal, M, M1, M2, M3, M4, R_12, R_23):
     ''' Performs a mean stress transformation to R_goal according to the

@@ -20,93 +20,92 @@ __maintainer__ = __author__
 import inspect
 import pandas as pd
 
+class SignalValidator:
+    def _get_missing_keys(self, signal, keys_to_check):
+        '''Gets a list of missing keys that are needed for a signal object
 
-def get_missing_keys(signal, keys_to_check):
-    '''Gets a list of missing keys that are needed for a signal object
+        Parameters
+        ----------
+        signal : pandas.DataFrame or pandas.Series
+            The object to be checked
 
-    Parameters
-    ----------
-    signal : pandas.DataFrame or pandas.Series
-        The object to be checked
+        keys_to_check : list
+            A list of keys that need to be available in `signal`
 
-    keys_to_check : list
-        A list of keys that need to be available in `signal`
+        Returns
+        -------
+        missing_keys : list
+            a list of missing keys
 
-    Returns
-    -------
-    missing_keys : list
-        a list of missing keys
+        Raises
+        ------
+        AttributeError
+            If `signal` is neither a `pandas.DataFrame` nor a `pandas.Series`
 
-    Raises
-    ------
-    AttributeError
-        If `signal` is neither a `pandas.DataFrame` nor a `pandas.Series`
+        Notes
+        -----
+        If `signal` is a `pandas.DataFrame`, all keys of
+        `keys_to_check` not found in the `signal.columns` are
+        returned.
 
-    Notes
-    -----
-    If `signal` is a `pandas.DataFrame`, all keys of
-    `keys_to_check` not found in the `signal.columns` are
-    returned.
+        If `signal` is a `pandas.Series`, all keys of
+        `keys_to_check` not found in the `signal.index` are
+        returned.
+        '''
+        if isinstance(signal, pd.Series):
+            keys_avail = signal.index
+        elif isinstance(signal, pd.DataFrame):
+            keys_avail = signal.columns
+        else:
+            raise AttributeError("An accessor object needs to be either a pandas.Series or a pandas.DataFrame")
 
-    If `signal` is a `pandas.Series`, all keys of
-    `keys_to_check` not found in the `signal.index` are
-    returned.
-    '''
-    if isinstance(signal, pd.Series):
-        keys_avail = signal.index
-    elif isinstance(signal, pd.DataFrame):
-        keys_avail = signal.columns
-    else:
-        raise AttributeError("An accessor object needs to be either a pandas.Series or a pandas.DataFrame")
-
-    missing_keys = []
-    for k in keys_to_check:
-        if k not in keys_avail:
-            missing_keys.append(k)
-    return missing_keys
-
-
-def fail_if_key_missing(signal, keys_to_check, msg=None):
-    '''Raises an exception if any key is missing in a signal object
-
-    Parameters
-    ----------
-    signal : pandas.DataFrame or pandas.Series
-        The object to be checked
-
-    keys_to_check : list
-        A list of keys that need to be available in `signal`
-
-    Raises
-    ------
-    AttributeError
-        if `signal` is neither a `pandas.DataFrame` nor a `pandas.Series`
-    AttributeError
-        if any of the keys is not found in the signal's keys.
-
-    Notes
-    -----
-    If `signal` is a `pandas.DataFrame`, all keys of
-    `keys_to_check` meed to be found in the `signal.columns`.
-
-    If `signal` is a `pandas.Series`, all keys of
-    `keys_to_check` meed to be found in the `signal.index`.
-
-    See also
-    --------
-    :func:`signal.get_missing_keys`
-    :class:`stresssignal.StressTensorVoigtAccessor`
-    '''
-    missing_keys = get_missing_keys(signal, keys_to_check)
-    if not missing_keys:
-        return
-    if msg is None:
-        stack = inspect.stack()
-        the_class = stack[2][0].f_locals['self'].__class__
-        msg = the_class.__name__ + ' must have the items %s. Missing %s.'
-    raise AttributeError(msg % (', '.join(keys_to_check), ', '.join(missing_keys)))
+        missing_keys = []
+        for k in keys_to_check:
+            if k not in keys_avail:
+                missing_keys.append(k)
+        return missing_keys
 
 
+    def fail_if_key_missing(self, signal, keys_to_check, msg=None):
+        '''Raises an exception if any key is missing in a signal object
+
+        Parameters
+        ----------
+        signal : pandas.DataFrame or pandas.Series
+            The object to be checked
+
+        keys_to_check : list
+            A list of keys that need to be available in `signal`
+
+        Raises
+        ------
+        AttributeError
+            if `signal` is neither a `pandas.DataFrame` nor a `pandas.Series`
+        AttributeError
+            if any of the keys is not found in the signal's keys.
+
+        Notes
+        -----
+        If `signal` is a `pandas.DataFrame`, all keys of
+        `keys_to_check` meed to be found in the `signal.columns`.
+
+        If `signal` is a `pandas.Series`, all keys of
+        `keys_to_check` meed to be found in the `signal.index`.
+
+        See also
+        --------
+        :func:`signal.get_missing_keys`
+        :class:`stresssignal.StressTensorVoigtAccessor`
+        '''
+        missing_keys = self._get_missing_keys(signal, keys_to_check)
+        if not missing_keys:
+            return
+        if msg is None:
+            stack = inspect.stack()
+            the_class = stack[2][0].f_locals['self'].__class__
+            msg = the_class.__name__ + ' must have the items %s. Missing %s.'
+        raise AttributeError(msg % (', '.join(keys_to_check), ', '.join(missing_keys)))
+        
 class PylifeSignal:
     '''Base class for signal accessor classes
 
@@ -138,7 +137,8 @@ class PylifeSignal:
     _method_dict = {}
 
     def __init__(self, pandas_obj):
-        self._validate(pandas_obj)
+        self._validator = SignalValidator()
+        self._validate(pandas_obj, self._validator)
         self._obj = pandas_obj
 
     class _MethodCaller:
@@ -150,6 +150,8 @@ class PylifeSignal:
             return self._method(self._obj, *args, **kwargs)
 
     def __getattr__(self, itemname):
+        if itemname not in self._method_dict.keys():
+            raise AttributeError("Method '%s' not registered", itemname)
         method = self._method_dict[itemname]
         return self._MethodCaller(method, self._obj)
 
