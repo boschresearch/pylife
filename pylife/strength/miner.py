@@ -48,7 +48,6 @@ __author__ = "Cedric Philip Wagner"
 __maintainer__ = "Johannes Mueller"
 
 
-import inspect
 import logging
 import numpy as np
 import pandas as pd
@@ -100,11 +99,11 @@ class MinerBase:
 
     Parameters
     ----------
-    N_D : float
+    ND_50 : float
         number of cycles of the fatigue strength of the S/N curve [number of cycles]
-    k : float
+    k_1 : float
         slope of the S/N curve [unitless]
-    sigma_ak : float
+    SD_50 : float
         fatigue strength of the S/N curve [MPa]
     """
 
@@ -115,8 +114,8 @@ class MinerBase:
     zeitfestigkeitsfaktor = None
     defaults = {
         "steel": {
-            "N_D": 10**6,
-            "k": 5,
+            "ND_50": 10**6,
+            "k_1": 5,
         }
     }
     """
@@ -124,22 +123,22 @@ class MinerBase:
     which could be used when the information is not available
     """
 
-    def __init__(self, N_D, k, sigma_ak):
-        self.N_D = abs(N_D)
-        if self.N_D < 10**3:
+    def __init__(self, ND_50, k_1, SD_50):
+        self.ND_50 = abs(ND_50)
+        if self.ND_50 < 10**3:
             raise ValueError(
-                "N_D is unexpectedly small ('{}'). "
+                "ND_50 is unexpectedly small ('{}'). "
                 "Please check valid input of this parameter! "
                 "Input is not in logarithmic scale.".format(
-                    self.N_D,
+                    self.ND_50,
                 )
             )
-        self.k = abs(k)
-        self.sigma_ak = abs(sigma_ak)
+        self.k_1 = abs(k_1)
+        self.SD_50 = abs(SD_50)
         self.sn_curve = FiniteLifeCurve(
-            k=self.k,
-            S_d=self.sigma_ak,
-            N_e=self.N_D
+            k=self.k_1,
+            S_d=self.SD_50,
+            N_e=self.ND_50
         )
 
     def setup(self, collective):
@@ -231,7 +230,7 @@ class MinerBase:
     def calc_zeitfestigkeitsfaktor(self, N, total_lifetime=True):
         """Calculate "Zeitfestigkeitsfaktor" according to Waechter2017 (p. 96)"""
 
-        z = (self.N_D / N)**(1. / self.k)
+        z = (self.ND_50 / N)**(1. / self.k_1)
 
         if total_lifetime:
             self.zeitfestigkeitsfaktor = z
@@ -311,9 +310,9 @@ class MinerElementar(MinerBase):
     # Solidity (Völligkeit) according to FKM guideline
     V_FKM = None
 
-    def __init__(self, N_D, k, sigma_ak):
+    def __init__(self, ND_50, k_1, SD_50):
         super(MinerElementar, self).__init__(
-            N_D, k, sigma_ak,
+            ND_50, k_1, SD_50,
         )
 
     def setup(self, collective):
@@ -341,9 +340,9 @@ class MinerElementar(MinerBase):
                     number of cycles of the highest stress class
         """
         super(MinerElementar, self).calc_A(collective)
-        V = solidity_haibach(self.collective, self.k)
+        V = solidity_haibach(self.collective, self.k_1)
         self.V_haibach = V
-        self.V_FKM = V**(1/self.k)
+        self.V_FKM = V**(1/self.k_1)
         A = 1. / V
         self.A = A
 
@@ -369,9 +368,9 @@ class MinerHaibach(MinerBase):
     """
     evaluated_load_levels = None
 
-    def __init__(self, N_D, k, sigma_ak):
+    def __init__(self, ND_50, k_1, SD_50):
         super(MinerHaibach, self).__init__(
-            N_D, k, sigma_ak,
+            ND_50, k_1, SD_50,
         )
         self.evaluated_load_levels = {}
 
@@ -404,19 +403,19 @@ class MinerHaibach(MinerBase):
         -------
         A : float > 0
             lifetime multiple
-            return value is 'inf' if load_level < sigma_ak
+            return value is 'inf' if load_level < SD_50
         """
         super(MinerHaibach, self).calc_A(collective)
         self.evaluated_load_levels[round(load_level)] = {}
         # this parameter makes each evaluation of A unique
         self._last_load_level_evaluated = load_level
-        if load_level < self.sigma_ak:
+        if load_level < self.SD_50:
             logger.warning(
-                "The given load level ('{}') is below sigma_ak ('{}'). It is assumed "
+                "The given load level ('{}') is below SD_50 ('{}'). It is assumed "
                 "that with this load level no damage occurs. "
                 "Hence, an infinite value is returned.".format(
                     load_level,
-                    self.sigma_ak
+                    self.SD_50
                 )
             )
             if ignore_inf_rule:
@@ -427,11 +426,11 @@ class MinerHaibach(MinerBase):
                 return np.inf
         assert self.S_collective.max() == 1
         s_a = self.S_collective * load_level
-        i_full_damage = (s_a >= self.sigma_ak)
-        i_reduced_damage = (s_a < self.sigma_ak)
+        i_full_damage = (s_a >= self.SD_50)
+        i_reduced_damage = (s_a < self.SD_50)
         self.evaluated_load_levels[round(load_level)]["i_full_damage"] = i_full_damage
         self.evaluated_load_levels[round(load_level)]["i_reduced_damage"] = i_reduced_damage
-        x_D = self.sigma_ak / s_a.max()
+        x_D = self.SD_50 / s_a.max()
         self.evaluated_load_levels[round(load_level)]["x_D"] = x_D
 
         s_full_damage = s_a[i_full_damage]
@@ -442,12 +441,12 @@ class MinerHaibach(MinerBase):
         # first expression of the summation term in the denominator
         sum_1 = np.dot(
             n_full_damage,
-            ((s_full_damage / s_a.max())**self.k),
+            ((s_full_damage / s_a.max())**self.k_1),
         )
         self.evaluated_load_levels[round(load_level)]["sum_1_denominator"] = sum_1
-        sum_2 = (x_D**(1 - self.k)) * np.dot(
+        sum_2 = (x_D**(1 - self.k_1)) * np.dot(
             n_reduced_damage,
-            ((s_reduced_damage / s_a.max())**(2 * self.k - 1))
+            ((s_reduced_damage / s_a.max())**(2 * self.k_1 - 1))
         )
         self.evaluated_load_levels[round(load_level)]["sum_2_denominator"] = sum_2
 
