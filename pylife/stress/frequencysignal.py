@@ -28,7 +28,7 @@ class psdSignal:
         return factor_rms_nods*eps1+(1-factor_rms_nods)*eps2
     
     
-    def psd_smoother(self,fsel,factor_rms_nods = 0.5):
+    def psd_smoother(self,fsel,factor_rms_nodes = 0.5):
         ''' Smooth your PSD using nodes and a penalty factor weighting the errors
         for the RMS and for the node PSD values
         
@@ -51,12 +51,17 @@ class psdSignal:
         '''
     	# InputVariablen
     	# 
-        f  = self.index.values
-        fsel = np.unique(np.append(min(f),fsel))#,max(f)]))
-        log_Hi0 = np.interp(fsel,f,np.log10(self))
-        log_Hi = op.fmin(psdSignal._intMinlog,log_Hi0,args=(self,f,fsel,factor_rms_nods))
-        log_H = np.interp(f,fsel,log_Hi)
-        self_opt = np.power(10,log_H)
-        return pd.Series(data = self_opt,index = self.index)
+#        f  = self.index.values
+#        fsel = np.unique(np.append(min(f),fsel))#,max(f)]))
+        f  = np.log10(self.index.values)
+        fsel = np.log10(np.unique(np.append(min(f),fsel)))#,max(f)]))
+        opt_df = pd.DataFrame()
+        for colact in self.columns:
+            log_Hi0 = np.interp(fsel,f,np.log10(self[colact]))
+            log_Hi = op.fmin(psdSignal._intMinlog,log_Hi0,args=(self[colact],f,fsel,factor_rms_nodes),disp = 0)
+            log_H = np.interp(f,fsel,log_Hi)
+            opt_df[colact] = np.power(10,log_H)
+        opt_df.index = self.index            
+        return opt_df
     
     
