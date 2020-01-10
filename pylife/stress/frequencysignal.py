@@ -39,7 +39,7 @@ class psdSignal:
             unsmoothed PSD        
         fsel: list or np.array
            nodes
-        factor_rms_nods: float (0 <= factor_rms_nods <= 1)
+        factor_rms_nodes: float (0 <= factor_rms_nods <= 1)
             penalty error weighting the errors:
                 
             * 0: only error of node PSD values is considered
@@ -51,8 +51,6 @@ class psdSignal:
         '''
     	# InputVariablen
     	# 
-#        f  = self.index.values
-#        fsel = np.unique(np.append(min(f),fsel))#,max(f)]))
         f  = np.log10(self.index.values)
         fsel = np.log10(np.unique(np.append(min(f),fsel)))#,max(f)]))
         opt_df = pd.DataFrame()
