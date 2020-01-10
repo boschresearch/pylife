@@ -33,8 +33,8 @@ class PlotWoehlerCurve:
             # Unit
             self.unit = u'$N/mm^2$'
             # Figure xy limits (Woehler curve)
-            self.xlim_WL = (round(min(WoehlerCurve.data.cycles)*0.4,-1), round(max(WoehlerCurve.data.cycles)*2,-1))
-            self.ylim_WL = (round(min(WoehlerCurve.data.loads)*0.8,-1), round(max(WoehlerCurve.data.loads)*1.2,-1))
+            self.xlim_WL = (round(min(WoehlerCurve.fatigue_data.cycles)*0.4,-1), round(max(WoehlerCurve.fatigue_data.cycles)*2,-1))
+            self.ylim_WL = (round(min(WoehlerCurve.fatigue_data.loads)*0.8,-1), round(max(WoehlerCurve.fatigue_data.loads)*1.2,-1))
         else:
             # Amplitude
             self.amp = amp
@@ -62,10 +62,8 @@ class PlotWoehlerCurve:
 
     def shift_woehlercurve_pf(self, WL50, WoehlerCurve, pa_goal, method):
         """ Shift the Basquin-curve according to the failure probability value (obtain the 10-90 % curves)"""
-        if method == 'Mali':
-            TN = WoehlerCurve.Mali_5p_result['1/TN']
-        else:
-            TN = WoehlerCurve.TN
+        
+        TN = WoehlerCurve.TN
 
         WL_shift = np.array(WL50)
         WL_shift[:, 1] /= (10**(-stats.norm.ppf(pa_goal)*np.log10(TN)/2.56))
@@ -74,23 +72,20 @@ class PlotWoehlerCurve:
 
 
     def base_plot(self, WoehlerCurve, title, method):
-
+        k = WoehlerCurve.k
+        TN = WoehlerCurve.TN
         if method == 'Mali':
-            k = WoehlerCurve.Mali_5p_result['k_1']
-            TN = WoehlerCurve.Mali_5p_result['1/TN']
             TS = TN**(1./k)
         else:
-            k = WoehlerCurve.k
-            TN = WoehlerCurve.TN
             TS = WoehlerCurve.TS
 
         self.fig = plt.figure(figsize=(8, 5))
         if title == 'Initial data':
-            plt.plot(WoehlerCurve.fractures.cycles, WoehlerCurve.fractures.loads, 'bo', label='Failure')
-            plt.axhline(y=WoehlerCurve.fatg_lim, linewidth=2, color='r', label='Endurance limit')
+            plt.plot(WoehlerCurve.fatigue_data.fractures.cycles, WoehlerCurve.fatigue_data.fractures.loads, 'bo', label='Failure')
+            plt.axhline(y=WoehlerCurve.fatigue_data.fatg_lim, linewidth=2, color='r', label='Endurance limit')
         else:
             self.ax = plt.subplot('111')
-            plt.plot(WoehlerCurve.fractures.cycles, WoehlerCurve.fractures.loads, 'bo', label='Failure')
+            plt.plot(WoehlerCurve.fatigue_data.fractures.cycles, WoehlerCurve.fatigue_data.fractures.loads, 'bo', label='Failure')
             plt.plot(self.wl_curve[:,1], self.wl_curve[:,0], 'r', linewidth=2., label=u'WL, $P_A$=50%')
 
             if title == 'Slope':
@@ -100,9 +95,9 @@ class PlotWoehlerCurve:
                          bbox={'facecolor': 'grey', 'alpha': 0.2, 'pad': 10})
 
             elif title == 'Pearl chain method':
-                plt.plot(WoehlerCurve.N_shift, np.ones(len(WoehlerCurve.N_shift))*WoehlerCurve.Sa_shift,
+                plt.plot(WoehlerCurve.fatigue_data.N_shift, np.ones(len(WoehlerCurve.fatigue_data.N_shift))*WoehlerCurve.fatigue_data.Sa_shift,
                          'go',label='PCM shifted probes', marker="v")
-                plt.plot(self.xlim_WL, np.ones(len(self.xlim_WL))*WoehlerCurve.Sa_shift,'g')
+                plt.plot(self.xlim_WL, np.ones(len(self.xlim_WL))*WoehlerCurve.fatigue_data.Sa_shift,'g')
 
             elif title == 'Deviation TN':
                 plt.plot(self.shift_woehlercurve_pf(WL50=self.wl_curve,
@@ -125,7 +120,7 @@ class PlotWoehlerCurve:
                          horizontalalignment='left', transform=self.ax.transAxes,
                          bbox={'facecolor': 'grey', 'alpha': 0.2, 'pad': 10})
 
-        plt.plot(WoehlerCurve.runouts.cycles, WoehlerCurve.runouts.loads, 'bo', mfc='none',
+        plt.plot(WoehlerCurve.fatigue_data.runouts.cycles, WoehlerCurve.fatigue_data.runouts.loads, 'bo', mfc='none',
                  label=u'Runout', alpha=0.5
                  )
         plt.title(title)
@@ -133,7 +128,7 @@ class PlotWoehlerCurve:
         return self.fig
 
 
-    def edit_WL_diagram(self):
+    def edit_WL_diagram_from_curve(self):
         """ Transforming the axis to accommodate the data in the logrithmic scale """
         self.edit_WL_diagram(self.fig, self.amp, self.ld_typ, self.unit, self.xlim_WL, self.ylim_WL)
          
@@ -156,7 +151,7 @@ class PlotWoehlerCurve:
 
     def probability_plot(self, WoehlerCurve, title):
         if title == 'Probability plot of the finite zone':
-            X = WoehlerCurve.N_shift
+            X = WoehlerCurve.fatigue_data.N_shift
             Y = WoehlerCurve.u
             a = WoehlerCurve.a_pa
             b = WoehlerCurve.b_pa
@@ -212,7 +207,7 @@ class PlotWoehlerCurve:
         else:
             plt.xticks([10**((stats.norm.ppf(0.1)-b)/a), 10**((stats.norm.ppf(0.9)-b)/a)],
                        ('', ''))
-#                        ('N($P_{A,10}$)', 'N($P_{A,90}$)'))
+            #('N($P_{A,10}$)', 'N($P_{A,90}$)'))
 
         self.fig.tight_layout()
 
@@ -280,7 +275,7 @@ class PlotWoehlerCurve:
             TN = WC_data.TN
 
         fig = plt.figure(figsize=(8, 5))
-#        fig = plt.figure(figsize=(4.5,5.5))
+        #fig = plt.figure(figsize=(4.5,5.5))
         ax = plt.subplot('111')
 
         plt.plot(WC_data.fractures.cycles, WC_data.fractures.loads, 'bo', label='Failure')

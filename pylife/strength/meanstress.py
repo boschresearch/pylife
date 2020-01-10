@@ -38,6 +38,7 @@ import pandas as pd
 import pylife
 from pylife.stress import stresssignal
 from pylife.core import signal
+from pylife.core.data_validator import DataValidator
 
 
 @pd.api.extensions.register_dataframe_accessor("meanstress_mesh")
@@ -91,7 +92,7 @@ class MeanstressHist:
 @pd.api.extensions.register_series_accessor("FKM_Goodman")
 class FKMGoodman:
     def __init__(self, pandas_obj):
-        self._validator = signal.SignalValidator()
+        self._validator = DataValidator()
         self._validate(pandas_obj, self._validator)
         self._obj = pandas_obj
 

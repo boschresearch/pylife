@@ -5,24 +5,25 @@ import pytest
 import pandas as pd
 
 import pylife.core.signal as signal
+from pylife.core.data_validator import DataValidator
 
 foo_bar_baz = pd.DataFrame({'foo': [1.0], 'bar': [1.0], 'baz': [1.0]})
-val = signal.SignalValidator()
+val = DataValidator()
 
 def test_missing_keys_none():
-    assert val._get_missing_keys(foo_bar_baz, ['foo', 'bar']) == []
+    assert val.get_missing_keys(foo_bar_baz, ['foo', 'bar']) == []
 
 def test_missing_keys_one():
-    assert val._get_missing_keys(foo_bar_baz, ['foo', 'foobar']) == ['foobar']
+    assert val.get_missing_keys(foo_bar_baz, ['foo', 'foobar']) == ['foobar']
 
 
 def test_missing_keys_two():
-    assert set(val._get_missing_keys(foo_bar_baz, ['foo', 'foobar', 'barfoo'])) == set(['foobar', 'barfoo'])
+    assert set(val.get_missing_keys(foo_bar_baz, ['foo', 'foobar', 'barfoo'])) == set(['foobar', 'barfoo'])
 
 @pd.api.extensions.register_dataframe_accessor('test_accessor_none')
 class AccessorNone(signal.PylifeSignal):
     def __init__(self, pandas_obj):
-        self._validator = signal.SignalValidator()
+        self._validator = DataValidator()
         self._validate(pandas_obj, self._validator)
         self._obj = pandas_obj
         
@@ -35,7 +36,7 @@ class AccessorNone(signal.PylifeSignal):
 @pd.api.extensions.register_dataframe_accessor('test_accessor_one')
 class AccessorOne:
     def __init__(self, pandas_obj):
-        self._validator = signal.SignalValidator()
+        self._validator = DataValidator()
         self._validate(pandas_obj, self._validator)
         self._obj = pandas_obj
 
@@ -45,7 +46,7 @@ class AccessorOne:
 @pd.api.extensions.register_dataframe_accessor('test_accessor_two')
 class AccessorTwo:
     def __init__(self, pandas_obj):
-        self._validator = signal.SignalValidator()
+        self._validator = DataValidator()
         self._validate(pandas_obj, self._validator)
         self._obj = pandas_obj
 

@@ -25,14 +25,17 @@ import io
 import numpy as np
 
 class WoehlerWidget:
-    def excel_upload(self):
+    
+    @staticmethod
+    def excel_upload():
         file_name = widgets.FileUpload(
                     accept='.xlsx',  # Accepted file extension
                     multiple=False  # True to accept multiple files upload else False
                 )
         return file_name
 
-    def data_head_tail(self):
+    @staticmethod
+    def data_head_tail():
         w = widgets.RadioButtons(
             options=['Head of the data', 'Details of the data'],
             description='Visualization:',
@@ -42,29 +45,28 @@ class WoehlerWidget:
 
         return w
 
-    def method_mali_probit(self):
+    @staticmethod
+    def method_mali_probit():
         w2 = widgets.RadioButtons(
             options=['Mali', 'Probit'],
             description='Visualization',
             disabled=False,
-            style={'description_width': 'initial'}
-            )
+            style={'description_width': 'initial'})
 
         return w2
+    
+    @staticmethod
+    def k_1_def(): 
+        w3 = widgets.RadioButtons(
+            options=[('Fractures', "fractures"), ('Finite-life zone', "zone_fin")],
+            description='Data points',
+            disabled=False,
+            style={'description_width': 'initial'})
 
+        return w3
 
-	def k_1_def(self):
-	    w3 = widgets.RadioButtons(
-	        options=[('Fractures', "fractures"), ('Finite-life zone', "zone_fin")],
-	        description='Data points',
-	        disabled=False,
-	        style={'description_width': 'initial'}
-	    )
-
-	    return w3
-
-
-    def WL_param(self):
+    @staticmethod
+    def WL_param():
 
         tab_contents = ['k_1', '1/TN', 'SD_50', '1/TS', 'ND_50']
         items_a = ['Mali k_1', 'Mali 1/TN', 'Mali SD_50','Mali 1/TS', 'Mali ND_50']
@@ -77,8 +79,8 @@ class WoehlerWidget:
 
         return tab
 
-
-    def WL_param_display(self, tab):
+    @staticmethod
+    def WL_param_display(tab):
 
         print('Maximum Likelihood Method:\n')
         print('Estimated Parameters:')
@@ -99,60 +101,66 @@ class WoehlerWidget:
 
         return fixed_param, estim_param
 
-    #+ '\033[91m' +'\033[1m' +
-    def results_mali_probit(self, WC_data, fixed_param):
-
-        print('Maximum Likelihood %d Param method:\n'% len(WC_data.p_opt))
+    @staticmethod
+    def print_mali_5p_result(woehler_curve, fixed_param):
+        print('Maximum Likelihood %d Param method:\n'% len(woehler_curve.p_opt))
 
         if 'SD_50' in fixed_param:
-            print ('Endurance SD50 = ', np.round(WC_data.Mali_5p_result['SD_50'],decimals=1))
+            print ('Endurance SD50 = ', np.round(woehler_curve.curve_parameters['SD_50'],decimals=1))
         else:
-            print ('\033[91m' +'\033[1m' + 'Endurance SD50 = ' + '\033[1;34m'+ str(np.round(WC_data.Mali_5p_result['SD_50'],decimals=1)))
+            print ('\033[91m' +'\033[1m' + 'Endurance SD50 = ' + '\033[1;34m'+ str(np.round(woehler_curve.curve_parameters['SD_50'],decimals=1)))
+            
         if 'ND_50' in fixed_param:
-            print ('\033[0;0m' + 'Endurance load-cycle ND50 = ' + str('{:1.2e}'.format(WC_data.Mali_5p_result['ND_50'])))
+            print ('\033[0;0m' + 'Endurance load-cycle ND50 = ' + str('{:1.2e}'.format(woehler_curve.curve_parameters['ND_50'])))
         else:
-            print ('\033[91m' +'\033[1m' +'Endurance load-cycle ND50 = ' + '\033[1;34m'+  str('{:1.2e}'.format(WC_data.Mali_5p_result['ND_50'])))
+            print ('\033[91m' +'\033[1m' +'Endurance load-cycle ND50 = ' + '\033[1;34m'+  str('{:1.2e}'.format(woehler_curve.curve_parameters['ND_50'])))
+            
         if '1/TS' in fixed_param:
-            print ('\033[0;0m' + 'Deviation in load direction 1/TS = ' + str(np.round(WC_data.Mali_5p_result['1/TS'],decimals=2)))
+            print ('\033[0;0m' + 'Deviation in load direction 1/TS = ' + str(np.round(woehler_curve.curve_parameters['1/TS'],decimals=2)))
         else:
-            print ('\033[91m' +'\033[1m' +'Deviation in load direction 1/TS = '+ '\033[1;34m'+  str(np.round(WC_data.Mali_5p_result['1/TS'],decimals=2)))
+            print ('\033[91m' +'\033[1m' +'Deviation in load direction 1/TS = '+ '\033[1;34m'+  str(np.round(woehler_curve.curve_parameters['1/TS'],decimals=2)))
+            
         if 'k_1' in fixed_param:
-            print ('\033[0;0m' + 'Slope k = ' + str(np.round(WC_data.Mali_5p_result['k_1'],decimals=2)))
+            print ('\033[0;0m' + 'Slope k = ' + str(np.round(woehler_curve.curve_parameters['k_1'],decimals=2)))
         else:
-            print ('\033[91m' +'\033[1m' + 'Slope k = '+ '\033[1;34m'+ str(np.round(WC_data.Mali_5p_result['k_1'],decimals=2)))
+            print ('\033[91m' +'\033[1m' + 'Slope k = '+ '\033[1;34m'+ str(np.round(woehler_curve.curve_parameters['k_1'],decimals=2)))
+            
         if '1/TN' in fixed_param:
-            print ('\033[0;0m' + 'Deviation in load-cycle direction 1/TN = ' + str(np.round(WC_data.Mali_5p_result['1/TN'],decimals=2)))
+            print ('\033[0;0m' + 'Deviation in load-cycle direction 1/TN = ' + str(np.round(woehler_curve.curve_parameters['1/TN'],decimals=2)))
         else:
-            print ('\033[91m' +'\033[1m' + 'Deviation in load-cycle direction 1/TN = '+ '\033[1;34m'+  str(np.round(WC_data.Mali_5p_result['1/TN'],decimals=2)))
+            print ('\033[91m' +'\033[1m' + 'Deviation in load-cycle direction 1/TN = '+ '\033[1;34m'+  str(np.round(woehler_curve.curve_parameters['1/TN'],decimals=2)))
 
+    
+    @staticmethod
+    def print_mali_2p_result(woehler_curve):
         print ('\033[0;0m' + '\n------ Results Maximum Likelihood 2 Param method -------')
-        print ('Endurance SD50 =', np.round(WC_data.Mali_2p_result['SD_50'],decimals=1))
-        print ('Endurance load-cycle ND50 =', '{:1.2e}'.format(WC_data.Mali_2p_result['ND_50']))
-        print ('Deviation in load direction 1/TS_mali =', np.round(WC_data.Mali_2p_result['1/TS'],decimals=2))
-
+        print ('Endurance SD50 =', np.round(woehler_curve.Mali_2p_result['SD_50'],decimals=1))
+        print ('Endurance load-cycle ND50 =', '{:1.2e}'.format(woehler_curve.curve_parameters['ND_50']))
+        print ('Deviation in load direction 1/TS_mali =', np.round(woehler_curve.curve_parameters['1/TS'],decimals=2))    
+        
+    @staticmethod
+    def print_slope(woehler_curve): 
         print('\033[0;0m' + '\n------ Slope using linear regression -------')
-        print('Slope K_1 = '+str(np.round(WC_data.k, decimals=2)))
-
+        print('Slope K_1 = '+str(np.round(woehler_curve.fatigue_data.k, decimals=2)))
+        
+    @staticmethod
+    def print_deviation_results(woehler_curve):        
         print('\n------ Deviation 1/TN using pearl-chain method -------')
-        print('Deviation in load-cycle direction 1/TN =', np.round(WC_data.TN, decimals=2))
-        print('Deviation in load direction (Mali köder) 1/TS* =', np.round(WC_data.TS, decimals=2))
-
+        print('Deviation in load-cycle direction 1/TN =', np.round(woehler_curve.TN, decimals=2))
+        print('Deviation in load direction (Mali köder) 1/TS* =', np.round(woehler_curve.TS, decimals=2))
+    
+    @staticmethod
+    def print_probit_results(woehler_curve):
         print('\n------ Results Probit-Method -------')
-        if len(WC_data.ld_lvls_inf[0])<2:
+        if len(woehler_curve.ld_lvls_inf[0])<2:
             print("Not enough load levels in the infinite zone for the probit method")
         else:
-            print('Endurance SD50 =', np.round(WC_data.Probit_result['SD_50'], decimals=1))
-            print('Endurance load-cycle ND50 =', '{:1.2e}'.format(WC_data.Probit_result['ND_50']))
-            print('Deviation in load direction 1/TS =', np.round(WC_data.Probit_result['1/TS'], decimals=2))
-        '''
-         if not len(WC_data.ld_lvls_inf[0])<2 and WC_data.Probit_result['1/TS']<10:
-             print('\n------ Results Probit-Method -------')
-             print('Endurance SD50 =', np.round(WC_data.Probit_result['SD_50'], decimals=1))
-             print('Endurance load-cycle ND50 =', '{:1.2e}'.format(WC_data.Probit_result['ND_50']))
-             print('Deviation in load direction 1/TS =', np.round(WC_data.Probit_result['1/TS'], decimals=2))
-        '''
+            print('Endurance SD50 =', np.round(woehler_curve.Probit_result['SD_50'], decimals=1))
+            print('Endurance load-cycle ND50 =', '{:1.2e}'.format(woehler_curve.Probit_result['ND_50']))
+            print('Deviation in load direction 1/TS =', np.round(woehler_curve.Probit_result['1/TS'], decimals=2))
 
-    def results_visual(self):
+    @staticmethod
+    def results_visual():
         w4 = widgets.RadioButtons(
             options=[('Initial data', 'Initial data'), ('Slope', 'Slope'),
                     ('Pearl chain method', 'Pearl chain method'),
@@ -167,7 +175,8 @@ class WoehlerWidget:
 
         return w4
 
-    def inf_plot(self, WC_data, k_1):
+    @staticmethod
+    def inf_plot(woehler_curve, k_1):
         w5 = widgets.RadioButtons(
             options=[('k_2 = 0', 0), ('k_2 = k_1', k_1), ('k_2 = 2 k_1 - 1', 2*k_1-1)],
             value= 0,
