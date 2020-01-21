@@ -99,10 +99,9 @@ class WoehlerCurveCreator:
         var = optimize.fmin(self.Mali_SD_TS, [SD_start, TS_start],
                                            args=(fatigue_data.zone_inf, fatigue_data.load_cycle_limit),
                                            disp=False)
-        a_wl, b_wl, _, _, _, = self.fatigue_data.slope(fatigue_data) 
         
         ND50 = 10**(b_wl + a_wl*np.log10(var[0]))
-        mali_2p_result = {'SD_50': var[0], '1/TS': var[1],'ND_50': ND50}
+        mali_2p_result = {'SD_50': var[0], '1/TS': var[1],'ND_50': ND50, 'k': fatigue_data.k, '1/TN': fatigue_data.TN}
         return WoehlerCurve(self.fatigue_data, mali_2p_result)          
         
     def probit_procedure(self):
@@ -117,7 +116,7 @@ class WoehlerCurveCreator:
         # Average endurance load cycle
         ND50_probit = 10**(self.fatigue_data.b + self.fatigue_data.a * np.log10(SD50_probit))
 
-        probit_result = {'SD_50': SD50_probit, '1/TS': TS_probit,'ND_50': ND50_probit, 'k': fatigue_data.k}
+        probit_result = {'SD_50': SD50_probit, '1/TS': TS_probit,'ND_50': ND50_probit, 'k': fatigue_data.k, '1/TN': fatigue_data.TN}
         return WoehlerCurve(self.fatigue_data, probit_result)
     
     def mali_sum_lolli(self, SD, TS, k, N_E, TN, fractures, zone_inf, load_cycle_limit):
