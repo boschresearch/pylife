@@ -20,27 +20,25 @@ __maintainer__ = "Johannes Mueller"
 from pylife.materialdata.woehler.probability_plot import ProbabilityPlot
 
 class ProbabilityPlotCreator:
-    def __init__(fatigue_data)
+    def __init__(self, fatigue_data):
         self.fatigue_data = fatigue_data
-            
-    def deviation_probability_plot(self, fatigue_data):
-        probability_plot_finite = {'X': fatigue_data.N_shift, 'Y': fatigue_data.u, 'a': fatigue_data.a_pa, 
-                                   'b': fatigue_data.b_pa, 'T': fatigue_data.TN}
-        return ProbabilityPlot(fatigue_data, probability_plot_finite)
+    
+    def probability_plot_finite(self):
+        probability_plot_finite = {'X': self.fatigue_data.N_shift, 'Y': self.fatigue_data.u, 'a': self.fatigue_data.a_pa, 
+                                   'b': self.fatigue_data.b_pa, 'T': self.fatigue_data.TN}
+        return ProbabilityPlot(self.fatigue_data, probability_plot_finite)
 
-    def probit_regression_plot(self, fatigue_data):
+    def probability_plot_inifinite(self):
         # Probaility regression plot
-        failure_probability_infinite = self.__rossow_failure_probability_infinite(fatigue_data)
+        failure_probability_infinite = self.__rossow_failure_probability_infinite(self.fatigue_data)
         inv_cdf = stats.norm.ppf(failure_probability_infinite)
-        a_ue, b_ue, _, _, _ = stats.linregress(np.log10(fatigue_data.ld_lvls_inf[0]), inv_cdf)
+        a_ue, b_ue, _, _, _ = stats.linregress(np.log10(self.fatigue_data.ld_lvls_inf[0]), inv_cdf)
         # Deviation TS in load-cycle direction
         TS_probit = 10**(2.5631031311*(1./a_ue))
-        probability_plot = {'X': fatigue_data.ld_lvls_inf[0], 'Y': inv_cdf, 'a': a_ue, 'b': b_ue, 'T': TS_probit}
-        return ProbabilityPlot(fatigue_data, probability_plot)
+        probability_plot = {'X': self.fatigue_data.ld_lvls_inf[0], 'Y': inv_cdf, 'a': a_ue, 'b': b_ue, 'T': TS_probit}
+        return ProbabilityPlot(self.fatigue_data, probability_plot)
     
-
-    
-    def __rossow_failure_probability_infinite(fatigue_data):
+    def __rossow_failure_probability_infinite(self):
         """
         Probit, probability unit, is the inverse cumulative distribution function (CDF).
         Describes the failure probability of the infinite zone.
@@ -57,26 +55,26 @@ class ProbabilityPlotCreator:
         -------
         self.FP: The failure probability following rossow's method for the infinite zone
         """
-        data_probit = np.zeros((len(fatigue_data.ld_lvls_inf[0]), 3))
+        data_probit = np.zeros((len(self.fatigue_data.ld_lvls_inf[0]), 3))
 
-        data_probit[:, 0] = fatigue_data.ld_lvls_inf[0]
-        data_probit[:, 1] = fatigue_data.ld_lvls_inf[1]
+        data_probit[:, 0] = self.fatigue_data.ld_lvls_inf[0]
+        data_probit[:, 1] = self.fatigue_data.ld_lvls_inf[1]
 
-        if len(fatigue_data.ld_lvls_inf[0]) != len(fatigue_data.ld_lvls_inf_frac[1]):
-            x = {k:v for k,v in enumerate(~np.in1d(fatigue_data.ld_lvls_inf[0], fatigue_data.ld_lvls_inf_frac[0]))
+        if len(self.fatigue_data.ld_lvls_inf[0]) != len(self.fatigue_data.ld_lvls_inf_frac[1]):
+            x = {k:v for k,v in enumerate(~np.in1d(self.fatigue_data.ld_lvls_inf[0], self.fatigue_data.ld_lvls_inf_frac[0]))
                  if v == True
                 }
             if len([*x.keys()]) > 1:
-                fracs = list(fatigue_data.ld_lvls_inf_frac[1])
+                fracs = list(self.fatigue_data.ld_lvls_inf_frac[1])
                 for keys in np.arange(len([*x.keys()])):
                     fracs.insert([*x.keys()][keys], 0)
                 data_probit[:, 2] = np.asarray(fracs)
             else:
-                    fracs = list(fatigue_data.ld_lvls_inf_frac[1])
+                    fracs = list(self.fatigue_data.ld_lvls_inf_frac[1])
                     fracs.insert([*x.keys()][0], 0)
                     data_probit[:, 2] = np.asarray(fracs)
         else:
-            data_probit[:, 2] = fatigue_data.ld_lvls_inf_frac[1]
+            data_probit[:, 2] = self.fatigue_data.ld_lvls_inf_frac[1]
 
         # Rossow failure probability for the transition zone
         failure_probability_infinite = []

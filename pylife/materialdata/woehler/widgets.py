@@ -23,6 +23,7 @@ from IPython.display import display
 from os import path
 import io
 import numpy as np
+from pylife.materialdata.woehler.probability_plot_creator import ProbabilityPlotCreator
 
 class WoehlerWidget:
     
@@ -160,20 +161,44 @@ class WoehlerWidget:
             print('Deviation in load direction 1/TS =', np.round(woehler_curve.Probit_result['1/TS'], decimals=2))
 
     @staticmethod
-    def results_visual():
+    def results_visual_woehler_curve():
         w4 = widgets.RadioButtons(
-            options=[('Initial data', 'Initial data'), ('Slope', 'Slope'),
-                    ('Pearl chain method', 'Pearl chain method'),
-                    ('Probability plot of the finite zone','Probability plot of the finite zone'),
-                    ('Deviation in load-cycle direction','Deviation TN'),
-                    ('Probability plot of the infinite zone', 'Probability plot of the infinite zone')],
+            options=[('Initial data', 'Initial data'), 
+                     ('Slope', 'Slope'),
+                     ('Pearl chain method', 'Pearl chain method'),
+                     ('Deviation in load-cycle direction','Deviation TN')],
             value= 'Initial data',
             description='Plot Type',
             disabled=False,
-            style={'description_width': 'initial'}
-            )
+            style={'description_width': 'initial'})
 
         return w4
+              
+    @staticmethod     
+    def on_results_visual_probability_plot_selection_changed(change):
+        switcher = {options[0][0]: ProbabilityPlotCreator.probability_plot_finite,
+                    options[1][0]: ProbabilityPlotCreator.probability_plot_inifinite}
+        
+        if change['new'] == 'Probability plot of the finite zone':
+            ProbabilityPlotCreator.probability_plot_finite()
+        else:
+            ProbabilityPlotCreator.probability_plot_inifinite()
+        out = widgets.Output()
+        with out:
+            if change['type'] == 'change' and change['name'] == 'value':
+                print("changed to %s" % change['new'])
+                       
+    @staticmethod
+    def results_visual_probability_plot():
+        w4 = widgets.RadioButtons(
+            options=[('Probability plot of the finite zone','Probability plot of the finite zone'),
+                     ('Probability plot of the infinite zone', 'Probability plot of the infinite zone')],
+            value= 'Probability plot of the finite zone',
+            description='Plot Type',
+            disabled=False,
+            style={'description_width': 'initial'})
+        #w4.observe(WoehlerWidget.on_results_visual_probability_plot_selection_changed, names = 'value')
+        return w4   
 
     @staticmethod
     def inf_plot(woehler_curve, k_1):
