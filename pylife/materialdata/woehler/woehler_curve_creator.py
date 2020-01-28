@@ -35,7 +35,7 @@ class WoehlerCurveCreator:
         
     def deviation_woehler_curve(self):        
         woehler_curve = {'k': self.fatigue_data.k, 'TN': self.fatigue_data.TN, 'TS': self.fatigue_data.TS}
-        return WoehlerCurve(self.fatigue_data, woehler_curve)    
+        return WoehlerCurve(woehler_curve, self.fatigue_data)    
     
     def maximum_like_procedure(self, param_fix):
         """
@@ -85,7 +85,7 @@ class WoehlerCurveCreator:
         else:
             print('You need to leave at least one parameter empty!')
         
-        return WoehlerCurveWithFixedParams(self.fatigue_data, mali_5p_result, p_opt, param_fix)
+        return WoehlerCurveWithFixedParams(mali_5p_result, p_opt, param_fix, self.fatigue_data)
     
     def maximum_like_procedure_2_param(self):
         ''' This maximum likelihood procedure estimates the load endurance limit SD50_mali_2_param and the
@@ -102,7 +102,7 @@ class WoehlerCurveCreator:
         
         ND50 = 10**(b_wl + a_wl*np.log10(var[0]))
         mali_2p_result = {'SD_50': var[0], '1/TS': var[1],'ND_50': ND50, 'k': fatigue_data.k, '1/TN': fatigue_data.TN}
-        return WoehlerCurve(self.fatigue_data, mali_2p_result)          
+        return WoehlerCurve(mali_2p_result, self.fatigue_data)          
         
     def probit_procedure(self):
         '''
@@ -117,7 +117,7 @@ class WoehlerCurveCreator:
         ND50_probit = 10**(self.fatigue_data.b + self.fatigue_data.a * np.log10(SD50_probit))
 
         probit_result = {'SD_50': SD50_probit, '1/TS': TS_probit,'ND_50': ND50_probit, 'k': fatigue_data.k, '1/TN': fatigue_data.TN}
-        return WoehlerCurve(self.fatigue_data, probit_result)
+        return WoehlerCurve(probit_result, self.fatigue_data)
     
     def mali_sum_lolli(self, SD, TS, k, N_E, TN, fractures, zone_inf, load_cycle_limit):
         """
