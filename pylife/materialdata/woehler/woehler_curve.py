@@ -18,10 +18,11 @@ __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
 from pylife.core.data_validator import DataValidator
+import numpy as np
 
 class WoehlerCurve:
-    
-    def __init__(self, fatigue_data, curve_parameters):
+
+    def __init__(self, curve_parameters, fatigue_data = None):
         self.fatigue_data = fatigue_data
         self.k = DataValidator.fill_member('k_1', curve_parameters)
         self.ND_50 = DataValidator.fill_member('ND_50', curve_parameters)
@@ -32,4 +33,4 @@ class WoehlerCurve:
     @property
     def curve_parameters(self):
         return {'SD_50': self.SD_50, '1/TS': self.TS, 'k_1': self.k, 
-                'ND_50': self.ND_50, '1/TN': self.TN}  
+                'ND_50': self.ND_50, '1/TN': self.TN}   

@@ -20,7 +20,7 @@ __maintainer__ = "Johannes Mueller"
 from pylife.materialdata.woehler.woehler_curve import WoehlerCurve
 
 class WoehlerCurveWithFixedParams(WoehlerCurve): 
-    def __init__(self, fatigue_data, curve_parameters, p_opt, param_fix):
-        super().__init__(fatigue_data, curve_parameters)
+    def __init__(self, curve_parameters, p_opt, param_fix, fatigue_data = None):
+        super().__init__(curve_parameters, fatigue_data)
         self.p_opt = p_opt
         self.param_fix = param_fix
