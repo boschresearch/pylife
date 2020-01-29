@@ -25,16 +25,16 @@ import io
 import numpy as np
 from pylife.materialdata.woehler.probability_plot_creator import ProbabilityPlotCreator
 
-class WoehlerWidget:
+class WoehlerCurveWidgets:
     
-    def excel_upload():
+    def excel_upload(self):
         file_name = widgets.FileUpload(
                     accept='.xlsx',  # Accepted file extension
                     multiple=False  # True to accept multiple files upload else False
                 )
         return file_name
 
-    def data_head_tail():
+    def data_head_tail(self):
         w = widgets.RadioButtons(
             options=['Head of the data', 'Details of the data'],
             description='Visualization:',
@@ -44,7 +44,7 @@ class WoehlerWidget:
 
         return w
 
-    def method_mali_probit():
+    def method_mali_probit(self):
         w2 = widgets.RadioButtons(
             options=['Mali', 'Probit'],
             description='Visualization',
@@ -53,7 +53,7 @@ class WoehlerWidget:
 
         return w2
     
-    def k_1_def(): 
+    def k_1_def(self): 
         w3 = widgets.RadioButtons(
             options=[('Fractures', "fractures"), ('Finite-life zone', "zone_fin")],
             description='Data points',
@@ -62,7 +62,7 @@ class WoehlerWidget:
 
         return w3
 
-    def WL_param():
+    def WL_param(self):
 
         tab_contents = ['k_1', '1/TN', 'SD_50', '1/TS', 'ND_50']
         items_a = ['Mali k_1', 'Mali 1/TN', 'Mali SD_50','Mali 1/TS', 'Mali ND_50']
@@ -75,7 +75,7 @@ class WoehlerWidget:
 
         return tab
 
-    def WL_param_display(tab):
+    def WL_param_display(self, tab):
 
         print('Maximum Likelihood Method:\n')
         print('Estimated Parameters:')
@@ -96,7 +96,7 @@ class WoehlerWidget:
 
         return fixed_param, estim_param
 
-    def print_mali_5p_result(woehler_curve, fixed_param):
+    def print_mali_5p_result(self, woehler_curve, fixed_param):
         print('Maximum Likelihood %d Param method:\n'% len(woehler_curve.p_opt))
 
         if 'SD_50' in fixed_param:
@@ -125,22 +125,22 @@ class WoehlerWidget:
             print ('\033[91m' +'\033[1m' + 'Deviation in load-cycle direction 1/TN = '+ '\033[1;34m'+  str(np.round(woehler_curve.curve_parameters['1/TN'],decimals=2)))
 
     
-    def print_mali_2p_result(woehler_curve):
+    def print_mali_2p_result(self, woehler_curve):
         print ('\033[0;0m' + '\n------ Results Maximum Likelihood 2 Param method -------')
         print ('Endurance SD50 =', np.round(woehler_curve.Mali_2p_result['SD_50'],decimals=1))
         print ('Endurance load-cycle ND50 =', '{:1.2e}'.format(woehler_curve.curve_parameters['ND_50']))
         print ('Deviation in load direction 1/TS_mali =', np.round(woehler_curve.curve_parameters['1/TS'],decimals=2))    
         
-    def print_slope(woehler_curve): 
+    def print_slope(self, woehler_curve): 
         print('\033[0;0m' + '\n------ Slope using linear regression -------')
         print('Slope K_1 = '+str(np.round(woehler_curve.fatigue_data.k, decimals=2)))
         
-    def print_deviation_results(woehler_curve):        
+    def print_deviation_results(self, woehler_curve):        
         print('\n------ Deviation 1/TN using pearl-chain method -------')
         print('Deviation in load-cycle direction 1/TN =', np.round(woehler_curve.TN, decimals=2))
         print('Deviation in load direction (Mali köder) 1/TS* =', np.round(woehler_curve.TS, decimals=2))
     
-    def print_probit_results(woehler_curve):
+    def print_probit_results(self, woehler_curve):
         print('\n------ Results Probit-Method -------')
         if len(woehler_curve.ld_lvls_inf[0])<2:
             print("Not enough load levels in the infinite zone for the probit method")
@@ -149,7 +149,7 @@ class WoehlerWidget:
             print('Endurance load-cycle ND50 =', '{:1.2e}'.format(woehler_curve.Probit_result['ND_50']))
             print('Deviation in load direction 1/TS =', np.round(woehler_curve.Probit_result['1/TS'], decimals=2))
 
-    def results_visual_woehler_curve():
+    def results_visual_woehler_curve(self):
         w4 = widgets.RadioButtons(
             options=[('Initial data', 'Initial data'), 
                      ('Slope', 'Slope'),
@@ -162,7 +162,7 @@ class WoehlerWidget:
 
         return w4
               
-    def on_results_visual_probability_plot_selection_changed(change):
+    def on_results_visual_probability_plot_selection_changed(self, change):
         switcher = {options[0][0]: ProbabilityPlotCreator.probability_plot_finite,
                     options[1][0]: ProbabilityPlotCreator.probability_plot_inifinite}
         
@@ -175,7 +175,7 @@ class WoehlerWidget:
             if change['type'] == 'change' and change['name'] == 'value':
                 print("changed to %s" % change['new'])
                        
-    def results_visual_probability_plot():
+    def results_visual_probability_plot(self):
         w4 = widgets.RadioButtons(
             options=[('Probability plot of the finite zone','Probability plot of the finite zone'),
                      ('Probability plot of the infinite zone', 'Probability plot of the infinite zone')],
@@ -186,7 +186,7 @@ class WoehlerWidget:
         #w4.observe(WoehlerWidget.on_results_visual_probability_plot_selection_changed, names = 'value')
         return w4   
 
-    def inf_plot(woehler_curve, k_1):
+    def inf_plot(self, woehler_curve, k_1):
         w5 = widgets.RadioButtons(
             options=[('k_2 = 0', 0), ('k_2 = k_1', k_1), ('k_2 = 2 k_1 - 1', 2*k_1-1)],
             value= 0,

@@ -29,23 +29,21 @@ class PlotWoehlerCurveData:
         self.woehler_curve = woehler_curve
         self.y_min = self.woehler_curve.fatigue_data.loads_min*0.8 if y_max == None else y_max
         self.y_max = self.woehler_curve.fatigue_data.loads_max*1.2 if y_min == None else y_min
+        self.xlim_WL = (round(min(self.woehler_curve.fatigue_data.data.cycles)*0.4,-1), round(max(self.woehler_curve.fatigue_data.data.cycles)*2,-1))
+        self.ylim_WL = (round(min(self.woehler_curve.fatigue_data.data.loads)*0.8,-1), round(max(self.woehler_curve.fatigue_data.data.loads)*1.2,-1)) 
         self.ax = self.__default_ax_config() if ax == None else ax
 
     def __default_ax_config(self):
-        xlim_WL = (round(min(self.woehler_curve.fatigue_data.data.cycles)*0.4,-1), round(max(self.woehler_curve.fatigue_data.data.cycles)*2,-1))
-        ylim_WL = (round(min(self.woehler_curve.fatigue_data.data.loads)*0.8,-1), round(max(self.woehler_curve.fatigue_data.data.loads)*1.2,-1)) 
-        amp = 'Amplitude'
-        ld_typ = 'Stress'
-        unit = '$N/mm^2$'
         fig, ax = plt.subplots()
+        #need setter for the title
         #ax.set_title('Initial data')
-        ax.set_xlim(xlim_WL)
-        ax.set_ylim(ylim_WL)
+        ax.set_xlim(self.xlim_WL)
+        ax.set_ylim(self.ylim_WL)
         ax.set_xscale('log')
         ax.set_yscale('log')
         ax.grid(True)
         ax.set_xlabel('Number of cycles', fontsize = 11)
-        ax.set_ylabel(amp + ' (' + ld_typ+') in ' + unit + '(log scaled)')
+        ax.set_ylabel('Amplitude' + ' (' + 'Stress' +') in ' + '$N/mm^2$' + '(log scaled)')
         fig.tight_layout()
         matplotlib.rcParams.update({'font.size': 11})
         return ax
@@ -70,8 +68,7 @@ class PlotWoehlerCurveData:
         fatigue_data = self.woehler_curve.fatigue_data
         self.ax.plot(fatigue_data.N_shift, np.ones(len(fatigue_data.N_shift))*fatigue_data.Sa_shift,
                     'go',label='PCM shifted probes', marker="v")
-        xlim_WL = (round(min(fatigue_data.data.cycles)*0.4,-1), round(max(fatigue_data.data.cycles)*2,-1))
-        self.ax.plot(xlim_WL, np.ones(len(xlim_WL))*fatigue_data.Sa_shift,'g')
+        self.ax.plot(self.xlim_WL, np.ones(len(self.xlim_WL))*fatigue_data.Sa_shift,'g')
         self.ax.legend(loc='upper right', fontsize=11)
         return self
         
@@ -84,6 +81,13 @@ class PlotWoehlerCurveData:
         self.ax.plot(woehler_curve_graph.calc_shifted_woehlercurve_points(0.9)[:, 1],
                 woehler_curve_graph.points[:, 0], 'r', linewidth=1.5, 
                 linestyle='--')
+        text = '$k$ = '+str(np.round(self.woehler_curve.k, decimals=2)) + '\n'
+        text += '$1/T_N$ = ' + str(np.round(self.woehler_curve.TN, decimals=2)) + '\n'
+        text += '$1/T_S^*$ = ' + str(np.round(self.woehler_curve.TS, decimals=2))
+
+        self.ax.text(0.01, 0.03, text, verticalalignment='bottom',
+                    horizontalalignment='left', transform=self.ax.transAxes,
+                    bbox={'facecolor': 'grey', 'alpha': 0.2, 'pad': 10})                
         self.ax.legend(loc='upper right', fontsize=11)
         return self
 
@@ -96,5 +100,26 @@ class PlotWoehlerCurveData:
         self.ax.plot(WL_10[:, 1], WL_10[:, 0], 'r', linewidth=1.5, linestyle='--', label=u'WC, $P_A$=10% u. 90%')
         self.ax.plot(WL_90[:, 1], WL_90[:, 0], 'r', linewidth=1.5, linestyle='--')
         self.ax.legend(loc='upper right', fontsize=11)
+
+        text = '$k_1$ = '+str(np.round(self.woehler_curve.k,decimals=2)) + '\n'
+        text += '$k_2$ = '+str(np.round(k_2,decimals=2)) + '\n'
+        text += '$1/T_N$ = ' + str(np.round(self.woehler_curve.TN,decimals=2)) + '\n'
+        text += '$1/T_S^*$ = ' + str(np.round(self.woehler_curve.TN**(1./self.woehler_curve.k), decimals=2)) + '\n'
+        text += '$S_{D,50}$ = ' + str(np.round(self.woehler_curve.SD_50,decimals=1)) + '\n'
+        text += '$N_{D,50}$ = ' + '{:1.2e}'.format(self.woehler_curve.ND_50) + '\n'
+        text += '$1/T_S$ = ' + str(np.round(self.woehler_curve.TS,decimals=2))
+
+        self.ax.text(0.01, 0.03, text,
+                 verticalalignment='bottom',horizontalalignment='left',
+                 transform=self.ax.transAxes, bbox={'facecolor':'grey', 'alpha':0.2, 'pad':10})       
+        return self
+
+    def plot_slope(self):
+        text = '$k$ = '+str(np.round(k, decimals=2))
+        self.ax.text(0.01, 0.03, text, verticalalignment='bottom', 
+            horizontalalignment='left', transform=self.ax.transAxes, 
+            bbox={'facecolor': 'grey', 'alpha': 0.2, 'pad': 10})
+        self.plot_basic_fatigue_data()
+        self.plot_woehler_curve()
         return self
 

@@ -17,6 +17,8 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
+import numpy as np
+from scipy import stats
 from pylife.materialdata.woehler.probability_plot import ProbabilityPlot
 
 class ProbabilityPlotCreator:
@@ -28,9 +30,9 @@ class ProbabilityPlotCreator:
                                    'b': self.fatigue_data.b_pa, 'T': self.fatigue_data.TN}
         return ProbabilityPlot(self.fatigue_data, probability_plot_finite)
 
-    def probability_plot_inifinite(self):
+    def probability_plot_infinite(self):
         # Probaility regression plot
-        failure_probability_infinite = self.__rossow_failure_probability_infinite(self.fatigue_data)
+        failure_probability_infinite = self.__rossow_failure_probability_infinite()
         inv_cdf = stats.norm.ppf(failure_probability_infinite)
         a_ue, b_ue, _, _, _ = stats.linregress(np.log10(self.fatigue_data.ld_lvls_inf[0]), inv_cdf)
         # Deviation TS in load-cycle direction
