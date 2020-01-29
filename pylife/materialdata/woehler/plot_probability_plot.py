@@ -19,72 +19,65 @@ __maintainer__ = "Johannes Mueller"
 
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 from pylife.materialdata.woehler.probability_plot import ProbabilityPlot
 from abc import ABC, abstractmethod
+from scipy import stats
 
-class PlotProbabilityPlot:
-    def __init__(self, probability_plot):
+class PlotProbabilityPlot(ABC):
+    def __init__(self, probability_plot, ax = None):
         self.probability_plot = probability_plot
-            
-    def plot_probability_plot(self, ax):
-        #Finite
-        # X = WoehlerCurve.fatigue_data.N_shift
-        # Y = WoehlerCurve.u
-        # a = WoehlerCurve.a_pa
-        # b = WoehlerCurve.b_pa
-        # T = WoehlerCurve.TN
-        # xlabel = 'load cycle N'
-        # ylabel = 'Failure probability'  
-        #scatter = '$1/T_N$ = '  
+        self.ax = self.__default_ax_config() if ax == None else ax
+
+    @abstractmethod
+    def get_scatter_label(self):
+        pass
+    
+    @abstractmethod
+    def get_xlabel(self):
+        pass
+
+    @abstractmethod   
+    def get_title(self):
+        pass
         
-        #Infinite
-        # X = WoehlerCurve.ld_lvls_inf[0]
-        # Y = WoehlerCurve.inv_cdf
-        # a = WoehlerCurve.a_ue
-        # b = WoehlerCurve.b_ue
-        # T = WoehlerCurve.Probit_result['1/TS']
-        # xlabel = self.amp+' ('+self.ld_typ+') in '+self.unit 
-        # ylabel = 'Failure probability'
-        #scatter = '$1/T_S$ = '
+    def __default_ax_config(self):
+        a = self.probability_plot.a
+        b = self.probability_plot.b
+        T = self.probability_plot.T
+        xlabel = self.get_xlabel()
+        scatter = self.get_scatter_label()
+        title = self.get_title()
 
+        fig, ax = plt.subplots()
         
-        #scatter = '$1/T_N$ = '
-
-        #fig = plt.figure(figsize=(6, 4))
-        #ax = plt.subplot('111')
-
-        ax.plot(self.probability_plot.X, self.probability_plot.Y, 'ro')
-        ax.plot([10**((i-self.probability_plot.b)/self.probability_plot.a) for i in np.arange(-2.5, 2.5, 0.1)],
-                 np.arange(-2.5, 2.5, 0.1), 'r')
-
-        '''
         yticks = [1, 5, 10, 20, 50, 80, 90, 95, 99]
-        plt.yticks([stats.norm.ppf(i/100.) for i in yticks],
-                   [str(i)+' %' for i in yticks])
+        ax.set_yticks([stats.norm.ppf(i/100.) for i in yticks])
+        ax.set_yticklabels([str(i)+' %' for i in yticks])
 
-        plt.xticks([10**((stats.norm.ppf(0.1)-self.probability_plot.b)/self.probability_plot.a), 10**((stats.norm.ppf(0.9)-self.probability_plot.b)/self.probability_plot.a)],
-                    ('', ''))
+        ax.set_xscale('log')    
+        ax.grid(True)    
+        
+        ax.set_xlabel(xlabel)		
+        ax.set_ylabel('Failure probability')
 
-        plt.xscale('log') #problem with the scaling cant overwrite xticks for inf zone
-        plt.grid()
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.title(title)
-
-        plt.text(0.15, 0.03, 'N($P_{A,10}$)='+'{:1.1e}'.format(10**((stats.norm.ppf(0.1)-self.probability_plot.b)/self.probability_plot.a), decimals=1),
-                 verticalalignment='bottom',horizontalalignment='left', transform=self.ax.transAxes,
+        ax.set_title(title)
+        ax.text(0.15, 0.03, 'N($P_{A,10}$)='+'{:1.1e}'.format(10**((stats.norm.ppf(0.1)-b)/a), decimals=1),
+            verticalalignment='bottom',horizontalalignment='left', transform=ax.transAxes,
+            bbox={'facecolor':'grey', 'alpha':0.1, 'pad':10}, fontsize=11)
+        ax.text(0.5, 0.88, scatter + str(np.round(T,decimals=2)),
+            verticalalignment='bottom',horizontalalignment='center', transform=ax.transAxes,
+            bbox={'facecolor':'grey', 'alpha':0.2, 'pad':10}, fontsize=11)
+        ax.text(0.9, 0.03, 'N($P_{A,90}$)='+'{:1.1e}'.format(10**((stats.norm.ppf(0.9)-b)/a),decimals=1),
+                 verticalalignment='bottom',horizontalalignment='right', transform=ax.transAxes,
                  bbox={'facecolor':'grey', 'alpha':0.1, 'pad':10}, fontsize=11)
-
-        plt.text(0.5, 0.88, scatter + str(np.round(self.probability_plot.T,decimals=2)),
-                 verticalalignment='bottom',horizontalalignment='center', transform=self.ax.transAxes,
-                 bbox={'facecolor':'grey', 'alpha':0.2, 'pad':10}, fontsize=11)
-
-        plt.text(0.9, 0.03, 'N($P_{A,90}$)='+'{:1.1e}'.format(10**((stats.norm.ppf(0.9)-self.probability_plot.b)/self.probability_plot.a),decimals=1),
-                 verticalalignment='bottom',horizontalalignment='right', transform=self.ax.transAxes,
-                 bbox={'facecolor':'grey', 'alpha':0.1, 'pad':10}, fontsize=11)
-
-        plt.xticks([10**((stats.norm.ppf(0.1)-self.probability_plot.b)/self.probability_plot.a), 10**((stats.norm.ppf(0.9)-self.probability_plot.b)/self.probability_plot.a)], ('', ''))
 
         fig.tight_layout()
-        '''
+        return ax
+
+    
+    def plot_probability_plot(self):
+        self.ax.plot(self.probability_plot.X, self.probability_plot.Y, 'ro')
+        self.ax.plot([10**((i-self.probability_plot.b)/self.probability_plot.a) for i in np.arange(-2.5, 2.5, 0.1)], np.arange(-2.5, 2.5, 0.1), 'r')
+
         return self
