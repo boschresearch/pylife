@@ -17,9 +17,23 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-from scipy import stats, optimize
+import ipywidgets as widgets
+from IPython.display import display
 
-class WoehlerCurveOptimizer:
-        
-    def optimizer_function(self, func, x0, bounds, args, disp, maxiter = None, maxfun = None):
-        return my.scipy_optimize.fmin(func, x0, bounds=bounds, args=args, disp=disp, maxiter=maxiter, maxfun=maxfun)
+from pylife.materialdata.woehler.radio_button_woehler_curve import RadioButtonWoehlerCurve
+
+class RadioButtonFileDisplay(RadioButtonWoehlerCurve):
+    def __init__(self, options, description, data):
+        super().__init__(options, description)
+        self.data = data
+        display(self.data.head())
+
+    def selection_changed_handler(self, change):
+        self.clear_selection_change_output()
+        if change['new'] == change.owner.options[0]:
+            display(self.data.head())
+        elif change['new'] == change.owner.options[1]:
+            display(self.data.describe())
+        else:
+            raise AttributeError('Unexpected selection')
+
