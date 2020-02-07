@@ -17,18 +17,24 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-from pylife.core.data_validator import DataValidator
-from pylife.materialdata.woehler.woehler_curve_pearl_chain import WoehlerCurvePearlChain
-import numpy as np
+import ipywidgets as widgets
+from IPython.display import display
 
-class WoehlerCurve(WoehlerCurvePearlChain):
+from pylife.materialdata.woehler.radio_button_woehler_curve import RadioButtonWoehlerCurve
 
-    def __init__(self, curve_parameters, fatigue_data = None):
-        super().__init__(curve_parameters, fatigue_data)
-        self.ND_50 = DataValidator.fill_member('ND_50', curve_parameters)
-        self.SD_50 = DataValidator.fill_member('SD_50', curve_parameters)
+class DataFileDisplay(RadioButtonWoehlerCurve):
+    def __init__(self, data):
+        super().__init__(['Head of the data', 'Details of the data'], 'File display selection')
+        self.data = data
+        display(self.data.head())
 
-    @property
-    def curve_parameters(self):
-        return {'SD_50': self.SD_50, '1/TS': self.TS, 'k_1': self.k, 
-                'ND_50': self.ND_50, '1/TN': self.TN}   
+    def selection_changed_handler(self, change):
+        self.clear_selection_change_output()
+
+        if change['new'] == change.owner.options[0]:
+            display(self.data.head())
+        elif change['new'] == change.owner.options[1]:
+            display(self.data.describe())
+        else:
+            raise AttributeError('Unexpected selection')
+

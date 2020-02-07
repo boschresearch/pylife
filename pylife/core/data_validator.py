@@ -111,6 +111,6 @@ class DataValidator:
         if key in values:
             member = values[key]
         else:
-            member = 0
+            member = ''
         return member    
         

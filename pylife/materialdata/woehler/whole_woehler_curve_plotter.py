@@ -27,25 +27,23 @@ sys.path.insert(0, os.path.abspath('..\\pylife'))
 from pylife.materialdata.woehler.woehler_curve_diagrams import WoehlerCurveDiagrams
 from pylife.materialdata.woehler.radio_button_woehler_curve import RadioButtonWoehlerCurve
 
-class WoehlerCurveDataPlotter(RadioButtonWoehlerCurve):
+class WholeWoehlerCurvePlotter(RadioButtonWoehlerCurve):
     def __init__(self, woehler_curve):
         self.woehler_curve = woehler_curve
         self.woehler_curve_diagrams = WoehlerCurveDiagrams(self.woehler_curve)
-        self.woehler_curve_diagrams.plot_initial_data()
-        super().__init__(options=['Initial data', 'Slope', 'Pearl chain method', 'Deviation in load-cycle direction'], description='Plot Type')
+        super().__init__(options=['k_2 = 0', 'k_2 = k_1', 'k_2 = 2 k_1 - 1'], description='Runout zone plot')
+        self.woehler_curve_diagrams.plot_whole_woehler_curve_graph(0)
         
     def selection_changed_handler(self, change):
         clear_output()
         display(self.radio_button)
         if change['new'] == change.owner.options[0]:
-            self.woehler_curve_diagrams.plot_initial_data()
+            self.woehler_curve_diagrams.plot_whole_woehler_curve_graph(0)
         elif change['new'] == change.owner.options[1]:
-            self.woehler_curve_diagrams.plot_slope()
+            self.woehler_curve_diagrams.plot_whole_woehler_curve_graph(self.woehler_curve.k)
         elif change['new'] == change.owner.options[2]:
-            self.woehler_curve_diagrams.plot_pearl_chain_method()
-        elif change['new'] == change.owner.options[3]:
-            self.woehler_curve_diagrams.plot_deviation()
+            self.woehler_curve_diagrams.plot_whole_woehler_curve_graph(2 * self.woehler_curve.k - 1)
         else:
-            raise AttributeError('Unexpected selection')
+            raise AttributeError('Unexpected selection')        
 
 
