@@ -25,7 +25,7 @@ from scipy import stats
 from pylife.materialdata.woehler.woehler_curve_graph import WoehlerCurveGraph
 from pylife.materialdata.woehler.whole_woehler_curve import WholeWoehlerCurve
 
-class PlotWoehlerCurveData:
+class WoehlerCurveDiagrams:
     def __init__(self, woehler_curve, y_min = None, y_max = None, ax = None):
         self.woehler_curve = woehler_curve
         self.y_min = self.woehler_curve.fatigue_data.loads_min*0.8 if y_max is None else y_max
@@ -37,7 +37,7 @@ class PlotWoehlerCurveData:
     def __default_ax_config(self, title):
         fig, ax = plt.subplots()
         #need setter for the title
-        #ax.set_title('Initial data')
+        ax.set_title('Initial data')
         # fig = plt.figure()
         # ax = fig.add_axes([0,0,1,1])
         ax.set_xlim(self.xlim_WL)
@@ -74,6 +74,7 @@ class PlotWoehlerCurveData:
 
     def plot_woehler_curve(self, ax = None):
         ax_local = self.__default_ax_config('Woehler curve') if ax is None else ax
+        print('plot_woehler_curve', self.woehler_curve.curve_parameters)
         woehler_curve_graph = WoehlerCurveGraph(self.woehler_curve, self.y_min, self.y_max)
         ax_local.plot(woehler_curve_graph.points[:,1], woehler_curve_graph.points[:,0], color='r', linewidth=2., label=u'WL, $P_A$=50%')
         ax_local.legend(loc='upper right', fontsize=11)

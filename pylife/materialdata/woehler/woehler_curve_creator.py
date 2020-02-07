@@ -25,17 +25,17 @@ from scipy import stats, optimize
 from pylife.materialdata.woehler.woehler_curve import WoehlerCurve
 from pylife.materialdata.woehler.woehler_curve_fixed_params import WoehlerCurveWithFixedParams
 from pylife.materialdata.woehler.fatigue_data import FatigueData
-#from pylife.materialdata.woehler.woehler_curve_optimizer import WoehlerCurveOptimizer
+from pylife.materialdata.woehler.woehler_curve_pearl_chain import WoehlerCurvePearlChain
 
 
 class WoehlerCurveCreator:
-    def __init__(self, data):
-        self.fatigue_data = data
+    def __init__(self, fatigue_data):
+        self.fatigue_data = fatigue_data
         #self.optimzer = WoehlerCurveOptimizer()
         
-    def deviation_woehler_curve(self):        
-        woehler_curve = {'k': self.fatigue_data.k, 'TN': self.fatigue_data.TN, 'TS': self.fatigue_data.TS}
-        return WoehlerCurve(woehler_curve, self.fatigue_data)    
+    def pearl_chain_method(self):        
+        woehler_curve = {'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN, '1/TS': self.fatigue_data.TS}
+        return WoehlerCurvePearlChain(woehler_curve, self.fatigue_data)    
     
     def maximum_like_procedure(self, param_fix):
         """
@@ -97,11 +97,11 @@ class WoehlerCurveCreator:
         TS_start = 1.2
 
         var = optimize.fmin(self.Mali_SD_TS, [SD_start, TS_start],
-                                           args=(fatigue_data.zone_inf, fatigue_data.load_cycle_limit),
+                                           args=(self.fatigue_data.zone_inf, self.fatigue_data.load_cycle_limit),
                                            disp=False)
         
-        ND50 = 10**(b_wl + a_wl*np.log10(var[0]))
-        mali_2p_result = {'SD_50': var[0], '1/TS': var[1],'ND_50': ND50, 'k': fatigue_data.k, '1/TN': fatigue_data.TN}
+        ND50 = 10**(self.fatigue_data.b_wl + self.fatigue_data.a_wl*np.log10(var[0]))
+        mali_2p_result = {'SD_50': var[0], '1/TS': var[1],'ND_50': ND50, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
         return WoehlerCurve(mali_2p_result, self.fatigue_data)          
         
     def probit_procedure(self):
@@ -109,14 +109,13 @@ class WoehlerCurveCreator:
         Evaluation of infinite zone. Probit procedure uses the rossow function for infinite zone to compute the failure probability of the infinite
         zone, in order to estimate the endurance parameters as well as the scatter in load direction
         '''
-        
-        probability_plot = self.probit_regression_plot(self.fatigue_data)
+        probit_data = self.fatigue_data.determine_probit_parameters()
         # Average fatigue strength
-        SD50_probit = 10**((0 - probability_plot.b) / probability_plot.a)
+        SD50_probit = 10**((0 - probit_data['b']) / probit_data['a'])
         # Average endurance load cycle
-        ND50_probit = 10**(self.fatigue_data.b + self.fatigue_data.a * np.log10(SD50_probit))
+        ND50_probit = 10**(self.fatigue_data.b_wl + self.fatigue_data.a_wl * np.log10(SD50_probit))
 
-        probit_result = {'SD_50': SD50_probit, '1/TS': TS_probit,'ND_50': ND50_probit, 'k': fatigue_data.k, '1/TN': fatigue_data.TN}
+        probit_result = {'SD_50': SD50_probit, '1/TS': probit_data['T'],'ND_50': ND50_probit, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
         return WoehlerCurve(probit_result, self.fatigue_data)
     
     def mali_sum_lolli(self, SD, TS, k, N_E, TN, fractures, zone_inf, load_cycle_limit):

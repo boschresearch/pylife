@@ -17,23 +17,17 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-import ipywidgets as widgets
-from IPython.display import display
+from pylife.core.data_validator import DataValidator
+import numpy as np
 
-from pylife.materialdata.woehler.radio_button_woehler_curve import RadioButtonWoehlerCurve
+class WoehlerCurvePearlChain:
 
-class RadioButtonFileDisplay(RadioButtonWoehlerCurve):
-    def __init__(self, options, description, data):
-        super().__init__(options, description)
-        self.data = data
-        display(self.data.head())
+    def __init__(self, curve_parameters, fatigue_data = None):
+        self.fatigue_data = fatigue_data
+        self.k = DataValidator.fill_member('k_1', curve_parameters)
+        self.TS = DataValidator.fill_member('1/TS', curve_parameters)
+        self.TN = DataValidator.fill_member('1/TN', curve_parameters)
 
-    def selection_changed_handler(self, change):
-        self.clear_selection_change_output()
-        if change['new'] == change.owner.options[0]:
-            display(self.data.head())
-        elif change['new'] == change.owner.options[1]:
-            display(self.data.describe())
-        else:
-            raise AttributeError('Unexpected selection')
-
+    @property
+    def curve_parameters(self):
+        return {'1/TS': self.TS, 'k_1': self.k, '1/TN': self.TN}   

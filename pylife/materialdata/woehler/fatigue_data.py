@@ -27,7 +27,7 @@ class FatigueData:
         self.load_cycle_limit = load_cycle_limit
         self.__data_sort()
         self.__slope()
-        self.__deviation()
+        self.__pearl_chain_method()
         
     def __data_sort(self):
 
@@ -79,7 +79,7 @@ class FatigueData:
         '# Load-cycle endurance start value relative to the load endurance start value'
         self.N_E = 10**(self.b_wl + self.a_wl*(np.log10(self.fatg_lim)))            
         
-    def __deviation(self):
+    def __pearl_chain_method(self):
         '''
         Pearl chain method: consists of shifting the fractured data to a median load level.
         The shifted data points are assigned to a Rossow failure probability.The scatter in load-cycle
@@ -92,7 +92,7 @@ class FatigueData:
         self.N_shift = self.fractures.cycles * ((self.Sa_shift/self.fractures.loads)**(-self.k))
         self.N_shift = np.sort(self.N_shift)
 
-        fp = self.__rossow_fail_prob(self.N_shift)
+        fp = self.__rossow_failure_probability_finite(self.N_shift)
         self.u = stats.norm.ppf(fp)
 
         self.a_pa, self.b_pa, _, _, _ = stats.linregress(np.log10(self.N_shift), self.u)
@@ -104,17 +104,86 @@ class FatigueData:
         '# Empirical method "following Koeder" to estimate the scatter in load direction '
         self.TS = self.TN**(1./self.k)  
         
-    def __rossow_fail_prob(self, x):
+    def __rossow_failure_probability_finite(self, data_probit):
         """ Failure Probability estimation formula of Rossow
 
         'Statistics of Metal Fatigue in Engineering' page 16
 
         https://books.google.de/books?isbn=3752857722
         """
-        i = np.arange(len(x))+1
-        pa = (3.*(i)-1.)/(3.*len(x)+1.)
+        i = np.arange(len(data_probit))+1
+        pa = (3.*(i)-1.)/(3.*len(data_probit)+1.)
 
         return pa
+
+    def __collect_data_for_rossow_infinite(self):
+        data_probit = np.zeros((len(self.ld_lvls_inf[0]), 3))
+
+        data_probit[:, 0] = self.ld_lvls_inf[0]
+        data_probit[:, 1] = self.ld_lvls_inf[1]
+
+        if len(self.ld_lvls_inf[0]) != len(self.ld_lvls_inf_frac[1]):
+            x = {k:v for k,v in enumerate(~np.in1d(self.ld_lvls_inf[0], self.ld_lvls_inf_frac[0]))
+                 if v == True
+                }
+            if len([*x.keys()]) > 1:
+                fracs = list(self.ld_lvls_inf_frac[1])
+                for keys in np.arange(len([*x.keys()])):
+                    fracs.insert([*x.keys()][keys], 0)
+                data_probit[:, 2] = np.asarray(fracs)
+            else:
+                    fracs = list(self.ld_lvls_inf_frac[1])
+                    fracs.insert([*x.keys()][0], 0)
+                    data_probit[:, 2] = np.asarray(fracs)
+        else:
+            data_probit[:, 2] = self.ld_lvls_inf_frac[1]      
+          
+        return data_probit
+
+    def __rossow_failure_probability_infinite(self, data_probit):
+        """
+        Probit, probability unit, is the inverse cumulative distribution function (CDF).
+        Describes the failure probability of the infinite zone.
+
+        Parameters
+        ----------
+        data_probit:
+            - A three column table containing:
+                1st column: Load levels in the infinite zone
+                2nd column: The quantity of data points found in the respective load level
+                3rd column: Of these data points, the quantity of fractured data points
+
+        Returns
+        -------
+        self.FP: The failure probability following rossow's method for the infinite zone
+        """
+        # Rossow failure probability for the transition zone
+        failure_probability_infinite = []
+
+        for i in data_probit:
+            '#Number of specimen'
+            n = i[1]
+            '#Number of fractures'
+            r = i[2]
+
+            if r == 0:
+                failure_probability_infinite.append(1. - 0.5**(1./n))
+            elif r == n:
+                failure_probability_infinite.append(0.5**(1./n))
+            else:
+                failure_probability_infinite.append((3*r-1)/(3*n+1))
+
+        return np.asarray(failure_probability_infinite)   
+
+    def determine_probit_parameters(self):
+        # Probaility regression plot
+        data_probit = self.__collect_data_for_rossow_infinite()
+        failure_probability_infinite = self.__rossow_failure_probability_infinite(data_probit)
+        inv_cdf = stats.norm.ppf(failure_probability_infinite)
+        a_ue, b_ue, _, _, _ = stats.linregress(np.log10(self.ld_lvls_inf[0]), inv_cdf)
+        # Deviation TS in load-cycle direction
+        TS_probit = 10**(2.5631031311*(1./a_ue))
+        return {'Y': inv_cdf, 'a': a_ue, 'b': b_ue, 'T': TS_probit}
   
     @property
     def initial_p_opt(self):
