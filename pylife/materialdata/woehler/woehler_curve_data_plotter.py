@@ -35,8 +35,7 @@ class WoehlerCurveDataPlotter(RadioButtonWoehlerCurve):
         super().__init__(options=['Initial data', 'Slope', 'Pearl chain method', 'Deviation in load-cycle direction'], description='Plot Type')
         
     def selection_changed_handler(self, change):
-        clear_output()
-        display(self.radio_button)
+        self.clear_selection_change_output()
         if change['new'] == change.owner.options[0]:
             self.woehler_curve_diagrams.plot_initial_data()
         elif change['new'] == change.owner.options[1]:

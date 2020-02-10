@@ -17,23 +17,11 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-import numpy as np
-from scipy import stats
-from pylife.materialdata.woehler.probability_plot import ProbabilityPlot
+from pylife.materialdata.woehler.probability_curve import ProbabilityCurve
+from pylife.materialdata.woehler.probability_curve_creator import ProbabilityCurveCreator
 
-class ProbabilityPlotCreator:
-    def __init__(self, fatigue_data):
-        self.fatigue_data = fatigue_data
-    
-    def probability_plot_finite(self):
-        probability_plot_finite = {'X': self.fatigue_data.N_shift, 'Y': self.fatigue_data.u, 'a': self.fatigue_data.a_pa, 
-                                   'b': self.fatigue_data.b_pa, 'T': self.fatigue_data.TN}
-        return ProbabilityPlot(self.fatigue_data, probability_plot_finite)
-
-    def probability_plot_infinite(self):
+class ProbabilityCurveCreatorInfinite(ProbabilityCurveCreator):
+    def create_probability_curve(self):
         probit_data = self.fatigue_data.determine_probit_parameters()
-        probability_plot = {'X': self.fatigue_data.ld_lvls_inf[0], 'Y': probit_data['Y'], 'a': probit_data['a'], 'b': probit_data['b'], 'T': probit_data['T']}
-        return ProbabilityPlot(self.fatigue_data, probability_plot)
-    
-
-    
+        probability_curve = {'X': self.fatigue_data.ld_lvls_inf[0], 'Y': probit_data['Y'], 'a': probit_data['a'], 'b': probit_data['b'], 'T': probit_data['T']}
+        return ProbabilityCurve(self.fatigue_data, probability_curve)
