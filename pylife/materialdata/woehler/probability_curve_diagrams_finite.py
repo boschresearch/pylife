@@ -19,9 +19,9 @@ __maintainer__ = "Johannes Mueller"
 
 import matplotlib
 import matplotlib.pyplot as plt
-from pylife.materialdata.woehler.plot_probability_plot import PlotProbabilityPlot
+from pylife.materialdata.woehler.probability_curve_diagrams import ProbabilityCurveDiagrams
 
-class PlotProbabilityPlotFinite(PlotProbabilityPlot):
+class ProbabilityCurveDiagramsFinite(ProbabilityCurveDiagrams):
     def get_scatter_label(self):
         return '$1/T_N$ = '
 

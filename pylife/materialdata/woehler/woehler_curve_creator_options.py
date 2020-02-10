@@ -24,7 +24,6 @@ import sys, os
 
 sys.path.insert(0, os.path.abspath('..\\pylife'))
 
-from pylife.materialdata.woehler.woehler_curve_diagrams import WoehlerCurveDiagrams
 from pylife.materialdata.woehler.woehler_curve_creator import WoehlerCurveCreator
 from pylife.materialdata.woehler.radio_button_woehler_curve import RadioButtonWoehlerCurve
 

@@ -17,14 +17,19 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-from pylife.core.data_validator import DataValidator
+from pylife.materialdata.woehler.probability_curve_creator_finite import ProbabilityCurveCreatorFinite
+from pylife.materialdata.woehler.probability_curve_creator_infinite import ProbabilityCurveCreatorInfinite
 
-class ProbabilityPlot:
-    def __init__(self, fatigue_data, curve_parameters):
-        self.fatigue_data = fatigue_data        
+class ProbabilityCurveFactory:
+    def __init__(self, fatigue_data):
+        self.probability_curve_creator_finite = ProbabilityCurveCreatorFinite(fatigue_data)
+        self.probability_curve_creator_infinite = ProbabilityCurveCreatorInfinite(fatigue_data)
+    
+    def create_probability_curve_finite(self):
+        return self.probability_curve_creator_finite.create_probability_curve()
+
+    def create_probability_curve_infinite(self):
+        return self.probability_curve_creator_infinite.create_probability_curve()
         
-        self.X = DataValidator.fill_member('X', curve_parameters)
-        self.Y = DataValidator.fill_member('Y', curve_parameters)
-        self.a = DataValidator.fill_member('a', curve_parameters)
-        self.b = DataValidator.fill_member('b', curve_parameters)
-        self.T = DataValidator.fill_member('T', curve_parameters)
+
+    

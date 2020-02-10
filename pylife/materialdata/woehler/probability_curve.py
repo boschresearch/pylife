@@ -17,16 +17,19 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-import matplotlib
-import matplotlib.pyplot as plt
-from pylife.materialdata.woehler.plot_probability_plot import PlotProbabilityPlot
+from pylife.core.data_validator import DataValidator
 
-class PlotProbabilityPlotInfinite(PlotProbabilityPlot):
-    def get_scatter_label(self):
-        return '$1/T_S$ = '
+class ProbabilityCurve:
+    def __init__(self, fatigue_data, curve_parameters):
+        self.fatigue_data = fatigue_data        
+        
+        self.X = DataValidator.fill_member('X', curve_parameters)
+        self.Y = DataValidator.fill_member('Y', curve_parameters)
+        self.a = DataValidator.fill_member('a', curve_parameters)
+        self.b = DataValidator.fill_member('b', curve_parameters)
+        self.T = DataValidator.fill_member('T', curve_parameters)
 
-    def get_xlabel(self):
-        return 'Amplitude' + ' ('+ 'Stress' +') in ' + '$N/mm^2$'
-
-    def get_title(self):
-        return 'Probability plot of the infinite zone'
+    @property
+    def curve_parameters(self):
+        return {'X': self.X, 'Y': self.Y, 'a': self.a, 
+                'b': self.b, 'T': self.T}   

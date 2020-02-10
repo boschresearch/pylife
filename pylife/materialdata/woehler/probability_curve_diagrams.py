@@ -20,14 +20,14 @@ __maintainer__ = "Johannes Mueller"
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from pylife.materialdata.woehler.probability_plot import ProbabilityPlot
+from pylife.materialdata.woehler.probability_curve import ProbabilityCurve
 from abc import ABC, abstractmethod
 from scipy import stats
 
-class PlotProbabilityPlot(ABC):
-    def __init__(self, probability_plot, ax = None):
-        self.probability_plot = probability_plot
-        self.ax = self.__default_ax_config() if ax == None else ax
+class ProbabilityCurveDiagrams(ABC):
+    def __init__(self, probability_curve):
+        self.probability_curve = probability_curve
+        #self.ax = self.__default_ax_config() if ax == None else ax
 
     @abstractmethod
     def get_scatter_label(self):
@@ -42,9 +42,9 @@ class PlotProbabilityPlot(ABC):
         pass
         
     def __default_ax_config(self):
-        a = self.probability_plot.a
-        b = self.probability_plot.b
-        T = self.probability_plot.T
+        a = self.probability_curve.a
+        b = self.probability_curve.b
+        T = self.probability_curve.T
         xlabel = self.get_xlabel()
         scatter = self.get_scatter_label()
         title = self.get_title()
@@ -76,8 +76,7 @@ class PlotProbabilityPlot(ABC):
         return ax
 
     
-    def plot_probability_plot(self):
-        self.ax.plot(self.probability_plot.X, self.probability_plot.Y, 'ro')
-        self.ax.plot([10**((i-self.probability_plot.b)/self.probability_plot.a) for i in np.arange(-2.5, 2.5, 0.1)], np.arange(-2.5, 2.5, 0.1), 'r')
-
-        return self
+    def plot_probability_curve_diagram(self, ax = None):
+        ax_local = self.__default_ax_config() if ax is None else ax
+        ax_local.plot(self.probability_curve.X, self.probability_curve.Y, 'ro')
+        ax_local.plot([10**((i-self.probability_curve.b)/self.probability_curve.a) for i in np.arange(-2.5, 2.5, 0.1)], np.arange(-2.5, 2.5, 0.1), 'r')
