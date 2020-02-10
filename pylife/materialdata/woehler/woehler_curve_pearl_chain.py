@@ -27,7 +27,4 @@ class WoehlerCurvePearlChain:
         self.k = DataValidator.fill_member('k_1', curve_parameters)
         self.TS = DataValidator.fill_member('1/TS', curve_parameters)
         self.TN = DataValidator.fill_member('1/TN', curve_parameters)
-
-    @property
-    def curve_parameters(self):
-        return {'1/TS': self.TS, 'k_1': self.k, '1/TN': self.TN}   
+        self.curve_parameters = curve_parameters

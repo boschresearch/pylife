@@ -27,8 +27,3 @@ class WoehlerCurve(WoehlerCurvePearlChain):
         super().__init__(curve_parameters, fatigue_data)
         self.ND_50 = DataValidator.fill_member('ND_50', curve_parameters)
         self.SD_50 = DataValidator.fill_member('SD_50', curve_parameters)
-
-    @property
-    def curve_parameters(self):
-        return {'SD_50': self.SD_50, '1/TS': self.TS, 'k_1': self.k, 
-                'ND_50': self.ND_50, '1/TN': self.TN}   

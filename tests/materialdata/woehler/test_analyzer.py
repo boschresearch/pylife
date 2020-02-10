@@ -116,22 +116,13 @@ def test_maximum_likelihood_5param_method_with_all_fixed_params():
     expected_5p_mali = [0, 0, 0, 0, 0]
     
     SD_50_2p_mali_true = 335.49751
-    #TS_2p_mali_true = 1.1956
     ND_50_2p_mali_true = 463819.429
-    #true_2p_mali = [SD_50_2p_mali_true, TS_2p_mali_true, ND_50_2p_mali_true]
 
     #Exercise
     FD = FatigueData(data, ld_cyc_lim)
     WCC = WoehlerCurveCreator(FD)
-    WC_data = WCC.maximum_like_procedure({'k_1': 15.7, '1/TN': 1.2, 'SD_50': 280, 
-                                          '1/TS': 1.2, 'ND_50': 10000000}) 
-    
-    result_5p_mali = [WC_data.SD_50, WC_data.TS, WC_data.k, WC_data.ND_50, WC_data.TN]
- 
-    #WC_data = WCA.WoehlerCurve(data, ld_cyc_lim, {'k_1': 15.7, '1/TN': 1.2, 'SD_50': 280, '1/TS': 1.2, 'ND_50': 10000000}, {})
-    #WC_data.calc_woehler_curve_parameters()
-    #result_5p_mali = [*WC_data.Mali_5p_result.values()]
-    #result_2p_mali = [*WC_data.Mali_2p_result.values()]
+
+    np.testing.assert_raises(AttributeError, WCC.maximum_like_procedure, {'k_1': 15.7, '1/TN': 1.2, 'SD_50': 280, '1/TS': 1.2, 'ND_50': 10000000})
 
     #Verify
     #np.testing.assert_array_almost_equal(result_5p_mali, expected_5p_mali, decimal = 1)

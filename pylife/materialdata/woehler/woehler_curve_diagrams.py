@@ -32,7 +32,6 @@ class WoehlerCurveDiagrams:
         self.y_max = self.woehler_curve.fatigue_data.loads_max*1.2 if y_min is None else y_min
         self.xlim_WL = (round(min(self.woehler_curve.fatigue_data.data.cycles)*0.4,-1), round(max(self.woehler_curve.fatigue_data.data.cycles)*2,-1))
         self.ylim_WL = (round(min(self.woehler_curve.fatigue_data.data.loads)*0.8,-1), round(max(self.woehler_curve.fatigue_data.data.loads)*1.2,-1)) 
-        #self.ax = self.__default_ax_config() if ax is None else ax
 
     def __default_ax_config(self, title):
         fig, ax = plt.subplots()

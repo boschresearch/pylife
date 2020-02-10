@@ -83,7 +83,7 @@ class WoehlerCurveCreator:
             mali_5p_result.update(param_fix)
             mali_5p_result.update(zip([*p_opt], var_opt))
         else:
-            print('You need to leave at least one parameter empty!')
+            raise AttributeError('You need to leave at least one parameter empty!')
         
         return WoehlerCurveWithFixedParams(mali_5p_result, p_opt, param_fix, self.fatigue_data)
     
