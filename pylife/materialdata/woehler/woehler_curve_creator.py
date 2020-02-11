@@ -23,7 +23,7 @@ import numpy.ma as ma
 import mystic as my
 from scipy import stats, optimize
 from pylife.materialdata.woehler.woehler_curve import WoehlerCurve
-from pylife.materialdata.woehler.woehler_curve_fixed_params import WoehlerCurveWithFixedParams
+from pylife.materialdata.woehler.woehler_curve_with_bic import WoehlerCurveWithBIC
 from pylife.materialdata.woehler.fatigue_data import FatigueData
 from pylife.materialdata.woehler.woehler_curve_pearl_chain import WoehlerCurvePearlChain
 
@@ -75,17 +75,20 @@ class WoehlerCurveCreator:
                                             args=([*p_opt], param_fix, self.fatigue_data.fractures, self.fatigue_data.zone_inf,
                                                 self.fatigue_data.load_cycle_limit
                                                 ),
+                                            full_output=True,
                                             disp=True,
                                             maxiter=1e4,
                                             maxfun=1e4,
                                             )
             #self.optimzer.OptimizerFunction(self.optimzer.mali_sum_lolli, [*self.p_opt.values()], [*self.dict_bound.values()], )
             mali_5p_result.update(param_fix)
-            mali_5p_result.update(zip([*p_opt], var_opt))
+            mali_5p_result.update(zip([*p_opt], var_opt[0]))
         else:
             raise AttributeError('You need to leave at least one parameter empty!')
         
-        return WoehlerCurveWithFixedParams(mali_5p_result, p_opt, param_fix, self.fatigue_data)
+        
+
+        return WoehlerCurveWithBIC(mali_5p_result, p_opt, param_fix, -var_opt[1], self.fatigue_data)
     
     def maximum_like_procedure_2_param(self):
         ''' This maximum likelihood procedure estimates the load endurance limit SD50_mali_2_param and the
@@ -96,13 +99,13 @@ class WoehlerCurveCreator:
         SD_start = self.fatigue_data.fatg_lim
         TS_start = 1.2
 
-        var = optimize.fmin(self.Mali_SD_TS, [SD_start, TS_start],
+        var_opt = optimize.fmin(self.Mali_SD_TS, [SD_start, TS_start],
                                            args=(self.fatigue_data.zone_inf, self.fatigue_data.load_cycle_limit),
-                                           disp=False)
-        
-        ND50 = 10**(self.fatigue_data.b_wl + self.fatigue_data.a_wl*np.log10(var[0]))
-        mali_2p_result = {'SD_50': var[0], '1/TS': var[1],'ND_50': ND50, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
-        return WoehlerCurve(mali_2p_result, self.fatigue_data)          
+                                           disp=False, full_output=True)
+
+        ND50 = 10**(self.fatigue_data.b_wl + self.fatigue_data.a_wl*np.log10(var_opt[0][0]))
+        mali_2p_result = {'SD_50': var_opt[0][0], '1/TS': var_opt[0][1],'ND_50': ND50, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
+        return WoehlerCurveWithBIC(mali_2p_result, {'SD_50': SD_start, '1/TS': TS_start}, {}, -var_opt[1], self.fatigue_data)          
         
     def probit_procedure(self):
         '''

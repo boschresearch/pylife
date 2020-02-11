@@ -29,3 +29,6 @@ class ProbabilityCurve:
         self.b = DataValidator.fill_member('b', curve_parameters)
         self.T = DataValidator.fill_member('T', curve_parameters)
         self.curve_parameters = curve_parameters 
+
+    def __str__ (self):
+        return str(self.curve_parameters)

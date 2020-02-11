@@ -27,7 +27,7 @@ from scipy import stats
 class ProbabilityCurveDiagrams(ABC):
     def __init__(self, probability_curve):
         self.probability_curve = probability_curve
-        #self.ax = self.__default_ax_config() if ax == None else ax
+        #self.ax = self.__default_ax_config() if ax is None else ax
 
     @abstractmethod
     def get_scatter_label(self):
