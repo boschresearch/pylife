@@ -36,19 +36,19 @@ class WoehlerCurveCreatorOptions(RadioButtonWoehlerCurve):
         self.calculate_curve_button = widgets.Button(description = 'Calculate curve')
         self.calculate_curve_button.on_click(self.calculate_curve_button_clicked_handler)
         self.woehler_curve = self.woehler_curve_creator.maximum_like_procedure_2_param()
-        print(self.woehler_curve.curve_parameters)
+        print(self.woehler_curve)
         
     def selection_changed_handler(self, change):
         self.clear_selection_change_output()
         if change['new'] == change.owner.options[0]:
             self.woehler_curve = self.woehler_curve_creator.maximum_like_procedure_2_param()
-            print(self.woehler_curve.curve_parameters)
+            print(self.woehler_curve)
         elif change['new'] == change.owner.options[1]:
             display(self.param_fix_tab)
             display(self.calculate_curve_button)
         elif change['new'] == change.owner.options[2]:
             self.woehler_curve = self.woehler_curve_creator.probit_procedure()
-            print(self.woehler_curve.curve_parameters)
+            print(self.woehler_curve)
         else:
             raise AttributeError('Unexpected selection')
         
@@ -71,7 +71,7 @@ class WoehlerCurveCreatorOptions(RadioButtonWoehlerCurve):
     def calculate_curve_button_clicked_handler(self, b):
         param_fix = {k: v for k, v in self.param_fix.items() if v is not ''}
         self.woehler_curve = self.woehler_curve_creator.maximum_like_procedure(param_fix)
-        print(self.woehler_curve.curve_parameters)
+        print(self.woehler_curve)
 
 
 
