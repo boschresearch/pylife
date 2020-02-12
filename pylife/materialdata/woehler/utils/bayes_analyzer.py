@@ -22,17 +22,17 @@ class BayesAnalyzer:
 
         data_choice = {}
         lds = {}
-        last = len(WoehlerCurve.ld_lvls_fin[0])-1
-        ld_lvl_1 = np.log10(data.cycles[WoehlerCurve.ld_lvls_fin[0][last] == data.loads])
+        last = len(WoehlerCurve.fatigue_data.ld_lvls_fin[0])-1
+        ld_lvl_1 = np.log10(data.cycles[WoehlerCurve.fatigue_data.ld_lvls_fin[0][last] == data.loads])
         data_choice['data_1'] = np.random.choice(ld_lvl_1, n_N[0])
-        lds['x_1'] = np.ones(len(data_choice['data_1']))*np.log10(WoehlerCurve.ld_lvls_fin[0][last])
+        lds['x_1'] = np.ones(len(data_choice['data_1']))*np.log10(WoehlerCurve.fatigue_data.ld_lvls_fin[0][last])
         y_small_size = data_choice['data_1']
         x_small_size = lds['x_1']
 
         for ld_lvl in np.arange(len(n_N)-1)+1:
-            N_ld_lvl = np.log10(data.cycles[WoehlerCurve.ld_lvls_fin[0][-ld_lvl] == data.loads])
+            N_ld_lvl = np.log10(data.cycles[WoehlerCurve.fatigue_data.ld_lvls_fin[0][-ld_lvl] == data.loads])
             data_choice['data_%d' % ld_lvl] = np.random.choice(N_ld_lvl, n_N[ld_lvl])
-            lds['x_%d' % ld_lvl] =  np.ones(len(data_choice['data_%d' % ld_lvl]))*np.log10(WoehlerCurve.ld_lvls_fin[0][-ld_lvl])
+            lds['x_%d' % ld_lvl] =  np.ones(len(data_choice['data_%d' % ld_lvl]))*np.log10(WoehlerCurve.fatigue_data.ld_lvls_fin[0][-ld_lvl])
             y_small_size = np.concatenate((y_small_size, data_choice['data_%d' % ld_lvl]))
             x_small_size = np.concatenate((x_small_size, lds['x_%d' % ld_lvl]))
 
@@ -155,30 +155,30 @@ class BayesAnalyzer:
         x_small_size=[]
         x_inf_dict={}
 
-        s_fp = np.log10(WoehlerCurve.ld_lvls_inf[0])
+        s_fp = np.log10(WoehlerCurve.fatigue_data.ld_lvls_inf[0])
         s_fp[::-1].sort()
         # Using SD_50 and TS_50 to deduce the probability of getting a fracture depending on the load level we are testing:
-        probability_runout = stats.norm.cdf((s_fp-np.log10(WoehlerCurve.Mali_5p_result['SD_50']))*(2.56/np.log10(WoehlerCurve.Mali_5p_result['1/TS'])))
+        probability_runout = stats.norm.cdf((s_fp-np.log10(WoehlerCurve.curve_parameters['SD_50']))*(2.56/np.log10(WoehlerCurve.curve_parameters['1/TS'])))
 
         # find the 0-1 distribution
-        for lvl in np.arange(len(WoehlerCurve.ld_lvls_inf[0])):
+        for lvl in np.arange(len(WoehlerCurve.fatigue_data.ld_lvls_inf[0])):
             # Check if user put a 0 in this load level
             if n_N_inf[lvl] != 0:
                 n_frac = self.fail_runout_sampler(lvl, lvl_N_small, probability_runout, n_N_inf, n_frac)
 
-                N_values_frac = WoehlerCurve.zone_inf_fractures.cycles[WoehlerCurve.ld_lvls_inf[0][-(lvl+1)] == WoehlerCurve.zone_inf_fractures.loads]
+                N_values_frac = WoehlerCurve.fatigue_data.zone_inf_fractures.cycles[WoehlerCurve.fatigue_data.ld_lvls_inf[0][-(lvl+1)] == WoehlerCurve.fatigue_data.zone_inf_fractures.loads]
                 # replace 1 with a value from random norm. and 0 with load cycle limit
                 if n_frac['%d'%(lvl+1)]!=0:
                     data_inf = np.random.choice(N_values_frac, n_frac['%d'%(lvl+1)])
                     if n_frac['%d'%(lvl+1)]!=n_N_inf[lvl]:
-                        data_inf = np.concatenate((data_inf, np.ones(n_N_inf[lvl]-n_frac['%d'%(lvl+1)])*WoehlerCurve.load_cycle_limit))
+                        data_inf = np.concatenate((data_inf, np.ones(n_N_inf[lvl]-n_frac['%d'%(lvl+1)])*WoehlerCurve.fatigue_data.load_cycle_limit))
                         data_inf_dict['data_%d' % (lvl+1)] = data_inf
                     else:
                         data_inf_dict['data_%d' % (lvl+1)] = data_inf
                 else:
-                    data_inf_dict['data_%d' % (lvl+1)] = np.ones(n_N_inf[lvl]-n_frac['%d'%(lvl+1)])*WoehlerCurve.load_cycle_limit
+                    data_inf_dict['data_%d' % (lvl+1)] = np.ones(n_N_inf[lvl]-n_frac['%d'%(lvl+1)])*WoehlerCurve.fatigue_data.load_cycle_limit
     #            data_inf_dict = failure_sampler(data_inf_dict, N_values_frac, n_frac['%d'%(lvl+1)], n_N_inf[lvl], lvl)
-                x_inf_dict['x_%d' % (lvl+1)] = np.ones(n_N_inf[lvl])*np.log10(WoehlerCurve.ld_lvls_inf[0][-(lvl+1)])
+                x_inf_dict['x_%d' % (lvl+1)] = np.ones(n_N_inf[lvl])*np.log10(WoehlerCurve.fatigue_data.ld_lvls_inf[0][-(lvl+1)])
 
                 y_small_size = np.concatenate((y_small_size, np.log10([*data_inf_dict['data_%d' % (lvl+1)]])))
                 x_small_size = np.concatenate((x_small_size, [*x_inf_dict['x_%d' % (lvl+1)]]))
