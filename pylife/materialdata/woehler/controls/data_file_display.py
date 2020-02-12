@@ -17,10 +17,9 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-import ipywidgets as widgets
 from IPython.display import display
 
-from pylife.materialdata.woehler.radio_button_woehler_curve import RadioButtonWoehlerCurve
+from pylife.materialdata.woehler.controls.radio_button_woehler_curve import RadioButtonWoehlerCurve
 
 class DataFileDisplay(RadioButtonWoehlerCurve):
     def __init__(self, data):

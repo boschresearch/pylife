@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import sys, os, copy
-sys.path.insert(0, os.path.abspath('.'))
+import copy
 
 import numpy as np
 import pandas as pd

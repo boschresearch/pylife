@@ -17,13 +17,16 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-from pylife.core.data_validator import DataValidator
-from pylife.materialdata.woehler.woehler_curve_pearl_chain import WoehlerCurvePearlChain
-import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+from .probability_curve_diagrams import ProbabilityCurveDiagrams
 
-class WoehlerCurve(WoehlerCurvePearlChain):
+class ProbabilityCurveDiagramsInfinite(ProbabilityCurveDiagrams):
+    def get_scatter_label(self):
+        return '$1/T_S$ = '
 
-    def __init__(self, curve_parameters, fatigue_data = None):
-        super().__init__(curve_parameters, fatigue_data)
-        self.ND_50 = DataValidator.fill_member('ND_50', curve_parameters)
-        self.SD_50 = DataValidator.fill_member('SD_50', curve_parameters)
+    def get_xlabel(self):
+        return 'Amplitude' + ' ('+ 'Stress' +') in ' + '$N/mm^2$'
+
+    def get_title(self):
+        return 'Probability plot of the infinite zone'

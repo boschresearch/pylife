@@ -17,16 +17,14 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-import ipywidgets as widgets
-from IPython.display import display, clear_output
 import sys, os
 
 
 sys.path.insert(0, os.path.abspath('..\\pylife'))
 
-from pylife.materialdata.woehler.probability_curve_factory import ProbabilityCurveFactory
-from pylife.materialdata.woehler.probability_curve_diagrams_factory import ProbabilityCurveDiagramsFactory
-from pylife.materialdata.woehler.radio_button_woehler_curve import RadioButtonWoehlerCurve
+from pylife.materialdata.woehler.factories.probability_curve_factory import ProbabilityCurveFactory
+from pylife.materialdata.woehler.factories.probability_curve_diagrams_factory import ProbabilityCurveDiagramsFactory
+from pylife.materialdata.woehler.controls.radio_button_woehler_curve import RadioButtonWoehlerCurve
 
 class ProbabilityCurvePlotter(RadioButtonWoehlerCurve):
     def __init__(self, fatigue_data):

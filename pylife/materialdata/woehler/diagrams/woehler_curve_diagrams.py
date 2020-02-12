@@ -22,8 +22,8 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy import stats
-from pylife.materialdata.woehler.woehler_curve_graph import WoehlerCurveGraph
-from pylife.materialdata.woehler.whole_woehler_curve import WholeWoehlerCurve
+from pylife.materialdata.woehler.diagrams.woehler_curve_graph import WoehlerCurveGraph
+from pylife.materialdata.woehler.diagrams.whole_woehler_curve_graph import WholeWoehlerCurveGraph
 
 class WoehlerCurveDiagrams:
     def __init__(self, woehler_curve, y_min = None, y_max = None, ax = None):
@@ -112,7 +112,7 @@ class WoehlerCurveDiagrams:
 
     def plot_whole_woehler_curve_graph(self, k_2, ax = None):
         ax_local = self.__default_ax_config('Woehler curve') if ax is None else ax
-        whole_woehler_curve_graph = WholeWoehlerCurve(self.woehler_curve, k_2, self.y_min, self.y_max)
+        whole_woehler_curve_graph = WholeWoehlerCurveGraph(self.woehler_curve, k_2, self.y_min, self.y_max)
         WL_50 = whole_woehler_curve_graph.graph_50
         WL_10 = whole_woehler_curve_graph.graph_10
         WL_90 = whole_woehler_curve_graph.graph_90

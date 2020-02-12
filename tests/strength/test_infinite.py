@@ -1,10 +1,8 @@
-import sys, os, copy
-sys.path.insert(0, os.path.abspath('.'))
+import copy
 
 import numpy as np
 import pandas as pd
 import numpy.testing as testing
-sys.path.insert(0, os.path.abspath('.'))
 
 import pylife.strength.infinite as INF
 

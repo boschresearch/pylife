@@ -17,11 +17,13 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-from pylife.materialdata.woehler.probability_curve import ProbabilityCurve
-from pylife.materialdata.woehler.probability_curve_creator import ProbabilityCurveCreator
+from pylife.core.data_validator import DataValidator
+from pylife.materialdata.woehler.curves.woehler_curve_pearl_chain import WoehlerCurvePearlChain
+import numpy as np
 
-class ProbabilityCurveCreatorInfinite(ProbabilityCurveCreator):
-    def create_probability_curve(self):
-        probit_data = self.fatigue_data.determine_probit_parameters()
-        probability_curve = {'X': self.fatigue_data.ld_lvls_inf[0], 'Y': probit_data['Y'], 'a': probit_data['a'], 'b': probit_data['b'], 'T': probit_data['T']}
-        return ProbabilityCurve(self.fatigue_data, probability_curve)
+class WoehlerCurve(WoehlerCurvePearlChain):
+
+    def __init__(self, curve_parameters, fatigue_data = None):
+        super().__init__(curve_parameters, fatigue_data)
+        self.ND_50 = DataValidator.fill_member('ND_50', curve_parameters)
+        self.SD_50 = DataValidator.fill_member('SD_50', curve_parameters)
