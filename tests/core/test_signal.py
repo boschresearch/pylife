@@ -1,6 +1,3 @@
-import sys, os, copy
-sys.path.insert(0, os.path.abspath('.'))
-
 import pytest
 import pandas as pd
 

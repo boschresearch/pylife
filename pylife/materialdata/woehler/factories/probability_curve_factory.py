@@ -17,19 +17,19 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-from pylife.materialdata.woehler.probability_curve_diagrams_finite import ProbabilityCurveDiagramsFinite
-from pylife.materialdata.woehler.probability_curve_diagrams_infinite import ProbabilityCurveDiagramsInfinite
+from pylife.materialdata.woehler.creators.probability_curve_creator_finite import ProbabilityCurveCreatorFinite
+from pylife.materialdata.woehler.creators.probability_curve_creator_infinite import ProbabilityCurveCreatorInfinite
 
-class ProbabilityCurveDiagramsFactory:
-    def __init__(self, probability_curve):
-        self.probability_curve_diagrams_finite = ProbabilityCurveDiagramsFinite(probability_curve)
-        self.probability_curve_diagrams_infinite = ProbabilityCurveDiagramsInfinite(probability_curve)
+class ProbabilityCurveFactory:
+    def __init__(self, fatigue_data):
+        self.probability_curve_creator_finite = ProbabilityCurveCreatorFinite(fatigue_data)
+        self.probability_curve_creator_infinite = ProbabilityCurveCreatorInfinite(fatigue_data)
     
-    def plot_probability_curve_diagram_finite(self):
-        self.probability_curve_diagrams_finite.plot_probability_curve_diagram()
+    def create_probability_curve_finite(self):
+        return self.probability_curve_creator_finite.create_probability_curve()
 
-    def plot_probability_curve_diagram_infinite(self):
-        self.probability_curve_diagrams_infinite.plot_probability_curve_diagram()
+    def create_probability_curve_infinite(self):
+        return self.probability_curve_creator_infinite.create_probability_curve()
         
 
     

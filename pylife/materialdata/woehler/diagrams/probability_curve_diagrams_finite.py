@@ -17,11 +17,16 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-from pylife.materialdata.woehler.probability_curve import ProbabilityCurve
-from pylife.materialdata.woehler.probability_curve_creator import ProbabilityCurveCreator
+import matplotlib
+import matplotlib.pyplot as plt
+from pylife.materialdata.woehler.diagrams.probability_curve_diagrams import ProbabilityCurveDiagrams
 
-class ProbabilityCurveCreatorFinite(ProbabilityCurveCreator):    
-    def create_probability_curve(self):
-        probability_curve_finite = {'X': self.fatigue_data.N_shift, 'Y': self.fatigue_data.u, 'a': self.fatigue_data.a_pa, 
-                                   'b': self.fatigue_data.b_pa, 'T': self.fatigue_data.TN}
-        return ProbabilityCurve(self.fatigue_data, probability_curve_finite)
+class ProbabilityCurveDiagramsFinite(ProbabilityCurveDiagrams):
+    def get_scatter_label(self):
+        return '$1/T_N$ = '
+
+    def get_xlabel(self):
+        return 'load cycle N'
+
+    def get_title(self):
+        return 'Probability plot of the finite zone'

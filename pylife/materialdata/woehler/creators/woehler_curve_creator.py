@@ -22,10 +22,10 @@ import pandas as pd
 import numpy.ma as ma
 import mystic as my
 from scipy import stats, optimize
-from pylife.materialdata.woehler.woehler_curve import WoehlerCurve
-from pylife.materialdata.woehler.woehler_curve_with_bic import WoehlerCurveWithBIC
+from pylife.materialdata.woehler.curves.woehler_curve import WoehlerCurve
+from pylife.materialdata.woehler.curves.woehler_curve_with_bic import WoehlerCurveWithBIC
 from pylife.materialdata.woehler.fatigue_data import FatigueData
-from pylife.materialdata.woehler.woehler_curve_pearl_chain import WoehlerCurvePearlChain
+from pylife.materialdata.woehler.curves.woehler_curve_pearl_chain import WoehlerCurvePearlChain
 
 
 class WoehlerCurveCreator:

@@ -20,7 +20,7 @@ __maintainer__ = "Johannes Mueller"
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from pylife.materialdata.woehler.probability_curve import ProbabilityCurve
+from pylife.materialdata.woehler.curves.probability_curve import ProbabilityCurve
 from abc import ABC, abstractmethod
 from scipy import stats
 

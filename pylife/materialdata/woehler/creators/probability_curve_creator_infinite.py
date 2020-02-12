@@ -17,16 +17,11 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-import matplotlib
-import matplotlib.pyplot as plt
-from pylife.materialdata.woehler.probability_curve_diagrams import ProbabilityCurveDiagrams
+from pylife.materialdata.woehler.curves.probability_curve import ProbabilityCurve
+from pylife.materialdata.woehler.creators.probability_curve_creator import ProbabilityCurveCreator
 
-class ProbabilityCurveDiagramsInfinite(ProbabilityCurveDiagrams):
-    def get_scatter_label(self):
-        return '$1/T_S$ = '
-
-    def get_xlabel(self):
-        return 'Amplitude' + ' ('+ 'Stress' +') in ' + '$N/mm^2$'
-
-    def get_title(self):
-        return 'Probability plot of the infinite zone'
+class ProbabilityCurveCreatorInfinite(ProbabilityCurveCreator):
+    def create_probability_curve(self):
+        probit_data = self.fatigue_data.determine_probit_parameters()
+        probability_curve = {'X': self.fatigue_data.ld_lvls_inf[0], 'Y': probit_data['Y'], 'a': probit_data['a'], 'b': probit_data['b'], 'T': probit_data['T']}
+        return ProbabilityCurve(self.fatigue_data, probability_curve)

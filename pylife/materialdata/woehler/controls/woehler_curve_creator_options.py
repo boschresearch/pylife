@@ -24,8 +24,8 @@ import sys, os
 
 sys.path.insert(0, os.path.abspath('..\\pylife'))
 
-from pylife.materialdata.woehler.woehler_curve_creator import WoehlerCurveCreator
-from pylife.materialdata.woehler.radio_button_woehler_curve import RadioButtonWoehlerCurve
+from pylife.materialdata.woehler.creators.woehler_curve_creator import WoehlerCurveCreator
+from pylife.materialdata.woehler.controls.radio_button_woehler_curve import RadioButtonWoehlerCurve
 
 class WoehlerCurveCreatorOptions(RadioButtonWoehlerCurve):
     def __init__(self, fatigue_data):

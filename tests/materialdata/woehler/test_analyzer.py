@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import sys, os, copy
-sys.path.insert(0, os.path.abspath('.'))
-
 import numpy as np
 import pandas as pd
 import numpy.testing as testing
@@ -10,7 +7,7 @@ import numpy.ma as ma
 from scipy import stats, optimize
 import mystic as my
 
-from pylife.materialdata.woehler.woehler_curve_creator import WoehlerCurveCreator
+from pylife.materialdata.woehler.creators.woehler_curve_creator import WoehlerCurveCreator
 from pylife.materialdata.woehler.fatigue_data import FatigueData
 
 def test_maximum_likelihood_5param_method_with_no_fixed_params():

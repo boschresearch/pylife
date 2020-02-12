@@ -18,7 +18,7 @@ __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
 import numpy as np
-from pylife.materialdata.woehler.woehler_curve import WoehlerCurve
+from pylife.materialdata.woehler.curves.woehler_curve import WoehlerCurve
 
 class WoehlerCurveWithBIC(WoehlerCurve): 
     def __init__(self, curve_parameters, p_opt, param_fix, fopt, fatigue_data = None):

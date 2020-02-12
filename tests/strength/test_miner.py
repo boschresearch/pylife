@@ -10,8 +10,6 @@ import sys
 from . import data
 from .data import collective
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
 import pylife.strength.miner as miner
 import pylife.strength.meanstress
 from pylife.strength import miner
