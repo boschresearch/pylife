@@ -32,11 +32,11 @@ class WoehlerCurveCreator:
     def __init__(self, fatigue_data):
         self.fatigue_data = fatigue_data
         #self.optimzer = WoehlerCurveOptimizer()
-        
-    def pearl_chain_method(self):        
-        woehler_curve = {'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN, '1/TS': self.fatigue_data.TS}
-        return WoehlerCurvePearlChain(woehler_curve, self.fatigue_data)    
-    
+
+    def pearl_chain_method(self):
+        woehler_curve = {'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN, '1/TS': self.fatigue_data.TS, 'load_intercept': self.load_intercept}
+        return WoehlerCurveElementary(woehler_curve, self.fatigue_data)
+
     def maximum_like_procedure(self, param_fix):
         """
         Maximum likelihood is a method of estimating the parameters of a distribution model by maximizing
@@ -63,33 +63,31 @@ class WoehlerCurveCreator:
         p_opt = self.fatigue_data.initial_p_opt
 
         dict_bound = self.fatigue_data.initial_dict_bound
-        
+
         for k in param_fix:
             p_opt.pop(k)
             dict_bound.pop(k)
-            
+
         mali_5p_result = {}
-        if dict_bound: 
+        if dict_bound:
             var_opt = my.scipy_optimize.fmin(self.mali_sum_lolli_wrapper, [*p_opt.values()],
-                                            bounds=[*dict_bound.values()],
-                                            args=([*p_opt], param_fix, self.fatigue_data.fractures, self.fatigue_data.zone_inf,
-                                                self.fatigue_data.load_cycle_limit
-                                                ),
-                                            full_output=True,
-                                            disp=True,
-                                            maxiter=1e4,
-                                            maxfun=1e4,
+                                             bounds=[*dict_bound.values()],
+                                             args=([*p_opt], param_fix, self.fatigue_data.fractures, self.fatigue_data.zone_inf,
+                                                   self.fatigue_data.load_cycle_limit
+                                                   ),
+                                             full_output=True,
+                                             disp=True,
+                                             maxiter=1e4,
+                                             maxfun=1e4,
                                             )
             #self.optimzer.OptimizerFunction(self.optimzer.mali_sum_lolli, [*self.p_opt.values()], [*self.dict_bound.values()], )
             mali_5p_result.update(param_fix)
             mali_5p_result.update(zip([*p_opt], var_opt[0]))
         else:
             raise AttributeError('You need to leave at least one parameter empty!')
-        
-        
 
         return WoehlerCurveWithBIC(mali_5p_result, p_opt, param_fix, -var_opt[1], self.fatigue_data)
-    
+
     def maximum_like_procedure_2_param(self):
         ''' This maximum likelihood procedure estimates the load endurance limit SD50_mali_2_param and the
         scatter in load direction TS_mali_2_param.
@@ -105,8 +103,8 @@ class WoehlerCurveCreator:
 
         ND50 = 10**(self.fatigue_data.b_wl + self.fatigue_data.a_wl*np.log10(var_opt[0][0]))
         mali_2p_result = {'SD_50': var_opt[0][0], '1/TS': var_opt[0][1],'ND_50': ND50, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
-        return WoehlerCurveWithBIC(mali_2p_result, {'SD_50': SD_start, '1/TS': TS_start}, {}, -var_opt[1], self.fatigue_data)          
-        
+        return WoehlerCurveWithBIC(mali_2p_result, {'SD_50': SD_start, '1/TS': TS_start}, {}, -var_opt[1], self.fatigue_data)
+
     def probit_procedure(self):
         '''
         Evaluation of infinite zone. Probit procedure uses the rossow function for infinite zone to compute the failure probability of the infinite
@@ -120,7 +118,7 @@ class WoehlerCurveCreator:
 
         probit_result = {'SD_50': SD50_probit, '1/TS': probit_data['T'],'ND_50': ND50_probit, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
         return WoehlerCurve(probit_result, self.fatigue_data)
-    
+
     def mali_sum_lolli(self, SD, TS, k, N_E, TN, fractures, zone_inf, load_cycle_limit):
         """
         Produces the likelihood functions that are needed to compute the parameters of the woehler curve.
@@ -174,8 +172,8 @@ class WoehlerCurveCreator:
         neg_sum_lolli = -sum_lolli
 
         return neg_sum_lolli
-    
-     
+
+
     def mali_sum_lolli_wrapper(self, var_args, var_keys, fix_args, fractures, zone_inf, load_cycle_limit):
         ''' 1) Finds the start values to be optimized. The rest of the paramters are fixed by the user.
             2) Calls function mali_sum_lolli to calculate the maximum likelihood of the current
@@ -186,7 +184,7 @@ class WoehlerCurveCreator:
         args.update(zip(var_keys, var_args))
 
         return self.mali_sum_lolli(args['SD_50'], args['1/TS'], args['k_1'], args['ND_50'],
-                                          args['1/TN'], fractures, zone_inf, load_cycle_limit)   
+                                          args['1/TN'], fractures, zone_inf, load_cycle_limit)
 
     def Mali_SD_TS(self, variables, zone_inf, load_cycle_limit):
         """
@@ -226,4 +224,3 @@ class WoehlerCurveCreator:
         neg_sum_lolli = -sum_lolli
 
         return neg_sum_lolli
-   
