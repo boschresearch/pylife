@@ -23,5 +23,5 @@ from pylife.materialdata.woehler.creators.probability_curve_creator import Proba
 class ProbabilityCurveCreatorInfinite(ProbabilityCurveCreator):
     def create_probability_curve(self):
         probit_data = self.fatigue_data.determine_probit_parameters()
-        probability_curve = {'X': self.fatigue_data.ld_lvls_inf[0], 'Y': probit_data['Y'], 'a': probit_data['a'], 'b': probit_data['b'], 'T': probit_data['T']}
+        probability_curve = {'load_levels': self.fatigue_data.ld_lvls_inf[0], 'failure_probs': probit_data['Y'], 'slope': probit_data['a'], 'intercept': probit_data['b'], 'TS': probit_data['T']}
         return ProbabilityCurve(self.fatigue_data, probability_curve)
