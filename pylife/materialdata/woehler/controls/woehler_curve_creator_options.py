@@ -18,65 +18,52 @@ __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
 import ipywidgets as widgets
-from IPython.display import display, clear_output
-import sys, os
+from IPython.display import display
 
-
-sys.path.insert(0, os.path.abspath('..\\pylife'))
-
-from pylife.materialdata.woehler.creators.woehler_curve_creator import WoehlerCurveCreator
 from pylife.materialdata.woehler.controls.radio_button_woehler_curve import RadioButtonWoehlerCurve
+
 
 class WoehlerCurveCreatorOptions(RadioButtonWoehlerCurve):
     def __init__(self, fatigue_data):
         self.woehler_curve = None
-        self.woehler_curve_creator = WoehlerCurveCreator(fatigue_data)
+        self.fatigue_data = fatigue_data
         self.collect_fixed_params()
         super().__init__(['Maximum likelihood 2 params', 'Maximum likelihood 5 params', 'Probit'], 'Select method')
-        self.calculate_curve_button = widgets.Button(description = 'Calculate curve')
+        self.calculate_curve_button = widgets.Button(description='Calculate curve')
         self.calculate_curve_button.on_click(self.calculate_curve_button_clicked_handler)
-        self.woehler_curve = self.woehler_curve_creator.maximum_like_procedure_2_param()
+        self.woehler_curve = self.fatigue_data.woehler_max_likelihood_inf_limit()
         print(self.woehler_curve)
-        
+
     def selection_changed_handler(self, change):
         self.clear_selection_change_output()
         if change['new'] == change.owner.options[0]:
-            self.woehler_curve = self.woehler_curve_creator.maximum_like_procedure_2_param()
+            self.woehler_curve = self.fatigue_data.max_likelihood_inf_limit()
             print(self.woehler_curve)
         elif change['new'] == change.owner.options[1]:
             display(self.param_fix_tab)
             display(self.calculate_curve_button)
         elif change['new'] == change.owner.options[2]:
-            self.woehler_curve = self.woehler_curve_creator.probit_procedure()
+            self.woehler_curve = self.fatigue_data.woehler_probit()
             print(self.woehler_curve)
         else:
             raise AttributeError('Unexpected selection')
-        
 
     def tab_content_changed_handler(self, change):
         try:
-            self.param_fix.update({change.owner.description : float(change.new)})
+            self.param_fix.update({change.owner.description: float(change.new)})
         except(ValueError, TypeError):
-            self.param_fix.update({change.owner.description : ''})
+            self.param_fix.update({change.owner.description: ''})
 
     def collect_fixed_params(self):
-        self.param_fix = {'SD_50': '', '1/TS': '','ND_50': '', 'k_1': '', '1/TN': ''}
+        self.param_fix = {'SD_50': '', '1/TS': '', 'ND_50': '', 'k_1': '', '1/TN': ''}
         items = []
         for k in self.param_fix:
-            text = widgets.Text(description = k, value = self.param_fix[k])
-            text.observe(self.tab_content_changed_handler, names = 'value')
+            text = widgets.Text(description=k, value=self.param_fix[k])
+            text.observe(self.tab_content_changed_handler, names='value')
             items.append(text)
         self.param_fix_tab = widgets.VBox(items)
 
     def calculate_curve_button_clicked_handler(self, b):
-        param_fix = {k: v for k, v in self.param_fix.items() if v is not ''}
-        self.woehler_curve = self.woehler_curve_creator.maximum_like_procedure(param_fix)
+        param_fix = {k: v for k, v in self.param_fix.items() if v != ''}
+        self.woehler_curve = self.fatigue_data.woehler_max_likelihood(param_fix)
         print(self.woehler_curve)
-
-
-
-        
-
-
-
-

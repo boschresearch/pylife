@@ -22,22 +22,18 @@ import pandas as pd
 import numpy.ma as ma
 import mystic as my
 from scipy import stats, optimize
-from pylife.materialdata.woehler.curves.woehler_curve import WoehlerCurve
-from pylife.materialdata.woehler.curves.woehler_curve_with_bic import WoehlerCurveWithBIC
-from pylife.materialdata.woehler.fatigue_data import FatigueData
-from pylife.materialdata.woehler.curves.woehler_curve_pearl_chain import WoehlerCurvePearlChain
+from pylife.materialdata.woehler.curves.woehler_curve import WoehlerCurve, WoehlerCurveElementary
 
 
 class WoehlerCurveCreator:
     def __init__(self, fatigue_data):
         self.fatigue_data = fatigue_data
-        #self.optimzer = WoehlerCurveOptimizer()
 
     def pearl_chain_method(self):
-        woehler_curve = {'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN, '1/TS': self.fatigue_data.TS, 'load_intercept': self.load_intercept}
+        woehler_curve = {'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN, '1/TS': self.fatigue_data.TS, 'load_intercept': self.fatigue_data.load_intercept}
         return WoehlerCurveElementary(woehler_curve, self.fatigue_data)
 
-    def maximum_like_procedure(self, param_fix):
+    def max_likelihood_full(self, param_fix):
         """
         Maximum likelihood is a method of estimating the parameters of a distribution model by maximizing
         a likelihood function, so that under the assumed statistical model the observed data is most probable.
@@ -54,6 +50,7 @@ class WoehlerCurveCreator:
 
         self.dict_bound: Boundary values of the Mali estimated parameters if none are fixed by the user.
         This forces the optimizer to search for a minimum solution within a given area.
+
 
         Returns
         -------
@@ -86,9 +83,9 @@ class WoehlerCurveCreator:
         else:
             raise AttributeError('You need to leave at least one parameter empty!')
 
-        return WoehlerCurveWithBIC(mali_5p_result, p_opt, param_fix, -var_opt[1], self.fatigue_data)
+        return WoehlerCurve(mali_5p_result, self.fatigue_data)
 
-    def maximum_like_procedure_2_param(self):
+    def max_likelihood_inf_limit(self):
         ''' This maximum likelihood procedure estimates the load endurance limit SD50_mali_2_param and the
         scatter in load direction TS_mali_2_param.
         Moreover, the load cycle endurance is computed by the interesecting endurance limit line with the
@@ -102,10 +99,10 @@ class WoehlerCurveCreator:
                                            disp=False, full_output=True)
 
         ND50 = 10**(self.fatigue_data.b_wl + self.fatigue_data.a_wl*np.log10(var_opt[0][0]))
-        mali_2p_result = {'SD_50': var_opt[0][0], '1/TS': var_opt[0][1],'ND_50': ND50, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
-        return WoehlerCurveWithBIC(mali_2p_result, {'SD_50': SD_start, '1/TS': TS_start}, {}, -var_opt[1], self.fatigue_data)
+        mali_2p_result = {'SD_50': var_opt[0][0], '1/TS': var_opt[0][1], 'ND_50': ND50, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
+        return WoehlerCurve(mali_2p_result, self.fatigue_data)
 
-    def probit_procedure(self):
+    def probit(self):
         '''
         Evaluation of infinite zone. Probit procedure uses the rossow function for infinite zone to compute the failure probability of the infinite
         zone, in order to estimate the endurance parameters as well as the scatter in load direction
@@ -155,7 +152,7 @@ class WoehlerCurveCreator:
 
         """
         # Likelihood functions of the fractured data
-        x_ZF = np.log10(fractures.cycles * ((fractures.loads/SD)**(k)))
+        x_ZF = np.log10(fractures.cycles * ((fractures.load/SD)**(k)))
         Mu_ZF = np.log10(N_E)
         Sigma_ZF = np.log10(TN)/2.5631031311
         Li_ZF = stats.norm.pdf(x_ZF, Mu_ZF, abs(Sigma_ZF))
@@ -165,7 +162,7 @@ class WoehlerCurveCreator:
         std_log = np.log10(TS)/2.5631031311
         runouts = ma.masked_where(zone_inf.cycles >= load_cycle_limit, zone_inf.cycles)
         t = runouts.mask.astype(int)
-        Li_DF = stats.norm.cdf(np.log10(zone_inf.loads/SD), loc=np.log10(1), scale=abs(std_log))
+        Li_DF = stats.norm.cdf(np.log10(zone_inf.load/SD), loc=np.log10(1), scale=abs(std_log))
         LLi_DF = np.log(t+(1-2*t)*Li_DF)
 
         sum_lolli = LLi_DF.sum() + LLi_ZF.sum()
@@ -217,7 +214,7 @@ class WoehlerCurveCreator:
         std_log = np.log10(TS)/2.5631031311
         runouts = ma.masked_where(zone_inf.cycles >= load_cycle_limit, zone_inf.cycles)
         t = runouts.mask.astype(int)
-        Li_DF = stats.norm.cdf(np.log10(zone_inf.loads/SD), loc=np.log10(1), scale=abs(std_log))
+        Li_DF = stats.norm.cdf(np.log10(zone_inf.load/SD), loc=np.log10(1), scale=abs(std_log))
         LLi_DF = np.log(t+(1-2*t)*Li_DF)
 
         sum_lolli = LLi_DF.sum()
