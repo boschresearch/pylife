@@ -47,6 +47,10 @@ class FatigueDataAccessor(signal.PylifeSignal):
     def load(self):
         return self._obj.load
 
+    @property
+    def data(self):
+        return self._obj
+
     def __data_sort(self):
 
         self.load_max = self._obj.load.max()
