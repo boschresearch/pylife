@@ -234,3 +234,8 @@ class FatigueDataAccessor(signal.PylifeSignal):
         if self.__analyzer is None:
             self.basic_analysis(self._obj.cycles.max())
         return self.__analyzer.max_likelihood_inf_limit()
+
+    def baysian_information_criterion(self):
+        if self.__analyzer is None:
+            return None
+        return self.__analyzer.baysian_information_criterion()

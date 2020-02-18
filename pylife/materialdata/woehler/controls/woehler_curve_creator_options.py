@@ -37,7 +37,7 @@ class WoehlerCurveCreatorOptions(RadioButtonWoehlerCurve):
     def selection_changed_handler(self, change):
         self.clear_selection_change_output()
         if change['new'] == change.owner.options[0]:
-            self.woehler_curve = self.fatigue_data.max_likelihood_inf_limit()
+            self.woehler_curve = self.fatigue_data.woehler_max_likelihood_inf_limit()
             print(self.woehler_curve)
         elif change['new'] == change.owner.options[1]:
             display(self.param_fix_tab)
