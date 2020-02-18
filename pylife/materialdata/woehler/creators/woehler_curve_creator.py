@@ -28,6 +28,10 @@ from pylife.materialdata.woehler.curves.woehler_curve import WoehlerCurve, Woehl
 class WoehlerCurveCreator:
     def __init__(self, fatigue_data):
         self.fatigue_data = fatigue_data
+        self._bic = None
+
+    def baysian_information_criterion(self):
+        return self._bic
 
     def pearl_chain_method(self):
         woehler_curve = {'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN, '1/TS': self.fatigue_data.TS, 'load_intercept': self.fatigue_data.load_intercept}
@@ -65,25 +69,23 @@ class WoehlerCurveCreator:
             p_opt.pop(k)
             dict_bound.pop(k)
 
-        mali_5p_result = {}
-        if dict_bound:
-            var_opt = my.scipy_optimize.fmin(self.mali_sum_lolli_wrapper, [*p_opt.values()],
-                                             bounds=[*dict_bound.values()],
-                                             args=([*p_opt], param_fix, self.fatigue_data.fractures, self.fatigue_data.zone_inf,
-                                                   self.fatigue_data.load_cycle_limit
-                                                   ),
-                                             full_output=True,
-                                             disp=True,
-                                             maxiter=1e4,
-                                             maxfun=1e4,
-                                            )
-            #self.optimzer.OptimizerFunction(self.optimzer.mali_sum_lolli, [*self.p_opt.values()], [*self.dict_bound.values()], )
-            mali_5p_result.update(param_fix)
-            mali_5p_result.update(zip([*p_opt], var_opt[0]))
-        else:
+        if not dict_bound:
             raise AttributeError('You need to leave at least one parameter empty!')
+        var_opt = my.scipy_optimize.fmin(
+            self.__likelihood_wrapper, [*p_opt.values()],
+            bounds=[*dict_bound.values()],
+            args=([*p_opt], param_fix),
+            full_output=True,
+            disp=True,
+            maxiter=1e4,
+            maxfun=1e4,
+        )
+        res = {}
+        res.update(param_fix)
+        res.update(zip([*p_opt], var_opt[0]))
 
-        return WoehlerCurve(mali_5p_result, self.fatigue_data)
+        self.__calc_bic(p_opt, self.likelihood_total(res['SD_50'], res['1/TS'], res['k_1'], res['ND_50'], res['1/TN']))
+        return WoehlerCurve(res, self.fatigue_data)
 
     def max_likelihood_inf_limit(self):
         ''' This maximum likelihood procedure estimates the load endurance limit SD50_mali_2_param and the
@@ -94,13 +96,17 @@ class WoehlerCurveCreator:
         SD_start = self.fatigue_data.fatg_lim
         TS_start = 1.2
 
-        var_opt = optimize.fmin(self.Mali_SD_TS, [SD_start, TS_start],
-                                           args=(self.fatigue_data.zone_inf, self.fatigue_data.load_cycle_limit),
-                                           disp=False, full_output=True)
+        var_opt = optimize.fmin(self.likelihood_infinite, [SD_start, TS_start], disp=False, full_output=True)
 
         ND50 = 10**(self.fatigue_data.b_wl + self.fatigue_data.a_wl*np.log10(var_opt[0][0]))
-        mali_2p_result = {'SD_50': var_opt[0][0], '1/TS': var_opt[0][1], 'ND_50': ND50, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
-        return WoehlerCurve(mali_2p_result, self.fatigue_data)
+        mali_inf_limit_result = {
+            'SD_50': var_opt[0][0],
+            '1/TS': var_opt[0][1],
+            'ND_50': ND50,
+            'k_1': self.fatigue_data.k,
+            '1/TN': self.fatigue_data.TN
+        }
+        return WoehlerCurve(mali_inf_limit_result, self.fatigue_data)
 
     def probit(self):
         '''
@@ -116,7 +122,7 @@ class WoehlerCurveCreator:
         probit_result = {'SD_50': SD50_probit, '1/TS': probit_data['T'],'ND_50': ND50_probit, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
         return WoehlerCurve(probit_result, self.fatigue_data)
 
-    def mali_sum_lolli(self, SD, TS, k, N_E, TN, fractures, zone_inf, load_cycle_limit):
+    def likelihood_total(self, SD, TS, k, N_E, TN):
         """
         Produces the likelihood functions that are needed to compute the parameters of the woehler curve.
         The likelihood functions are represented by probability and cummalative distribution functions.
@@ -151,39 +157,19 @@ class WoehlerCurveCreator:
             estimate of a function is the same as minimizing the negative log likelihood of the function.
 
         """
+        return self.likelihood_finite(SD, k, N_E, TN) + self.likelihood_infinite(SD, TS)
+
+    def likelihood_finite(self, SD, k, N_E, TN):
         # Likelihood functions of the fractured data
-        x_ZF = np.log10(fractures.cycles * ((fractures.load/SD)**(k)))
-        Mu_ZF = np.log10(N_E)
-        Sigma_ZF = np.log10(TN)/2.5631031311
-        Li_ZF = stats.norm.pdf(x_ZF, Mu_ZF, abs(Sigma_ZF))
-        LLi_ZF = np.log(Li_ZF)
+        fractures = self.fatigue_data.fractures
+        x = np.log10(fractures.cycles * ((fractures.load/SD)**(k)))
+        mu = np.log10(N_E)
+        sigma = np.log10(TN)/2.5631031311
+        log_likelihood = np.log(stats.norm.pdf(x, mu, abs(sigma)))
 
-        # Likelihood functions of the data found in the infinite zone
-        std_log = np.log10(TS)/2.5631031311
-        runouts = ma.masked_where(zone_inf.cycles >= load_cycle_limit, zone_inf.cycles)
-        t = runouts.mask.astype(int)
-        Li_DF = stats.norm.cdf(np.log10(zone_inf.load/SD), loc=np.log10(1), scale=abs(std_log))
-        LLi_DF = np.log(t+(1-2*t)*Li_DF)
+        return -log_likelihood.sum()
 
-        sum_lolli = LLi_DF.sum() + LLi_ZF.sum()
-        neg_sum_lolli = -sum_lolli
-
-        return neg_sum_lolli
-
-
-    def mali_sum_lolli_wrapper(self, var_args, var_keys, fix_args, fractures, zone_inf, load_cycle_limit):
-        ''' 1) Finds the start values to be optimized. The rest of the paramters are fixed by the user.
-            2) Calls function mali_sum_lolli to calculate the maximum likelihood of the current
-            variable states.
-        '''
-        args = {}
-        args.update(fix_args)
-        args.update(zip(var_keys, var_args))
-
-        return self.mali_sum_lolli(args['SD_50'], args['1/TS'], args['k_1'], args['ND_50'],
-                                          args['1/TN'], fractures, zone_inf, load_cycle_limit)
-
-    def Mali_SD_TS(self, variables, zone_inf, load_cycle_limit):
+    def likelihood_infinite(self, SD, TS):
         """
         Produces the likelihood functions that are needed to compute the endurance limit and the scatter
         in load direction. The likelihood functions are represented by a cummalative distribution function.
@@ -207,17 +193,30 @@ class WoehlerCurveCreator:
             estimate of a function is the same as minimizing the negative log likelihood of the function.
 
         """
-
-        SD = variables[0]
-        TS = variables[1]
-
+        zone_inf = self.fatigue_data.zone_inf
         std_log = np.log10(TS)/2.5631031311
-        runouts = ma.masked_where(zone_inf.cycles >= load_cycle_limit, zone_inf.cycles)
+        runouts = ma.masked_where(zone_inf.cycles >= self.fatigue_data.load_cycle_limit, zone_inf.cycles)
         t = runouts.mask.astype(int)
-        Li_DF = stats.norm.cdf(np.log10(zone_inf.load/SD), loc=np.log10(1), scale=abs(std_log))
-        LLi_DF = np.log(t+(1-2*t)*Li_DF)
+        likelihood = stats.norm.cdf(np.log10(zone_inf.load/SD), loc=np.log10(1), scale=abs(std_log))
+        log_likelihood = np.log(t+(1-2*t)*likelihood)
 
-        sum_lolli = LLi_DF.sum()
-        neg_sum_lolli = -sum_lolli
+        return -log_likelihood.sum()
 
-        return neg_sum_lolli
+    def __likelihood_wrapper(self, var_args, var_keys, fix_args):
+        ''' 1) Finds the start values to be optimized. The rest of the paramters are fixed by the user.
+            2) Calls function mali_sum_lolli to calculate the maximum likelihood of the current
+            variable states.
+        '''
+        args = {}
+        args.update(fix_args)
+        args.update(zip(var_keys, var_args))
+
+        return self.likelihood_total(args['SD_50'], args['1/TS'], args['k_1'], args['ND_50'], args['1/TN'])
+
+    def __calc_bic(self, p_opt, log_likelihood):
+        ''' Bayesian Information Criterion: is a criterion for model selection among a finite set of models;
+        the model with the lowest BIC is preferred.
+        https://www.statisticshowto.datasciencecentral.com/bayesian-information-criterion/
+        '''
+        param_est = len([*p_opt.values()])
+        self._bic = (-2*log_likelihood)+(param_est*np.log(self.fatigue_data.data.shape[0]))
