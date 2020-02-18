@@ -84,7 +84,7 @@ class WoehlerCurveCreator:
         res.update(param_fix)
         res.update(zip([*p_opt], var_opt[0]))
 
-        self.__calc_bic(p_opt, self.likelihood_total(res['SD_50'], res['1/TS'], res['k_1'], res['ND_50'], res['1/TN']))
+        self.__calc_bic(self.likelihood_total(res['SD_50'], res['1/TS'], res['k_1'], res['ND_50'], res['1/TN']))
         return WoehlerCurve(res, self.fatigue_data)
 
     def max_likelihood_inf_limit(self):
@@ -96,17 +96,19 @@ class WoehlerCurveCreator:
         SD_start = self.fatigue_data.fatg_lim
         TS_start = 1.2
 
-        var_opt = optimize.fmin(self.likelihood_infinite, [SD_start, TS_start], disp=False, full_output=True)
+        var_opt = optimize.fmin(lambda p: self.likelihood_infinite(p[0], p[1]), [SD_start, TS_start], disp=False, full_output=True)
 
         ND50 = 10**(self.fatigue_data.b_wl + self.fatigue_data.a_wl*np.log10(var_opt[0][0]))
-        mali_inf_limit_result = {
+        res = {
             'SD_50': var_opt[0][0],
             '1/TS': var_opt[0][1],
             'ND_50': ND50,
             'k_1': self.fatigue_data.k,
             '1/TN': self.fatigue_data.TN
         }
-        return WoehlerCurve(mali_inf_limit_result, self.fatigue_data)
+
+        self.__calc_bic(self.likelihood_total(res['SD_50'], res['1/TS'], res['k_1'], res['ND_50'], res['1/TN']))
+        return WoehlerCurve(res, self.fatigue_data)
 
     def probit(self):
         '''
@@ -119,8 +121,10 @@ class WoehlerCurveCreator:
         # Average endurance load cycle
         ND50_probit = 10**(self.fatigue_data.b_wl + self.fatigue_data.a_wl * np.log10(SD50_probit))
 
-        probit_result = {'SD_50': SD50_probit, '1/TS': probit_data['T'],'ND_50': ND50_probit, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
-        return WoehlerCurve(probit_result, self.fatigue_data)
+        res = {'SD_50': SD50_probit, '1/TS': probit_data['T'],'ND_50': ND50_probit, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
+
+        self.__calc_bic(self.likelihood_total(res['SD_50'], res['1/TS'], res['k_1'], res['ND_50'], res['1/TN']))
+        return WoehlerCurve(res, self.fatigue_data)
 
     def likelihood_total(self, SD, TS, k, N_E, TN):
         """
@@ -158,6 +162,17 @@ class WoehlerCurveCreator:
 
         """
         return self.likelihood_finite(SD, k, N_E, TN) + self.likelihood_infinite(SD, TS)
+
+    def __likelihood_wrapper(self, var_args, var_keys, fix_args):
+        ''' 1) Finds the start values to be optimized. The rest of the paramters are fixed by the user.
+            2) Calls function mali_sum_lolli to calculate the maximum likelihood of the current
+            variable states.
+        '''
+        args = {}
+        args.update(fix_args)
+        args.update(zip(var_keys, var_args))
+
+        return self.likelihood_total(args['SD_50'], args['1/TS'], args['k_1'], args['ND_50'], args['1/TN'])
 
     def likelihood_finite(self, SD, k, N_E, TN):
         # Likelihood functions of the fractured data
@@ -202,21 +217,10 @@ class WoehlerCurveCreator:
 
         return -log_likelihood.sum()
 
-    def __likelihood_wrapper(self, var_args, var_keys, fix_args):
-        ''' 1) Finds the start values to be optimized. The rest of the paramters are fixed by the user.
-            2) Calls function mali_sum_lolli to calculate the maximum likelihood of the current
-            variable states.
-        '''
-        args = {}
-        args.update(fix_args)
-        args.update(zip(var_keys, var_args))
-
-        return self.likelihood_total(args['SD_50'], args['1/TS'], args['k_1'], args['ND_50'], args['1/TN'])
-
-    def __calc_bic(self, p_opt, log_likelihood):
+    def __calc_bic(self, log_likelihood):
         ''' Bayesian Information Criterion: is a criterion for model selection among a finite set of models;
         the model with the lowest BIC is preferred.
         https://www.statisticshowto.datasciencecentral.com/bayesian-information-criterion/
         '''
-        param_est = len([*p_opt.values()])
-        self._bic = (-2*log_likelihood)+(param_est*np.log(self.fatigue_data.data.shape[0]))
+        param_est = len([*self.fatigue_data.initial_p_opt.values()])
+        self._bic = (2*log_likelihood)+(param_est*np.log(self.fatigue_data.data.shape[0]))
