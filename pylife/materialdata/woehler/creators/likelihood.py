@@ -25,6 +25,7 @@ from scipy import stats
 class Likelihood:
     def __init__(self, fatigue_data):
         self._fd = fatigue_data
+        self.__runouts = None
 
     def likelihood_total(self, SD, TS, k, N_E, TN):
         """
@@ -98,8 +99,9 @@ class Likelihood:
         """
         zone_inf = self._fd.zone_inf
         std_log = np.log10(TS)/2.5631031311
-        runouts = ma.masked_where(zone_inf.cycles >= self._fd.load_cycle_limit, zone_inf.cycles)
-        t = runouts.mask.astype(int)
+        if self.__runouts is None:
+            self.__runouts = ma.masked_where(zone_inf.cycles >= self._fd.load_cycle_limit, zone_inf.cycles)
+        t = self.__runouts.mask.astype(int)
         likelihood = stats.norm.cdf(np.log10(zone_inf.load/SD), loc=np.log10(1), scale=abs(std_log))
         log_likelihood = np.log(t+(1-2*t)*likelihood)
 
