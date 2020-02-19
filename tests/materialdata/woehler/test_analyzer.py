@@ -132,3 +132,19 @@ def test_max_likelihood_full_method_with_all_fixed_params():
     #np.testing.assert_array_almost_equal(result_5p_mali, expected_5p_mali, decimal = 1)
     #np.testing.assert_array_almost_equal(result_2p_mali, true_2p_mali, decimal = 1)
     #Cleanup - none
+
+def test_bayesian():
+    SD_50_mali_true = 340.
+    TS_mali_true = 1.12
+    k_Mali_mali_true = 7.0
+    ND_50_mali_true = 400000.
+    TN_mali_true = 5.3
+
+    expected = [SD_50_mali_true, TS_mali_true, k_Mali_mali_true, ND_50_mali_true, TN_mali_true]
+
+    # Exercise
+    WC_data = data.fatigue.woehler_bayesian(nsamples=200)
+    result = [WC_data.SD_50, WC_data.TS, WC_data.k, WC_data.ND_50, WC_data.TN]
+
+    # Verify
+    np.testing.assert_allclose(result, expected, rtol=1e-1)

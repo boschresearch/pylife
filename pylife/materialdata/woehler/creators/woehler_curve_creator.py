@@ -18,17 +18,18 @@ __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
 import numpy as np
-import pandas as pd
-import numpy.ma as ma
 import mystic as my
-from scipy import stats, optimize
-from pylife.materialdata.woehler.curves.woehler_curve import WoehlerCurve, WoehlerCurveElementary
+from scipy import optimize
 
+from pylife.materialdata.woehler.curves.woehler_curve import WoehlerCurve, WoehlerCurveElementary
+from pylife.materialdata.woehler.creators.likelihood import Likelihood
+from pylife.materialdata.woehler.creators.bayesian import Bayesian
 
 class WoehlerCurveCreator:
     def __init__(self, fatigue_data):
         self.fatigue_data = fatigue_data
         self._bic = None
+        self._lh = Likelihood(fatigue_data)
 
     def baysian_information_criterion(self):
         return self._bic
@@ -84,7 +85,7 @@ class WoehlerCurveCreator:
         res.update(param_fix)
         res.update(zip([*p_opt], var_opt[0]))
 
-        self.__calc_bic(self.likelihood_total(res['SD_50'], res['1/TS'], res['k_1'], res['ND_50'], res['1/TN']))
+        self.__calc_bic(self._lh.likelihood_total(res['SD_50'], res['1/TS'], res['k_1'], res['ND_50'], res['1/TN']))
         return WoehlerCurve(res, self.fatigue_data)
 
     def max_likelihood_inf_limit(self):
@@ -96,7 +97,8 @@ class WoehlerCurveCreator:
         SD_start = self.fatigue_data.fatg_lim
         TS_start = 1.2
 
-        var_opt = optimize.fmin(lambda p: self.likelihood_infinite(p[0], p[1]), [SD_start, TS_start], disp=False, full_output=True)
+        var_opt = optimize.fmin(lambda p: -self._lh.likelihood_infinite(p[0], p[1]),
+                                [SD_start, TS_start], disp=False, full_output=True)
 
         ND50 = 10**(self.fatigue_data.b_wl + self.fatigue_data.a_wl*np.log10(var_opt[0][0]))
         res = {
@@ -107,13 +109,16 @@ class WoehlerCurveCreator:
             '1/TN': self.fatigue_data.TN
         }
 
-        self.__calc_bic(self.likelihood_total(res['SD_50'], res['1/TS'], res['k_1'], res['ND_50'], res['1/TN']))
+        self.__calc_bic(self._lh.likelihood_total(res['SD_50'], res['1/TS'], res['k_1'], res['ND_50'], res['1/TN']))
         return WoehlerCurve(res, self.fatigue_data)
 
     def probit(self):
-        '''
-        Evaluation of infinite zone. Probit procedure uses the rossow function for infinite zone to compute the failure probability of the infinite
-        zone, in order to estimate the endurance parameters as well as the scatter in load direction
+        '''Evaluation of infinite zone.
+
+        Probit procedure uses the rossow function for infinite zone to compute
+        the failure probability of the infinite zone, in order to
+        estimate the endurance parameters as well as the scatter in
+        load direction
         '''
         probit_data = self.fatigue_data.determine_probit_parameters()
         # Average fatigue strength
@@ -123,45 +128,8 @@ class WoehlerCurveCreator:
 
         res = {'SD_50': SD50_probit, '1/TS': probit_data['T'],'ND_50': ND50_probit, 'k_1': self.fatigue_data.k, '1/TN': self.fatigue_data.TN}
 
-        self.__calc_bic(self.likelihood_total(res['SD_50'], res['1/TS'], res['k_1'], res['ND_50'], res['1/TN']))
+        self.__calc_bic(self._lh.likelihood_total(res['SD_50'], res['1/TS'], res['k_1'], res['ND_50'], res['1/TN']))
         return WoehlerCurve(res, self.fatigue_data)
-
-    def likelihood_total(self, SD, TS, k, N_E, TN):
-        """
-        Produces the likelihood functions that are needed to compute the parameters of the woehler curve.
-        The likelihood functions are represented by probability and cummalative distribution functions.
-        The likelihood function of a runout is 1-Li(fracture). The functions are added together, and the
-        negative value is returned to the optimizer.
-
-        Parameters
-        ----------
-        SD:
-            Endurnace limit start value to be optimzed, unless the user fixed it.
-        TS:
-            The scatter in load direction 1/TS to be optimzed, unless the user fixed it.
-        k:
-            The slope k_1 to be optimzed, unless the user fixed it.
-        N_E:
-            Load-cycle endurance start value to be optimzed, unless the user fixed it.
-        TN:
-            The scatter in load-cycle direction 1/TN to be optimzed, unless the user fixed it.
-        fractures:
-            The data that our log-likelihood function takes in. This data represents the fractured data.
-        zone_inf:
-            The data that our log-likelihood function takes in. This data is found in the infinite zone.
-        load_cycle_limit:
-            The dependent variable that our model requires, in order to seperate the fractures from the
-            runouts.
-
-        Returns
-        -------
-        neg_sum_lolli :
-            Sum of the log likelihoods. The negative value is taken since optimizers in statistical
-            packages usually work by minimizing the result of a function. Performing the maximum likelihood
-            estimate of a function is the same as minimizing the negative log likelihood of the function.
-
-        """
-        return self.likelihood_finite(SD, k, N_E, TN) + self.likelihood_infinite(SD, TS)
 
     def __likelihood_wrapper(self, var_args, var_keys, fix_args):
         ''' 1) Finds the start values to be optimized. The rest of the paramters are fixed by the user.
@@ -172,50 +140,7 @@ class WoehlerCurveCreator:
         args.update(fix_args)
         args.update(zip(var_keys, var_args))
 
-        return self.likelihood_total(args['SD_50'], args['1/TS'], args['k_1'], args['ND_50'], args['1/TN'])
-
-    def likelihood_finite(self, SD, k, N_E, TN):
-        # Likelihood functions of the fractured data
-        fractures = self.fatigue_data.fractures
-        x = np.log10(fractures.cycles * ((fractures.load/SD)**(k)))
-        mu = np.log10(N_E)
-        sigma = np.log10(TN)/2.5631031311
-        log_likelihood = np.log(stats.norm.pdf(x, mu, abs(sigma)))
-
-        return -log_likelihood.sum()
-
-    def likelihood_infinite(self, SD, TS):
-        """
-        Produces the likelihood functions that are needed to compute the endurance limit and the scatter
-        in load direction. The likelihood functions are represented by a cummalative distribution function.
-        The likelihood function of a runout is 1-Li(fracture).
-
-        Parameters
-        ----------
-        variables:
-            The start values to be optimized. (Endurance limit SD, Scatter in load direction 1/TS)
-        zone_inf:
-            The data that our log-likelihood function takes in. This data is found in the infinite zone.
-        load_cycle_limit:
-            The dependent variable that our model requires, in order to seperate the fractures from the
-            runouts.
-
-        Returns
-        -------
-        neg_sum_lolli :
-            Sum of the log likelihoods. The negative value is taken since optimizers in statistical
-            packages usually work by minimizing the result of a function. Performing the maximum likelihood
-            estimate of a function is the same as minimizing the negative log likelihood of the function.
-
-        """
-        zone_inf = self.fatigue_data.zone_inf
-        std_log = np.log10(TS)/2.5631031311
-        runouts = ma.masked_where(zone_inf.cycles >= self.fatigue_data.load_cycle_limit, zone_inf.cycles)
-        t = runouts.mask.astype(int)
-        likelihood = stats.norm.cdf(np.log10(zone_inf.load/SD), loc=np.log10(1), scale=abs(std_log))
-        log_likelihood = np.log(t+(1-2*t)*likelihood)
-
-        return -log_likelihood.sum()
+        return -self._lh.likelihood_total(args['SD_50'], args['1/TS'], args['k_1'], args['ND_50'], args['1/TN'])
 
     def __calc_bic(self, log_likelihood):
         ''' Bayesian Information Criterion: is a criterion for model selection among a finite set of models;
@@ -223,4 +148,28 @@ class WoehlerCurveCreator:
         https://www.statisticshowto.datasciencecentral.com/bayesian-information-criterion/
         '''
         param_est = len([*self.fatigue_data.initial_p_opt.values()])
-        self._bic = (2*log_likelihood)+(param_est*np.log(self.fatigue_data.data.shape[0]))
+        self._bic = (-2*log_likelihood)+(param_est*np.log(self.fatigue_data.data.shape[0]))
+
+    def bayesian(self, nsamples=500):
+        nburn = nsamples // 10
+
+        bs = Bayesian(self.fatigue_data)
+        slope_trace = bs.slope(nsamples=nsamples)
+        TN_trace = bs.TN(nsamples=nsamples)
+        SD_TS_trace = bs.SD_TS(nsamples=nsamples)
+
+        slope = slope_trace.get_values('x')[nburn:].mean()
+        intercept = slope_trace.get_values('Intercept')[nburn:].mean()
+        SD_50 = SD_TS_trace.get_values('SD_50')[nburn:].mean()
+        ND_50 = np.power(10., np.log10(SD_50) * slope + intercept)
+
+        res = {
+            'SD_50': SD_50,
+            '1/TS': SD_TS_trace.get_values('TS_50')[nburn:].mean(),
+            'ND_50': ND_50,
+            'k_1': -slope,
+            '1/TN': TN_trace.get_values('mu')[nburn:].mean(),
+        }
+
+        self.__calc_bic(self._lh.likelihood_total(res['SD_50'], res['1/TS'], res['k_1'], res['ND_50'], res['1/TN']))
+        return WoehlerCurve(res, self.fatigue_data)

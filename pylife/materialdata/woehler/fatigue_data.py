@@ -235,6 +235,11 @@ class FatigueDataAccessor(signal.PylifeSignal):
             self.basic_analysis(self._obj.cycles.max())
         return self.__analyzer.max_likelihood_inf_limit()
 
+    def woehler_bayesian(self, nsamples=5000):
+        if self.__analyzer is None:
+            self.basic_analysis(self._obj.cycles.max())
+        return self.__analyzer.bayesian(nsamples=nsamples)
+
     def baysian_information_criterion(self):
         if self.__analyzer is None:
             return None
