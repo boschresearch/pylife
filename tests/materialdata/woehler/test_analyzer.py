@@ -91,23 +91,24 @@ def test_max_likelihood_full_with_fixed_params():
     """
     Test of woehler curve parameters evaluation with the maximum likelihood method
     """
-    TN_5p_mali_true = 1.2
-    SD_50_5p_mali_true = 280
-    TS_5p_mali_true = 1.2
-    ND_50_5p_mali_true = 10000000
-    k_Mali_5p_mali_true = 6.94518
+    SD_50_mali_true = 335.49754284383698
+    TS_mali_true = 1.1956125208561188
+    k_Mali_mali_true = 7.0
+    ND_50_mali_true = 463819.1853458205
+    TN_mali_true = 5.0
 
-    expected_5p_mali = [SD_50_5p_mali_true, TS_5p_mali_true, k_Mali_5p_mali_true,
-                        ND_50_5p_mali_true, TN_5p_mali_true]
+    expected_5p_mali = [SD_50_mali_true, TS_mali_true, k_Mali_mali_true,
+                        ND_50_mali_true, TN_mali_true]
 
     # Exercise
-    WC_data = data.fatigue.woehler_max_likelihood({'1/TN': 1.2, 'SD_50': 280,
-                                                   '1/TS': 1.2, 'ND_50': 10000000})
+    WC_data = data.fatigue.woehler_max_likelihood({'1/TN': 5.0, 'k_1': 7.0})
 
     result_5p_mali = [WC_data.SD_50, WC_data.TS, WC_data.k, WC_data.ND_50, WC_data.TN]
 
     # Verify
-    np.testing.assert_array_almost_equal(result_5p_mali, expected_5p_mali, decimal=1)
+    np.testing.assert_allclose(result_5p_mali, expected_5p_mali, rtol=1e-1)
+    assert WC_data.k == k_Mali_mali_true
+    assert WC_data.TN == TN_mali_true
 
 
 def test_max_likelihood_full_method_with_all_fixed_params():
