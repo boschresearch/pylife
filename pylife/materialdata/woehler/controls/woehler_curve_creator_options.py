@@ -28,7 +28,7 @@ class WoehlerCurveCreatorOptions(RadioButtonWoehlerCurve):
         self.woehler_curve = None
         self.fatigue_data = fatigue_data
         self.collect_fixed_params()
-        super().__init__(['Maximum likelihood 2 params', 'Maximum likelihood 5 params', 'Probit'], 'Select method')
+        super().__init__(['Maximum likelihood 2 params', 'Maximum likelihood 5 params', 'Probit', 'Bayes (SLOW!)'], 'Select method')
         self.calculate_curve_button = widgets.Button(description='Calculate curve')
         self.calculate_curve_button.on_click(self.calculate_curve_button_clicked_handler)
         self.woehler_curve = self.fatigue_data.woehler_max_likelihood_inf_limit()
@@ -44,6 +44,9 @@ class WoehlerCurveCreatorOptions(RadioButtonWoehlerCurve):
             display(self.calculate_curve_button)
         elif change['new'] == change.owner.options[2]:
             self.woehler_curve = self.fatigue_data.woehler_probit()
+            print(self.woehler_curve)
+        elif change['new'] == change.owner.options[3]:
+            self.woehler_curve = self.fatigue_data.woehler_bayesian()
             print(self.woehler_curve)
         else:
             raise AttributeError('Unexpected selection')
