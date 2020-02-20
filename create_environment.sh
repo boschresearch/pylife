@@ -4,8 +4,6 @@ git config filter.jupyter_clean.clean \
     "`git rev-parse --show-toplevel`/_venv/bin/jupyter nbconvert \
     --stdin --stdout --to notebook --ClearOutputPreprocessor.enabled=True"
 
-exit 0
-
 if [[ `uname` = Linux ]] ; then
     . ~/miniconda3/etc/profile.d/conda.sh
 else
