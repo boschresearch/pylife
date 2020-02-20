@@ -23,12 +23,12 @@ class AccessorNone(signal.PylifeSignal):
         self._validator = DataValidator()
         self._validate(pandas_obj, self._validator)
         self._obj = pandas_obj
-        
+
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['foo', 'bar'])
-		
+
     def already_here(self):
-        pass		
+        pass
 
 @pd.api.extensions.register_dataframe_accessor('test_accessor_one')
 class AccessorOne:
