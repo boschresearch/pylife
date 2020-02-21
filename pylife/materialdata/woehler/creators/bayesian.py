@@ -28,11 +28,6 @@ from pylife.materialdata.woehler.creators.likelihood import Likelihood
 
 class WoehlerBayesian(WoehlerElementary):
 
-    def __init__(self, df, nsamples=500):
-        super().__init__(df)
-        self._loglike = self._LogLike(Likelihood(self._fd))
-        self._nsamples = nsamples
-
     class _LogLike(tt.Op):
         """
         Specify what type of object will be passed and returned to the Op when it is
@@ -73,7 +68,9 @@ class WoehlerBayesian(WoehlerElementary):
 
             outputs[0][0] = np.array(logl)  # output the log-likelihood
 
-    def _specific_analysis(self, wc):
+    def _specific_analysis(self, wc, nsamples=500):
+        self._nsamples = nsamples
+        self._loglike = self._LogLike(Likelihood(self._fd))
         nburn = self._nsamples // 10
 
         slope_trace = self._slope_trace()

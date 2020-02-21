@@ -17,7 +17,7 @@ class WoehlerElementary:
         self._df = df
         self._lh = Likelihood(self._fd)
 
-    def analyze(self):
+    def analyze(self, **kw):
         self._slope, self._lg_intercept = self._fit_slope()
         TN_inv, TS_inv = self._pearl_chain_method()
         wc = pd.Series({
@@ -26,7 +26,7 @@ class WoehlerElementary:
             'SD_50': self._fd.fatigue_limit, '1/TN': TN_inv, '1/TS': TS_inv
         })
 
-        wc = self._specific_analysis(wc)
+        wc = self._specific_analysis(wc, **kw)
         self.__calc_bic(wc)
         return wc
 
@@ -149,14 +149,10 @@ class WoehlerMaxLikeInf(WoehlerElementary):
 
 
 class WoehlerMaxLikeFull(WoehlerElementary):
-    def __init__(self, df, fixed_parameters={}):
-        super().__init__(df)
-        self._fixed_prms = fixed_parameters
+    def _specific_analysis(self, wc, fixed_parameters={}):
+        return pd.Series(self.__max_likelihood_full(wc, fixed_parameters))
 
-    def _specific_analysis(self, wc):
-        return pd.Series(self.__max_likelihood_full(wc))
-
-    def __max_likelihood_full(self, initial_wcurve):
+    def __max_likelihood_full(self, initial_wcurve, fixed_prms):
         """
         Maximum likelihood is a method of estimating the parameters of a distribution model by maximizing
         a likelihood function, so that under the assumed statistical model the observed data is most probable.
@@ -182,21 +178,21 @@ class WoehlerMaxLikeFull(WoehlerElementary):
         """
 
         p_opt = initial_wcurve.to_dict()
-        for k in self._fixed_prms:
+        for k in fixed_prms:
             p_opt.pop(k)
 
         if not p_opt:
             raise AttributeError('You need to leave at least one parameter empty!')
         var_opt = my.scipy_optimize.fmin(
             self.__likelihood_wrapper, [*p_opt.values()],
-            args=([*p_opt], self._fixed_prms),
+            args=([*p_opt], fixed_prms),
             full_output=True,
             disp=True,
             maxiter=1e4,
             maxfun=1e4,
         )
         res = {}
-        res.update(self._fixed_prms)
+        res.update(fixed_prms)
         res.update(zip([*p_opt], var_opt[0]))
 
         return res
