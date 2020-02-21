@@ -18,14 +18,12 @@ __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
 import numpy as np
-import numpy.ma as ma
 from scipy import stats
 
 
 class Likelihood:
     def __init__(self, fatigue_data):
         self._fd = fatigue_data
-        self.__runouts = None
 
     def likelihood_total(self, SD, TS, k, N_E, TN):
         """
@@ -97,12 +95,10 @@ class Likelihood:
             estimate of a function is the same as minimizing the negative log likelihood of the function.
 
         """
-        zone_inf = self._fd.zone_inf
+        infinite_zone = self._fd.infinite_zone
         std_log = np.log10(TS)/2.5631031311
-        if self.__runouts is None:
-            self.__runouts = ma.masked_where(zone_inf.cycles >= self._fd.load_cycle_limit, zone_inf.cycles)
-        t = self.__runouts.mask.astype(int)
-        likelihood = stats.norm.cdf(np.log10(zone_inf.load/SD), loc=np.log10(1), scale=abs(std_log))
+        t = np.logical_not(self._fd.infinite_zone.fracture).astype(int)
+        likelihood = stats.norm.cdf(np.log10(infinite_zone.load/SD), loc=np.log10(1), scale=abs(std_log))
         log_likelihood = np.log(t+(1-2*t)*likelihood)
 
         return log_likelihood.sum()
