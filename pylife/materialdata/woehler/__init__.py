@@ -69,9 +69,10 @@ class FatigueDataAccessor(signal.PylifeSignal):
         self._infinite_zone = self._obj[self._obj.load <= self._fatigue_limit]
 
 
-
-def determine_fractures(df, load_cycle_limit):
+def determine_fractures(df, load_cycle_limit=None):
     DataValidator().fail_if_key_missing(df, ['load', 'cycles'])
+    if load_cycle_limit is None:
+        load_cycle_limit = df.cycles.max()
     ret = df.copy()
     ret['fracture'] = pd.Series([True] * len(df)).where(df.cycles < load_cycle_limit, False)
     return ret
