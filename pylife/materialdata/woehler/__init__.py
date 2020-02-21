@@ -1,78 +1,11 @@
 
+from .accessors import \
+    FatigueDataAccessor, \
+    WoehlerCurveElementaryAccessor, \
+    WoehlerCurveAccessor, \
+    determine_fractures
 
-import pandas as pd
-from pylife import signal
-from pylife import DataValidator
-
-
-@pd.api.extensions.register_series_accessor('woehler_elementary')
-class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['k_1', '1/TN', 'ND_50', 'SD_50'])
-
-
-@pd.api.extensions.register_series_accessor('woehler')
-class WoehlerCurveAccessor(WoehlerCurveElementaryAccessor):
-    def _validate(self, obj, validator):
-        self.super()._validate(obj, validator)
-        validator.fail_if_key_missing(obj, ['1/TS'])
-
-
-@pd.api.extensions.register_dataframe_accessor('fatigue_data')
-class FatigueDataAccessor(signal.PylifeSignal):
-
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['load', 'cycles', 'fracture'])
-        self._fatigue_limit = None
-
-    @property
-    def fractures(self):
-        return self._obj[self._obj.fracture == True]
-
-    @property
-    def runouts(self):
-        return self._obj[self._obj.fracture == False]
-
-    @property
-    def fatigue_limit(self):
-        if self._fatigue_limit is None:
-            self._calc_finite_zone()
-        return self._fatigue_limit
-
-    @property
-    def finite_zone(self):
-        if self._fatigue_limit is None:
-            self._calc_finite_zone()
-        return self._finite_zone
-
-    @property
-    def infinite_zone(self):
-        if self._fatigue_limit is None:
-            self._calc_finite_zone()
-        return self._infinite_zone
-
-    def _calc_finite_zone(self):
-        '''
-        Computes the start value of the load endurance limit. This is done by searching for the lowest load
-        level before the appearance of a runout data point, and the first load level where a runout appears.
-        Then the median of the two load levels is the start value.
-        '''
-        if len(self.runouts) == 0:
-            self._fatigue_limit = 0
-            self._finite_zone = self._obj[:0]
-            self._infinte_zone = self._obj
-            return
-
-        max_runout_load = self.runouts.load.max()
-        self._finite_zone = self.fractures[self.fractures.load > max_runout_load]
-        self._fatigue_limit = (self._finite_zone.load.min() + max_runout_load) / 2
-        self._infinite_zone = self._obj[self._obj.load <= self._fatigue_limit]
-
-
-def determine_fractures(df, load_cycle_limit=None):
-    DataValidator().fail_if_key_missing(df, ['load', 'cycles'])
-    if load_cycle_limit is None:
-        load_cycle_limit = df.cycles.max()
-    ret = df.copy()
-    ret['fracture'] = pd.Series([True] * len(df)).where(df.cycles < load_cycle_limit, False)
-    return ret
+from .creators.elementary import Elementary
+from .creators.probit import Probit
+from .creators.maxlike import MaxLikeInf, MaxLikeFull
+from .creators.bayesian import Bayesian
