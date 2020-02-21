@@ -1,5 +1,5 @@
 
-import pytest
+import pytest 
 import pandas as pd
 
 import pylife.core.signal as signal
