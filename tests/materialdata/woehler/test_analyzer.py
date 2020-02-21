@@ -5,8 +5,6 @@ import pandas as pd
 import pytest
 
 from pylife.materialdata import woehler
-from pylife.materialdata.woehler.creators.woehler_elementary import *
-from pylife.materialdata.woehler.creators.bayesian import *
 
 data = pd.DataFrame(np.array([
         [4.50e+02, 3.40e+04],
@@ -118,7 +116,7 @@ def test_woehler_elementary():
         '1/TS': 1.27
     }).sort_index()
 
-    wc = WoehlerElementary(woehler.determine_fractures(data, 1e7)).analyze().sort_index()
+    wc = woehler.Elementary(woehler.determine_fractures(data, 1e7)).analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
@@ -132,7 +130,7 @@ def test_woehler_probit():
         '1/TN': 5.26
     }).sort_index()
 
-    wc = WoehlerProbit(woehler.determine_fractures(data, 1e7)).analyze().sort_index()
+    wc = woehler.Probit(woehler.determine_fractures(data, 1e7)).analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
@@ -146,7 +144,7 @@ def test_woehler_max_likelihood_inf_limit():
         '1/TN': 5.26
     }).sort_index()
 
-    wc = WoehlerMaxLikeInf(woehler.determine_fractures(data, 1e7)).analyze().sort_index()
+    wc = woehler.MaxLikeInf(woehler.determine_fractures(data, 1e7)).analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
@@ -161,7 +159,7 @@ def test_woehler_max_likelihood_full_without_fixed_params():
 
     bic = 45.35256860035525
 
-    we = WoehlerMaxLikeFull(woehler.determine_fractures(data, 1e7))
+    we = woehler.MaxLikeFull(woehler.determine_fractures(data, 1e7))
     wc = we.analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
@@ -177,7 +175,7 @@ def test_max_likelihood_full_with_fixed_params():
     }).sort_index()
 
     wc = (
-        WoehlerMaxLikeFull(woehler.determine_fractures(data, 1e7))
+        woehler.MaxLikeFull(woehler.determine_fractures(data, 1e7))
         .analyze(fixed_parameters={'1/TN': 6.0, 'k_1': 8.0})
         .sort_index()
     )
@@ -194,7 +192,7 @@ def test_max_likelihood_full_method_with_all_fixed_params():
     fp = {'k_1': 15.7, '1/TN': 1.2, 'SD_50': 280, '1/TS': 1.2, 'ND_50': 10000000}
     with pytest.raises(AttributeError, match=r'You need to leave at least one parameter empty!'):
         (
-            WoehlerMaxLikeFull(woehler.determine_fractures(data, 1e7))
+            woehler.MaxLikeFull(woehler.determine_fractures(data, 1e7))
             .analyze(fixed_parameters=fp)
         )
 
@@ -208,6 +206,6 @@ def test_bayesian():
         '1/TN': 5.3
     }).sort_index()
 
-    wc = WoehlerBayesian(woehler.determine_fractures(data, 1e7)).analyze().sort_index()
+    wc = woehler.Bayesian(woehler.determine_fractures(data, 1e7)).analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)

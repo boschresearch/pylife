@@ -22,11 +22,11 @@ import pandas as pd
 import theano.tensor as tt
 import pymc3 as pm
 
-from pylife.materialdata.woehler.creators.woehler_elementary import WoehlerElementary
-from pylife.materialdata.woehler.creators.likelihood import Likelihood
+from .elementary import Elementary
+from .likelihood import Likelihood
 
 
-class WoehlerBayesian(WoehlerElementary):
+class Bayesian(Elementary):
 
     class _LogLike(tt.Op):
         """
@@ -68,7 +68,7 @@ class WoehlerBayesian(WoehlerElementary):
 
             outputs[0][0] = np.array(logl)  # output the log-likelihood
 
-    def _specific_analysis(self, wc, nsamples=500):
+    def _specific_analysis(self, wc, nsamples=1000):
         self._nsamples = nsamples
         self._loglike = self._LogLike(Likelihood(self._fd))
         nburn = self._nsamples // 10
