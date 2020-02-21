@@ -177,8 +177,8 @@ def test_max_likelihood_full_with_fixed_params():
     }).sort_index()
 
     wc = (
-        WoehlerMaxLikeFull(woehler.determine_fractures(data, 1e7), {'1/TN': 6.0, 'k_1': 8.0})
-        .analyze()
+        WoehlerMaxLikeFull(woehler.determine_fractures(data, 1e7))
+        .analyze(fixed_parameters={'1/TN': 6.0, 'k_1': 8.0})
         .sort_index()
     )
     pd.testing.assert_index_equal(wc.index, expected.index)
@@ -191,11 +191,11 @@ def test_max_likelihood_full_method_with_all_fixed_params():
     """
     Test of woehler curve parameters evaluation with the maximum likelihood method
     """
+    fp = {'k_1': 15.7, '1/TN': 1.2, 'SD_50': 280, '1/TS': 1.2, 'ND_50': 10000000}
     with pytest.raises(AttributeError, match=r'You need to leave at least one parameter empty!'):
         (
-            WoehlerMaxLikeFull(woehler.determine_fractures(data, 1e7),
-                               {'k_1': 15.7, '1/TN': 1.2, 'SD_50': 280, '1/TS': 1.2, 'ND_50': 10000000})
-            .analyze()
+            WoehlerMaxLikeFull(woehler.determine_fractures(data, 1e7))
+            .analyze(fixed_parameters=fp)
         )
 
 
