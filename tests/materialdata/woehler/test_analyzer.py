@@ -52,7 +52,7 @@ data = pd.DataFrame(np.array([
 ]), columns=['load', 'cycles'])
 
 
-def test_woehler_fracture_determination():
+def test_woehler_fracture_determination_given():
     df = pd.DataFrame({
         'load': [1, 2, 3],
         'cycles': [1e6, 1e7, 1e4]
@@ -82,6 +82,21 @@ def test_woehler_fracture_determination():
     fd = test.fatigue_data
     pd.testing.assert_frame_equal(fd.fractures, expected_fractures)
     pd.testing.assert_frame_equal(fd.runouts, expected_runouts)
+
+def test_woehler_fracture_determination_infered():
+    df = pd.DataFrame({
+        'load': [1, 2, 3],
+        'cycles': [1e6, 1e7, 1e4]
+    })
+
+    expected = pd.DataFrame({
+        'load': [1, 2, 3],
+        'cycles': [1e6, 1e7, 1e4],
+        'fracture': [True, False, True]
+    })
+
+    test = woehler.determine_fractures(df).sort_index()
+    pd.testing.assert_frame_equal(test, expected)
 
 def test_woehler_endur_zones():
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
