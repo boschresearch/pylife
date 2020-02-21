@@ -7,4 +7,4 @@ call flake8 --exit-zero --exclude=virtual-env > flake8.log || exit /B 1
 
 call conda deactivate
 
-call conda env remove --name _venv
+call conda env remove --name _pylife
