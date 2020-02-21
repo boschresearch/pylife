@@ -18,12 +18,21 @@ __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
 import numpy as np
+import pandas as pd
 import theano.tensor as tt
 import pymc3 as pm
 
+from pylife.materialdata.woehler.creators.woehler_elementary import WoehlerElementary
 from pylife.materialdata.woehler.creators.likelihood import Likelihood
 
-class Bayesian:
+
+class WoehlerBayesian(WoehlerElementary):
+
+    def __init__(self, df, nsamples=500):
+        super().__init__(df)
+        self._loglike = self._LogLike(Likelihood(self._fd))
+        self._nsamples = nsamples
+
     class _LogLike(tt.Op):
         """
         Specify what type of object will be passed and returned to the Op when it is
@@ -64,11 +73,29 @@ class Bayesian:
 
             outputs[0][0] = np.array(logl)  # output the log-likelihood
 
-    def __init__(self, fatigue_data):
-        self._loglike = self._LogLike(Likelihood(fatigue_data))
-        self._fd = fatigue_data
+    def _specific_analysis(self, wc):
+        nburn = self._nsamples // 10
 
-    def slope(self, nsamples=5000, chains=2):
+        slope_trace = self._slope_trace()
+        TN_trace = self._TN_trace()
+        SD_TS_trace = self._SD_TS_trace()
+
+        slope = slope_trace.get_values('x')[nburn:].mean()
+        intercept = slope_trace.get_values('Intercept')[nburn:].mean()
+        SD_50 = SD_TS_trace.get_values('SD_50')[nburn:].mean()
+        ND_50 = np.power(10., np.log10(SD_50) * slope + intercept)
+
+        res = {
+            'SD_50': SD_50,
+            '1/TS': SD_TS_trace.get_values('TS_50')[nburn:].mean(),
+            'ND_50': ND_50,
+            'k_1': -slope,
+            '1/TN': TN_trace.get_values('mu')[nburn:].mean(),
+        }
+
+        return pd.Series(res)
+
+    def _slope_trace(self, chains=2):
         data_dict = {
             'x': np.log10(self._fd.fractures.load),
             'y': np.log10(self._fd.fractures.cycles.to_numpy())
@@ -76,24 +103,25 @@ class Bayesian:
         with pm.Model():
             family = pm.glm.families.StudentT()
             pm.glm.GLM.from_formula('y ~ x', data_dict, family=family)
-            trace_robust = pm.sample(nsamples, nuts_kwargs={'target_accept': 0.99}, chains=chains, tune=1000)
+            trace_robust = pm.sample(self._nsamples, nuts_kwargs={'target_accept': 0.99}, chains=chains, tune=1000)
 
             return trace_robust
 
-    def TN(self, nsamples=5000, chains=3):
+    def _TN_trace(self, chains=3):
         with pm.Model():
-            log_N_shift = np.log10(self._fd.N_shift)
+            log_N_shift = np.log10(self._normed_cycles)
             stdev = pm.HalfNormal('stdev', sd=1.3)  # sd standard wert (log-normal/ beat Verteilung/exp lambda)
             mu = pm.Normal('mu', mu=log_N_shift.mean(), sd=log_N_shift.std())  # mu könnte von FKM gegeben
             _ = pm.Normal('y', mu=mu, sd=stdev, observed=log_N_shift)  # lognormal
 
-            trace_TN = pm.sample(nsamples, nuts_kwargs={'target_accept': 0.99}, chains=chains, tune=1000)
+            trace_TN = pm.sample(self._nsamples, nuts_kwargs={'target_accept': 0.99}, chains=chains, tune=1000)
 
         return trace_TN
 
-    def SD_TS(self, nsamples=5000, chains=3):
+    def _SD_TS_trace(self, chains=3):
         with pm.Model():
-            SD = pm.Normal('SD_50', mu=self._fd.zone_inf.load.mean(), sd=self._fd.zone_inf.load.std()*5)
+            inf_load = self._fd.infinite_zone.load
+            SD = pm.Normal('SD_50', mu=inf_load.mean(), sd=inf_load.std()*5)
             TS = pm.Lognormal('TS_50', mu=np.log10(1.1), sd=np.log10(0.5))
 
             # convert m and c to a tensor vector
@@ -101,6 +129,6 @@ class Bayesian:
 
             pm.DensityDist('likelihood', lambda v: self._loglike(v), observed={'v': var})
 
-            trace_SD_TS = pm.sample(nsamples, tune=1000, chains=chains, discard_tuned_samples=True)
+            trace_SD_TS = pm.sample(self._nsamples, tune=1000, chains=chains, discard_tuned_samples=True)
 
         return trace_SD_TS
