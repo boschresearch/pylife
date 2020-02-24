@@ -38,96 +38,90 @@ class WoehlerCurveDiagrams:
         self.ylim_WL = (round(min(self._fd.load)*0.8, -1),
                         round(max(self._fd.load)*1.2, -1))
 
-    def __default_ax_config(self, title):
-        fig, ax = plt.subplots()
-        # need setter for the title
-        ax.set_title('Initial data')
-        # fig = plt.figure()
-        # ax = fig.add_axes([0,0,1,1])
-        ax.set_xlim(self.xlim_WL)
-        ax.set_ylim(self.ylim_WL)
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-        ax.grid(True)
-        ax.set_xlabel('Number of cycles', fontsize=11)
-        ax.set_ylabel('Amplitude' + ' (' + 'Stress' + ') in ' + '$N/mm^2$' + '(log scaled)')
-        fig.tight_layout()
+        self.reset(ax)
+
+    def reset(self, ax=None):
+        if ax is None:
+            _, self._ax = plt.subplots()
+        else:
+            self._ax = ax
+        self.__default_ax_config()
+        return self
+
+    def __default_ax_config(self):
+        self._ax.set_xlim(self.xlim_WL)
+        self._ax.set_ylim(self.ylim_WL)
+        self._ax.set_xscale('log')
+        self._ax.set_yscale('log')
+        self._ax.grid(True)
+        self._ax.set_xlabel('Number of cycles', fontsize=11)
+        self._ax.set_ylabel('Amplitude' + ' (' + 'Stress' + ') in ' + '$N/mm^2$' + '(log scaled)')
         matplotlib.rcParams.update({'font.size': 11})
-        return ax
 
-    def plot_basic_fatigue_data(self, ax=None):
-        ax_local = self.__default_ax_config('Initial data') if ax is None else ax
-        ax_local.plot(self._fd.runouts.cycles,
+    def plot_fatigue_data(self):
+        self._ax.plot(self._fd.runouts.cycles,
                       self._fd.runouts.load, 'bo', mfc='none', label='Runout')
-        ax_local.plot(self._fd.fractures.cycles,
+        self._ax.plot(self._fd.fractures.cycles,
                       self._fd.fractures.load, 'bo', label='Failure')
-        # self.plot_endurance_limit(ax_local)
-        ax_local.legend(loc='upper right', fontsize=11)
+        # self.plot_endurance_limit()
+        self._ax.legend(loc='upper right', fontsize=11)
         return self
 
-    def plot_initial_data(self, ax=None):
-        ax_local = self.__default_ax_config('Initial data') if ax is None else ax
-        self.plot_endurance_limit(ax_local)
-        self.plot_basic_fatigue_data(ax_local)
-        ax_local.legend(loc='upper right', fontsize=11)
+    def plot_endurance_limit(self):
+        self._ax.axhline(y=self._fd.fatigue_limit, linewidth=2, color='r', label='Endurance limit')
         return self
 
-    def plot_endurance_limit(self, ax=None):
-        ax_local = self.__default_ax_config('Endurance limit') if ax is None else ax
-        ax_local.axhline(y=self._fd.fatigue_limit, linewidth=2, color='r', label='Endurance limit')
+    def plot_woehler_curve(self, failure_probablility=0.5, **kw):
+        woehler_curve_graph = WoehlerCurveGraph(self.woehler_curve, self.y_min, self.y_max, failure_probablility)
+
+        self._ax.plot(woehler_curve_graph.points[:, 1],
+                      woehler_curve_graph.points[:, 0], **kw)
+        self._ax.legend(loc='upper right', fontsize=11)
         return self
 
-    def plot_woehler_curve(self, ax=None):
-        ax_local = self.__default_ax_config('Woehler curve') if ax is None else ax
-        print('plot_woehler_curve', self.woehler_curve)
-        woehler_curve_graph = WoehlerCurveGraph(self.woehler_curve, self.y_min, self.y_max)
-        ax_local.plot(woehler_curve_graph.points[:, 1],
-                      woehler_curve_graph.points[:, 0], color='r', linewidth=2., label=u'WL, $P_A$=50%')
-        ax_local.legend(loc='upper right', fontsize=11)
-        return self
-
-    def plot_pearl_chain_method(self, ax=None):
-        ax_local = self.__default_ax_config('Pearl chain method') if ax is None else ax
+    def plot_pearl_chain_method(self):
         pce = self._analyzer.pearl_chain_estimator()
         normed_load = pce.normed_load
         normed_cycles = pce.normed_cycles
-        ax_local.plot(normed_cycles, np.ones(len(normed_cycles))*normed_load,
+        self._ax.plot(normed_cycles, np.ones(len(normed_cycles))*normed_load,
                       'go', label='PCM shifted probes', marker="v")
-        ax_local.plot(self.xlim_WL, np.ones(len(self.xlim_WL))*normed_load, 'g')
-        self.plot_woehler_curve(ax_local)
-        ax_local.legend(loc='upper right', fontsize=11)
+        self._ax.plot(self.xlim_WL, np.ones(len(self.xlim_WL))*normed_load, 'g')
+        self.plot_woehler_curve()
+        self._ax.legend(loc='upper right', fontsize=11)
         return self
 
-    def plot_deviation(self, ax=None):
-        ax_local = self.__default_ax_config('Deviation') if ax is None else ax
-        woehler_curve_graph = WoehlerCurveGraph(self.woehler_curve, self.y_min, self.y_max)
-        ax_local.plot(woehler_curve_graph.calc_shifted_woehlercurve_points(0.1)[:, 1],
-                woehler_curve_graph.points[:, 0], 'r', linewidth=1.5,
-                linestyle='--', label=u'WL, $P_A$=10% u. 90%')
-        ax_local.plot(woehler_curve_graph.calc_shifted_woehlercurve_points(0.9)[:, 1],
-                woehler_curve_graph.points[:, 0], 'r', linewidth=1.5,
-                linestyle='--')
-        self.plot_woehler_curve(ax_local)
+    def plot_deviation(self, **kw):
+        self.plot_woehler_curve(failure_probablility=0.5, color='r', label='$P_A$=50%')
+        self.plot_woehler_curve(failure_probablility=0.1, color='r', linestyle='--', label='$P_A$=10% u. 90%')
+        self.plot_woehler_curve(failure_probablility=0.9, color='r', linestyle='--')
+
         text = '$k$ = '+str(np.round(self.woehler_curve['k_1'], decimals=2)) + '\n'
         text += '$1/T_N$ = ' + str(np.round(self.woehler_curve['1/TN'], decimals=2)) + '\n'
         text += '$1/T_S^*$ = ' + str(np.round(self.woehler_curve['1/TS'], decimals=2))
 
-        ax_local.text(0.01, 0.03, text, verticalalignment='bottom',
-                    horizontalalignment='left', transform=ax_local.transAxes,
+        self._ax.text(0.01, 0.03, text, verticalalignment='bottom',
+                    horizontalalignment='left', transform=self._ax.transAxes,
                     bbox={'facecolor': 'grey', 'alpha': 0.2, 'pad': 10})
-        ax_local.legend(loc='upper right', fontsize=11)
+        self._ax.legend(loc='upper right', fontsize=11)
         return self
 
-    def plot_whole_woehler_curve_graph(self, k_2, ax=None):
-        ax_local = self.__default_ax_config('Woehler curve') if ax is None else ax
+    def plot_fitted_curve(self, k_2=None):
+        ''' This is broken now
+        '''
+        woehler_curve_inf = self.woehler_curve.copy()
+        woehler_curve_inf['k_1'] = k_2
+
+        wcg_fin = WoehlerCurveGraph(self._woehler_curve, self._woehler_curve['SD_50'], self.y_max, 0.5)
+        wcg_inf = WoehlerCurveGraph(self._woehler_curve_inf, self._woehler_curve['SD_50'], self.y_max, 0.5)
+
         whole_woehler_curve_graph = WholeWoehlerCurveGraph(self.woehler_curve, k_2, self.y_min, self.y_max)
         WL_50 = whole_woehler_curve_graph.graph_50
         WL_10 = whole_woehler_curve_graph.graph_10
         WL_90 = whole_woehler_curve_graph.graph_90
-        ax_local.plot(WL_50[:, 1], WL_50[:, 0], 'r', linewidth=2., label=u'WC, $P_A$=50%')
-        ax_local.plot(WL_10[:, 1], WL_10[:, 0], 'r', linewidth=1.5, linestyle='--', label=u'WC, $P_A$=10% u. 90%')
-        ax_local.plot(WL_90[:, 1], WL_90[:, 0], 'r', linewidth=1.5, linestyle='--')
-        ax_local.legend(loc='upper right', fontsize=11)
+        self._ax.plot(WL_50[:, 1], WL_50[:, 0], 'r', linewidth=2., label=u'WC, $P_A$=50%')
+        self._ax.plot(WL_10[:, 1], WL_10[:, 0], 'r', linewidth=1.5, linestyle='--', label=u'WC, $P_A$=10% u. 90%')
+        self._ax.plot(WL_90[:, 1], WL_90[:, 0], 'r', linewidth=1.5, linestyle='--')
+        self._ax.legend(loc='upper right', fontsize=11)
 
         text = '$k_1$ = '+str(np.round(self.woehler_curve['k_1'],decimals=2)) + '\n'
         text += '$k_2$ = '+str(np.round(k_2,decimals=2)) + '\n'
@@ -137,17 +131,16 @@ class WoehlerCurveDiagrams:
         text += '$N_{D,50}$ = ' + '{:1.2e}'.format(self.woehler_curve['ND_50']) + '\n'
         text += '$1/T_S$ = ' + str(np.round(self.woehler_curve['1/TS'],decimals=2))
 
-        ax_local.text(0.01, 0.03, text,
+        self._ax.text(0.01, 0.03, text,
                  verticalalignment='bottom',horizontalalignment='left',
-                 transform=ax_local.transAxes, bbox={'facecolor':'grey', 'alpha':0.2, 'pad':10})
+                 transform=self._ax.transAxes, bbox={'facecolor':'grey', 'alpha':0.2, 'pad':10})
         return self
 
-    def plot_slope(self, ax=None):
-        ax_local = self.__default_ax_config('Slope') if ax is None else ax
+    def plot_slope(self, failure_probablility=0.5):
         text = '$k$ = '+str(np.round(self.woehler_curve['k_1'], decimals=2))
-        ax_local.text(0.01, 0.03, text, verticalalignment='bottom',
-            horizontalalignment='left', transform=ax_local.transAxes,
+        self._ax.text(0.01, 0.03, text, verticalalignment='bottom',
+            horizontalalignment='left', transform=self._ax.transAxes,
             bbox={'facecolor': 'grey', 'alpha': 0.2, 'pad': 10})
-        self.plot_basic_fatigue_data(ax_local)
-        self.plot_woehler_curve(ax_local)
+        self.plot_fatigue_data()
+        self.plot_woehler_curve()
         return self

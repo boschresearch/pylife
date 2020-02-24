@@ -23,23 +23,24 @@ from .radio_button_woehler_curve import RadioButtonWoehlerCurve
 
 class WoehlerCurveDataPlotter(RadioButtonWoehlerCurve):
     def __init__(self, woehler_curve, fatigue_data, analyzer):
-        self.woehler_curve = woehler_curve
-        self.woehler_curve_diagrams = WoehlerCurveDiagrams(self.woehler_curve, fatigue_data, analyzer)
-        self.woehler_curve_diagrams.plot_initial_data()
-        super().__init__(options=['Initial data',
+        self._woehler_curve = woehler_curve
+        self._woehler_curve_diagrams = WoehlerCurveDiagrams(self._woehler_curve, fatigue_data, analyzer)
+        self._woehler_curve_diagrams.plot_fatigue_data()
+        super().__init__(options=['Only initial data',
                                   'Slope',
-                                  'Pearl chain method',
+                                  'Pearl chain',
                                   'Deviation in load-cycle direction'], description='Plot Type')
 
     def selection_changed_handler(self, change):
         self.clear_selection_change_output()
+        self._woehler_curve_diagrams.reset().plot_fatigue_data()
         if change['new'] == change.owner.options[0]:
-            self.woehler_curve_diagrams.plot_initial_data()
+            pass
         elif change['new'] == change.owner.options[1]:
-            self.woehler_curve_diagrams.plot_slope()
+            self._woehler_curve_diagrams.plot_fatigue_data().plot_slope()
         elif change['new'] == change.owner.options[2]:
-            self.woehler_curve_diagrams.plot_pearl_chain_method()
+            self._woehler_curve_diagrams.plot_pearl_chain_method()
         elif change['new'] == change.owner.options[3]:
-            self.woehler_curve_diagrams.plot_deviation()
+            self._woehler_curve_diagrams.plot_deviation()
         else:
             raise AttributeError('Unexpected selection')

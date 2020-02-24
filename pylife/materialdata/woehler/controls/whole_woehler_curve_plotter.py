@@ -17,29 +17,24 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-import sys, os
+from ..diagrams.woehler_curve_diagrams import WoehlerCurveDiagrams
+from .radio_button_woehler_curve import RadioButtonWoehlerCurve
 
-sys.path.insert(0, os.path.abspath('..\\pylife'))
-
-from pylife.materialdata.woehler.diagrams.woehler_curve_diagrams import WoehlerCurveDiagrams
-from pylife.materialdata.woehler.controls.radio_button_woehler_curve import RadioButtonWoehlerCurve
 
 class WholeWoehlerCurvePlotter(RadioButtonWoehlerCurve):
-    def __init__(self, woehler_curve):
+    def __init__(self, woehler_curve, fatigue_data, analyzer):
         self.woehler_curve = woehler_curve
-        self.woehler_curve_diagrams = WoehlerCurveDiagrams(self.woehler_curve)
-        super().__init__(options=['k_2 = 0', 'k_2 = k_1', 'k_2 = 2 k_1 - 1'], description='Runout zone plot')
+        self.woehler_curve_diagrams = WoehlerCurveDiagrams(self.woehler_curve, fatigue_data, analyzer)
+        super().__init__(options=['k_2 = inf', 'k_2 = k_1', 'k_2 = 2 k_1 - 1'], description='Runout zone plot')
         self.woehler_curve_diagrams.plot_whole_woehler_curve_graph(0)
-        
+
     def selection_changed_handler(self, change):
         self.clear_selection_change_output()
         if change['new'] == change.owner.options[0]:
-            self.woehler_curve_diagrams.plot_whole_woehler_curve_graph(0)
+            self.woehler_curve_diagrams.plot_whole_woehler_curve_graph(None)
         elif change['new'] == change.owner.options[1]:
             self.woehler_curve_diagrams.plot_whole_woehler_curve_graph(self.woehler_curve.k)
         elif change['new'] == change.owner.options[2]:
             self.woehler_curve_diagrams.plot_whole_woehler_curve_graph(2 * self.woehler_curve.k - 1)
         else:
-            raise AttributeError('Unexpected selection')        
-
-
+            raise AttributeError('Unexpected selection')
