@@ -47,7 +47,7 @@ data = pd.DataFrame(np.array([
         [3.00e+02, 1.00e+07],
         [3.00e+02, 1.00e+07],
         [3.00e+02, 1.00e+07]
-]), columns=['load', 'cycles'])
+]), columns=['load', 'cycles']).sample(frac=1)
 
 
 def test_woehler_fracture_determination_given():
