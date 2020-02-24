@@ -5,13 +5,13 @@ import scipy.stats as stats
 
 import pylife
 from .likelihood import Likelihood
+from .pearl_chain import PearlChainProbability
 import pylife.utils.functions as functions
 
 
 class Elementary:
-    def __init__(self, df):
-        self._fd = df.fatigue_data
-        self._df = df
+    def __init__(self, fatigue_data):
+        self._fd = fatigue_data
         self._lh = Likelihood(self._fd)
 
     def analyze(self, **kw):
@@ -38,10 +38,9 @@ class Elementary:
         the model with the lowest BIC is preferred.
         https://www.statisticshowto.datasciencecentral.com/bayesian-information-criterion/
         '''
-        param_num = 5 # SD_50, 1/TS, k_1, ND_50, 1/TN
+        param_num = 5  # SD_50, 1/TS, k_1, ND_50, 1/TN
         log_likelihood = self._lh.likelihood_total(wc['SD_50'], wc['1/TS'], wc['k_1'], wc['ND_50'], wc['1/TN'])
-        self._bic = (-2*log_likelihood)+(param_num*np.log(self._df.shape[0]))
-
+        self._bic = (-2*log_likelihood)+(param_num*np.log(self._fd.data.shape[0]))
 
     def _fit_slope(self):
         '''Computes the slope of the finite zone with the help of a linear regression function

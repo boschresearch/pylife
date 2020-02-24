@@ -81,6 +81,7 @@ def test_woehler_fracture_determination_given():
     pd.testing.assert_frame_equal(fd.fractures, expected_fractures)
     pd.testing.assert_frame_equal(fd.runouts, expected_runouts)
 
+
 def test_woehler_fracture_determination_infered():
     df = pd.DataFrame({
         'load': [1, 2, 3],
@@ -95,6 +96,7 @@ def test_woehler_fracture_determination_infered():
 
     test = woehler.determine_fractures(df).sort_index()
     pd.testing.assert_frame_equal(test, expected)
+
 
 def test_woehler_endur_zones():
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
@@ -116,7 +118,8 @@ def test_woehler_elementary():
         '1/TS': 1.27
     }).sort_index()
 
-    wc = woehler.Elementary(woehler.determine_fractures(data, 1e7)).analyze().sort_index()
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    wc = woehler.Elementary(fd).analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
@@ -130,7 +133,8 @@ def test_woehler_probit():
         '1/TN': 5.26
     }).sort_index()
 
-    wc = woehler.Probit(woehler.determine_fractures(data, 1e7)).analyze().sort_index()
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    wc = woehler.Probit(fd).analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
@@ -144,9 +148,11 @@ def test_woehler_max_likelihood_inf_limit():
         '1/TN': 5.26
     }).sort_index()
 
-    wc = woehler.MaxLikeInf(woehler.determine_fractures(data, 1e7)).analyze().sort_index()
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    wc = woehler.MaxLikeInf(fd).analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+
 
 def test_woehler_max_likelihood_full_without_fixed_params():
     expected = pd.Series({
@@ -159,11 +165,13 @@ def test_woehler_max_likelihood_full_without_fixed_params():
 
     bic = 45.35256860035525
 
-    we = woehler.MaxLikeFull(woehler.determine_fractures(data, 1e7))
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    we = woehler.MaxLikeFull(fd)
     wc = we.analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
     np.testing.assert_almost_equal(we.bayesian_information_criterion(), bic, decimal=2)
+
 
 def test_max_likelihood_full_with_fixed_params():
     expected = pd.Series({
@@ -174,8 +182,9 @@ def test_max_likelihood_full_with_fixed_params():
         '1/TN': 6.0
     }).sort_index()
 
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
     wc = (
-        woehler.MaxLikeFull(woehler.determine_fractures(data, 1e7))
+        woehler.MaxLikeFull(fd)
         .analyze(fixed_parameters={'1/TN': 6.0, 'k_1': 8.0})
         .sort_index()
     )
@@ -190,9 +199,10 @@ def test_max_likelihood_full_method_with_all_fixed_params():
     Test of woehler curve parameters evaluation with the maximum likelihood method
     """
     fp = {'k_1': 15.7, '1/TN': 1.2, 'SD_50': 280, '1/TS': 1.2, 'ND_50': 10000000}
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
     with pytest.raises(AttributeError, match=r'You need to leave at least one parameter empty!'):
         (
-            woehler.MaxLikeFull(woehler.determine_fractures(data, 1e7))
+            woehler.MaxLikeFull(fd)
             .analyze(fixed_parameters=fp)
         )
 
@@ -206,6 +216,7 @@ def test_bayesian():
         '1/TN': 5.3
     }).sort_index()
 
-    wc = woehler.Bayesian(woehler.determine_fractures(data, 1e7)).analyze().sort_index()
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    wc = woehler.Bayesian(fd).analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
