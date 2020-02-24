@@ -28,7 +28,7 @@ class WholeWoehlerCurveGraph:
 
     def __init__(self, woehler_curve, k_2, y_min, y_max):
         self.woehler_curve = woehler_curve
-        self.k_2 = k_2
+        self.k_2 = woehler_curve['k_1'] if k_2 is None else k_2
         self.y_min = y_min
         self.y_max = y_max
 
@@ -45,7 +45,8 @@ class WholeWoehlerCurveGraph:
         graph_1 = WoehlerCurveGraph(woehler_curve, y_lim, self.y_max)
         graph_1.points = graph_1.calc_shifted_woehlercurve_points(pa_goal)
 
-        woehler_curve_2 = WoehlerCurve({'SD_50': y_lim, '1/TS': woehler_curve['1/TS'], 'ND_50': graph_1.points[-1, -1],
+        woehler_curve_2 = self._woehler_curve.copy()
+        WoehlerCurve({'SD_50': y_lim, '1/TS': woehler_curve['1/TS'], 'ND_50': graph_1.points[-1, -1],
                                         'k_1': self.k_2, '1/TN': woehler_curve['1/TN']})
         graph_2 = WoehlerCurveGraph(woehler_curve_2, self.y_min, y_lim)
         return np.append(graph_1.points, graph_2.points, axis=0)
