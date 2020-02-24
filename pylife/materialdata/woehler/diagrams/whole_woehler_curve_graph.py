@@ -21,8 +21,6 @@ import numpy as np
 from scipy import stats
 
 from .woehler_curve_graph import WoehlerCurveGraph
-from ..curves.woehler_curve import WoehlerCurve
-
 
 class WholeWoehlerCurveGraph:
 

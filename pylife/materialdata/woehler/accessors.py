@@ -25,6 +25,18 @@ class FatigueDataAccessor(signal.PylifeSignal):
         self._fatigue_limit = None
 
     @property
+    def num_tests(self):
+        return self._obj.shape[0]
+
+    @property
+    def num_fractures(self):
+        return self.fractures.shape[0]
+
+    @property
+    def num_runouts(self):
+        return self.runouts.shape[0]
+
+    @property
     def fractures(self):
         return self._obj[self._obj.fracture == True]
 

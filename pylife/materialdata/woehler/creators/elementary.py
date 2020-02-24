@@ -43,7 +43,7 @@ class Elementary:
         '''
         param_num = 5  # SD_50, 1/TS, k_1, ND_50, 1/TN
         log_likelihood = self._lh.likelihood_total(wc['SD_50'], wc['1/TS'], wc['k_1'], wc['ND_50'], wc['1/TN'])
-        self._bic = (-2*log_likelihood)+(param_num*np.log(self._fd.data.shape[0]))
+        self._bic = (-2*log_likelihood)+(param_num*np.log(self._fd.num_tests))
 
     def _fit_slope(self):
         '''Computes the slope of the finite zone with the help of a linear regression function
