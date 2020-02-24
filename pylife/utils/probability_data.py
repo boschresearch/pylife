@@ -5,11 +5,11 @@ import scipy.stats as stats
 
 
 class ProbabilityFit:
-    def __init__(self, fprobs, occurences):
-        ppf = stats.norm.ppf(fprobs)
-        self._slope, self._intercept, _, _, _ = stats.linregress(np.log10(occurences), ppf)
+    def __init__(self, probs, occurrences):
+        ppf = stats.norm.ppf(probs)
+        self._slope, self._intercept, _, _, _ = stats.linregress(np.log10(occurrences), ppf)
         self._ppf = ppf
-        self._occurences = occurences
+        self._occurrences = occurrences
 
     @property
     def slope(self):
@@ -20,8 +20,8 @@ class ProbabilityFit:
         return self._intercept
 
     @property
-    def occurences(self):
-        return self._occurences
+    def occurrences(self):
+        return self._occurrences
 
     @property
     def precentiles(self):
