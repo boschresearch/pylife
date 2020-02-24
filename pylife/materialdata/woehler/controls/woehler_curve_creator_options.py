@@ -20,36 +20,51 @@ __maintainer__ = "Johannes Mueller"
 import ipywidgets as widgets
 from IPython.display import display
 
-from pylife.materialdata.woehler.controls.radio_button_woehler_curve import RadioButtonWoehlerCurve
+from ..creators.maxlike import MaxLikeInf, MaxLikeFull
+from ..creators.probit import Probit
+from ..creators.bayesian import Bayesian
+from .radio_button_woehler_curve import RadioButtonWoehlerCurve
 
 
 class WoehlerCurveCreatorOptions(RadioButtonWoehlerCurve):
-    def __init__(self, fatigue_data):
+    def __init__(self, df):
         self.woehler_curve = None
-        self.fatigue_data = fatigue_data
+        self._df = df
         self.collect_fixed_params()
-        super().__init__(['Maximum likelihood 2 params', 'Maximum likelihood 5 params', 'Probit', 'Bayes (SLOW!)'], 'Select method')
+        self._option_dict = {
+            'Maximum likelihood 2 params': (MaxLikeInf(self._df), self.__just_analyze),
+            'Maximum likelihood 5 params': (MaxLikeFull(self._df), self.__display_param_fix),
+            'Probit': (Probit(self._df), self.__just_analyze),
+            'Bayes (SLOW!)': (Bayesian(self._df), self.__just_analyze)
+        }
+
+        super().__init__(self._option_dict.keys(), 'Select method')
         self.calculate_curve_button = widgets.Button(description='Calculate curve')
         self.calculate_curve_button.on_click(self.calculate_curve_button_clicked_handler)
-        self.woehler_curve = self.fatigue_data.woehler_max_likelihood_inf_limit()
+        self._analyzer, _ = list(self._option_dict.values())[0]
+        self.__just_analyze()
+
+    def analyzer(self):
+        return self._analyzer
+
+    def __just_analyze(self, **kwargs):
+        self.woehler_curve = self._analyzer.analyze(**kwargs)
         print(self.woehler_curve)
+        self.bic = self._analyzer.bayesian_information_criterion()
+        print("BIC:", self.bic)
+
+    def __display_param_fix(self):
+        display(self.param_fix_tab)
+        display(self.calculate_curve_button)
 
     def selection_changed_handler(self, change):
         self.clear_selection_change_output()
-        if change['new'] == change.owner.options[0]:
-            self.woehler_curve = self.fatigue_data.woehler_max_likelihood_inf_limit()
-            print(self.woehler_curve)
-        elif change['new'] == change.owner.options[1]:
-            display(self.param_fix_tab)
-            display(self.calculate_curve_button)
-        elif change['new'] == change.owner.options[2]:
-            self.woehler_curve = self.fatigue_data.woehler_probit()
-            print(self.woehler_curve)
-        elif change['new'] == change.owner.options[3]:
-            self.woehler_curve = self.fatigue_data.woehler_bayesian()
-            print(self.woehler_curve)
-        else:
+        try:
+            self._analyzer, analyze_method = self._option_dict[change['new']]
+        except KeyError:
             raise AttributeError('Unexpected selection')
+
+        analyze_method()
 
     def tab_content_changed_handler(self, change):
         try:
@@ -68,5 +83,4 @@ class WoehlerCurveCreatorOptions(RadioButtonWoehlerCurve):
 
     def calculate_curve_button_clicked_handler(self, b):
         param_fix = {k: v for k, v in self.param_fix.items() if v != ''}
-        self.woehler_curve = self.fatigue_data.woehler_max_likelihood(param_fix)
-        print(self.woehler_curve)
+        self.__just_analyze(fixed_parameters=param_fix)

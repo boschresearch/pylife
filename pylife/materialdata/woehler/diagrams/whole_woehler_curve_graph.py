@@ -19,8 +19,10 @@ __maintainer__ = "Johannes Mueller"
 
 import numpy as np
 from scipy import stats
-from pylife.materialdata.woehler.diagrams.woehler_curve_graph import WoehlerCurveGraph
-from pylife.materialdata.woehler.curves.woehler_curve import WoehlerCurve
+
+from .woehler_curve_graph import WoehlerCurveGraph
+from ..curves.woehler_curve import WoehlerCurve
+
 
 class WholeWoehlerCurveGraph:
 
@@ -30,24 +32,20 @@ class WholeWoehlerCurveGraph:
         self.y_min = y_min
         self.y_max = y_max
 
-        SD_50 = woehler_curve.SD_50
-        SD_10 = SD_50 / (10**(-stats.norm.ppf(0.1)*np.log10(woehler_curve.TS)/2.56))
-        SD_90 = SD_50 / (10**(-stats.norm.ppf(0.9)*np.log10(woehler_curve.TS)/2.56))
+        SD_50 = woehler_curve['SD_50']
+        SD_10 = SD_50 / (10**(-stats.norm.ppf(0.1)*np.log10(woehler_curve['1/TS'])/2.56))
+        SD_90 = SD_50 / (10**(-stats.norm.ppf(0.9)*np.log10(woehler_curve['1/TS'])/2.56))
 
-        #50%
         self.graph_50 = self.__create_whole_woehler_curve_graph(SD_50, 0.5)
-
-        #10%
         self.graph_10 = self.__create_whole_woehler_curve_graph(SD_10, 0.1)
-
-        #90%
         self.graph_90 = self.__create_whole_woehler_curve_graph(SD_90, 0.9)
 
     def __create_whole_woehler_curve_graph(self, y_lim, pa_goal):
         woehler_curve = self.woehler_curve
         graph_1 = WoehlerCurveGraph(woehler_curve, y_lim, self.y_max)
-        graph_1.points = graph_1.calc_shifted_woehlercurve_points(pa_goal) 
+        graph_1.points = graph_1.calc_shifted_woehlercurve_points(pa_goal)
 
-        woehler_curve_2 = WoehlerCurve({'SD_50': y_lim, '1/TS': woehler_curve.TS, 'ND_50': graph_1.points[-1, -1], 'k_1': self.k_2, '1/TN': woehler_curve.TN})
-        graph_2 = WoehlerCurveGraph(woehler_curve_2, self.y_min, y_lim)                 
-        return np.append(graph_1.points, graph_2.points, axis=0)        
+        woehler_curve_2 = WoehlerCurve({'SD_50': y_lim, '1/TS': woehler_curve['1/TS'], 'ND_50': graph_1.points[-1, -1],
+                                        'k_1': self.k_2, '1/TN': woehler_curve['1/TN']})
+        graph_2 = WoehlerCurveGraph(woehler_curve_2, self.y_min, y_lim)
+        return np.append(graph_1.points, graph_2.points, axis=0)

@@ -17,20 +17,20 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
-import sys, os
+from ..diagrams.woehler_curve_diagrams import WoehlerCurveDiagrams
+from .radio_button_woehler_curve import RadioButtonWoehlerCurve
 
-sys.path.insert(0, os.path.abspath('..\\pylife'))
-
-from pylife.materialdata.woehler.diagrams.woehler_curve_diagrams import WoehlerCurveDiagrams
-from pylife.materialdata.woehler.controls.radio_button_woehler_curve import RadioButtonWoehlerCurve
 
 class WoehlerCurveDataPlotter(RadioButtonWoehlerCurve):
-    def __init__(self, woehler_curve):
+    def __init__(self, woehler_curve, fatigue_data, analyzer):
         self.woehler_curve = woehler_curve
-        self.woehler_curve_diagrams = WoehlerCurveDiagrams(self.woehler_curve)
+        self.woehler_curve_diagrams = WoehlerCurveDiagrams(self.woehler_curve, fatigue_data, analyzer)
         self.woehler_curve_diagrams.plot_initial_data()
-        super().__init__(options=['Initial data', 'Slope', 'Pearl chain method', 'Deviation in load-cycle direction'], description='Plot Type')
-        
+        super().__init__(options=['Initial data',
+                                  'Slope',
+                                  'Pearl chain method',
+                                  'Deviation in load-cycle direction'], description='Plot Type')
+
     def selection_changed_handler(self, change):
         self.clear_selection_change_output()
         if change['new'] == change.owner.options[0]:
@@ -43,5 +43,3 @@ class WoehlerCurveDataPlotter(RadioButtonWoehlerCurve):
             self.woehler_curve_diagrams.plot_deviation()
         else:
             raise AttributeError('Unexpected selection')
-
-

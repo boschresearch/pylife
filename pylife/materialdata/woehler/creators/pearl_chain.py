@@ -8,13 +8,17 @@ import pylife.utils.functions as functions
 
 class PearlChainProbability():
     def __init__(self, fractures, slope):
-        mean_fr_load = fractures.load.mean()
-        self._normed_cycles = np.sort(fractures.cycles * ((mean_fr_load/fractures.load)**(slope)))
+        self._normed_load = fractures.load.mean()
+        self._normed_cycles = np.sort(fractures.cycles * ((self._normed_load/fractures.load)**(slope)))
 
         fp = functions.rossow_cumfreqs(len(self._normed_cycles))
         self._percentiles = stats.norm.ppf(fp)
         self._prob_slope, self._prob_intercept, _, _, _ = stats.linregress(np.log10(self._normed_cycles),
                                                                            self._percentiles)
+
+    @property
+    def normed_load(self):
+        return self._normed_load
 
     @property
     def normed_cycles(self):
