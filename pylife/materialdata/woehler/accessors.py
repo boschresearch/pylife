@@ -33,6 +33,14 @@ class FatigueDataAccessor(signal.PylifeSignal):
         return self._obj[self._obj.fracture == False]
 
     @property
+    def load(self):
+        return self._obj.load
+
+    @property
+    def cycles(self):
+        return self._obj.cycles
+
+    @property
     def fatigue_limit(self):
         if self._fatigue_limit is None:
             self._calc_finite_zone()
