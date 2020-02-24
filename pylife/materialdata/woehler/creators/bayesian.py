@@ -106,7 +106,7 @@ class Bayesian(Elementary):
 
     def _TN_trace(self, chains=3):
         with pm.Model():
-            log_N_shift = np.log10(self._normed_cycles)
+            log_N_shift = np.log10(self._pearl_chain_estimator.normed_cycles)
             stdev = pm.HalfNormal('stdev', sd=1.3)  # sd standard wert (log-normal/ beat Verteilung/exp lambda)
             mu = pm.Normal('mu', mu=log_N_shift.mean(), sd=log_N_shift.std())  # mu könnte von FKM gegeben
             _ = pm.Normal('y', mu=mu, sd=stdev, observed=log_N_shift)  # lognormal
