@@ -3,6 +3,7 @@ from .elementary import Elementary
 import numpy as np
 import scipy.stats as stats
 import pylife.utils.functions as functions
+from pylife.utils.probability_data import ProbabilityFit
 
 
 class Probit(Elementary):
@@ -27,16 +28,19 @@ class Probit(Elementary):
         c3 = np.logical_and(np.logical_not(c1), np.logical_not(c2))
         w = np.where(c3)
         fprobs[w] = (3*frac_num[w] - 1) / (3*tot_num[w] + 1)
+
         return fprobs, inf_groups.load.mean()
 
     def __probit_analysis(self):
         fprobs, load = self.__probit_rossow_estimation()
-        ppf = stats.norm.ppf(fprobs)
-        probit_slope, probit_intercept, _, _, _ = stats.linregress(np.log10(load), ppf)
 
-        TS_inv = functions.std2scatteringRange(1./probit_slope)
+        self._probability_fit = ProbabilityFit(fprobs, load)
 
-        SD_50 = 10**(-probit_intercept/probit_slope)
+        TS_inv = functions.std2scatteringRange(1./self._probability_fit.slope)
+        SD_50 = 10**(-self._probability_fit.intercept/self._probability_fit.slope)
         ND_50 = self._transition_cycles(SD_50)
 
         return TS_inv, SD_50, ND_50
+
+    def fitter(self):
+        return self._probability_fit
