@@ -1,6 +1,7 @@
 __all__ = [ 'stress', 'strength', 'utils' ]
 
 from pylife.core import signal
+from pylife.core.data_validator import DataValidator
 
 from ._version import get_versions
 __version__ = get_versions()['version']
