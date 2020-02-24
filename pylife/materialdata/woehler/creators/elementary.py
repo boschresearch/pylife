@@ -67,7 +67,7 @@ class Elementary:
         '''
         self._pearl_chain_estimator = PearlChainProbability(self._fd.fractures, self._slope)
 
-        TN_inv = functions.std2scatteringRange(1./self._pearl_chain_estimator.probability_slope)
+        TN_inv = functions.std2scatteringRange(1./self._pearl_chain_estimator.slope)
         TS_inv = TN_inv**(1./-self._slope)
 
         return TN_inv, TS_inv
