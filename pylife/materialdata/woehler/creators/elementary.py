@@ -33,6 +33,9 @@ class Elementary:
     def bayesian_information_criterion(self):
         return self._bic
 
+    def pearl_chain_estimator(self):
+        return self._pearl_chain_estimator
+
     def __calc_bic(self, wc):
         ''' Bayesian Information Criterion: is a criterion for model selection among a finite set of models;
         the model with the lowest BIC is preferred.
@@ -62,18 +65,9 @@ class Elementary:
         The shifted data points are assigned to a Rossow failure probability.The scatter in load-cycle
         direction can be computed from the probability net.
         '''
-        fr = self._fd.fractures
+        self._pearl_chain_estimator = PearlChainProbability(self._fd.fractures, self._slope)
 
-        mean_fr_load = fr.load.mean()
-        self._normed_cycles = np.sort(fr.cycles * ((mean_fr_load/fr.load)**(self._slope)))
-
-        fp = functions.rossow_cumfreqs(len(self._normed_cycles))
-        percentiles = stats.norm.ppf(fp)
-        prob_slope, prob_intercept, _, _, _ = stats.linregress(np.log10(self._normed_cycles), percentiles)
-        # Scatter in load cycle direction
-        TN_inv = functions.std2scatteringRange(1./prob_slope)
-        # Scatter in load direction
-        # Empirical method "following Koeder" to estimate the scatter in load direction '
+        TN_inv = functions.std2scatteringRange(1./self._pearl_chain_estimator.probability_slope)
         TS_inv = TN_inv**(1./-self._slope)
 
         return TN_inv, TS_inv
