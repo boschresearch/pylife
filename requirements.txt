@@ -9,3 +9,4 @@ pytables
 jupyter
 matplotlib
 xlrd
+pymc3
