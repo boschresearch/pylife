@@ -217,6 +217,6 @@ def test_bayesian():
     }).sort_index()
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    wc = woehler.Bayesian(fd).analyze().sort_index()
+    wc = woehler.Bayesian(fd).analyze(progressbar=False).sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
