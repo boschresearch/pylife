@@ -68,14 +68,14 @@ class Bayesian(Elementary):
 
             outputs[0][0] = np.array(logl)  # output the log-likelihood
 
-    def _specific_analysis(self, wc, nsamples=1000):
+    def _specific_analysis(self, wc, nsamples=1000, **kw):
         self._nsamples = nsamples
         self._loglike = self._LogLike(Likelihood(self._fd))
         nburn = self._nsamples // 10
 
-        slope_trace = self._slope_trace()
-        TN_trace = self._TN_trace()
-        SD_TS_trace = self._SD_TS_trace()
+        slope_trace = self._slope_trace(**kw)
+        TN_trace = self._TN_trace(**kw)
+        SD_TS_trace = self._SD_TS_trace(**kw)
 
         slope = slope_trace.get_values('x')[nburn:].mean()
         intercept = slope_trace.get_values('Intercept')[nburn:].mean()
@@ -92,7 +92,7 @@ class Bayesian(Elementary):
 
         return pd.Series(res)
 
-    def _slope_trace(self, chains=2):
+    def _slope_trace(self, chains=2, **kw):
         data_dict = {
             'x': np.log10(self._fd.fractures.load),
             'y': np.log10(self._fd.fractures.cycles.to_numpy())
@@ -100,22 +100,22 @@ class Bayesian(Elementary):
         with pm.Model():
             family = pm.glm.families.StudentT()
             pm.glm.GLM.from_formula('y ~ x', data_dict, family=family)
-            trace_robust = pm.sample(self._nsamples, nuts_kwargs={'target_accept': 0.99}, chains=chains, tune=1000)
+            trace_robust = pm.sample(self._nsamples, nuts_kwargs={'target_accept': 0.99}, chains=chains, tune=1000, **kw)
 
             return trace_robust
 
-    def _TN_trace(self, chains=3):
+    def _TN_trace(self, chains=3, **kw):
         with pm.Model():
             log_N_shift = np.log10(self._pearl_chain_estimator.normed_cycles)
             stdev = pm.HalfNormal('stdev', sd=1.3)  # sd standard wert (log-normal/ beat Verteilung/exp lambda)
             mu = pm.Normal('mu', mu=log_N_shift.mean(), sd=log_N_shift.std())  # mu könnte von FKM gegeben
             _ = pm.Normal('y', mu=mu, sd=stdev, observed=log_N_shift)  # lognormal
 
-            trace_TN = pm.sample(self._nsamples, nuts_kwargs={'target_accept': 0.99}, chains=chains, tune=1000)
+            trace_TN = pm.sample(self._nsamples, nuts_kwargs={'target_accept': 0.99}, chains=chains, tune=1000, **kw)
 
         return trace_TN
 
-    def _SD_TS_trace(self, chains=3):
+    def _SD_TS_trace(self, chains=3, **kw):
         with pm.Model():
             inf_load = self._fd.infinite_zone.load
             SD = pm.Normal('SD_50', mu=inf_load.mean(), sd=inf_load.std()*5)
@@ -126,6 +126,6 @@ class Bayesian(Elementary):
 
             pm.DensityDist('likelihood', lambda v: self._loglike(v), observed={'v': var})
 
-            trace_SD_TS = pm.sample(self._nsamples, tune=1000, chains=chains, discard_tuned_samples=True)
+            trace_SD_TS = pm.sample(self._nsamples, tune=1000, chains=chains, discard_tuned_samples=True, **kw)
 
         return trace_SD_TS
