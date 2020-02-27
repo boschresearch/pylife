@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import numpy.testing as testing
 
-import pylife.utils.meshmapping
+import pylife.mesh.meshmapping
 
 
 def points_2d(flen, tlen):

@@ -20,7 +20,7 @@ __maintainer__ = "Johannes Mueller"
 import numpy as np
 import pandas as pd
 
-from pylife.utils.meshsignal import MeshAccessor
+from .meshsignal import MeshAccessor
 
 
 @pd.api.extensions.register_dataframe_accessor('gradient')

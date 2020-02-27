@@ -1,7 +1,7 @@
 
 import pandas as pd
 
-import pylife.utils.hotspot
+import pylife.mesh.hotspot
 
 
 def test_single_hotspot_1d():

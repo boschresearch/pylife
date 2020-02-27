@@ -2,7 +2,7 @@ import pytest
 
 import pandas as pd
 
-import pylife.utils.meshsignal
+import pylife.mesh.meshsignal
 
 
 def test_plain_mesh_3d():
