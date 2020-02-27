@@ -17,7 +17,7 @@
 __author__ = "Daniel Christopher Kreuter"
 __maintainer__ = "Johannes Mueller"
 
-from pylife.utils import meshsignal
+import pylife.mesh.meshsignal as meshsignal
 import pandas as pd
 
 

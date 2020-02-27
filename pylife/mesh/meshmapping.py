@@ -29,7 +29,7 @@ import scipy.interpolate as interp
 import numpy as np
 import pandas as pd
 
-from pylife.utils.meshsignal import PlainMeshAccessor
+from .meshsignal import PlainMeshAccessor
 
 @pd.api.extensions.register_dataframe_accessor('meshmapper')
 class MeshmapperAccessor(PlainMeshAccessor):

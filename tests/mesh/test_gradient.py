@@ -1,5 +1,5 @@
 
-import pylife.stress.gradient
+import pylife.mesh.gradient
 import pandas as pd
 import numpy as np
 
