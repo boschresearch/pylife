@@ -1,33 +1,40 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[76]:
+# In[1]:
 
 
 import numpy as np
 import pandas as pd
 
-from pylife.stress.rainflow import *
-import pylife.strength.meanstress
+from pylife.stress.histogram import *
 import pylife.stress.timesignal as ts
+from pylife.stress.rainflow import *
+import pylife.stress.equistress
+
+import pylife.strength.meanstress
 from pylife.strength import miner
 from pylife.strength.miner import MinerElementar, MinerHaibach
-import matplotlib.pyplot as plt
+from pylife.strength import failure_probability as fp
+
 from pylife.materialdata.woehler.diagram import *
 from pylife.materialdata.woehler.widgets import *
 from pylife.materialdata.woehler.analyzer import *
+
 import pylife.utils.meshplot
-import pylife.stress.equistress
-from scipy.stats import norm
-from pylife.strength import failure_probability as fp
+import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
+import matplotlib as mpl
+
+from scipy.stats import norm
+
 from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
 import io
 from IPython.display import HTML
 import base64 
-import matplotlib as mpl
+
 # mpl.style.use('seaborn')
 # mpl.style.use('seaborn-notebook')
 mpl.style.use('bmh')
@@ -90,7 +97,7 @@ plotChan = widgets.Dropdown(options = file_act.columns)
 display(plotChan)
 
 
-# In[77]:
+# In[7]:
 
 
 get_ipython().run_line_magic('matplotlib', 'notebook')
@@ -149,7 +156,7 @@ for i in range(len(child)):
 tab
 
 
-# In[13]:
+# In[11]:
 
 
 """ Running statistics to drop out zero values """
@@ -165,7 +172,7 @@ for df_act in bandpass:
 # display(cleaned_df)
 
 
-# In[75]:
+# In[12]:
 
 
 get_ipython().run_line_magic('matplotlib', 'notebook')
@@ -179,7 +186,7 @@ for df_act in cleaned:
 
 # ### Rainflow ###
 
-# In[21]:
+# In[13]:
 
 
 rfcChan = widgets.Dropdown(options = df_act.columns)
@@ -188,7 +195,7 @@ binwidget = widgets.IntSlider(value = 64, min=1, max=1024, step=1,description='B
 display(binwidget)
 
 
-# In[49]:
+# In[14]:
 
 
 rainflow = []
@@ -198,7 +205,7 @@ for df_act in cleaned:
     rainflow.append(rfm)
 
 
-# In[74]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'notebook')
@@ -235,7 +242,7 @@ for rf_act in rainflow:
 
 # ### Meanstress transformation ###
 
-# In[78]:
+# In[15]:
 
 
 meanstress_para = ['M', 'M2', 'R_Goal']
@@ -250,7 +257,7 @@ for i in range(len(child)):
 tab_mean
 
 
-# In[79]:
+# In[16]:
 
 
 transformed = []
@@ -262,7 +269,7 @@ for rf_act in rainflow:
 
 # ## Repeating factor
 
-# In[80]:
+# In[17]:
 
 
 child = [widgets.FloatText(description=name) for name in files]
@@ -274,86 +281,98 @@ for i in range(len(child)):
 tab_repeat
 
 
-# In[87]:
+# In[18]:
 
 
 for ii in range(len(files)): 
     transformed[ii] = transformed[ii]*tab_repeat.children[ii].value
-    if ii == 0:
-        transformed_total = transformed[ii]
-    else:
-        transformed_total = pd.concat([transformed_total,transformed[ii]]).sort_index()
-display(transformed_total)    
-#%%
-index_min =  transformed_total.index.left.min()
-index_max =  transformed_total.index.right.max()
-bins = 24
-new_index = pd.interval_range(index_min,index_max,periods= bins)
-test = transformed_total.groupby(pd.cut(transformed_total.index.mid.values,
-                             np.linspace(index_min,index_max,bins))).sum()
-test.index.name = 'range'
-# In[83]:
+range_only_total = combine_hist(transformed,method = "sum")
+display(range_only_total)    
+
+
+# In[19]:
 
 
 get_ipython().run_line_magic('matplotlib', 'notebook')
+fig, ax = plt.subplots(nrows=1, ncols=2,figsize=(10, 5))
+# plot total
+amplitude = range_only_total.index.get_level_values('range').left.values[::-1]/2
+cycles = range_only_total.values[::-1].ravel()
+ax[0].step(cycles,amplitude,c = "black",linewidth = 3, label = "total")
+ax[1].step(np.cumsum(cycles),amplitude,c = "black",linewidth = 3, label = "total")
+ii = 0
 for range_only in transformed:
     amplitude = range_only.index.get_level_values('range').mid.values[::-1]/2
     cycles = range_only.values[::-1].ravel()
-
-    # fig, ax = plt.subplots(nrows=1, ncols=2,figsize=(10, 5))
-    # ax[0].barh(amplitude,np.cumsum(cycles), height = range_only.index.get_level_values('range').length.min())
-    # ax[1].barh(amplitude,cycles, height = range_only.index.get_level_values('range').length.min())
-    # ax[0].set_title('Cumulated sum count')
-    # ax[1].set_title('Count')
-    # for ai in ax:
-    #     ai.xaxis.grid(True)
-    # #     ai.set_xticks([y+1 for y in range(len(all_data))], )
-    #     ai.set_xlabel('count')
-    #     ai.set_ylabel('amplitude of ' + colName)
-    #     ai.set_ylim((0,max(amplitude)))  
+    ax[0].step(cycles,amplitude,label = files [ii])
+    ax[1].step(np.cumsum(cycles),amplitude,label = files [ii])
+    ii += 1
+ax[0].set_title('Count')
+ax[1].set_title('Cumulated sum count')
+ax[1].legend()
+for ai in ax:
+    ai.xaxis.grid(True)
+    ai.set_xlabel('count')
+    ai.set_ylabel('amplitude of ' + rfcChan.value)
+    ai.set_ylim((0,max(amplitude)))  
 
 
 # ## Nominal stress approach ##
 
 # ### Material parameters ###
 
-# In[ ]:
+# In[20]:
 
 
 mat = WL_param()
 display(mat)
 
 
-# In[ ]:
+# In[21]:
 
 
-mat_para, _ = WL_param_display(mat)
-sn_curve_parameters =  {key:mat_para[key] for key in mat_para.keys() - {'TN_inv', 'TS_inv'}} 
-mat_para['TS_inv'] = mat_para['TN_inv']**(1/mat_para['k_1'])
-print(mat_para)
+#mat_para, _ = WL_param_display(mat)
+#sn_curve_parameters =  {key:mat_para[key] for key in mat_para.keys() - {'TN_inv', 'TS_inv'}} 
+#mat_para['TS_inv'] = mat_para['TN_inv']**(1/mat_para['k_1'])
+#print(mat_para)
+sn_curve_parameters = {'ND_50': 1000000.0, 'k_1': 4.0, 'SD_50': 120.0}
 print(sn_curve_parameters)
+#mat_para['1/TN'] = mat_para['TN_inv']
+#mat_para['1/TS'] = mat_para['TS_inv']
 
 
 # ### Damage Calculation ###
 
-# In[ ]:
+# In[22]:
 
 
 SNmethod = widgets.Dropdown(options = ['Miner Elementar','Miner Haibach','Miner original'])
 display(SNmethod)
 
 
-# In[ ]:
+# In[23]:
 
 
-damage_calc = MinerElementar(**sn_curve_parameters)
-data_act = transformed[0]
-range_mid = data_act.index.get_level_values('range').mid.values
-data_finite = data_act[range_mid > sn_curve_parameters['SD_50']][::-1]
-stress_finite = data_finite.index.get_level_values('range').mid.values
-N = damage_calc.sn_curve.calc_N(stress_finite)
-d = np.sum(data_act[range_mid > sn_curve_parameters['SD_50']].values/N)
-print("\033[1m  Total Damage: %.2f  \033[0m" %d) 
+from pylife.strength import sn_curve
+damage_calc = sn_curve.FiniteLifeCurve(**sn_curve_parameters)
+load_values = range_only_total.index.get_level_values('range').mid.values
+cycles_SN = pd.DataFrame(index = range_only_total.index,columns = ['cycles'], data = np.inf)
+
+cycles_SN.loc[load_values > 120,'cycles'] = 1e6 * ( load_values[load_values > 
+                      120] / 120)**(-4)
+
+
+cycles_SN.loc[load_values <= 120,'cycles'] = 1e6 *  (load_values[load_values <= 
+                      120] / 120)**(-(2*4-1))
+damage = damage_calc.calc_damage(range_only_total,method = 'MinerHaibach')
+# data_act = range_only_total
+# range_mid = data_act.index.get_level_values('range').mid.values
+# data_finite = data_act[range_mid > sn_curve_parameters['SD_50']][::-1]
+# stress_finite = data_finite.index.get_level_values('range').mid.values
+# N = damage_calc.sn_curve.calc_N(stress_finite)
+# d = np.sum(data_act[range_mid > sn_curve_parameters['SD_50']].values.ravel()/N)
+# print("\033[1m  Total Damage: %.3e  \033[0m" %d) 
+
 
 
 # In[ ]:
@@ -367,9 +386,11 @@ class wc_data:
         self.loads_max = loads_max
 SRI = mat_para['SD_50']*(mat_para['ND_50']**(1/mat_para['k_1']))
 wc = wc_data(mat_para['k_1'],mat_para['TN_inv'],SRI) 
-_ = PlotWoehlerCurve.final_curve_plot(wc, mat_para['SD_50'], mat_para['ND_50'],mat_para['TS_inv'],0, 
-                                      None,"Amplitude","Load", " ", (1,1e8), (1e1,1e3), 0)
-plt.barh(stress_finite,np.cumsum(data_finite.values), height = data_finite.index.get_level_values('range').length.min())
+_ = PlotWoehlerCurve.final_curve_plot(mat_para, 0,"amp",'ACC', 
+                                      'm/s^2',(1,1e8), (1e2,5e3),
+                                      0)
+# plt.barh(stress_finite,np.cumsum(data_finite.values), height = data_finite.index.get_level_values('range').length.min())
+plt.step(np.cumsum(cycles),2*amplitude)
 
 
 # ## Failure Probaility ##
