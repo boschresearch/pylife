@@ -8,6 +8,7 @@ dependencies:
 - pytables
 - cython
 - matplotlib
+- pymc3
 - jupyter
 - pip
 - pip:
