@@ -136,9 +136,9 @@ class MinerBase:
         self.k_1 = abs(k_1)
         self.SD_50 = abs(SD_50)
         self.sn_curve = FiniteLifeCurve(
-            k=self.k_1,
-            S_d=self.SD_50,
-            N_e=self.ND_50
+            k_1=self.k_1,
+            SD_50=self.SD_50,
+            ND_50=self.ND_50
         )
 
     def setup(self, collective):

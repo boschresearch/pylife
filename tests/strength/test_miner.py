@@ -19,31 +19,31 @@ from pylife.stress.timesignal import TimeSignalGenerator
 
 # parameters for the example given in Haibach2006
 sn_curve_parameters_haibach = {
-    "N_D": 1E6,
-    "k": 4,
-    "sigma_ak": 100
+    "ND_50": 1E6,
+    "k_1": 4,
+    "SD_50": 100
 }
 # parameters for the example given in Haibach2006
 sn_curve_parameters_elementar = {
-    "N_D": 2E6,
-    "k": 7,
-    "sigma_ak": 125
+    "ND_50": 2E6,
+    "k_1": 7,
+    "SD_50": 125
 }
 
 
 @pytest.fixture(scope="module")
 def miner_base():
-    return miner.MinerBase(N_D=10**6, k=5, sigma_ak=200)
+    return miner.MinerBase(ND_50=10**6, k_1=5, SD_50=200)
 
 
 @pytest.fixture(scope="module")
 def miner_elementar():
-    return miner.MinerElementar(N_D=10**6, k=6, sigma_ak=200)
+    return miner.MinerElementar(ND_50=10**6, k_1=6, SD_50=200)
 
 
 @pytest.fixture(scope="function")
 def miner_haibach():
-    m = miner.MinerHaibach(N_D=10**6, k=6, sigma_ak=200)
+    m = miner.MinerHaibach(ND_50=10**6, k_1=6, SD_50=200)
     m.setup(collective)
     return m
 
@@ -84,13 +84,13 @@ class TestMinerBase:
 
     def test_init(self, miner_base):
         """Dummy test case for demonstration"""
-        assert miner_base.N_D == pytest.approx(10**6)
+        assert miner_base.ND_50 == pytest.approx(10**6)
 
         with pytest.raises(TypeError):
-            miner.MinerBase(N_D="str", k="str", sigma_ak="str")
+            miner.MinerBase(ND_50="str", k_1="str", SD_50="str")
 
         with pytest.raises(ValueError):
-            miner.MinerBase(N_D=15, k=10, sigma_ak=200)
+            miner.MinerBase(ND_50=15, k_1=10, SD_50=200)
 
     def test__parse_collective_splitting_of_array(self, miner_base):
         miner_base._parse_collective(self.coll)
@@ -140,9 +140,9 @@ class TestMinerElementar:
         assert H0 == pytest.approx(190733.0)
         assert H0 == pytest.approx(miner_elementar.H0)
         # calculation of Zeitfestigkeitsfaktor
-        # N_D = 10**6
+        # ND_50 = 10**6
         # k = 6
-        z = 1.3180413239445 # = (N_D / H0)**(1. / k)
+        z = 1.3180413239445 # = (ND_50 / H0)**(1. / k)
         assert miner_elementar.zeitfestigkeitsfaktor_collective == pytest.approx(z)
 
     def test_A(self, miner_elementar):
@@ -170,7 +170,7 @@ class TestMinerElementar:
         load_level = 400
         A = miner_elementar.calc_A(self.coll)
         N_woehler_load_level = (
-            miner_elementar.N_D * (load_level / miner_elementar.sigma_ak)**(-miner_elementar.k)
+            miner_elementar.ND_50 * (load_level / miner_elementar.SD_50)**(-miner_elementar.k_1)
         )
         N_predict = N_woehler_load_level * A
         assert miner_elementar.N_predict(load_level, A) == pytest.approx(N_predict)
@@ -195,12 +195,12 @@ class TestMinerElementar:
 
 class TestMinerHaibach:
     def test_calc_A_no_collective_specified(self):
-        m = miner.MinerHaibach(N_D=10**6, k=5, sigma_ak=200)
+        m = miner.MinerHaibach(ND_50=10**6, k_1=5, SD_50=200)
         with pytest.raises(RuntimeError):
             m.calc_A(load_level=240)
 
-    def test_calc_A_load_level_smaller_N_D(self, miner_haibach):
-        A = miner_haibach.calc_A(load_level=(miner_haibach.sigma_ak/ 2.))
+    def test_calc_A_load_level_smaller_ND_50(self, miner_haibach):
+        A = miner_haibach.calc_A(load_level=(miner_haibach.SD_50/ 2.))
         assert A == np.inf
 
     def test_calc_A_split_damage_regions(self, miner_haibach):
@@ -223,7 +223,7 @@ class TestMinerHaibach:
     def test_N_predict(self, miner_haibach):
         load_level = 400
         N_woehler_load_level = (
-            miner_haibach.N_D * (load_level / miner_haibach.sigma_ak)**(-miner_haibach.k)
+            miner_haibach.ND_50 * (load_level / miner_haibach.SD_50)**(-miner_haibach.k_1)
         )
         A = miner_haibach.calc_A(load_level)
         N_predict = N_woehler_load_level * A
