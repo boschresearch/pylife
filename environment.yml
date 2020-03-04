@@ -1,0 +1,14 @@
+name: pylife
+dependencies:
+- python >2
+- numpy
+- pytest
+- scipy
+- pandas
+- pytables
+- cython
+- matplotlib
+- jupyter
+- pip
+- pip:
+  - mystic
