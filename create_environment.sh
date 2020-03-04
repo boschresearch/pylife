@@ -20,6 +20,8 @@ if [[ `uname` != Linux ]] ; then
     conda install pywin32
 fi
 
+python setup.py develop
+
 conda deactivate
 
 shopt -q login_shell && read -n1 -r -p "Press any key to continue..." key
