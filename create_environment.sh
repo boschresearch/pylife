@@ -7,7 +7,7 @@ git config filter.jupyter_clean.clean \
 if [[ `uname` = Linux ]] ; then
     . $ANACONDA_HOME/etc/profile.d/conda.sh
 else
-    eval $('/c/Program Files/Anaconda3/Scripts/conda.exe' 'shell_bash', 'hook')
+    eval "$('/c/Program Files/Anaconda3/Scripts/conda.exe' 'shell.bash' 'hook')"
 fi
 
 python_version=`head -1 requirements.txt`
