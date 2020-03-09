@@ -30,10 +30,9 @@ pipeline {
         stage('Pip install') {
             steps {
                 // Using proxy user credentials
-                withCredentials([usernameColonPassword(credentialsId: 'TECH_USER', variable: 'PASS')]) {
-                    bat 'conda activate %VENV_NAME%'
-                    bat 'pip install -r requirements_PIP.txt --proxy http://%PASS%@rb-proxy-de.bosch.com:8080 --user'
-                }
+                bat 'conda activate %VENV_NAME%'
+                bat 'pip install -r requirements_PIP.txt'
+
             }
         }        
     }
