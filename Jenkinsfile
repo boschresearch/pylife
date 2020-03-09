@@ -4,7 +4,7 @@ pipeline {
         VENV_NAME = '_pyLife'
     }
     // Discard the old builds and artifacts
-	options {
+    options {
       buildDiscarder logRotator(
           artifactDaysToKeepStr: '30', 
           artifactNumToKeepStr: '1', 
