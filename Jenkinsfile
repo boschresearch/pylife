@@ -3,6 +3,10 @@ pipeline {
     agent {
         label 'master'
     }
+    // Default python project settings (EDITABLE)
+    environment {
+        VENV_NAME = '_pyLife'
+    }    
     // Discard the old builds and artifacts
     options {
       buildDiscarder logRotator(
@@ -18,8 +22,8 @@ pipeline {
         stage('Prepare Python env') {
             steps {
                 bat 'set PATH'
-                bat 'conda env remove -n _pyLife'
-                bat 'conda create -y -n _pyLife --file ./requirements_CONDA.txt'
+                bat 'conda env remove -n %VENV_NAME%'
+                bat 'conda create -y -n %VENV_NAME% --file ./requirements_CONDA.txt'
             }
         }
         // Install python packages with pip to the already created python environment
@@ -28,7 +32,7 @@ pipeline {
                 // Using proxy user credentials
                 withCredentials([usernameColonPassword(credentialsId: 'PROXY_ID', variable: 'PASS')]) {
                     bat 'activate %VENV_NAME%'
-                    bat 'pip install -r %REQUIREMENTS_PATH% --proxy http://%PASS%@rb-proxy-de.bosch.com:8080 --user'
+                    bat 'pip install -r requirements_PIP.txt --proxy http://%PASS%@rb-proxy-de.bosch.com:8080 --user'
                 }
             }
         }        
