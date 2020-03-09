@@ -1,14 +1,18 @@
 #!/bin/bash
 
-git config filter.jupyter_clean.clean \
-    "`git rev-parse --show-toplevel`/_venv/bin/jupyter nbconvert \
-    --stdin --stdout --to notebook --ClearOutputPreprocessor.enabled=True"
 
 if [[ `uname` = Linux ]] ; then
+    JUPYTER=`git rev-parse --show-toplevel`/_venv/bin/jupyter
     . $ANACONDA_HOME/etc/profile.d/conda.sh
 else
+    JUPYTER=`git rev-parse --show-toplevel`/_venv/Scripts/jupyter
     eval "$('/c/Program Files/Anaconda3/Scripts/conda.exe' 'shell.bash' 'hook')"
 fi
+
+git config filter.jupyter_clean.clean \
+    "$JUPYTER nbconvert \
+    --stdin --stdout --to notebook --ClearOutputPreprocessor.enabled=True"
+
 
 python_version=`head -1 requirements.txt`
 
