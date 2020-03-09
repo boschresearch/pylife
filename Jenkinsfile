@@ -1,8 +1,4 @@
 pipeline {
-    // Default python project settings (EDITABLE)
-    environment {
-        VENV_NAME = '_pyLife'
-    }
     // Discard the old builds and artifacts
     options {
       buildDiscarder logRotator(
@@ -18,8 +14,8 @@ pipeline {
         stage('Prepare Python env') {
             steps {
                 bat 'set PATH'
-                bat 'conda env remove -n %VENV_NAME%'
-                bat 'conda create -n %VENV_NAME%' --file ./requirements_CONDA.txt
+                bat 'conda env remove -n _pyLife'
+                bat 'conda create -n _pyLife --file ./requirements_CONDA.txt'
             }
         }
     }
