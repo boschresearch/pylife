@@ -135,8 +135,8 @@ class TimeSignalPrep:
 
 #        dfResample.index =  np.arange(self.df.index.min(),self.df.index.max(),1/sample_rate_new)
         index_new =  np.linspace(self.df.index.min(),
-                      self.df.index.min() + np.floor((self.df.index.max()-self.df.index.min())*sample_rate_new)/sample_rate_new,
-                      (self.df.index.max()-self.df.index.min())*sample_rate_new + 1)
+                                 self.df.index.min() + np.floor((self.df.index.max()-self.df.index.min())*sample_rate_new)/sample_rate_new,
+                                 int(np.floor(self.df.index.max()-self.df.index.min())*sample_rate_new + 1))
         dfResample = pd.DataFrame(index = index_new)
         for colakt in self.df.columns:
             dfResample[colakt] = np.interp(dfResample.index,self.df.index,self.df[colakt])
