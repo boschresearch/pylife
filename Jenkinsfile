@@ -19,8 +19,18 @@ pipeline {
             steps {
                 bat 'set PATH'
                 bat 'conda env remove -n _pyLife'
-                bat 'conda create -n _pyLife --file ./requirements_CONDA.txt'
+                bat 'conda create -y -n _pyLife --file ./requirements_CONDA.txt'
             }
         }
+        // Install python packages with pip to the already created python environment
+        stage('Pip install') {
+            steps {
+                // Using proxy user credentials
+                withCredentials([usernameColonPassword(credentialsId: 'PROXY_ID', variable: 'PASS')]) {
+                    bat 'activate %VENV_NAME%'
+                    bat 'pip install -r %REQUIREMENTS_PATH% --proxy http://%PASS%@rb-proxy-de.bosch.com:8080 --user'
+                }
+            }
+        }        
     }
 }
