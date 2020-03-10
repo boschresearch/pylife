@@ -3,11 +3,6 @@ pipeline {
     agent {
         label 'master'
     }
-    // Default python project settings (EDITABLE)
-    environment {
-        VENV_NAME = '_pyLife'
-        BATCH_FOLDER = '/batch_script'
-    }    
     // Discard the old builds and artifacts
     options {
       buildDiscarder logRotator(
@@ -28,8 +23,8 @@ pipeline {
         // Test Python packages with PyTest
         stage('PyTest & Code coverage') {
             steps {
-                    bat '/batch_scripts/jenkins.bat'
+                bat 'batch_scripts/jenkins.bat'
             }
-        }               
-    }    
+        }
+    }
 }
