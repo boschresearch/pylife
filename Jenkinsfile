@@ -6,6 +6,7 @@ pipeline {
     // Default python project settings (EDITABLE)
     environment {
         VENV_NAME = '_pyLife'
+        BATCH_FOLDER = '/batch_script'
     }    
     // Discard the old builds and artifacts
     options {
@@ -21,20 +22,8 @@ pipeline {
         // Create a new Anaconda python virtual environment and set proxy variables
         stage('Prepare Python env') {
             steps {
-                bat 'set PATH'
-                bat 'cd pylife'
-                bat 'conda env remove -n %VENV_NAME%'
-                bat 'conda create -y -n %VENV_NAME% --file ./requirements_CONDA.txt'
+                bat 'install_pylife.bat'
             }
-        }
-        // Install python packages with pip to the already created python environment
-        stage('Pip install') {
-            steps {
-                // Using proxy user credentials
-                bat 'conda activate %VENV_NAME%'
-                bat 'pip install -r requirements_PIP.txt'
-
-            }
-        }        
+        }       
     }
 }
