@@ -22,6 +22,7 @@ pipeline {
         stage('Prepare Python env') {
             steps {
                 bat 'set PATH'
+                bat 'cd pylife'
                 bat 'conda env remove -n %VENV_NAME%'
                 bat 'conda create -y -n %VENV_NAME% --file ./requirements_CONDA.txt'
             }
