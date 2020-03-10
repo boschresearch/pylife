@@ -28,7 +28,7 @@ pipeline {
         // Test Python packages with PyTest
         stage('PyTest & Code coverage') {
             steps {
-                    bat 'jenkins.cmd'
+                    bat 'batch_scripts/jenkins.bat'
             }
         }               
     }    
