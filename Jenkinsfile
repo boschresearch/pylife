@@ -19,11 +19,17 @@ pipeline {
     }
     // Build stages
     stages {
-        // Create a new Anaconda python virtual environment and set proxy variables
+        // Create a new Anaconda python virtual environment and install PIP packages
         stage('Prepare Python env') {
             steps {
                 bat 'install_pylife.bat'
             }
-        }       
-    }
+        }
+        // Test Python packages with PyTest
+        stage('PyTest & Code coverage') {
+            steps {
+                    bat 'jenkins.cmd'
+            }
+        }               
+    }    
 }
