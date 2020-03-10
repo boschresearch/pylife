@@ -1,7 +1,7 @@
-call conda env remove --name _pylife
+call conda env remove -p ./_venv
 
-call conda create -y -n _pylife --file requirements_CONDA.txt
+call conda create -y -p _venv --file requirements_CONDA.txt
 
-call conda activate _pylife
+call conda activate ./_venv
 
 call pip install -r requirements_PIP.txt
