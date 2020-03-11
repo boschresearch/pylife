@@ -26,5 +26,27 @@ pipeline {
                 bat 'batch_scripts/jenkins.bat'
             }
         }
+        // Static code analysis with Flake8
+        stage('Flake8') {
+            steps {
+                bat 'run_code_analysis.bat'
+            }
+        }
+        // Publish Test results with MSTest
+        stage('Publish Test Results') {
+            steps {
+                // JUnit Test results
+                junit 'junit_result.xml'
+
+                // Test Coverage results
+                publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'code_coverage.xml')], failNoReports: true, sourceFileResolver: sourceFiles('NEVER_STORE')
+            }
+        }
+        // Clean up the Python virtual environment
+        stage('Clean env') {
+            steps {
+                bat 'conda env remove -p ./_venv'
+            }
+        }                        
     }
 }
