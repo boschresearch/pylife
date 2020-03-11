@@ -29,7 +29,7 @@ pipeline {
         // Static code analysis with Flake8
         stage('Flake8') {
             steps {
-                bat 'run_code_analysis.bat'
+                bat 'batch_scripts/run_code_analysis.bat'
             }
         }
         // Publish Test results with MSTest
