@@ -23,7 +23,7 @@ pipeline {
         // Test Python packages with PyTest
         stage('PyTest & Code coverage') {
             steps {
-                bat 'batch_scripts/jenkins.bat'
+                bat 'batch_scripts/run_pylife_tests.bat'
             }
         }
         // Static code analysis with Flake8
