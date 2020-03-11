@@ -29,9 +29,11 @@ There are/will be the following subpackages:
 	* failure probability estimation
 	* S-N-calculations
 	* ...
-* `util` all the more general utilities
+* `mesh` FEM mesh related stuff
+    * stress gradients
 	* FEM-mapping
 	* hotspot detection
+* `util` all the more general utilities
 	* ...
 
 
