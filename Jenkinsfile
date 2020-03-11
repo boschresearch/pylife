@@ -49,4 +49,20 @@ pipeline {
             }
         }                        
     }
+    // Post-build actions
+    post {
+        always {
+            // Sending emails to developers & Culprits & Requester
+            script {
+                emailext body: '''${SCRIPT, template="groovy-html.template"}''',
+                mimeType: 'text/html',
+                subject: "[Jenkins] ${currentBuild.result}: '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
+                recipientProviders: [
+                    [$class: 'CulpritsRecipientProvider'], 
+                    [$class: 'DevelopersRecipientProvider'], 
+                    [$class: 'RequesterRecipientProvider']
+                ]
+            }
+        }
+    }    
 }
