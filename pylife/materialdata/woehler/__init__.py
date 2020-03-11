@@ -5,7 +5,7 @@ from .accessors import \
     WoehlerCurveAccessor, \
     determine_fractures
 
-from .creators.elementary import Elementary
-from .creators.probit import Probit
-from .creators.maxlike import MaxLikeInf, MaxLikeFull
-from .creators.bayesian import Bayesian
+from .analyzers.elementary import Elementary
+from .analyzers.probit import Probit
+from .analyzers.maxlike import MaxLikeInf, MaxLikeFull
+from .analyzers.bayesian import Bayesian
