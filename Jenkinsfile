@@ -1,8 +1,6 @@
 pipeline {
     // Which Build Node?
-    agent {
-        label 'master'
-    }
+    agent any
     // Discard the old builds and artifacts
     options {
       buildDiscarder logRotator(
