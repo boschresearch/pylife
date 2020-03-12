@@ -1,4 +1,4 @@
-# Installation of pyLife  
+# Installation of pyLife 
 
 For now we only have the python code repos, no pip or conda packages yet, sorry.
 
