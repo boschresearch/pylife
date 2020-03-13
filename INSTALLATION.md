@@ -17,7 +17,7 @@ or pip to set up the python environment.
 
 Create an anaconda environment with all the requirements by running
 ```
-./create_environment.sh
+./install_pylife_linux.sh
 ```
 which will take a couple of minutes, sorry.
 
