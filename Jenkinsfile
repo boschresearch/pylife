@@ -15,7 +15,7 @@ pipeline {
         // Create a new Anaconda python virtual environment and install PIP packages
         stage('Prepare Python env') {
             steps {
-                bat 'install_pylife.bat'
+                bat 'install_pylife_win.bat'
             }
         }
         // Test Python packages with PyTest
