@@ -75,11 +75,15 @@ class CyclicStressAccessor(signal.PylifeSignal):
 
         if 'sigma_a' in obj.columns and 'R' in obj.columns:
             obj['sigma_m'] = obj['sigma_a']*(1.+obj.R)/(1.-obj.R)
-        elif 'sigma_a' in obj.columns and 'sigma_m' not in obj.columns:
+            obj.loc[obj['R'] == -np.inf, 'sigma_m'] = -obj.sigma_a
+            return True
+        if 'sigma_a' in obj.columns and 'sigma_m' in obj.columns:
+            return True
+        if 'sigma_a' in obj.columns:
             obj['sigma_m'] = np.zeros_like(obj['sigma_a'].to_numpy())
         else:
             validator.fail_if_key_missing(obj, ['sigma_m', 'sigma_a'])
-        return True 
+        return True
 
     def constant_R(self, R):
         ''' Sets `sigma_m` in a way that `R` is a constant value.
