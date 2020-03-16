@@ -39,12 +39,6 @@ pipeline {
                 // Test Coverage results
                 publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'coverage_report.xml')], failNoReports: true, sourceFileResolver: sourceFiles('NEVER_STORE')
             }
-        }
-        // Clean up the Python virtual environment
-        stage('Clean env') {
-            steps {
-                bat 'conda env remove -p ./_venv'
-            }
         }                        
     }
     // Post-build actions
