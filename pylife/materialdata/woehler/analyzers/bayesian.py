@@ -126,6 +126,6 @@ class Bayesian(Elementary):
 
             pm.DensityDist('likelihood', lambda v: self._loglike(v), observed={'v': var})
 
-            trace_SD_TS = pm.sample(self._nsamples, tune=1000, chains=chains, discard_tuned_samples=True, **kw)
+            trace_SD_TS = pm.sample(self._nsamples, cores=1, tune=1000, chains=chains, discard_tuned_samples=True, **kw)
 
         return trace_SD_TS
