@@ -50,7 +50,7 @@ def test_FKM_goodman_plain_sm():
 
     R_goal = -1.
     res = MST.FKM_goodman(Sa, Sm, M, M/3, R_goal)
-    np.testing.assert_array_equal(res, np.ones_like(res))
+    np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
     Sm = np.array([5])
     Sa = np.array([0])
@@ -65,7 +65,7 @@ def test_FKM_goodman_single_M_sm():
     R_goal = -1.
 
     res = cyclic_signal.meanstress_mesh.FKM_goodman(pd.Series({ 'M':M, 'M2':M/3 }), R_goal).sigma_a
-    np.testing.assert_array_equal(res, np.ones_like(res))
+    np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
 
 def test_FKM_goodman_single_M_R():
@@ -75,7 +75,7 @@ def test_FKM_goodman_single_M_R():
     R_goal = -1.
 
     res = cyclic_signal.meanstress_mesh.FKM_goodman(pd.Series({ 'M':M, 'M2':M/3 }), R_goal).sigma_a
-    np.testing.assert_array_equal(res, np.ones_like(res))
+    np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
 
 def test_FKM_goodman_multiple_M_sm():
@@ -84,7 +84,7 @@ def test_FKM_goodman_multiple_M_sm():
 
     R_goal = -1.
     res = cyclic_signal.meanstress_mesh.FKM_goodman(pd.DataFrame({ 'M':[M]*7, 'M2':[M/3]*7, }), R_goal).sigma_a
-    np.testing.assert_array_equal(res, np.ones_like(res))
+    np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
 
 def test_FKM_goodman_multiple_M_sm():
@@ -93,7 +93,7 @@ def test_FKM_goodman_multiple_M_sm():
 
     R_goal = -1.
     res = cyclic_signal.meanstress_mesh.FKM_goodman(pd.DataFrame({ 'M':[M]*7, 'M2':[M/3]*7, }), R_goal).sigma_a
-    np.testing.assert_array_equal(res, np.ones_like(res))
+    np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
 
 def test_five_segment_plain_sm():
@@ -182,4 +182,4 @@ def test_five_segment_multiple_M_sm():
         'M0': [M0]*11, 'M1': [M1]*11, 'M2': [M2]*11, 'M3': [M3]*11, 'M4': [M4]*11,
         'R12': [R12]*11, 'R23': [R23]*11
     }), R_goal).sigma_a
-    np.testing.assert_array_equal(res, np.ones_like(res))
+    np.testing.assert_array_almost_equal(res, np.ones_like(res))

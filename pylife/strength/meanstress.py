@@ -211,8 +211,8 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
 
     ignored_states = np.seterr(**old_err_state)
 
-    #R12 = np.broadcast_to(R12, Sa.shape)
-    #R23 = np.broadcast_to(R23, Sa.shape)
+    R12 = np.broadcast_to(R12, Sa.shape)
+    R23 = np.broadcast_to(R23, Sa.shape)
 
     c4 = np.where(R > 1.)
     c0 = np.where(R <= 0.)
@@ -220,18 +220,18 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
     c2 = np.where((R > R12) & (R <= R23))
     c3 = np.where((R > R23) & (R < 1.))
 
-#    M0 = np.broadcast_to(M0, c0[0].shape)
-#    M1 = np.broadcast_to(M1, c1[0].shape)
-#    M2 = np.broadcast_to(M2, c2[0].shape)
-#    M3 = np.broadcast_to(M3, c3[0].shape)
-#    M4 = np.broadcast_to(M4, c4[0].shape)
+    M0 = np.broadcast_to(M0, Sa.shape)
+    M1 = np.broadcast_to(M1, Sa.shape)
+    M2 = np.broadcast_to(M2, Sa.shape)
+    M3 = np.broadcast_to(M3, Sa.shape)
+    M4 = np.broadcast_to(M4, Sa.shape)
 
     Ma = np.zeros_like(Sa)
-    Ma[c0] = M0
-    Ma[c1] = M1
-    Ma[c2] = M2
-    Ma[c3] = M3
-    Ma[c4] = M4
+    Ma[c0] = M0[c0]
+    Ma[c1] = M1[c1]
+    Ma[c2] = M2[c2]
+    Ma[c3] = M3[c3]
+    Ma[c4] = M4[c4]
 
     S_inf = np.zeros_like(Sa)
     S_0 = np.zeros_like(Sa)
@@ -247,19 +247,19 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
     r23 = np.append(c2, c3)
 
     S_inf[r4] = (Sa[r4]+Sm[r4]*Ma[r4])/(1.-Ma[r4])
-    S_0[r4] = S_inf[r4]*(1.-M0)/(1.+M0)
-    S_12[r4] = S_0[r4]*(1.+M1)/(1.+M1*B_12)
-    S_23[r4] = S_12[r4]*(1.+M2*B_12)/(1.+M2*B_23)
+    S_0[r4] = S_inf[r4]*(1.-M0[r4])/(1.+M0[r4])
+    S_12[r4] = S_0[r4]*(1.+M1[r4])/(1.+M1[r4]*B_12[r4])
+    S_23[r4] = S_12[r4]*(1.+M2[r4]*B_12[r4])/(1.+M2[r4]*B_23[r4])
 
     S_0[r] = (Sa[r]+Sm[r]*Ma[r])/(1.+Ma[r])
-    S_inf[r] = S_0[r]*(1.+M0)/(1.-M0)
-    S_12[r] = S_0[r]*(1.+M1)/(1.+M1*B_12)
-    S_23[r] = S_12[r]*(1.+M2*B_12)/(1.+M2*B_23)
+    S_inf[r] = S_0[r]*(1.+M0[r])/(1.-M0[r])
+    S_12[r] = S_0[r]*(1.+M1[r])/(1.+M1[r]*B_12[r])
+    S_23[r] = S_12[r]*(1.+M2[r]*B_12[r])/(1.+M2[r]*B_23[r])
 
-    S_23[r23] = (Sa[r23]+Sm[r23]*Ma[r23])/(1.+Ma[r23]*B_23)
-    S_12[r23] = S_23[r23]*(1.+M2*B_23)/(1.+M2*B_12)
-    S_0[r23] = S_12[r23]*(1.+M1*B_12)/(1.+M1)
-    S_inf[r23] = S_0[r23]*(1.+M0)/(1.-M0)
+    S_23[r23] = (Sa[r23]+Sm[r23]*Ma[r23])/(1.+Ma[r23]*B_23[r23])
+    S_12[r23] = S_23[r23]*(1.+M2[r23]*B_23[r23])/(1.+M2[r23]*B_12[r23])
+    S_0[r23] = S_12[r23]*(1.+M1[r23]*B_12[r23])/(1.+M1[r23])
+    S_inf[r23] = S_0[r23]*(1.+M0[r23])/(1.-M0[r23])
 
     if R_goal == 0.0:
         return S_0
