@@ -20,13 +20,13 @@ __maintainer__ = "Johannes Mueller"
 import ipywidgets as widgets
 from IPython.display import display
 
-from ..creators.maxlike import MaxLikeInf, MaxLikeFull
-from ..creators.probit import Probit
-from ..creators.bayesian import Bayesian
+from ..analyzers.maxlike import MaxLikeInf, MaxLikeFull
+from ..analyzers.probit import Probit
+from ..analyzers.bayesian import Bayesian
 from .radio_button_woehler_curve import RadioButtonWoehlerCurve
 
 
-class WoehlerCurveCreatorOptions(RadioButtonWoehlerCurve):
+class WoehlerCurveAnalyzerOptions(RadioButtonWoehlerCurve):
     def __init__(self, df):
         self.woehler_curve = None
         self._df = df
