@@ -2,6 +2,7 @@
 
 import sys, os, copy
 import warnings
+import pytest
 
 import numpy as np
 import pandas as pd
@@ -183,3 +184,49 @@ def test_five_segment_multiple_M_sm():
         'R12': [R12]*11, 'R23': [R23]*11
     }), R_goal).sigma_a
     np.testing.assert_array_almost_equal(res, np.ones_like(res))
+
+
+@pytest.mark.parametrize("R_goal, expected", [ # all calculated by pencil on paper
+    (-1., 2.0),
+    (0., 4./3.),
+    (-1./3., 8./5.),
+    (1./3., 14./12.)
+])
+def test_FKM_goodman_hist_range_mean(R_goal, expected):
+    rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
+    mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
+
+    df = pd.DataFrame({'frequency': np.zeros(24*24)}, index=pd.MultiIndex.from_product([rg,mn], names=['range', 'mean']))
+    df.loc[(7./6. - 1./24., 7./6.)] = 1.
+    df.loc[(4./3. - 1./24., 2./3.)] = 3.
+    df.loc[(2. - 1./24., 0.)] = 5.
+
+    haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
+    res = df.meanstress_hist.FKM_goodman(haigh, R_goal)
+
+    test_interval = pd.Interval(expected-1./96., expected+1./96.)
+    assert res.loc[res.index.overlaps(test_interval), 'frequency'].sum() == 9
+    assert res.loc[np.logical_not(res.index.overlaps(test_interval)), 'frequency'].sum() == 0
+
+
+@pytest.mark.parametrize("R_goal, expected", [ # all calculated by pencil on paper
+    (-1., 2.0),
+    (0., 4./3.),
+    (-1./3., 8./5.),
+    (1./3., 14./12.)
+])
+def test_FKM_goodman_hist_from_to_R1(R_goal, expected):
+    fr = pd.IntervalIndex.from_breaks(np.linspace(-1., 1., 49), closed='left')
+    to = pd.IntervalIndex.from_breaks(np.linspace(0, 2., 49), closed='left')
+
+    df = pd.DataFrame({'frequency': np.zeros(48*48)}, index=pd.MultiIndex.from_product([fr,to], names=['from', 'to']))
+    df.loc[(14./24., 21./12.)] = 1
+    df.loc[(0., 4./3.)] = 3
+    df.loc[(-1., 1.)] = 5
+
+    haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
+    res = df.meanstress_hist.FKM_goodman(haigh, R_goal)
+
+    test_interval = pd.Interval(expected-1./96., expected+1./96.)
+    assert res.loc[res.index.overlaps(test_interval), 'frequency'].sum() == 9
+    assert res.loc[np.logical_not(res.index.overlaps(test_interval)), 'frequency'].sum() == 0
