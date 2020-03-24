@@ -215,7 +215,7 @@ def test_FKM_goodman_hist_range_mean(R_goal, expected):
     (-1./3., 8./5.),
     (1./3., 14./12.)
 ])
-def test_FKM_goodman_hist_from_to_R1(R_goal, expected):
+def test_FKM_goodman_hist_from_to(R_goal, expected):
     fr = pd.IntervalIndex.from_breaks(np.linspace(-1., 1., 49), closed='left')
     to = pd.IntervalIndex.from_breaks(np.linspace(0, 2., 49), closed='left')
 
@@ -230,3 +230,54 @@ def test_FKM_goodman_hist_from_to_R1(R_goal, expected):
     test_interval = pd.Interval(expected-1./96., expected+1./96.)
     assert res.loc[res.index.overlaps(test_interval), 'frequency'].sum() == 9
     assert res.loc[np.logical_not(res.index.overlaps(test_interval)), 'frequency'].sum() == 0
+
+
+@pytest.mark.parametrize("R_goal, expected", [ # all calculated by pencil on paper
+    (-1., 2.0),
+    (0., 4./3.),
+    (-1./3., 8./5.),
+    (1./3., 14./12.)
+])
+def test_FKM_goodman_hist_range_mean_nonzero(R_goal, expected):
+    rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
+    mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
+
+    df = pd.DataFrame({'frequency': np.zeros(24*24)}, index=pd.MultiIndex.from_product([rg,mn], names=['range', 'mean']))
+    df.loc[(7./6., 7./6.)] = 1.
+    df.loc[(4./3., 2./3.)] = 3.
+    df.loc[(2.-1./96., 0.)] = 5.
+
+    haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
+    res = df[df.values > 0].meanstress_hist.FKM_goodman(haigh, R_goal)
+
+    test_interval = pd.Interval(expected-1./96., expected+1./96.)
+    print(df[df.values > 0])
+    print(df.meanstress_hist.FKM_goodman(haigh, R_goal))
+    print(res)
+    assert res.loc[res.index.overlaps(test_interval), 'frequency'].sum() == 9
+    assert res.loc[np.logical_not(res.index.overlaps(test_interval)), 'frequency'].sum() == 0
+
+
+def test_null_histogram():
+    rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
+    mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
+
+    df = pd.DataFrame({'frequency': np.zeros(24*24, dtype=np.int)}, index=pd.MultiIndex.from_product([rg,mn], names=['from', 'to']))
+    haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
+    res = df.meanstress_hist.FKM_goodman(haigh, -1)
+
+    assert not res['frequency'].any()
+
+
+def test_full_histogram():
+    rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
+    mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
+
+    df = pd.DataFrame({'frequency': np.linspace(1, 576, 576, dtype=np.int)}, index=pd.MultiIndex.from_product([rg,mn], names=['from', 'to']))
+    haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
+    res = df.meanstress_hist.FKM_goodman(haigh, -1)
+
+    print(df)
+    print(res)
+    print(res['frequency'].sum() - df['frequency'].sum())
+    assert res['frequency'].sum() == df['frequency'].sum()
