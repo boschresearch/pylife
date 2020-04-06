@@ -18,6 +18,7 @@ __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
 import numpy as np
+import pandas as pd
 from scipy import stats
 
 from .woehler_curve_graph import WoehlerCurveGraph
@@ -38,13 +39,13 @@ class WholeWoehlerCurveGraph:
         self.graph_10 = self.__create_whole_woehler_curve_graph(SD_10, 0.1)
         self.graph_90 = self.__create_whole_woehler_curve_graph(SD_90, 0.9)
 
+
     def __create_whole_woehler_curve_graph(self, y_lim, pa_goal):
         woehler_curve = self.woehler_curve
-        graph_1 = WoehlerCurveGraph(woehler_curve, y_lim, self.y_max)
-        graph_1.points = graph_1.calc_shifted_woehlercurve_points(pa_goal)
+        graph_1 = WoehlerCurveGraph(woehler_curve, y_lim, self.y_max, pa_goal)
 
-        woehler_curve_2 = self._woehler_curve.copy()
-        WoehlerCurve({'SD_50': y_lim, '1/TS': woehler_curve['1/TS'], 'ND_50': graph_1.points[-1, -1],
-                                        'k_1': self.k_2, '1/TN': woehler_curve['1/TN']})
-        graph_2 = WoehlerCurveGraph(woehler_curve_2, self.y_min, y_lim)
+        woehler_curve_2 = pd.Series({
+            'SD_50': y_lim, '1/TS': woehler_curve['1/TS'], 'ND_50': graph_1.points[-1, -1],
+            'k_1': self.k_2, '1/TN': woehler_curve['1/TN']})
+        graph_2 = WoehlerCurveGraph(woehler_curve_2, self.y_min, y_lim, pa_goal)
         return np.append(graph_1.points, graph_2.points, axis=0)
