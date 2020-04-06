@@ -49,6 +49,84 @@ data = pd.DataFrame(np.array([
         [3.00e+02, 1.00e+07]
 ]), columns=['load', 'cycles']).sample(frac=1)
 
+load_sorted = pd.Series(np.array([
+        4.50e+02, 4.50e+02, 4.50e+02, 4.50e+02, 4.00e+02, 4.00e+02, 4.00e+02, 4.00e+02, 3.75e+02, 3.75e+02,
+        3.75e+02, 3.75e+02, 3.75e+02, 3.75e+02, 3.50e+02, 3.50e+02, 3.50e+02, 3.50e+02, 3.50e+02, 3.50e+02,
+        3.25e+02, 3.25e+02, 3.25e+02, 3.25e+02, 3.25e+02, 3.25e+02, 3.25e+02, 3.25e+02, 3.25e+02, 3.25e+02,
+        3.00e+02, 3.00e+02, 3.00e+02, 3.00e+02, 3.00e+02, 3.00e+02, 3.00e+02, 3.00e+02, 3.00e+02, 3.00e+02]), name='load').sort_values()
+
+cycles_sorted = pd.Series(np.array([
+        3.40e+04, 5.40e+04, 6.00e+04, 7.60e+04, 5.30e+04, 9.40e+04, 2.07e+05, 2.27e+05, 6.80e+04, 2.34e+05,
+        3.96e+05, 5.00e+05, 6.00e+05, 7.09e+05, 1.70e+05, 1.87e+05, 2.20e+05, 2.89e+05, 3.09e+05, 1.00e+07,
+        6.75e+05, 7.51e+05, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07,
+        8.95e+05, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07]), name='cycles').sort_values()
+
+data_finite_sorted = pd.DataFrame(np.array([
+        [4.50e+02, 3.40e+04],
+        [4.50e+02, 5.40e+04],
+        [4.50e+02, 6.00e+04],
+        [4.50e+02, 7.60e+04],
+        [4.00e+02, 5.30e+04],
+        [4.00e+02, 9.40e+04],
+        [4.00e+02, 2.07e+05],
+        [4.00e+02, 2.27e+05],
+        [3.75e+02, 6.80e+04],
+        [3.75e+02, 2.34e+05],
+        [3.75e+02, 3.96e+05],
+        [3.75e+02, 5.00e+05],
+        [3.75e+02, 6.00e+05],
+        [3.75e+02, 7.09e+05],
+]), columns=['load', 'cycles']).sort_values(by='load').reset_index(drop=True)
+
+data_infinite_sorted = pd.DataFrame(np.array([
+        [3.50e+02, 1.70e+05],
+        [3.50e+02, 1.87e+05],
+        [3.50e+02, 2.20e+05],
+        [3.50e+02, 2.89e+05],
+        [3.50e+02, 3.09e+05],
+        [3.50e+02, 1.00e+07],
+        [3.25e+02, 6.75e+05],
+        [3.25e+02, 7.51e+05],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.00e+02, 8.95e+05],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07]
+]), columns=['load', 'cycles']).sort_values(by='load').reset_index(drop=True)
+
+def test_woehler_accessor_missing_keys():
+    wc = pd.Series({'k_1': 7, '1/TN': 12.0, 'ND_50': 1e6, 'SD_50': 350., '1/TS': 1.23})
+    for k in wc.keys():
+        _wc = wc.copy()
+        del _wc[k]
+        with pytest.raises(AttributeError, match=r"^.*Missing %s\." % k):
+            _wc.woehler
+
+def test_fatigue_data_property_methods():
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data
+    pd.testing.assert_series_equal(fd.load.sort_values(), load_sorted)
+    pd.testing.assert_series_equal(fd.cycles.sort_values(), cycles_sorted)
+
+    assert fd.num_runouts == 18
+    assert fd.num_fractures == 22
+    print(fd.finite_zone)
+    print(data_finite_sorted)
+    pd.testing.assert_frame_equal(fd.finite_zone.sort_values(by='load').reset_index(drop=True)[['load', 'cycles']], data_finite_sorted)
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data
+    pd.testing.assert_frame_equal(fd.infinite_zone.sort_values(by='load').reset_index(drop=True)[['load', 'cycles']], data_infinite_sorted)
 
 def test_woehler_fracture_determination_given():
     df = pd.DataFrame({
