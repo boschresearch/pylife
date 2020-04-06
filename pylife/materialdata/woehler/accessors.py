@@ -13,7 +13,7 @@ class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
 @pd.api.extensions.register_series_accessor('woehler')
 class WoehlerCurveAccessor(WoehlerCurveElementaryAccessor):
     def _validate(self, obj, validator):
-        self.super()._validate(obj, validator)
+        super(WoehlerCurveAccessor, self)._validate(obj, validator)
         validator.fail_if_key_missing(obj, ['1/TS'])
 
 
