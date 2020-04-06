@@ -35,7 +35,7 @@ class WoehlerCurveGraph:
 
         http://www.ux.uis.no/~hirpa/6KdB/ME/S-N%20diagram.pdf
         """
-        if self._woehler_curve['k_1'] is None:
+        if self._woehler_curve['k_1'] == np.inf:
             self._points = np.array([[self._woehler_curve['SD_50'], 1E9]])
         else:
             y = np.linspace(y_max, y_min, num=100)
@@ -44,9 +44,8 @@ class WoehlerCurveGraph:
 
     def __shift_woehlercurve_points(self, pa_goal):
         """ Shift the Basquin-curve according to the failure probability value (obtain the 10-90 % curves)"""
-        if self._woehler_curve['k_1'] is not None:
-            TN_inv = self._woehler_curve['1/TN']
-            self._points[:, 1] /= 10**(-stats.norm.ppf(pa_goal)*scatteringRange2std(TN_inv))
+        TN_inv = self._woehler_curve['1/TN']
+        self._points[:, 1] /= 10**(-stats.norm.ppf(pa_goal)*scatteringRange2std(TN_inv))
 
     @property
     def points(self):

@@ -108,12 +108,6 @@ class WoehlerCurveDiagrams:
     def plot_fitted_curve(self, k_2=None):
         ''' This is broken now
         '''
-        woehler_curve_inf = self.woehler_curve.copy()
-        woehler_curve_inf['k_1'] = k_2
-
-        wcg_fin = WoehlerCurveGraph(self._woehler_curve, self._woehler_curve['SD_50'], self.y_max, 0.5)
-        wcg_inf = WoehlerCurveGraph(self._woehler_curve_inf, self._woehler_curve['SD_50'], self.y_max, 0.5)
-
         whole_woehler_curve_graph = WholeWoehlerCurveGraph(self.woehler_curve, k_2, self.y_min, self.y_max)
         WL_50 = whole_woehler_curve_graph.graph_50
         WL_10 = whole_woehler_curve_graph.graph_10
@@ -124,7 +118,6 @@ class WoehlerCurveDiagrams:
         self._ax.legend(loc='upper right', fontsize=11)
 
         text = '$k_1$ = '+str(np.round(self.woehler_curve['k_1'],decimals=2)) + '\n'
-        text += '$k_2$ = '+str(np.round(k_2,decimals=2)) + '\n'
         text += '$1/T_N$ = ' + str(np.round(self.woehler_curve['1/TN'],decimals=2)) + '\n'
         text += '$1/T_S^*$ = ' + str(np.round(self.woehler_curve['1/TN']**(1./self.woehler_curve['k_1']), decimals=2)) + '\n'
         text += '$S_{D,50}$ = ' + str(np.round(self.woehler_curve['SD_50'],decimals=1)) + '\n'
