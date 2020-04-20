@@ -8,7 +8,7 @@ Created on Mon Jan 13 08:04:24 2020
 import numpy as np
 import pandas as pd
 
-def combine_hist(hist_list,method = 'sum',nbins = 64):
+def combine_hist(hist_list, method = 'sum',nbins = 64):
     """
     Performes the combination of multiple Histograms.
        
@@ -38,9 +38,18 @@ def combine_hist(hist_list,method = 'sum',nbins = 64):
             hist_combined = pd.concat([hist_combined,hist_list[ii]]).sort_index()
     index_min =  hist_combined.index.left.min()
     index_max =  hist_combined.index.right.max()        
-    hist_combined = hist_combined.groupby(
+    
+    if method == 'std':
+        hist_combined = hist_combined.groupby(
             pd.cut(hist_combined.index.mid.values,
-                   np.linspace(index_min,index_max,nbins))).agg(method)
+                    np.linspace(index_min,index_max,nbins+1))).agg('std',ddof = 0)
+        print('Using ddof = 0')
+    
+    else:
+        hist_combined = hist_combined.groupby(
+            pd.cut(hist_combined.index.mid.values,
+                    np.linspace(index_min,index_max,nbins+1))).agg(method)
+    
     hist_combined.index = pd.interval_range(index_min,index_max,
-                                         nbins-1,name = 'range')
+                                          nbins,name = 'range')
     return hist_combined
