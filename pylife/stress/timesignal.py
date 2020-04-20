@@ -192,9 +192,14 @@ class TimeSignalPrep:
             elif method == "min":
                 stats_list.append(np.abs(np.min(df[col][ind_act:ind_act+window_length])))
             elif method == "abs":
-                stats_list.append(np.abs(df[col][ind_act:ind_act+window_length]))
+                stats_list.append(np.max(np.abs(df[col][ind_act:ind_act+window_length])))
             ind_act = ind_act+hop
-        stats_list = pd.DataFrame({"stats": np.asarray(stats_list)})
+        try:            
+            stats_list = pd.DataFrame({"stats": np.asarray(stats_list)})#,
+        except: 
+            print(str(stats_list))
+                                  # index = np.arange(0,len(np.asarray(stats_list))-1,
+                                  #                   np.asarray(stats_list)))
         stats_list = stats_list[stats_list["stats"] < limit*stats_list["stats"].max()]
         for ind_act in stats_list.index:
             df = df.drop(index = np.arange(ind_act*hop,ind_act*hop+window_length), errors = 'ignore')
