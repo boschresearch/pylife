@@ -7,7 +7,6 @@ Created on Mon Apr 20 07:28:32 2020
 
 
 import numpy as np
-import scipy.stats as stats
 import pandas as pd
 from scipy import signal as sg
 from pylife.stress import timesignal as tsig
@@ -50,12 +49,12 @@ def test_running_stats_filt():
             sin1,
             sin2,
             wn1,
-            wn100)),columns = ['data'])  
+            wn2)),columns = ['data'])  
     df_sep =pd.DataFrame(np.vstack((
             sin1,
             sin2,
             wn1,
-            wn100))).T
+            wn2))).T
     df_sep.columns = ['sin1','sin2','wn1','wn2']
     df_stats = df_sep.describe() 
     df.plot()
