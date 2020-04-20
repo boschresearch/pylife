@@ -18,6 +18,7 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 import numpy as np
+import pandas as pd
 import scipy.stats as stats
 
 
@@ -194,9 +195,9 @@ class TimeSignalPrep:
             elif method == "abs":
                 stats_list.append(np.max(np.abs(df[col][ind_act:ind_act+window_length])))
             ind_act = ind_act+hop
-        try:            
+        try:
             stats_list = pd.DataFrame({"stats": np.asarray(stats_list)})#,
-        except: 
+        except:
             print(str(stats_list))
                                   # index = np.arange(0,len(np.asarray(stats_list))-1,
                                   #                   np.asarray(stats_list)))
