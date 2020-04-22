@@ -24,7 +24,7 @@ if [[ `uname` != Linux ]] ; then
     conda install pywin32
 fi
 
-python setup.py develop
+NO_INSTALL_REQUIREMENTS=true python setup.py develop
 
 conda deactivate
 
