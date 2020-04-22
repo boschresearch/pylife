@@ -1,4 +1,4 @@
-import setuptools, sys
+import setuptools, sys, os
 import distutils
 
 use_cython = False
@@ -36,8 +36,11 @@ cython_modules = [
     setuptools.Extension('pylife.stress.rainflow', sources=['pylife/stress/rainflow.py'])
 ]
 
-with open("requirements.txt", 'r') as fh:
-    requirements = fh.readlines()[1:]
+if os.getenv('NO_INSTALL_REQUIREMENTS') != 'true':
+    with open("requirements.txt", 'r') as fh:
+        requirements = fh.readlines()[1:]
+else:
+    requirements = []
 
 setuptools.setup(
     name="pylife",
