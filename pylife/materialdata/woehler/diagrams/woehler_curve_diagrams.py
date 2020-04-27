@@ -27,16 +27,18 @@ from .whole_woehler_curve_graph import WholeWoehlerCurveGraph
 
 
 class WoehlerCurveDiagrams:
-    def __init__(self, woehler_curve, fatigue_data, analyzer, y_min=None, y_max=None, ax=None):
+    def __init__(self, woehler_curve, fatigue_data = None, analyzer = None,
+                 y_min=None, y_max=None, x_min=None, x_max=None, ax=None):
         self.woehler_curve = woehler_curve
         self._analyzer = analyzer
         self._fd = fatigue_data
         self.y_min = self._fd.load.min()*0.8 if y_max is None else y_max
         self.y_max = self._fd.load.max()*1.2 if y_min is None else y_min
-        self.xlim_WL = (round(min(self._fd.cycles)*0.4, -1),
-                        round(max(self._fd.cycles)*2, -1))
-        self.ylim_WL = (round(min(self._fd.load)*0.8, -1),
-                        round(max(self._fd.load)*1.2, -1))
+        self.x_min = self._fd.cycles.min()*0.4 if x_max is None else x_max
+        self.x_max = self._fd.cycles.max()*2 if x_min is None else x_min
+        
+        self.xlim_WL = (round(self.x_min, -1),round(self.x_max, -1)) 
+        self.ylim_WL = (round(self.y_min, -1),round(self.y_max, -1))
 
         self.reset(ax)
 
