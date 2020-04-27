@@ -1,7 +1,11 @@
 call conda env remove -p ./_venv
 
-call conda create -y -p _venv --file requirements_CONDA.txt
+call conda env create -p _venv --file environment.yml
 
 call conda activate ./_venv
 
-call pip install -r requirements_PIP.txt
+call conda install pywin32
+
+set NO_INSTALL_REQUIREMENTS=true
+
+call python setup.py develop

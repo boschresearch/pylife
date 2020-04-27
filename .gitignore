@@ -5,7 +5,7 @@
 build
 .pytest_cache
 __pycache__
-_venv
+_venv*
 .spyproject
 *.so
 *.pyd
@@ -16,3 +16,5 @@ __pycache__
 *coverage*
 junit.xml
 
+src/pip-delete-this-directory.txt
+.vscode/settings.json
