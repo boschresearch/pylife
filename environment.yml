@@ -3,6 +3,9 @@ dependencies:
 - python >2
 - numpy
 - pytest
+- pytest-cov
+- pyflakes
+- pylint
 - scipy
 - pandas
 - cython
