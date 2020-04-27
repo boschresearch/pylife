@@ -20,7 +20,7 @@ __maintainer__ = __author__
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-
+import scipy.signal as signal
 
 class TimeSignalGenerator:
     '''Generates mixed time signals
