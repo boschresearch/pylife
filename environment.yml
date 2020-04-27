@@ -4,8 +4,7 @@ dependencies:
 - numpy
 - pytest
 - pytest-cov
-- pyflakes
-- pylint
+- flake8
 - scipy
 - pandas
 - cython
