@@ -32,10 +32,10 @@ class WoehlerCurveDiagrams:
         self.woehler_curve = woehler_curve
         self._analyzer = analyzer
         self._fd = fatigue_data
-        self.y_min = self._fd.load.min()*0.8 if y_max is None else y_max
-        self.y_max = self._fd.load.max()*1.2 if y_min is None else y_min
-        self.x_min = self._fd.cycles.min()*0.4 if x_max is None else x_max
-        self.x_max = self._fd.cycles.max()*2 if x_min is None else x_min
+        self.y_min = self._fd.load.min()*0.8 if y_min is None else y_min
+        self.y_max = self._fd.load.max()*1.2 if y_max is None else y_max
+        self.x_min = self._fd.cycles.min()*0.4 if x_min is None else x_min
+        self.x_max = self._fd.cycles.max()*2 if x_max is None else x_max
         
         self.xlim_WL = (round(self.x_min, -1),round(self.x_max, -1)) 
         self.ylim_WL = (round(self.y_min, -1),round(self.y_max, -1))
