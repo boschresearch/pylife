@@ -42,8 +42,18 @@ pipeline {
 
                 // Test Coverage results
                 publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'coverage_report.xml')], failNoReports: true, sourceFileResolver: sourceFiles('NEVER_STORE')
-            }
-        }                        
+                
+                // Test Coverage html
+                publishHTML target: [
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: false,
+                    keepAll: true,
+                    reportDir: 'coverage_report',
+                    reportFiles: 'index.html',
+                    reportName: 'Coverage report'
+                ]                
+            }                
+        }
     }
     // Post-build actions
     post {
