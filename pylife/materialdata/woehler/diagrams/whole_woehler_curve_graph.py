@@ -47,5 +47,5 @@ class WholeWoehlerCurveGraph:
         woehler_curve_2 = pd.Series({
             'SD_50': y_lim, '1/TS': woehler_curve['1/TS'], 'ND_50': graph_1.points[-1, -1],
             'k_1': self.k_2, '1/TN': woehler_curve['1/TN']})
-        graph_2 = WoehlerCurveGraph(woehler_curve_2, self.y_min, y_lim, pa_goal)
+        graph_2 = WoehlerCurveGraph(woehler_curve_2, self.y_min, y_lim)
         return np.append(graph_1.points, graph_2.points, axis=0)
