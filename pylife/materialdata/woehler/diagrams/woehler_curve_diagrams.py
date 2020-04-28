@@ -37,9 +37,9 @@ class WoehlerCurveDiagrams:
         self.x_min = self._fd.cycles.min()*0.4 if x_min is None else x_min
         self.x_max = self._fd.cycles.max()*2 if x_max is None else x_max
         
-        self.xlim_WL = (round(self.x_min, -1),round(self.x_max, -1)) 
-        self.ylim_WL = (round(self.y_min, -1),round(self.y_max, -1))
-
+        self.xlim_WL = (self.x_min,round(self.x_max, -1))
+        self.ylim_WL = (self.y_min,round(self.y_max, -1))
+        
         self.reset(ax)
 
     def reset(self, ax=None):
