@@ -1,7 +1,5 @@
 import numpy as np
-import scipy.stats as stats
 import pandas as pd
-from scipy import signal
 from scipy import optimize as op
 
 
@@ -19,12 +17,17 @@ class psdSignal:
     def __init__(self,df):
         
         self.df = df
-    def _intMinlog(log_Hi,psdin,f,fsel,factor_rms_nods):
-        # alles logarithmisieren
-        logY = np.log10(psdin)
-        logYsel =  np.interp(fsel,f,logY)# an den h-Stuetzstellen
-        eps1 = ((sum(psdin)-sum(np.power(10,np.interp(f,fsel,log_Hi))))**2)/(sum(psdin)**2)
-        eps2 =  np.dot(logYsel-log_Hi,logYsel-log_Hi)/np.dot(logYsel,logYsel)
+        
+    def rms_psd(psd):
+        return ((psd.diff()+psd).dropna()).multiply(np.diff(psd.index.values),axis = 0).sum()**0.5
+    
+    def _intMinlog(Hi,psdin,fsel,factor_rms_nods):
+        Ysel =  np.interp(fsel,psdin.index.values,psdin.values.flatten())# an den h-Stuetzstellen
+        rms_in = psdSignal.rms_psd(psdin)
+        rms_smooth = psdSignal.rms_psd(pd.DataFrame(data = 10**np.interp(psdin.index.values, fsel,np.log10(Hi)),
+                                                    index = psdin.index.values))
+        eps1 = (rms_in-rms_smooth)**2/rms_in**2
+        eps2 =  np.dot(np.log10(Ysel)-np.log10(Hi),np.log10(Ysel)-np.log10(Hi))/np.dot(np.log10(Ysel),np.log10(Ysel))
         return factor_rms_nods*eps1+(1-factor_rms_nods)*eps2
     
     
@@ -51,15 +54,19 @@ class psdSignal:
         '''
     	# InputVariablen
     	# 
-        f  = np.log10(self.index.values)
-        fsel = np.log10(np.unique(np.append(min(f),fsel)))#,max(f)]))
+        f  = np.logspace(np.log10(self.index.values.min()),np.log10(
+                              self.index.values.max()),100)
+        # fsel = np.log10(np.unique(np.append(min(f),fsel)))#,max(f)]))
+        fsel = np.unique(fsel)
         opt_df = pd.DataFrame()
         for colact in self.columns:
-            log_Hi0 = np.interp(fsel,f,np.log10(self[colact]))
-            log_Hi = op.fmin(psdSignal._intMinlog,log_Hi0,args=(self[colact],f,fsel,factor_rms_nodes),disp = 0)
-            log_H = np.interp(f,fsel,log_Hi)
-            opt_df[colact] = np.power(10,log_H)
-        opt_df.index = self.index            
+            df_in = pd.DataFrame(data = np.interp(f,self.index.values,self[colact]),
+                                 index = f)
+            Hi0 = 10**(np.interp(fsel,f,np.log10(df_in.values.flatten())))
+            Hi = op.fmin(psdSignal._intMinlog,Hi0,args=(df_in,fsel,factor_rms_nodes),disp = 0)
+            opt_df[colact] = np.interp(f,fsel,Hi)
+        
+        opt_df.index = f            
         return opt_df
     
     
