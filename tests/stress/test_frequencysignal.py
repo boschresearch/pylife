@@ -37,12 +37,12 @@ def test_psd_smoother():
     np.testing.assert_almost_equal(max(test_psd.values),2)
     test_psd = fsig.psdSignal.psd_smoother(psd_df,[50],1)
     
-    np.testing.assert_almost_equal(fsig.psdSignal.rms_psd(test_psd),
-                                   fsig.psdSignal.rms_psd(pd.DataFrame(10**np.interp(f_fine,
-                                                                                     psd_df.index.values,
-                                                                                     np.log10(psd_df.values.flatten())),
-                                                                       index = f_fine)),
-                                   decimal = 2)
+    pd.testing.assert_series_equal(fsig.psdSignal.rms_psd(test_psd),
+                                    fsig.psdSignal.rms_psd(pd.DataFrame(10**np.interp(f_fine,
+                                                                                      psd_df.index.values,
+                                                                                      np.log10(psd_df.values.flatten())),
+                                                                        index = f_fine)),
+                                     check_less_precise = 1)
 
          
           

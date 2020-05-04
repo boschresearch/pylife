@@ -23,9 +23,9 @@ class psdSignal:
     
     def _intMinlog(Hi,psdin,fsel,factor_rms_nods):
         Ysel =  np.interp(fsel,psdin.index.values,psdin.values.flatten())# an den h-Stuetzstellen
-        rms_in = psdSignal.rms_psd(psdin)
+        rms_in = psdSignal.rms_psd(psdin).values
         rms_smooth = psdSignal.rms_psd(pd.DataFrame(data = 10**np.interp(psdin.index.values, fsel,np.log10(Hi)),
-                                                    index = psdin.index.values))
+                                                    index = psdin.index.values)).values
         eps1 = (rms_in-rms_smooth)**2/rms_in**2
         eps2 =  np.dot(np.log10(Ysel)-np.log10(Hi),np.log10(Ysel)-np.log10(Hi))/np.dot(np.log10(Ysel),np.log10(Ysel))
         return factor_rms_nods*eps1+(1-factor_rms_nods)*eps2
