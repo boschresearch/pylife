@@ -182,7 +182,7 @@ class FiniteLifeCurve(FiniteLifeBase):
     def __init__(self, k_1, SD_50, ND_50):
         super(FiniteLifeCurve, self).__init__(k_1, SD_50, ND_50)
 
-    def calc_S(self, N, ignore_limits=False):
+    def calc_S(self, N, ignore_limits=True):
         """Calculate stress S for a given number of cycles N
 
         Parameters
@@ -234,8 +234,7 @@ class FiniteLifeCurve(FiniteLifeBase):
         """
         if np.any(S < self.SD_50):
             if ignore_limits:
-                logger.warning("The limits to the interpolation of the finite life region "
-                               "have explicitly been ignored.")
+                logger.warning("Using all cycles")
             else:
                 raise ValueError("The given stress S ('{}') must be larger than "
                                  "SD_50 ('{}').".format(
@@ -265,22 +264,17 @@ class FiniteLifeCurve(FiniteLifeBase):
         damage : pd.DataFrame
             damage for every load horizont based on the load collective and the method
         """
-        damage = pd.DataFrame(index = loads.index,columns = ['damage'], data = 0)
+        damage = pd.DataFrame(index = loads.index,columns = loads.columns, data = 0)
         load_values = loads.index.get_level_values('range').mid.values
         # Miner elementar
+        cycles_SN =FiniteLifeCurve.calc_N(self,load_values, ignore_limits = True)
         if method == 'elementar':
-            cycles_SN = FiniteLifeCurve.calc_N(self,load_values, ignore_limits = False)
-            damage.loc[load_values > self.SD_50,'damage'] = loads[load_values > self.SD_50].values.ravel()/cycles_SN[load_values > self.SD_50]
+            damage = loads.divide(cycles_SN,axis = 0)
+            damage[load_values <= self.SD_50] = 0
         elif method == 'original':
-            cycles_SN = FiniteLifeCurve.calc_N(self,load_values, ignore_limits = True)
-            damage['damage'] =  loads.values.ravel()/cycles_SN
+            damage = loads.divide(cycles_SN,axis = 0)
         elif method ==  'MinerHaibach':
-            cycles_SN = pd.DataFrame(index = loads.index,columns = ['cycles'], data = np.inf)
-            # k1
-            cycles_SN.loc[load_values > self.SD_50,'cycles'] = self.ND_50 * ( load_values[load_values >
-                      self.SD_50] / self.SD_50)**(-self.k_1)
             #k2
-            cycles_SN.loc[load_values <= self.SD_50,'cycles'] = self.ND_50 * ( load_values[load_values <=
-                      self.SD_50]/ self.SD_50)**(-(2*self.k_1-1))
-            damage['damage'] = loads.values/cycles_SN.values
+            cycles_SN[load_values <= self.SD_50] = self.ND_50 * ( load_values[load_values <= self.SD_50]/ self.SD_50)**(-(2*self.k_1-1))
+            damage = loads.divide(cycles_SN,axis = 0)
         return damage
