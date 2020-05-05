@@ -45,10 +45,6 @@ def test_psd_smoother():
                                      check_less_precise = 1)
 
          
-          
-
-test_psd_smoother()
-# test_rms_psd()
 
 
 
