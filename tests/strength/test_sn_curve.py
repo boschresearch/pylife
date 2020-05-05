@@ -60,8 +60,7 @@ def test_calc_damage():
         damage_calc = sn_curve.FiniteLifeCurve(**material[method])
         damage = damage_calc.calc_damage(loads,method = method)   
         pd.testing.assert_frame_equal(damage,damage_nCode[ii], check_less_precise = 2) 
-        ii += 1
-test_calc_damage()        
+        ii += 1      
 
         
 
