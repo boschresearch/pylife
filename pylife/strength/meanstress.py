@@ -38,7 +38,6 @@ import pandas as pd
 import pylife
 from pylife.stress import stresssignal
 from pylife.core import signal
-from pylife.core.data_validator import DataValidator
 
 
 @pd.api.extensions.register_dataframe_accessor("meanstress_mesh")
@@ -86,7 +85,7 @@ class MeanstressHist:
 
     def FKM_goodman(self, haigh, R_goal):
         haigh.FKM_Goodman
-        Dsig = haigh.FKM_Goodman.FKM_goodman(self._Sa, self._Sm, R_goal) * 2.
+        Dsig = FKM_goodman(self._Sa, self._Sm, haigh.M, haigh.M2, R_goal) * 2.
         Dsig_max = Dsig.max()
         binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
         bincount = int(np.ceil(Dsig_max / binsize))
@@ -103,24 +102,23 @@ class MeanstressHist:
 @pd.api.extensions.register_series_accessor("FKM_Goodman")
 class FKMGoodman:
     def __init__(self, pandas_obj):
-        self._validator = DataValidator()
-        self._validate(pandas_obj, self._validator)
+        self._validate(pandas_obj)
         self._obj = pandas_obj
 
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['M', 'M2'])
+    def _validate(self, obj):
+        signal.DataValidator().fail_if_key_missing(obj, ['M', 'M2'])
 
 
 @pd.api.extensions.register_dataframe_accessor("haigh_five_segment")
 @pd.api.extensions.register_series_accessor("haigh_five_segment")
 class FiveSegment:
     def __init__(self, pandas_obj):
-        self._validator = DataValidator()
-        self._validate(pandas_obj, self._validator)
+        self._validate(pandas_obj)
         self._obj = pandas_obj
 
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['M0', 'M1', 'M2', 'M3', 'M4', 'R12', 'R23'])
+    def _validate(self, obj):
+        signal.DataValidator().fail_if_key_missing(obj, ['M0', 'M1', 'M2', 'M3', 'M4', 'R12', 'R23'])
+
 
 
 def FKM_goodman(Sa, Sm, M, M2, R_goal):
