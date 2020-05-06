@@ -25,7 +25,7 @@ class psdSignal:
         Ysel =  np.interp(fsel,psdin.index.values,psdin.values.flatten())# an den h-Stuetzstellen
         rms_in = psdSignal.rms_psd(psdin).values
         rms_smooth = psdSignal.rms_psd(pd.DataFrame(data = 10**np.interp(psdin.index.values, fsel,np.log10(Hi)),
-                                                    index = psdin.index.values)).values
+                                                    index = psdin.index.values).fillna(0)).values
         eps1 = (rms_in-rms_smooth)**2/rms_in**2
         eps2 =  np.dot(np.log10(Ysel)-np.log10(Hi),np.log10(Ysel)-np.log10(Hi))/np.dot(np.log10(Ysel),np.log10(Ysel))
         return factor_rms_nods*eps1+(1-factor_rms_nods)*eps2
@@ -55,18 +55,20 @@ class psdSignal:
     	# InputVariablen
     	# 
         f  = np.logspace(np.log10(self.index.values.min()),np.log10(
-                              self.index.values.max()),100)
-        # fsel = np.log10(np.unique(np.append(min(f),fsel)))#,max(f)]))
+                              self.index.values.max()),1024)
         fsel = np.unique(fsel)
+        fout = np.append(np.append(self.index.values.min(),np.unique(fsel)),self.index.values.max())
         opt_df = pd.DataFrame()
         for colact in self.columns:
             df_in = pd.DataFrame(data = np.interp(f,self.index.values,self[colact]),
                                  index = f)
             Hi0 = 10**(np.interp(fsel,f,np.log10(df_in.values.flatten())))
             Hi = op.fmin(psdSignal._intMinlog,Hi0,args=(df_in,fsel,factor_rms_nodes),disp = 0)
-            opt_df[colact] = np.interp(f,fsel,Hi)
-        
-        opt_df.index = f            
+            # opt_df[colact] = 10**np.interp(f,fsel,np.log10(Hi))
+            opt_df[colact] =  10**np.interp(fout,fsel,np.log10(Hi))
+            
+        # opt_df.index = f       
+        opt_df.index = fout       
         return opt_df
     
     
