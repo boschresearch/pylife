@@ -22,7 +22,7 @@ def test_rms_psd():
     psd_nCode = psd_nCode.set_index(psd_nCode.columns[0])
     rms = fsig.psdSignal.rms_psd(psd_nCode)
     rms.name = 'RMS'
-    rms_nCode = pd.Series([51.27226649,47.85658056,26.20561707],name = 'RMS',index = [1,2,3])
+    rms_nCode = pd.Series([47.72598934,44.4876549,24.20755918],name = 'RMS',index = [1,2,3])
     pd.testing.assert_series_equal(rms,rms_nCode, check_less_precise = 1)
 
 
