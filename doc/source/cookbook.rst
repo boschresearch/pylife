@@ -5,7 +5,7 @@ pyLife Cookbook
    :maxdepth: 1
    :caption: Life time and reliability
 
-   demos/woehler_analyzer.nblink
+   demos/lifetime_calc.nblink
 
 .. toctree::
    :maxdepth: 1
