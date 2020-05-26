@@ -3,27 +3,25 @@ pyLife Cookbook
 
 .. toctree::
    :maxdepth: 1
+   :caption: Life time and reliability
+
+   demos/woehler_analyzer.nblink
+
+.. toctree::
+   :maxdepth: 1
    :caption: Material Data
 
-   demos/woehler_analyzer
-
+   demos/woehler_analyzer.nblink 
+   
 .. toctree::
    :maxdepth: 1
-   :caption: Stress analysis
+   :caption: FEM based methods
 
-   demos/rainflow
-   demos/stress_gradient
-
-
+   demos/hotspot_plate.nblink   
+   demos/stress_gradient.nblink
+   
 .. toctree::
    :maxdepth: 1
-   :caption: Strength analysis
+   :caption: Tools
 
-   demos/strength_analysis
-   demos/miner_rule
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Mesh utils
-
-   demos/hotspot_plate
+   demos/psd_optimizer.nblink    
