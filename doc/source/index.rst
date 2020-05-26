@@ -20,12 +20,6 @@ pyLife Documentation
    signal_api
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Cookbook
-
-   cookbook
-
-.. toctree::
    :maxdepth: 2
    :caption: Reference
 

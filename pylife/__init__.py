@@ -1,4 +1,4 @@
-__all__ = [ 'stress', 'strength', 'utils' ]
+__all__ = [ 'stress', 'strength', 'utils' , 'mesh']
 
 from pylife.core import signal
 from pylife.core.data_validator import DataValidator

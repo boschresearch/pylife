@@ -1,6 +1,6 @@
 The ``stresssignal`` module
 ###########################
 
-.. automodule:: stresssignal
+.. automodule:: pylife.stress.stresssignal
 	:undoc-members:
 	:members:

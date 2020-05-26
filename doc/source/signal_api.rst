@@ -60,14 +60,14 @@ Import the modules. Note that the module with the signal accessors (here
 :mod:`meshsignal`) needs to be imported explicitly.
 
 >>> import pandas as pd
->>> import pylife.utils.meshsignal
+>>> import pylife.mesh.meshsignal
 
 Create a DataFrame and have it validated if it is a valid plain mesh, i.e. has
 the columns `x` and `y`.
 
 >>> df = pd.DataFrame({'x': [1.0], 'y': [1.0]})
 >>> df.plain_mesh
-<pylife.utils.meshsignal.PlainMeshAccessor object at 0x7f66da8d4d10>
+<pylife.mesh.meshsignal.PlainMeshAccessor object at 0x7f66da8d4d10>
 
 Now create a DataFrame which is not a valid plain mesh and try to have it
 validated:
@@ -80,9 +80,9 @@ Traceback (most recent call last):
     return object.__getattribute__(self, name)
   File "/home/jmu3si/Devel/pylife/_venv/lib/python3.7/site-packages/pandas/core/accessor.py", line 175, in __get__
     accessor_obj = self._accessor(obj)
-  File "/home/jmu3si/Devel/pylife/pylife/utils/meshsignal.py", line 79, in __init__
+  File "/home/jmu3si/Devel/pylife/pylife/mesh/meshsignal.py", line 79, in __init__
     self._validate(pandas_obj)
-  File "/home/jmu3si/Devel/pylife/pylife/utils/meshsignal.py", line 84, in _validate
+  File "/home/jmu3si/Devel/pylife/pylife/mesh/meshsignal.py", line 84, in _validate
     signal.fail_if_key_missing(obj, self._coord_keys)
   File "/home/jmu3si/Devel/pylife/pylife/core/signal.py", line 88, in fail_if_key_missing
     raise AttributeError(msg % (', '.join(keys_to_check), ', '.join(missing_keys)))
@@ -95,7 +95,7 @@ Example for accessing a property
 Get the coordinates of a 2D plain mesh
 
 >>> import pandas as pd
->>> import pylife.utils.meshsignal
+>>> import pylife.mesh.meshsignal
 >>> df = pd.DataFrame({'x': [1.0], 'y': [1.0], 'foo': [42.0], 'bar': [23.0]})
 >>> df.plain_mesh.coordinates
      x    y
@@ -120,7 +120,7 @@ register as a pandas DataFrame accessor using a decorator
 .. code-block:: python
 
     import pandas as pd
-    import pylife.meshsignal
+    import pylife.mesh.meshsignal
 
     @pd.api.extensions.register_dataframe_accessor('my_mesh_processor')
     class MyMeshAccessor(meshsignal.MeshAccessor):

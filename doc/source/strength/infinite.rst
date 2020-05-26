@@ -1,6 +1,6 @@
 The ``infinite strength`` module
 ################################
 
-.. automodule:: infinite
+.. automodule:: pylife.strength.infinite
 	:undoc-members:
 	:members:

@@ -13,9 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-'''Helper to process mesh based data
-   =================================
+'''
+Helper to process mesh based data
+=================================
 
 Data that is distributed over a geometrical body, e.g. a stress tensor
 distribution on a component, is usually transported via a mesh. The
@@ -64,6 +64,7 @@ node_id element_id
 4923    1           14.726271  5.312840
 4924    1           14.592996  5.132274
 '''
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 

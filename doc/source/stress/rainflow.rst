@@ -1,6 +1,6 @@
 The ``rainflow`` module
 #######################
 
-.. automodule:: rainflow
+.. automodule:: pylife.stress.rainflow
 	:undoc-members:
 	:members:

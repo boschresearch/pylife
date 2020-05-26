@@ -1,7 +1,7 @@
-The `utils.meshsignal` module
+The `meshsignal` module
 =============================
 
-.. automodule:: meshsignal
+.. automodule:: pylife.mesh.meshsignal
 	:undoc-members:
 	:members:
 	:inherited-members:

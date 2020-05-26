@@ -28,8 +28,7 @@ __maintainer__ = __author__
 import scipy.interpolate as interp
 import numpy as np
 import pandas as pd
-
-from .meshsignal import PlainMeshAccessor
+from pylife.mesh.meshsignal import PlainMeshAccessor
 
 @pd.api.extensions.register_dataframe_accessor('meshmapper')
 class MeshmapperAccessor(PlainMeshAccessor):
