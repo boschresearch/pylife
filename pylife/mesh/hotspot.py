@@ -25,8 +25,9 @@ import pandas as pd
 class HotSpot(meshsignal.MeshAccessor):
 
     def calc(self, value_key, limit_frac=0.9, artefact_threshold=None):
-        '''Calculates hotspots on a FE mesh
-        ----------
+        '''
+        Calculates hotspots on a FE mesh
+        -----------------------------------
         value_key: string
             Column name of the field variable, on which the Hot Spot
             calculation is done.
@@ -52,7 +53,6 @@ class HotSpot(meshsignal.MeshAccessor):
 
         Notes
         -----
-
         A loop is defined in the following way:
                 * Select the node with the maximum stress value
                 * Find all elements > `limit_frac` belonging to this node

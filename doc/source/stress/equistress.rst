@@ -1,6 +1,6 @@
 The ``equistress`` module
 #########################
 
-.. automodule:: equistress
+.. automodule:: pylife.stress.equistress
 	:undoc-members:
 	:members:

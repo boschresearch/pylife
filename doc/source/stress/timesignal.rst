@@ -1,6 +1,6 @@
 The ``timesignal`` module
 #########################
 
-.. automodule:: timesignal
+.. automodule:: pylife.stress.timesignal
 	:undoc-members:
 	:members:

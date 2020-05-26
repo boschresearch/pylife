@@ -1,6 +1,6 @@
 The ``miner`` module
 ##############################
 
-.. automodule:: miner
+.. automodule:: pylife.strength.miner
 	:undoc-members:
 	:members:

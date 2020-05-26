@@ -1,6 +1,6 @@
 The ``meshmapping`` module
 ##############################
 
-.. automodule:: meshmapping
+.. automodule:: pylife.mesh.meshmapping
 	:undoc-members:
 	:members:

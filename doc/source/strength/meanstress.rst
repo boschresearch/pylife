@@ -1,6 +1,6 @@
 The ``meanstress`` module
 ##############################
 
-.. automodule:: meanstress
+.. automodule:: pylife.strength.meanstress
 	:undoc-members:
 	:members:

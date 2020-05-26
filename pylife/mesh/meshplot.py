@@ -23,7 +23,7 @@ from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 from matplotlib import cm as colormap
 
-from . import meshsignal
+from pylife.mesh import meshsignal
 
 
 @pd.api.extensions.register_dataframe_accessor('meshplot')

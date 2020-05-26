@@ -120,20 +120,20 @@ class TimeSignalPrep:
 
     def resample_acc(self,sample_rate_new = 1):
         """ Resampling the time series
-         Parameters:
-        ----------
 
+        Parameters
+        ----------
         self: DataFrame
 
         time_col: str
             column name of the time column
         sample_rate_new: float
             sample rate of the resampled time series
-        Returns:
-        --------
+
+        Returns
+        -------
         DataFrame
         """
-
 #        dfResample.index =  np.arange(self.df.index.min(),self.df.index.max(),1/sample_rate_new)
         index_new =  np.linspace(self.df.index.min(),
                                  self.df.index.min() + np.floor((self.df.index.max()-self.df.index.min())*sample_rate_new)/sample_rate_new,
@@ -157,8 +157,8 @@ class TimeSignalPrep:
 
         **Attention**: Reset_index is used
 
-        Parameters:
-        ----------
+        Parameters
+        -----------
 
         self: DataFrame
 
@@ -173,8 +173,9 @@ class TimeSignalPrep:
             default is 0.05
         method: str
             method: 'rms', 'min', 'max', 'abs', default is 'rms'
-        Returns:
-        --------
+
+        Returns
+        -------
         DataFrame
 
         """

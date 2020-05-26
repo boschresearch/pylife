@@ -1,6 +1,6 @@
 The ``failure_probability`` module
 ##################################
 
-.. automodule:: failure_probability
+.. automodule:: pylife.strength.failure_probability
 	:undoc-members:
 	:members:

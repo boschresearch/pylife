@@ -15,33 +15,35 @@
 # limitations under the License.
 
 """
+
 Implementation of the miner rule for fatigue analysis
+=====================================================
 
 Currently, the following implementations are part of this module:
-    1. Miner-elementar
-    2. Miner-relativ
+
+* Miner-elementar
+* Miner-relativ
 
 The source will be given in the function/class
 
 References
 ----------
-@book{Waechter2017,
-  doi = {10.1007/978-3-658-17459-0},
-  url = {https://doi.org/10.1007/978-3-658-17459-0},
-  year = {2017},
-  publisher = {Springer Fachmedien Wiesbaden},
-  author = {Michael W\"{a}chter and Christian M\"{u}ller and Alfons Esderts},
-  title = {Angewandter Festigkeitsnachweis nach {FKM}-Richtlinie}
+@book{Waechter2017
+doi = {10.1007/978-3-658-17459-0},
+url = {https://doi.org/10.1007/978-3-658-17459-0},
+year = {2017},
+publisher = {Springer Fachmedien Wiesbaden},
+author = {Michael W\"{a}chter and Christian M\"{u}ller and Alfons Esderts},
+title = {Angewandter Festigkeitsnachweis nach {FKM}-Richtlinie}
 }
 @book{haibach06,
-  author = {Haibach, Erwin},
-  doi = {10.1007/3-540-29364-7},
-  url = {https://doi.org/10.1007/3-540-29364-7},
-  year = {2006},
-  publisher = {Springer-Verlag},
-  title = {Betriebsfestigkeit}
+author = {Haibach, Erwin},
+doi = {10.1007/3-540-29364-7},
+url = {https://doi.org/10.1007/3-540-29364-7},
+year = {2006},
+publisher = {Springer-Verlag},
+title = {Betriebsfestigkeit}
 }
-
 """
 
 __author__ = "Cedric Philip Wagner"
@@ -81,8 +83,8 @@ def get_accumulated_from_relative_collective(collective):
         numpy array of shape (:, 2)
         where ":" depends on the number of classes defined
         for the rainflow counting
-            1. column: class values in ascending order
-            2. column: relative number of cycles for each load class
+        * column: class values in ascending order
+        * column: relative number of cycles for each load class
     """
     accumulated = np.stack([collective[:,0],
               np.flipud(np.cumsum(np.flipud(collective[:,1])))],
@@ -153,11 +155,11 @@ class MinerBase:
             numpy array of shape (:, 2)
             where ":" depends on the number of classes defined
             for the rainflow counting
-                1. column: class values in ascending order
-                2. column: accumulated number of cycles
-                    first entry is the total number of cycles
-                    then in a descending manner till the
-                    number of cycles of the highest stress class
+            * column: class values in ascending order
+            * column: accumulated number of cycles
+            first entry is the total number of cycles
+            then in a descending manner till the
+            number of cycles of the highest stress class
         """
         self._parse_collective(collective)
         self.zeitfestigkeitsfaktor_collective = self.calc_zeitfestigkeitsfaktor(
@@ -287,10 +289,10 @@ class MinerBase:
         A : float
             the lifetime multiple A
             BEWARE: this relation is only valid in a specific
-                    representation of the predicted (Miner) lifetime
-                    where the sn-curve is expressed via the point
-                    of the maximum amplitude of the collective:
-                    N_predicted = N(S = S_max) * A
+            representation of the predicted (Miner) lifetime
+            where the sn-curve is expressed via the point
+            of the maximum amplitude of the collective:
+            N_predicted = N(S = S_max) * A
         """
         # ignore limits
         #   e.g. for miner-elementary damage can be accumulated even with S_a,max below S_D
@@ -333,11 +335,11 @@ class MinerElementar(MinerBase):
             numpy array of shape (:, 2)
             where ":" depends on the number of classes defined
             for the rainflow counting
-                1. column: class values in ascending order
-                2. column: accumulated number of cycles
-                    first entry is the total number of cycles
-                    then in a descending manner till the
-                    number of cycles of the highest stress class
+            * column: class values in ascending order
+            * column: accumulated number of cycles
+            first entry is the total number of cycles
+            then in a descending manner till the
+            number of cycles of the highest stress class
         """
         super(MinerElementar, self).calc_A(collective)
         V = solidity_haibach(self.collective, self.k_1)
@@ -465,10 +467,10 @@ class MinerHaibach(MinerBase):
         A : float
             the lifetime multiple A
             BEWARE: this relation is only valid in a specific
-                    representation of the predicted (Miner) lifetime
-                    where the sn-curve is expressed via the point
-                    of the maximum amplitude of the collective:
-                    N_predicted = N(S = S_max) * A
+            representation of the predicted (Miner) lifetime
+            where the sn-curve is expressed via the point
+            of the maximum amplitude of the collective:
+            N_predicted = N(S = S_max) * A
         """
         if A is None:
             A = self.calc_A(load_level, ignore_inf_rule=ignore_inf_rule)
