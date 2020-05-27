@@ -19,7 +19,6 @@ sys.path.insert(0, os.path.abspath('../../pylife/stress'))
 sys.path.insert(0, os.path.abspath('../../pylife/strength'))
 sys.path.insert(0, os.path.abspath('../../pylife/materialdata/woehler'))
 sys.path.insert(0, os.path.abspath('../../pylife/utils'))
-sys.path.insert(0, os.path.abspath('../../pylife/mesh'))
 
 from _version import get_versions
 
