@@ -28,14 +28,14 @@ class psdSignal:
         psd.index = f    
         return ((psd.diff()+psd).dropna()).multiply(np.diff(psd.index.values),axis = 0).sum()**0.5
     
-    def _intMinlog(Hi,psdin,fsel,factor_rms_nods):
-        Hi_rms_df = pd.DataFrame(data = 10**np.interp(psdin.index.values, fsel,np.log10(Hi)),
+    def _intMinlog(self,psdin,fsel,factor_rms_nods):
+        self_rms_df = pd.DataFrame(data = 10**np.interp(psdin.index.values, fsel,np.log10(self)),
                                                     index = psdin.index.values)
         Ysel =  np.interp(fsel,psdin.index.values,psdin.values.flatten())
         rms_in = psdSignal.rms_psd(psdin).values
-        rms_smooth = psdSignal.rms_psd(Hi_rms_df).values
+        rms_smooth = psdSignal.rms_psd(self_rms_df).values
         eps1 = (rms_in-rms_smooth)**2/rms_in**2
-        eps2 =  np.dot(np.log10(Ysel/Hi),np.log10(Ysel/Hi))/np.dot(np.log10(Ysel),np.log10(Ysel))
+        eps2 =  np.dot(np.log10(Ysel/self),np.log10(Ysel/self))/np.dot(np.log10(Ysel),np.log10(Ysel))
         return factor_rms_nods*eps1+(1-factor_rms_nods)*eps2
     
     
