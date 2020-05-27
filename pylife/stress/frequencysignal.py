@@ -28,14 +28,14 @@ class psdSignal:
         psd.index = f    
         return ((psd.diff()+psd).dropna()).multiply(np.diff(psd.index.values),axis = 0).sum()**0.5
     
-    def _intMinlog(self,psdin,fsel,factor_rms_nods):
-        self_rms_df = pd.DataFrame(data = 10**np.interp(psdin.index.values, fsel,np.log10(self)),
+    def _intMinlog(Hi,psdin,fsel,factor_rms_nods):
+        Hi_rms_df = pd.DataFrame(data = 10**np.interp(psdin.index.values, fsel,np.log10(Hi)),
                                                     index = psdin.index.values)
         Ysel =  np.interp(fsel,psdin.index.values,psdin.values.flatten())
         rms_in = psdSignal.rms_psd(psdin).values
-        rms_smooth = psdSignal.rms_psd(self_rms_df).values
+        rms_smooth = psdSignal.rms_psd(Hi_rms_df).values
         eps1 = (rms_in-rms_smooth)**2/rms_in**2
-        eps2 =  np.dot(np.log10(Ysel/self),np.log10(Ysel/self))/np.dot(np.log10(Ysel),np.log10(Ysel))
+        eps2 =  np.dot(np.log10(Ysel/Hi),np.log10(Ysel/Hi))/np.dot(np.log10(Ysel),np.log10(Ysel))
         return factor_rms_nods*eps1+(1-factor_rms_nods)*eps2
     
     
@@ -69,14 +69,14 @@ class psdSignal:
         for colact in self.columns:
             df_in = pd.DataFrame(data = np.interp(f,self.index.values,self[colact]),
                                  index = f)
-            self0 = 10**(np.interp(fsel,f,np.log10(df_in.values.flatten())))
-            # self = op.fmin(psdSignal._intMinlog,self0,args=(df_in,fsel,factor_rms_nodes),disp = 0)
+            Hi0 = 10**(np.interp(fsel,f,np.log10(df_in.values.flatten())))
+            # Hi = op.fmin(psdSignal._intMinlog,Hi0,args=(df_in,fsel,factor_rms_nodes),disp = 0)
             lim = np.array([df_in.values.min()*np.ones_like(fsel),
                             np.array(df_in.values.max()*np.ones_like(fsel))]).T
             
-            self = op.minimize(psdSignal._intMinlog,x0 = self0,bounds = tuple(map(tuple, lim)),
+            Hi = op.minimize(psdSignal._intMinlog,x0 = Hi0,bounds = tuple(map(tuple, lim)),
                              args=(df_in,fsel,factor_rms_nodes))
-            opt_df[colact] =  10**np.interp(fout,fsel,np.log10(self.x))
+            opt_df[colact] =  10**np.interp(fout,fsel,np.log10(Hi.x))
             
         # opt_df.index = f       
         opt_df.index = fout       
