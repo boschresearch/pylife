@@ -12,13 +12,10 @@ print(coverage_old_xml_path)
 coverage_new_xml_path = 'coverage_report.xml'
 print(coverage_new_xml_path)
 
-path = os.getcwd() 
-print("Current Directory", path) 
+current_folder = os.getcwd() 
+print("Current Directory", current_folder) 
 
-parent_folder = os.path.abspath(os.path.join(path, os.pardir))
-print("Parent folder", parent_folder)
-
-is_develop = "develop" in parent_folder
+is_develop = "develop" in current_folder
 print(is_develop)
 
 coverage_old_xml = ET.parse(coverage_old_xml_path)
