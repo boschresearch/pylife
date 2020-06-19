@@ -26,7 +26,7 @@ pipeline {
                 
                 // Running code coverage tool
                 catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                    bat 'run_test_cov_analysis.bat'
+                    bat 'batch_scripts/run_test_cov_analysis.bat'
                 }
             }
         }
@@ -63,7 +63,17 @@ pipeline {
                     reportDir: 'coverage_report',
                     reportFiles: 'index.html',
                     reportName: 'Coverage Report html'
-                ]                
+                ] 
+
+                // Documentation
+                publishHTML target: [
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: false,
+                    keepAll: true,
+                    reportDir: 'doc/build/html',
+                    reportFiles: 'index.html',
+                    reportName: 'Documentation'
+                ]                  
             }                
         }
     }

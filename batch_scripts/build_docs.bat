@@ -1,11 +1,14 @@
-conda activate ./_venv
+call conda activate ./_venv
 
-conda install sphinx=2.4.4
-conda install -c conda-forge m2r nbsphinx ipykernel make --yes
-pip install nbsphinx-link 
-pip install sphinx-rtd-theme
+call conda install sphinx=2.4.4
+call conda install -c conda-forge m2r nbsphinx ipykernel make --yes
+call pip install nbsphinx-link 
+call pip install sphinx-rtd-theme
 
-jupyter_path = "./_venv/Scripts/jupyter"
+for /f "tokens=*" %%a in ('git rev-parse --show-toplevel') do (set repo_path=%%a)
 
-cd doc
-make html
+set jupyter_path=%repo_path%_venv/Scripts/jupyter
+
+call cd doc
+call make html
+call cd ..
