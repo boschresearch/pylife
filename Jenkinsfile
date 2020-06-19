@@ -20,18 +20,30 @@ pipeline {
         }
         // Test Python packages with PyTest
         stage('PyTest & Code coverage') {
-            steps { 
-                retry(3) {
-                    timeout(time: 10, unit: 'MINUTES') {
-                        bat 'batch_scripts/run_pylife_tests.bat'
-                    }
+            steps {
+                // Running unit tests
+                bat 'batch_scripts/run_pylife_tests.bat'
+                
+                // Running code coverage tool
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    bat 'run_test_cov_analysis.bat'
                 }
             }
         }
         // Static code analysis with Flake8
         stage('Flake8') {
             steps {
-                bat 'batch_scripts/run_code_analysis.bat'
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    bat 'batch_scripts/run_code_analysis.bat'
+                }
+            }
+        }
+        // Building documentation
+        stage('Documentation') {
+            steps {
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    bat 'batch_scripts/build_docs.bat'
+                }
             }
         }
         // Publish Test results with MSTest
@@ -50,7 +62,7 @@ pipeline {
                     keepAll: true,
                     reportDir: 'coverage_report',
                     reportFiles: 'index.html',
-                    reportName: 'Coverage report'
+                    reportName: 'Coverage Report html'
                 ]                
             }                
         }
