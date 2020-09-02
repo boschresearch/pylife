@@ -14,6 +14,20 @@ guide][1]. That document is generally recommendable to python programmers. This
 document therefore covers only things that go beyond the PEP8.
 
 
+### Clean code
+
+The notion of code quality that keeps software maintainable, makes it easier to
+find and fix bugs and so on is nowadays referred to by the expression *Clean
+Code*.
+
+The iconic figure behind that notion is [Robert C. Martin]
+(https://en.wikipedia.org/wiki/Robert_C._Martin) aka Uncle Bob. For
+the full story about clean code you can read his books *Clean Code* and *Clean
+Coders*. Some of his lectures about Clean Code are available on Youtube. You
+might want to take the time and watch [these two]
+(https://www.youtube.com/watch?v=7EmboKQH8lM), they are fun to watch.
+
+
 ## Naming conventions
 
 By naming conventions the programmer can give some indications to the reader of
