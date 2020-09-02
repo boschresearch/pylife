@@ -148,6 +148,11 @@ in order to find out, where a loop or an if statement begins and ends.
 Rule of thumb: The best functions fit on your screen together with their
 docstring, so that you can see what they are doing and how they are doing it.
 
+### Docstrings
+
+Document your public functions using docstrings following the [Numpy style]
+(https://numpydoc.readthedocs.io/en/latest/format.html).
+
 ### Commenting
 
 Commenting is important. That's programmers are taught in the basic programming
