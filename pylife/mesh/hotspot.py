@@ -17,8 +17,8 @@
 __author__ = "Daniel Christopher Kreuter"
 __maintainer__ = "Johannes Mueller"
 
-import pylife.mesh.meshsignal as meshsignal
 import pandas as pd
+import pylife.mesh.meshsignal as meshsignal
 
 
 @pd.api.extensions.register_dataframe_accessor('hotspot')
@@ -92,7 +92,7 @@ class HotSpot(meshsignal.MeshAccessor):
             if new_nodes.any():
                 new_entries = True
                 new_hotspot[new_nodes] = True
-            if new_elems.any() > 0:
+            if new_elems.any():
                 new_entries = True
                 new_hotspot[new_elems] = True
 
