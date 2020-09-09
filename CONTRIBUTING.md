@@ -6,13 +6,29 @@ the GitHub issues tracking system prior to any code development to coordinate
 with the pyLife development team early in the process. Coordinating up
 front helps to avoid frustration later on.
 
-Please do consult the [CODINGSTYLE](CODINGSTYLE.md) file for codingstyle guide
-lines. In order to have your contribution merged to main line, the
-functionality of your contribution (functions, class methods) need to be tested
-by [pytest][pytest] testing routines.
-
 Your contribution must be licensed under the Apache-2.0 license, the license
 used by this project.
+
+## Guidelines to pull requests
+
+Please do consult the [CODINGSTYLE](CODINGSTYLE.md) file for codingstyle guide
+lines. In order to have your contribution merged to main line following guide
+lines should be met.
+
+### Testing
+The functionality of your contribution (functions, class methods) need to be
+tested by [pytest][pytest] testing routines. We are measuring the testing
+coverage. Your pull request should not decrease the test coverage.
+
+### Docstrings
+Document your public API classes, methods, functions and attributes using numpy
+style docstings unless the naming is *really* self-explanatory.
+
+### Comments
+Use as little comments as possible. The code along with docstrings should be
+expressive enough. Remove any commented code lines before issuing your pull
+request.
+
 
 ## Add / retain copyright notices
 
