@@ -1,3 +1,4 @@
 {
-    "path": "../../../demos/lifetime_calc.ipynb"
+    "path": "../../../demos/lifetime_calc.ipynb",
+    "extra-media": ["../../../demos/"]
 }

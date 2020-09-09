@@ -1,3 +1,4 @@
 {
-    "path": "../../../demos/psd_optimizer.ipynb"
+    "path": "../../../demos/psd_optimizer.ipynb",
+    "extra-media": ["../../../demos/"]
 }
