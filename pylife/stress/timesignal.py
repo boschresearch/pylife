@@ -143,7 +143,7 @@ class TimeSignalPrep:
             dfResample[colakt] = np.interp(dfResample.index,self.df.index,self.df[colakt])
         return dfResample
 
-    def butter_bandpass(self,lowcut, highcut, fs, order=5):
+    def butter_bandpass(self, lowcut, highcut, fs, order=5):
         """Use the functonality of scipy"""
         nyq = 0.5 * fs
         low = lowcut / nyq
@@ -151,6 +151,7 @@ class TimeSignalPrep:
         b, a = signal.butter(order, [low, high], btype='band')
         TSout = signal.filtfilt(b, a, self.df)
         return TSout
+
     def running_stats_filt(self,col,window_length = 2048,buffer_overlap = 0.1,limit = 0.05, method = "rms"):
         """
         Calculates the running statistics of one DataFrame column and drops the rejected data points from the whole DataFrame.
