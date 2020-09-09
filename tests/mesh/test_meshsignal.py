@@ -46,5 +46,5 @@ def test_mesh_fail_coordinates():
 
 def test_mesh_fail_index():
     df = pd.DataFrame({'x': [1.0], 'y': [2.0], 'z': [3.0], 'a': [9.9]})
-    with pytest.raises(AttributeError, match=r'mesh.*element_id'):
+    with pytest.raises(AttributeError, match=r'.*element_id.*'):
         df.mesh.coordinates
