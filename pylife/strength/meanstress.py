@@ -89,7 +89,6 @@ class MeanstressHist:
         Dsig_max = Dsig.max()
         binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
         bincount = int(np.ceil(Dsig_max / binsize))
-        binsize = Dsig_max / (bincount - 0.5)
         new_idx = pd.IntervalIndex.from_breaks(np.linspace(0, Dsig_max, bincount), name="range")
         result = pd.DataFrame(data=np.zeros(bincount-1), index=new_idx, columns=['frequency'], dtype=np.int)
         for i, intv in enumerate(new_idx):
@@ -170,7 +169,7 @@ def FKM_goodman(Sa, Sm, M, M2, R_goal):
     elif R_goal == -1.:
         return S0*(1.+M)
 
-    elif R_goal == "-inf" or R_goal > 1.:
+    elif R_goal == "-inf "or R_goal > 1.:
         return Sinf
 
     elif R_goal < 0.0:
@@ -238,7 +237,6 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
 
     B_12 = (1.+R12)/(1.-R12)
     B_23 = (1.+R23)/(1.-R23)
-    B_goal = (1.+R_goal)/(1.-R_goal)
 
     r4 = c4
     r = np.append(c0, c1)
@@ -262,29 +260,31 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
     if R_goal == 0.0:
         return S_0
 
-    elif R_goal == -1.:
+    if R_goal == -1.:
         return S_0*(1.+M0)
 
-    elif R_goal == "-inf":
+    if R_goal == -np.inf:
         return S_inf
 
-    elif R_goal == R12:
+    if R_goal == R12:
         return S_12
 
-    elif R_goal == R23:
+    if R_goal == R23:
         return S_23
 
-    elif R_goal < 0.0:
+    B_goal = (1.+R_goal)/(1.-R_goal)
+
+    if R_goal <= 0.0:
         return S_0*(1.+M0)*(1.-M0/(M0+1./B_goal))
 
-    elif R_goal > 0.0 and R_goal < R12:
+    if R_goal > 0.0 and R_goal < R12:
         return S_0*(1.+M1)*(1.-M1/(M1+1./B_goal))
 
-    elif R_goal > R12 and R_goal < R23:
+    if R_goal > R12 and R_goal < R23:
         return S_23*(1.+M2*B_23)/(1.+M2*B_goal)
 
-    elif R_goal > R23 and R_goal < 1.:
+    if R_goal > R23 and R_goal < 1.:
         return S_23*(1.+M3*B_23)/(1.+M3*B_goal)
 
-    elif R_goal > 1.:
+    if R_goal > 1.:
         return S_inf*(1.-M4)*(1.-M4/(M4+1./B_goal))
