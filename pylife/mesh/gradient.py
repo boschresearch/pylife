@@ -99,5 +99,5 @@ class Gradient(MeshAccessor):
                                 'dy': [*self.lst_sqr_grad_dy.values()],
                                 'dz': [*self.lst_sqr_grad_dz.values()]})
         df_grad = df_grad.set_index('node_id')
-        print(df_grad.shape, self._obj.shape)
+
         return df_grad

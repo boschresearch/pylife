@@ -239,11 +239,11 @@ class RainflowCounterThreePoint(AbstractRainflowCounter):
                 if (start >= max(lowest_front, highest_front) and
                     np.abs(back_val - front_val) >= np.abs(front_val - start_val) and
                     front != highest_front and front != lowest_front):
-                        self.loops_from.append(start_val)
-                        self.loops_to.append(front_val)
-                        residual_indeces.pop()
-                        residual_indeces.pop()
-                        continue
+                    self.loops_from.append(start_val)
+                    self.loops_to.append(front_val)
+                    residual_indeces.pop()
+                    residual_indeces.pop()
+                    continue
 
             residual_indeces.append(back)
             back += 1

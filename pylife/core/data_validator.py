@@ -20,6 +20,7 @@ __maintainer__ = __author__
 import inspect
 import pandas as pd
 
+
 class DataValidator:
     def get_missing_keys(self, signal, keys_to_check):
         '''Gets a list of missing keys that are needed for a signal object
@@ -65,7 +66,7 @@ class DataValidator:
                 missing_keys.append(k)
         return missing_keys
 
-    
+
     def fail_if_key_missing(self, signal, keys_to_check, msg=None):
         '''Raises an exception if any key is missing in a signal object
 
@@ -105,12 +106,11 @@ class DataValidator:
             the_class = stack[2][0].f_locals['self'].__class__
             msg = the_class.__name__ + ' must have the items %s. Missing %s.'
         raise AttributeError(msg % (', '.join(keys_to_check), ', '.join(missing_keys)))
-    
+
     @staticmethod
     def fill_member(key, values):
         if key in values:
             member = values[key]
         else:
             member = ''
-        return member    
-        
+        return member
