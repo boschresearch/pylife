@@ -37,13 +37,11 @@ k = 6
 
 
 def test_solidity_haibach():
-
-    assert hlp.solidity_haibach(coll, k) == pytest.approx(0.00115875, abs=1e-8)
+    np.testing.assert_almost_equal(hlp.solidity_haibach(coll, k), 0.00115875)
 
 
 def test_solidity_fkm():
-
-    assert hlp.solidity_fkm(coll, k) == pytest.approx(0.32408968)
+    np.testing.assert_almost_equal(hlp.solidity_fkm(coll, k), 0.32408968)
 
 
 class TestStressRelations:
@@ -54,7 +52,7 @@ class TestStressRelations:
             amplitude=amplitude,
             R=R
         )
-        assert max_stress == pytest.approx(max_stress_calculated)
+        np.testing.assert_almost_equal(max_stress, max_stress_calculated)
 
     @pytest.mark.parametrize("amplitude, mean_stress, R", [(200, 0, -1), (200, 200, 0)])
     def test_get_mean_stress_from_amplitude(self, amplitude, mean_stress, R):
@@ -62,4 +60,4 @@ class TestStressRelations:
             amplitude=amplitude,
             R=R
         )
-        assert mean_stress == pytest.approx(mean_stress_calculated)
+        np.testing.assert_almost_equal(mean_stress, mean_stress_calculated)
