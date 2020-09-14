@@ -47,11 +47,28 @@ def get_turns(samples):
 
     '''
     diffs = np.diff(samples)
+    if np.any(diffs == 0.0):
+        # Remove the duplicates
+        duplicates = np.concatenate([diffs == 0, [False]])
+        samples = samples[~duplicates]
+        diffs = np.diff(samples)
+    else:
+        duplicates = None
     (positions,) = np.where(diffs[:-1] * diffs[1:] < 0.0)
     positions += 1
     turns = samples[(positions,)]
 
-    return positions, turns
+    if duplicates is None:
+        original_positions = positions
+    else:
+        # Transform the positions back to those in the original samples with duplicates
+        index_shift = np.cumsum(duplicates)
+        for rvs_ind in range(len(index_shift)):
+            if duplicates[-rvs_ind - 1] and duplicates[-rvs_ind - 2]:
+                index_shift[-rvs_ind - 2] = index_shift[-rvs_ind - 1]
+        original_positions = np.array([position + index_shift[position] for position in positions])
+
+    return original_positions, turns
 
 
 class AbstractRainflowCounter:
@@ -83,7 +100,10 @@ class AbstractRainflowCounter:
         if self._sample_tail is not None:
             samples = np.concatenate((self._sample_tail, samples))
         turn_positions, turns = get_turns(samples)
-        self._sample_tail = samples[turn_positions[-1]:]
+        if turn_positions.size > 0:
+            self._sample_tail = samples[turn_positions[-1]:]
+        else:
+            self._sample_tail = samples
         return turns
 
     def get_rainflow_matrix(self, bins):
