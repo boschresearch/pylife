@@ -51,7 +51,7 @@ def get_turns(samples):
         # Remove the duplicates
         duplicates = np.concatenate([diffs == 0, [False]])
         samples = samples[~duplicates]
-        diffs = np.diff(samples)
+        diffs = diffs[diffs != 0]
     else:
         duplicates = None
     (positions,) = np.where(diffs[:-1] * diffs[1:] < 0.0)
