@@ -350,7 +350,7 @@ def test_rainflow_partial_get_turns_no_turns():
 
 
 def test_rainflow_partial_get_turns_consecutive_duplicates():
-    samples = np.array([1., 0.5, 0.5, 1., 1., 1., -1., -1., 0.5, 1.])
+    samples = np.array([1., 1., 0.5, 0.5, 1., 1., 1., -1., -1., 0.5, 1.])
     rfc = RF.AbstractRainflowCounter()
     turns = rfc._get_new_turns(samples)
     np.testing.assert_array_equal(turns, np.array([0.5, 1., -1.]))

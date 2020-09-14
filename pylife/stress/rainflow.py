@@ -63,7 +63,7 @@ def get_turns(samples):
     else:
         # Transform the positions back to those in the original samples with duplicates
         index_shift = np.cumsum(duplicates)
-        for rvs_ind in range(len(index_shift)):
+        for rvs_ind in range(len(index_shift) - 1):
             if duplicates[-rvs_ind - 1] and duplicates[-rvs_ind - 2]:
                 index_shift[-rvs_ind - 2] = index_shift[-rvs_ind - 1]
         original_positions = np.array([position + index_shift[position] for position in positions])
