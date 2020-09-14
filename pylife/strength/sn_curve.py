@@ -229,7 +229,7 @@ class FiniteLifeCurve(FiniteLifeBase):
 
         Returns
         -------
-        N : float
+        N : array like
             number of cycles corresponding to the given stress value (point on the SN-curve)
         """
         if np.any(S < self.SD_50):
@@ -243,38 +243,37 @@ class FiniteLifeCurve(FiniteLifeBase):
                                      ))
         return self.ND_50 * (S / self.SD_50)**(-self.k_1)
 
-
-    def calc_damage(self, loads, method = "elementar"):
+    def calc_damage(self, loads, method="elementar"):
         """Calculate the damage based on the methods
-         * Miner elementar ( k_2 = -\inf)
+         * Miner elementar (k_2 = k)
          * Miner Haibach (k_2 = 2k-1)
-         * Miner original (k_2 = k)
+         * Miner original (k_2 = -\inf)
 
         Parameters
         ----------
         loads : pandas series histogram
             loads (index is the load, column the cycles)
         method : str
-         * 'elementar': Miner elementar ( k_2 = -\inf)
+         * 'elementar': Miner elementar (k_2 = k)
          * 'MinerHaibach': Miner Haibach (k_2 = 2k-1)
-         * 'original': Miner original (k_2 = k)
+         * 'original': Miner original (k_2 = -\inf)
 
         Returns
         -------
         damage : pd.DataFrame
             damage for every load horizont based on the load collective and the method
         """
-        damage = pd.DataFrame(index = loads.index,columns = loads.columns, data = 0)
+        damage = pd.DataFrame(index=loads.index,columns=loads.columns, data=0)
         load_values = loads.index.get_level_values('range').mid.values
         # Miner elementar
-        cycles_SN =FiniteLifeCurve.calc_N(self,load_values, ignore_limits = True)
-        if method == 'elementar':
+        cycles_SN = FiniteLifeCurve.calc_N(self, load_values, ignore_limits=True)
+        if method == 'original':
             damage = loads.divide(cycles_SN,axis = 0)
             damage[load_values <= self.SD_50] = 0
-        elif method == 'original':
+        elif method == 'elementar':
             damage = loads.divide(cycles_SN,axis = 0)
-        elif method ==  'MinerHaibach':
-            #k2
-            cycles_SN[load_values <= self.SD_50] = self.ND_50 * ( load_values[load_values <= self.SD_50]/ self.SD_50)**(-(2*self.k_1-1))
-            damage = loads.divide(cycles_SN,axis = 0)
+        elif method == 'MinerHaibach':
+            # k2
+            cycles_SN[load_values <= self.SD_50] = self.ND_50 * (load_values[load_values <= self.SD_50] / self.SD_50)**(-(2*self.k_1-1))
+            damage = loads.divide(cycles_SN, axis=0)
         return damage

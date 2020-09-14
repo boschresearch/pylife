@@ -22,7 +22,7 @@ Implementation of the miner rule for fatigue analysis
 Currently, the following implementations are part of this module:
 
 * Miner-elementar
-* Miner-relativ
+* Miner-haibach
 
 The source will be given in the function/class
 
