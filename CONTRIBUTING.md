@@ -9,16 +9,28 @@ front helps to avoid frustration later on.
 Your contribution must be licensed under the Apache-2.0 license, the license
 used by this project.
 
-## Guidelines to pull requests
+## Test driven development
+The functionality of your contribution (functions, class methods) need to be
+tested by [pytest][pytest] testing routines.
+
+In order to achieve maintainable code we ask contributors to use test driven
+development, i. e. follow the [Three Rules of Test Driven
+Development](https://medium.com/@rrugamba/3-laws-of-tdd-58b5ec46a998):
+
+1. Do not change production code without writing a failing unit test
+   first. Cleanups and refactorings a not changes in that sense.
+2. Write only enough test code as is sufficient to fail.
+3. Only write or change minimal production code as is sufficient to make the
+   failing test pass.
+
+We are measuring the testing coverage. Your pull request should not decrease
+the test coverage.
+
+## Coding style
 
 Please do consult the [CODINGSTYLE](CODINGSTYLE.md) file for codingstyle guide
 lines. In order to have your contribution merged to main line following guide
 lines should be met.
-
-### Testing
-The functionality of your contribution (functions, class methods) need to be
-tested by [pytest][pytest] testing routines. We are measuring the testing
-coverage. Your pull request should not decrease the test coverage.
 
 ### Docstrings
 Document your public API classes, methods, functions and attributes using numpy
