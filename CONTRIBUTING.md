@@ -41,6 +41,20 @@ Use as little comments as possible. The code along with docstrings should be
 expressive enough. Remove any commented code lines before issuing your pull
 request.
 
+## Branching and pull requests
+
+Pull requests must be filed against the `develop` branch, except for urgent
+bugfixes requiring a special bugfix release. Those can be filed against
+`master`.
+
+Branches should have meaningful names and whenever it makes sense use one of
+the following prefixes.
+
+* `bugfix/` for bugfixes, that do not change the API
+* `feature/` if a new feature is added
+* `doc/` if documentation is added or improved
+* `cleanup/` if code is cleaned or refactured without changing the feature set
+
 
 ## Add / retain copyright notices
 
