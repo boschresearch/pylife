@@ -1,8 +1,8 @@
 call conda activate ./_venv
 
-call conda install sphinx=2.4.4
-call conda install -c conda-forge m2r nbsphinx ipykernel make --yes
-call pip install nbsphinx-link 
+call conda install sphinx
+call conda install -c conda-forge m2r2 nbsphinx ipykernel make --yes
+call pip install nbsphinx-link
 call pip install sphinx-rtd-theme
 
 for /f "tokens=*" %%a in ('git rev-parse --show-toplevel') do (set repo_path=%%a)
