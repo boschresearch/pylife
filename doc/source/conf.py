@@ -39,7 +39,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
-    'm2r',
+    'm2r2',
     'nbsphinx',
     'nbsphinx_link'
     ]
