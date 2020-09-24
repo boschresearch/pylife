@@ -13,7 +13,8 @@ _venv*
 pylife.egg-info
 .ipynb_checkpoints
 __pycache__
-*coverage*
+coverage_report*
+.coverage
 junit.xml
 
 src/pip-delete-this-directory.txt
