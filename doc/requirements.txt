@@ -8,6 +8,6 @@ jupyter
 matplotlib
 xlrd
 sphinx
-m2r
+m2r2
 nbsphinx
 ipykernel

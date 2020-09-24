@@ -39,7 +39,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
-    'm2r',
+    'm2r2',
     'nbsphinx',
     'nbsphinx_link'
     ]
@@ -70,6 +70,8 @@ templates_path = ['_templates']
 #
 # source_suffix = ['.rst', '.md']
 source_suffix = '.rst'
+
+m2r_parse_relative_links = True
 
 # The encoding of source files.
 #
