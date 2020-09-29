@@ -285,7 +285,7 @@ def test_max_likelihood_full_method_with_all_fixed_params():
         )
 
 
-def test_bayesian():
+def test_bayesian_pseudo():
     expected = pd.Series({
         'SD_50': 340.,
         '1/TS': 1.12,
@@ -295,6 +295,22 @@ def test_bayesian():
     }).sort_index()
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    wc = woehler.Bayesian(fd).analyze(progressbar=False).sort_index()
+    wc = woehler.Bayesian(fd).analyze(nsamples=100, tune=10, random_seed=4223, progressbar=False).sort_index()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-0)
+
+
+@pytest.mark.slow_acceptance
+def test_bayesian_full():
+    expected = pd.Series({
+        'SD_50': 340.,
+        '1/TS': 1.12,
+        'k_1': 7.0,
+        'ND_50': 400000.,
+        '1/TN': 5.3
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    wc = woehler.Bayesian(fd).analyze(random_seed=4223, progressbar=False).sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
