@@ -23,5 +23,8 @@ import pylife.utils.functions as F
 
 def test_rossow():
     assert F.rossow_cumfreqs(1) == 0.5
-    for N in np.random.randint(1, high=1e6, size=100):
-        np.testing.assert_approx_equal(F.rossow_cumfreqs(N).sum(), N/2.0)
+    for N in np.random.randint(1, high=100, size=100):
+        cf = F.rossow_cumfreqs(N)
+        np.testing.assert_approx_equal(cf.sum(), N/2.0)
+        for i in range(N):
+            assert cf[i] + cf[N-i-1] == 1.0

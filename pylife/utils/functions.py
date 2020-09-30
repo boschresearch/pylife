@@ -73,7 +73,7 @@ def std2scatteringRange(std):
 
 
 def rossow_cumfreqs(N):
-    """ Cumulative frequency estimator according to Rossow
+    """Cumulative frequency estimator according to Rossow
 
     Parameters
     ----------
@@ -85,15 +85,35 @@ def rossow_cumfreqs(N):
     cumfreqs : numpy.ndarray
         The estimated cumulated frequencies of the N samples
 
-    Examples
+    Notes
     -----
-    tbw. FIXME
+    The returned value is the probability that the next taken sample
+    is below the value of the i-th sample of n sorted samples.
+
+    Examples
+    --------
+    >>> rossow_cumfreqs(1)
+    array([0.5])
+
+    If we have one sample, the probability that the next sample will
+    be below it is 0.5.
+
+    >>> rossow_cumfreqs(3)
+    array([0.2, 0.5, 0.8])
+
+    If we have three sorted samples, the probability that the next
+    sample will be
+    * below the first is 0.2
+    * below the second is 0.5
+    * below the third is 0.8
+
 
     References
     ----------
     'Statistics of Metal Fatigue in Engineering' page 16
 
     https://books.google.de/books?isbn=3752857722
+
     """
     i = np.arange(1, N+1)
     return (3.*i-1.)/(3.*N+1)
