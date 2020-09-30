@@ -13,8 +13,16 @@ _venv*
 pylife.egg-info
 .ipynb_checkpoints
 __pycache__
-*coverage*
+coverage_report*
+.coverage
 junit.xml
 
 src/pip-delete-this-directory.txt
 .vscode/settings.json
+
+doc/source/demos/*ipynb
+doc/source/demos/*.py
+doc/source/demos/*.h5
+doc/source/demos/*csv
+doc/source/demos/*.vmap
+doc/source/demos/pic

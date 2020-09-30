@@ -20,6 +20,13 @@ sys.path.insert(0, os.path.abspath('../../pylife/strength'))
 sys.path.insert(0, os.path.abspath('../../pylife/materialdata/woehler'))
 sys.path.insert(0, os.path.abspath('../../pylife/utils'))
 
+import asyncio
+
+# See https://bugs.python.org/issue37373 :(
+# https://github.com/jupyter/nbconvert/issues/1372
+if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 from _version import get_versions
 
 # -- General configuration ------------------------------------------------
@@ -39,7 +46,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
-    'm2r',
+    'm2r2',
     'nbsphinx',
     'nbsphinx_link'
     ]
@@ -70,6 +77,8 @@ templates_path = ['_templates']
 #
 # source_suffix = ['.rst', '.md']
 source_suffix = '.rst'
+
+m2r_parse_relative_links = True
 
 # The encoding of source files.
 #

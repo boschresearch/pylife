@@ -53,7 +53,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://sourcecode.socialcoding.bosch.com/projects/FMO/repos/pylife",
     packages=setuptools.find_packages(),
-    ext_modules = cython_modules if use_cython else [],
+    ext_modules = cythonize(cython_modules, compiler_directives={'linetrace': True}) if use_cython else [],
     include_package_data=True,
 	classifiers=[
         "Programming Language :: Python :: 3.x",
