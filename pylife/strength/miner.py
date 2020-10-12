@@ -86,9 +86,9 @@ def get_accumulated_from_relative_collective(collective):
         * column: class values in ascending order
         * column: relative number of cycles for each load class
     """
-    accumulated = np.stack([collective[:,0],
-              np.flipud(np.cumsum(np.flipud(collective[:,1])))],
-             axis=1)
+    accumulated = np.stack([collective[:, 0],
+                            np.flipud(np.cumsum(np.flipud(collective[:, 1])))],
+                           axis=1)
     return accumulated
 
 
@@ -109,21 +109,7 @@ class MinerBase:
         fatigue strength of the S/N curve [MPa]
     """
 
-    A = None  # lifetime multiple ("Lebensdauervielfaches")
     collective = None
-    _debug = {}  # store values only relevant for debugging, not for output
-    sn_curve = None  # inter-/extrapolate the finite life region of the woehler curve
-    zeitfestigkeitsfaktor = None
-    defaults = {
-        "steel": {
-            "ND_50": 10**6,
-            "k_1": 5,
-        }
-    }
-    """
-    Defaults are suggested in the literature
-    which could be used when the information is not available
-    """
 
     def __init__(self, ND_50, k_1, SD_50):
         self.ND_50 = abs(ND_50)
@@ -218,8 +204,8 @@ class MinerBase:
         ----------
         coll : pandas.DataFrame
             mean stress transformed pylife collective
-                columns: frequency
-                index: pandas.IntervalIndex
+        columns: frequency
+        index: pandas.IntervalIndex
         """
         load_classes = np.array(coll.index.mid)
         self._original_pylife_frequencies = coll["frequency"].to_numpy()

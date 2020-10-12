@@ -116,5 +116,5 @@ def test_mapping_3d_cubic():
     from_df, to_df = points_3d(flen, tlen)
     mapper = to_df.meshmapper
 
-    with pytest.raises(ValueError, match=r'cubic'):
+    with pytest.raises(ValueError, match=r'.*cubic.*'):
         mapper.process(from_df, 'value', method='cubic')

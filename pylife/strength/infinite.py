@@ -22,6 +22,7 @@ import numpy as np
 import scipy.stats as stats
 
 from pylife.stress import stresssignal
+from pylife.utils.functions import scatteringRange2std
 
 
 @pd.api.extensions.register_dataframe_accessor('infinite_security')
@@ -47,9 +48,8 @@ class InfiniteSecurityAccessor(stresssignal.CyclicStressAccessor):
             quotient of strength and existing stress
 
         """
-        #woehler_data.woehler
         wd = woehler_data
-        std_dev = 0.39015207303618954*np.log10(wd.strength_scatter)
+        std_dev = scatteringRange2std(wd.strength_scatter)
         allowed_stress = 10**stats.norm.ppf(allowed_failure_probability,
                                             loc=np.log10(wd.strength_inf),
                                             scale=std_dev)

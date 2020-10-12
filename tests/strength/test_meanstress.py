@@ -147,6 +147,33 @@ def test_five_segment_single_M_sm():
     np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
 
+@pytest.mark.parametrize("Sm, Sa", [(np.array([row.sigma_m]), np.array([row.sigma_a])) for _, row in five_segment_signal_sm().iterrows()])
+def test_five_segment_single_M_backwards(Sm, Sa):
+    cyclic_signal = pd.DataFrame({'sigma_a': [1.0], 'sigma_m': [0.0]})
+    M0= 0.5
+    M1 = M0/3.
+    M2 = M0/6.
+    M3 = 1.
+    M4 = -2.
+
+    R12 = 2./5.
+    R23 = 4./5.
+
+    warnings.simplefilter('ignore', RuntimeWarning)
+
+    R_goal = (Sm-Sa)/(Sm+Sa)
+
+
+    warnings.simplefilter('default', RuntimeWarning)
+
+    res = cyclic_signal.meanstress_mesh.five_segment(pd.Series({
+        'M0': M0, 'M1': M1, 'M2': M2, 'M3': M3, 'M4': M4,
+        'R12': R12, 'R23': R23
+    }), R_goal)
+    np.testing.assert_array_almost_equal(res.sigma_a, Sa)
+
+
+
 def test_five_segment_single_M_R():
     cyclic_signal = five_segment_signal_r()
     M0= 0.5
@@ -256,6 +283,9 @@ def test_FKM_goodman_hist_range_mean_nonzero(R_goal, expected):
     print(res)
     assert res.loc[res.index.overlaps(test_interval), 'frequency'].sum() == 9
     assert res.loc[np.logical_not(res.index.overlaps(test_interval)), 'frequency'].sum() == 0
+
+    binsize = res.index.get_level_values('range').length.min()
+    np.testing.assert_approx_equal(binsize, 2./24., significant=1)
 
 
 def test_null_histogram():
