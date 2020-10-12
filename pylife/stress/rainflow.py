@@ -157,7 +157,7 @@ class AbstractRainflowCounter:
 
 
 class RainflowCounterThreePoint(AbstractRainflowCounter):
-    '''Implements a 3 point rainflow counting algorithm
+    ''' Implements 3 point rainflow counting algorithm
 
     See the `here <subsection_TP_>`_ in the demo for an example.
 
@@ -171,7 +171,7 @@ class RainflowCounterThreePoint(AbstractRainflowCounter):
 
     * the load difference between front and back is bigger than or
       equal the one between start and front. In other words: if the
-      .ack goes beyond the starting point. For example (A-B-C) and
+      back goes beyond the starting point. For example (A-B-C) and
       (B-C-D) not closed, whereas (C-D-E) is.
 
     * the loop init has not been a loop front in a prior closed
@@ -256,17 +256,17 @@ class RainflowCounterThreePoint(AbstractRainflowCounter):
                 if front_val < turns[lowest_front]:
                     lowest_front = front
 
-                if (start >= max(lowest_front, highest_front)
-                    and np.abs(back_val - front_val) >= np.abs(front_val - start_val)):
-                    if front != highest_front and front != lowest_front:
-                        self.loops_from.append(start_val)
-                        self.loops_to.append(front_val)
-                        residual_indeces.pop()
-                        residual_indeces.pop()
-                        continue
+                if (start >= max(lowest_front, highest_front) and
+                    np.abs(back_val - front_val) >= np.abs(front_val - start_val) and
+                    front != highest_front and front != lowest_front):
+                    self.loops_from.append(start_val)
+                    self.loops_to.append(front_val)
+                    residual_indeces.pop()
+                    residual_indeces.pop()
+                    continue
 
             residual_indeces.append(back)
-            back = residual_indeces[-1] + 1
+            back += 1
 
         self._residuals = turns_np[residual_indeces]
 

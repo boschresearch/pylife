@@ -19,6 +19,7 @@ __maintainer__ = __author__
 
 from pylife.core.data_validator import DataValidator
 
+
 class PylifeSignal:
     '''Base class for signal accessor classes
 
@@ -28,7 +29,6 @@ class PylifeSignal:
 
     Notes
     -----
-
     Derived classes need to implement the method `_validate(self, obj)`
     that gets `pandas_obj` as `obj` parameter. This `validate()` method
     must rais an Exception (e.g. AttributeError or ValueError) in case
@@ -70,17 +70,13 @@ class PylifeSignal:
 
     @classmethod
     def _register_method(cls, method_name):
-        def equistress_decorator(method):
-            def method_wrapper(df):
-                df.equistress
-                return method(df)
+        def method_decorator(method):
             if method_name in cls._method_dict.keys():
                 raise ValueError("Method '%s' already registered in %s" % (method_name, cls.__name__))
             if hasattr(cls, method_name):
                 raise ValueError("%s already has an attribute '%s'" % (cls.__name__, method_name))
             cls._method_dict[method_name] = method
-            return method_wrapper
-        return equistress_decorator
+        return method_decorator
 
 
 def register_method(cls, method_name):

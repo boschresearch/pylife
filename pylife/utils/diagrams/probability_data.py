@@ -73,7 +73,7 @@ class ProbabilityDataDiagram:
 
     def plot(self, ax=None):
         ax_local = self.__default_ax_config() if ax is None else ax
-        ax_local.plot(self._prob_data.occurrences, self._prob_data.precentiles, 'ro')
+        ax_local.plot(self._prob_data.occurrences, self._prob_data.percentiles, 'ro')
         ax_local.plot([10**((i-self._prob_data.intercept)/self._prob_data.slope) for i in np.arange(-2.5, 2.5, 0.1)], np.arange(-2.5, 2.5, 0.1), 'r')
 
         return ax_local

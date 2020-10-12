@@ -33,14 +33,8 @@ logger.addHandler(ch)
 class FiniteLifeBase:
     """Base class for SN curve calculations - either in logarithmic or regular scale"""
 
-    _k_initial = None  # maintain the initial slope even when k is updated later on
-    _k = None
-    SD_50 = None
-    ND_50 = None
-
     def __init__(self, k_1, SD_50, ND_50):
-        self._k_initial = k_1
-        self._k = self._k_initial
+        self._k = k_1
         self.SD_50 = SD_50
         self.ND_50 = ND_50
         self._check_inputs_valid(k_1=self.k_1,
@@ -53,9 +47,6 @@ class FiniteLifeBase:
 
     @k_1.setter
     def k_1(self, k_1):
-        if self._k is not None:
-            logger.info("The slope 'k' of the SN curve is updated from "
-                        "'{}' to '{}'".format(self._k, k_1))
         self._k = k_1
 
     def _check_inputs_valid(self, **kwargs):
@@ -89,8 +80,6 @@ class FiniteLifeLine(FiniteLifeBase):
     ND_50 : float
         number of cycles at stress SD_50
     """
-    SD_50_log = None
-    ND_50_log = None
 
     def __init__(self, k, SD_50, ND_50):
         super(FiniteLifeLine, self).__init__(k, SD_50, ND_50)
@@ -266,7 +255,7 @@ class FiniteLifeCurve(FiniteLifeBase):
         damage = pd.DataFrame(index=loads.index,columns=loads.columns, data=0)
         load_values = loads.index.get_level_values('range').mid.values
         # Miner elementar
-        cycles_SN = FiniteLifeCurve.calc_N(self, load_values, ignore_limits=True)
+        cycles_SN = self.calc_N(load_values, ignore_limits=True)
         if method == 'original':
             damage = loads.divide(cycles_SN,axis = 0)
             damage[load_values <= self.SD_50] = 0

@@ -5,22 +5,24 @@ Created on Mon Apr 20 07:28:32 2020
 @author: KRD2RNG
 """
 
+import logging
+
 import numpy as np
 import pandas as pd
 from pylife.strength import sn_curve
 
 
 def test_calc_damage():
-   
+
     nCode_Xbinsize = 62.375
     nCode_XMax = 468.8125
     nCode_XMin = 32.1875
     material = pd.DataFrame(index = ['k_1', 'ND_50', 'SD_50'],
                                   columns = ['elementar','MinerHaibach','original'],
                                   data = [[4,5,6],[4e7,1e6,1e8],[200,180,150]])
-    
-    index =  pd.interval_range(start=nCode_XMin-nCode_Xbinsize/2, 
-                               end = nCode_XMax+nCode_Xbinsize/2, periods=8,name = "range")
+
+    index = pd.interval_range(start=nCode_XMin-nCode_Xbinsize/2,
+                              end = nCode_XMax+nCode_Xbinsize/2, periods=8,name = "range")
     loads = pd.DataFrame([[1.227E5,1.114E5,1.829E5],[2.433E4,3.117E4,16],
                           [1591,5095,0],[178,427,0],[64,138,0],[8,63,0],
                           [0,24,0],[0,1,0]],

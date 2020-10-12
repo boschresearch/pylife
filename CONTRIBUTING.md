@@ -6,13 +6,55 @@ the GitHub issues tracking system prior to any code development to coordinate
 with the pyLife development team early in the process. Coordinating up
 front helps to avoid frustration later on.
 
-Please do consult the [CODINGSTYLE](CODINGSTYLE.md) file for codingstyle guide
-lines. In order to have your contribution merged to main line, the
-functionality of your contribution (functions, class methods) need to be tested
-by [pytest][pytest] testing routines.
-
 Your contribution must be licensed under the Apache-2.0 license, the license
 used by this project.
+
+## Test driven development
+The functionality of your contribution (functions, class methods) need to be
+tested by [pytest][pytest] testing routines.
+
+In order to achieve maintainable code we ask contributors to use test driven
+development, i. e. follow the [Three Rules of Test Driven
+Development](https://medium.com/@rrugamba/3-laws-of-tdd-58b5ec46a998):
+
+1. Do not change production code without writing a failing unit test
+   first. Cleanups and refactorings a not changes in that sense.
+2. Write only enough test code as is sufficient to fail.
+3. Only write or change minimal production code as is sufficient to make the
+   failing test pass.
+
+We are measuring the testing coverage. Your pull request should not decrease
+the test coverage.
+
+## Coding style
+
+Please do consult the [CODINGSTYLE](CODINGSTYLE.md) file for codingstyle guide
+lines. In order to have your contribution merged to main line following guide
+lines should be met.
+
+### Docstrings
+Document your public API classes, methods, functions and attributes using numpy
+style docstings unless the naming is *really* self-explanatory.
+
+### Comments
+Use as little comments as possible. The code along with docstrings should be
+expressive enough. Remove any commented code lines before issuing your pull
+request.
+
+## Branching and pull requests
+
+Pull requests must be filed against the `develop` branch, except for urgent
+bugfixes requiring a special bugfix release. Those can be filed against
+`master`.
+
+Branches should have meaningful names and whenever it makes sense use one of
+the following prefixes.
+
+* `bugfix/` for bugfixes, that do not change the API
+* `feature/` if a new feature is added
+* `doc/` if documentation is added or improved
+* `cleanup/` if code is cleaned or refactured without changing the feature set
+
 
 ## Add / retain copyright notices
 

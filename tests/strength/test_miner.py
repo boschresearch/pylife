@@ -84,7 +84,7 @@ class TestMinerBase:
 
     def test_init(self, miner_base):
         """Dummy test case for demonstration"""
-        assert miner_base.ND_50 == pytest.approx(10**6)
+        np.testing.assert_almost_equal(miner_base.ND_50, 10**6)
 
         with pytest.raises(TypeError):
             miner.MinerBase(ND_50="str", k_1="str", SD_50="str")
@@ -137,20 +137,20 @@ class TestMinerElementar:
         miner_elementar.setup(self.coll)
 
         H0 = self.coll[0, 1]
-        assert H0 == pytest.approx(190733.0)
-        assert H0 == pytest.approx(miner_elementar.H0)
+        np.testing.assert_almost_equal(H0, 190733.0)
+        np.testing.assert_almost_equal(H0, miner_elementar.H0)
         # calculation of Zeitfestigkeitsfaktor
         # ND_50 = 10**6
         # k = 6
         z = 1.3180413239445 # = (ND_50 / H0)**(1. / k)
-        assert miner_elementar.zeitfestigkeitsfaktor_collective == pytest.approx(z)
+        np.testing.assert_almost_equal(miner_elementar.zeitfestigkeitsfaktor_collective, z)
 
     def test_A(self, miner_elementar):
         miner_elementar.setup(self.coll)
 
         # test requires k = 6
         A = miner_elementar.calc_A(self.coll)
-        assert A == pytest.approx(862.99608075, abs=1e-8)
+        np.testing.assert_almost_equal(A, 862.99608075)
 
     def test_d_m(self, miner_elementar):
         if miner_elementar.A is None:
@@ -158,7 +158,7 @@ class TestMinerElementar:
 
         d_m = miner_elementar.effective_damage_sum(miner_elementar.A)
         d_m_test = 0.36900120961677296
-        assert d_m == pytest.approx(d_m_test)
+        np.testing.assert_almost_equal(d_m, d_m_test)
 
     def test_d_m_limits(self, miner_elementar):
         # lower limit for d_m = 1
@@ -173,8 +173,8 @@ class TestMinerElementar:
             miner_elementar.ND_50 * (load_level / miner_elementar.SD_50)**(-miner_elementar.k_1)
         )
         N_predict = N_woehler_load_level * A
-        assert miner_elementar.N_predict(load_level, A) == pytest.approx(N_predict)
-        assert miner_elementar.N_predict(load_level) == pytest.approx(N_predict)
+        np.testing.assert_almost_equal(miner_elementar.N_predict(load_level, A), N_predict)
+        np.testing.assert_almost_equal(miner_elementar.N_predict(load_level), N_predict)
 
     def test_damage_accumulation_validation(self):
         """The test uses data from the book Haibach2006
@@ -190,7 +190,7 @@ class TestMinerElementar:
         miner_elementar.setup(coll)
         # some rounding is assumed in the example from the book
         # so in respect to millions of cycles a small neglectable tolerance is accepted
-        assert expected_N == pytest.approx(miner_elementar.N_predict(load_level), abs=5)
+        np.testing.assert_approx_equal(expected_N, miner_elementar.N_predict(load_level), significant=6)
 
 
 class TestMinerHaibach:
@@ -218,7 +218,7 @@ class TestMinerHaibach:
     def test_calc_A(self, miner_haibach):
         load_level = 400
         A = miner_haibach.calc_A(load_level)
-        assert A == pytest.approx(1000.342377197)
+        np.testing.assert_almost_equal(A, 1000.342377197)
 
     def test_N_predict(self, miner_haibach):
         load_level = 400
@@ -227,8 +227,8 @@ class TestMinerHaibach:
         )
         A = miner_haibach.calc_A(load_level)
         N_predict = N_woehler_load_level * A
-        assert miner_haibach.N_predict(load_level, A) == pytest.approx(N_predict)
-        assert miner_haibach.N_predict(load_level) == pytest.approx(N_predict)
+        np.testing.assert_almost_equal(miner_haibach.N_predict(load_level, A), N_predict)
+        np.testing.assert_almost_equal(miner_haibach.N_predict(load_level), N_predict)
 
     @pytest.mark.parametrize("load_level, predicted_N", [
         (100, 935519000),
@@ -251,7 +251,7 @@ class TestMinerHaibach:
         miner_haibach.setup(coll)
         # some rounding is assumed in the example from the book
         # so in respect to millions of cycles a small neglectable tolerance is accepted
-        assert predicted_N == pytest.approx(miner_haibach.N_predict(load_level), abs=80)
+        np.testing.assert_approx_equal(predicted_N, miner_haibach.N_predict(load_level), significant=5)
 
     def test_N_predict_inf_rule(self):
         coll = data.coll_haibach_mod_acc
