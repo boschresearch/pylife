@@ -1,8 +1,0 @@
-defusedxml==0.6.0
-dill==0.3.1.1
-klepto==0.1.8
-mpmath==1.1.0
-mystic==0.3.5
-numexpr==2.7.1
-pox==0.2.7
-sympy==1.5.1

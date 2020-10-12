@@ -15,18 +15,17 @@ else:
 try:
     from Cython.Build import cythonize
     from Cython.Distutils import build_ext
-    cython_avail = True
 except ImportError:
     def cythonize (*args, ** kwargs ):
         from Cython.Build import cythonize
         return cythonize(*args, ** kwargs)
-    cython_avail = False
+    use_cython = False
 
 import versioneer
 version=versioneer.get_version()
 cmdclass=versioneer.get_cmdclass()
 
-if cython_avail and use_cython:
+if use_cython:
     cmdclass.update(build_ext=build_ext)
 
 with open("README.md", "r") as fh:
