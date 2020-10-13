@@ -37,7 +37,7 @@ cython_modules = [
 
 if os.getenv('NO_INSTALL_REQUIREMENTS') != 'true':
     with open("requirements.txt", 'r') as fh:
-        requirements = fh.readlines()[1:]
+        requirements = fh.readlines()
 else:
     requirements = []
 
