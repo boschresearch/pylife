@@ -127,7 +127,7 @@ class Bayesian(Elementary):
             # convert m and c to a tensor vector
             var = tt.as_tensor_variable([SD, TS])
 
-            pm.DensityDist('likelihood', lambda v: self._loglike(v), observed={'v': var})
+            pm.Potential('likelihood', self._loglike(var))
 
             trace_SD_TS = pm.sample(self._nsamples, cores=1, chains=chains, random_seed=random_seed, discard_tuned_samples=True, tune=tune, **kw)
 
