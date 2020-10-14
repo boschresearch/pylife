@@ -1,4 +1,3 @@
-python>2
 numpy
 pytest
 spyder
@@ -11,3 +10,4 @@ jupyter
 matplotlib
 xlrd
 pymc3
+pytest-cov
