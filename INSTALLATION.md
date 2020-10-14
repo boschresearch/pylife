@@ -19,11 +19,17 @@ Create an anaconda environment with all the requirements by running
 ```
 ./install_pylife_linux.sh
 ```
+on Linux and
+```
+install_pylife_linux.bat
+```
+on Windows
+
 which will take a couple of minutes, sorry.
 
 Then activate it:
 ```
-conda activate _venv
+conda activate ./_venv
 ```
 
 ### Using pip
@@ -55,21 +61,9 @@ You can run the test suite by the command
 pytest
 ```
 
-If it creates an output like below, the installation was successful.
+If it creates an output ending like below, the installation was successful.
 ```
-============================= test session starts ==============================
-platform linux -- Python 3.7.4, pytest-5.2.1, py-1.8.0, pluggy-0.13.0
-rootdir: /home/jmu3si/Devel/pylife, inifile: pytest.ini, testpaths: tests
-collected 35 items
-
-tests/strength/test_meanstress.py ....                                   [ 11%]
-tests/stress/test_equistress.py .                                        [ 14%]
-tests/stress/test_rainflow.py .................                          [ 62%]
-tests/utils/test_failure_probability.py ...                              [ 71%]
-tests/utils/test_meshapping.py .....                                     [ 85%]
-tests/utils/test_meshops.py .....                                        [100%]
-
-============================== 35 passed in 7.29s ==============================
+================ 228 passed, 1 deselected, 13 warnings in 30.45s ===============
 ```
 
 There might be some `DeprecationWarning`s. Ignore them for now.
@@ -80,6 +74,10 @@ There might be some `DeprecationWarning`s. Ignore them for now.
 As long as the docs are not available online, you have to build them yourself
 using the command
 ```
-./build_docs.sh
+./batch_scripts/build_docs.sh
+```
+on Linux or
+```
+./batch_scripts/build_docs.bat
 ```
 The docs then are in `doc/build/index.html`.

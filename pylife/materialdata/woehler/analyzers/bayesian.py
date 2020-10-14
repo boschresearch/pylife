@@ -103,7 +103,7 @@ class Bayesian(Elementary):
         with pm.Model():
             family = pm.glm.families.StudentT()
             pm.glm.GLM.from_formula('y ~ x', data_dict, family=family)
-            trace_robust = pm.sample(self._nsamples, nuts_kwargs={'target_accept': 0.99}, random_seed=random_seed, chains=chains, tune=tune, **kw)
+            trace_robust = pm.sample(self._nsamples, target_accept=0.99, random_seed=random_seed, chains=chains, tune=tune, **kw)
 
             return trace_robust
 
@@ -114,7 +114,7 @@ class Bayesian(Elementary):
             mu = pm.Normal('mu', mu=log_N_shift.mean(), sd=log_N_shift.std())  # mu könnte von FKM gegeben
             _ = pm.Normal('y', mu=mu, sd=stdev, observed=log_N_shift)  # lognormal
 
-            trace_TN = pm.sample(self._nsamples, nuts_kwargs={'target_accept': 0.99}, random_seed=random_seed, chains=chains, tune=tune, **kw)
+            trace_TN = pm.sample(self._nsamples, target_accept=0.99, random_seed=random_seed, chains=chains, tune=tune, **kw)
 
         return trace_TN
 
@@ -127,7 +127,7 @@ class Bayesian(Elementary):
             # convert m and c to a tensor vector
             var = tt.as_tensor_variable([SD, TS])
 
-            pm.DensityDist('likelihood', lambda v: self._loglike(v), observed={'v': var})
+            pm.Potential('likelihood', self._loglike(var))
 
             trace_SD_TS = pm.sample(self._nsamples, cores=1, chains=chains, random_seed=random_seed, discard_tuned_samples=True, tune=tune, **kw)
 
