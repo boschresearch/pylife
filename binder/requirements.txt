@@ -1,0 +1,11 @@
+cython
+numpy
+scipy
+pandas
+tables
+mystic
+pymc3
+jupyter
+matplotlib
+xlrd
+git+https://github.com/boschresearch/pylife.git
