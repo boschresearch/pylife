@@ -1,3 +1,5 @@
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/boschresearch/pylife/master?filepath=demos%2Findex.ipynb)
+
 # pyLife – a general library for fatigue and reliability
 
 pyLife is an Open Source Python library for state of the art algorithms used in
