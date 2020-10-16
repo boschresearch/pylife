@@ -50,14 +50,14 @@ setuptools.setup(
     description="General Fatigue library",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://sourcecode.socialcoding.bosch.com/projects/FMO/repos/pylife",
+    url="https://github.com/boschresearch/pylife",
     packages=setuptools.find_packages(),
     ext_modules = cythonize(cython_modules, compiler_directives={'linetrace': True}) if use_cython else [],
     include_package_data=True,
 	classifiers=[
-        "Programming Language :: Python :: 3.x",
-        "License :: ? :: ?",
-        "Operating System :: OS Independent",
+            "Programming Language :: Python :: 3",
+            "License :: OSI Approved :: Apache Software License",
+            "Operating System :: OS Independent",
     ],
     setup_requires = [
         'setuptools',
