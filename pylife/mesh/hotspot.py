@@ -25,18 +25,21 @@ import pylife.mesh.meshsignal as meshsignal
 class HotSpot(meshsignal.MeshAccessor):
 
     def calc(self, value_key, limit_frac=0.9, artefact_threshold=None):
-        '''
-        Calculates hotspots on a FE mesh
-        -----------------------------------
-        value_key: string
+        '''Calculates hotspots on a FE mesh
+
+        Parameters
+        ----------
+        value_key : string
             Column name of the field variable, on which the Hot Spot
             calculation is done.
-        limit_frac: float, optional
-            fraction of the max field variable. Example: If you set
+
+        limit_frac : float, optional
+            Fraction of the max field variable. Example: If you set
             limit_frac = 0.9, the function finds all nodes and regions
             which are >= 90% of the maximum value of the field
             variable.  default: 0.9
-        artefact_threshold: float, optional
+
+        artefact_threshold : float, optional
             If set all the values above the `artefact_threshold` limit are not
             taken into account for the calculation of the maximum value. This
             is meant to be used for numerical artefacts which would take
@@ -58,8 +61,8 @@ class HotSpot(meshsignal.MeshAccessor):
                 * Find all elements > `limit_frac` belonging to this node
                 * Select all nodes > `limit_frac` belonging to these elements
                 * Start loop again until all nodes > `limit_frac` are assigned to a hotspot
-        Attention: All stress values are node based, not integration point based
 
+        Attention: All stress values are node based, not integration point based
         '''
         max_value = (self._obj[value_key].max() if artefact_threshold is None
                      else self._obj.loc[self._obj[value_key] < artefact_threshold, value_key].max())

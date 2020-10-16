@@ -4,9 +4,9 @@ scipy
 pandas
 cython
 mystic
+pymc3
 jupyter
 matplotlib
-xlrd
 sphinx
 m2r2
 nbsphinx
