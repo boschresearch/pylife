@@ -57,14 +57,9 @@ extensions = [
     'nbsphinx',
     'nbsphinx_link'
     ]
+
 napoleon_numpy_docstring = True
 nbsphinx_allow_errors = True
-# intersphinx_mapping = {
-    # 'pandas':  ('https://pandas.pydata.org/pandas-docs/stable/', None),
-    # 'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-    # 'matplotlib': ('http://matplotlib.sourceforge.net/', None)
-# }
-
 napoleon_numpy_docstring = True
 nbsphinx_timeout = -1
 
