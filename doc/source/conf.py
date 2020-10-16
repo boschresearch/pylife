@@ -20,6 +20,13 @@ sys.path.insert(0, os.path.abspath('../../pylife/strength'))
 sys.path.insert(0, os.path.abspath('../../pylife/materialdata/woehler'))
 sys.path.insert(0, os.path.abspath('../../pylife/utils'))
 
+
+# Don't try to use C-code for the theano stuff when building the docs.
+# Otherwise the demo notebooks fail on readthedocs
+os.environ['THEANO_FLAGS'] = 'cxx=""'
+os.environ['PYTHONWARNINGS'] = 'ignore'
+
+
 import asyncio
 
 # See https://bugs.python.org/issue37373 :(
