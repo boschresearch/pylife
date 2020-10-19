@@ -37,16 +37,17 @@ There are/will be the following subpackages:
 	* hotspot detection
 * `util` all the more general utilities
 	* ...
+* `materialdata` analysis of material testing data
+    * Wöhler (SN-curve) data analysis
 
 
 ## Disclaimer
 
-*This is work in progress at very early stage.* That means that interfaces will
-most likely change so any application you link against this library will most
-probably break once you pull updates. So don't do it unless you can live with
-that. This also means that if you have an application that could make use of a
-general reliability library you can contribute to the development and also have a
-say in the interface design.
+*pyLife is in continuous development.* We hope to keep the interfaces more or
+less stable. However depending on the practical use of pyLife in the future
+interface changes might occur. If that happens, we probably won't be able to
+put too much effort into backwards compatibility. So be prepared to react to
+deprecations.
 
 
 ## License
