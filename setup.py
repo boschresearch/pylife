@@ -28,7 +28,7 @@ cmdclass=versioneer.get_cmdclass()
 if use_cython:
     cmdclass.update(build_ext=build_ext)
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding='utf-8') as fh:
     long_description = fh.read()
 
 cython_modules = [
