@@ -51,7 +51,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/boschresearch/pylife",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(exclude=['demos', 'tests.*', 'tests']),
     ext_modules = cythonize(cython_modules, compiler_directives={'linetrace': True}) if use_cython else [],
     include_package_data=True,
 	classifiers=[

@@ -2,3 +2,6 @@ include versioneer.py
 include pylife/_version.py
 include README.md
 include LICENSE
+include requirements.txt
+recursive-exclude tests *
+recursive-exclude demos *
