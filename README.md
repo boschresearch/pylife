@@ -1,4 +1,5 @@
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/boschresearch/pylife/master?filepath=demos%2Findex.ipynb)
+[![testsuite](https://github.com/boschresearch/pylife/workflows/testsuite/badge.svg)](https://github.com/boschresearch/pylife/actions?query=workflow%3Atestsuite)
 
 # pyLife – a general library for fatigue and reliability
 
