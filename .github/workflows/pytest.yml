@@ -24,5 +24,7 @@ jobs:
         pip install -r requirements.txt
         python setup.py build_ext --inplace --force --define CYTHON_TRACE
     - name: Test with pytest
+      env: 
+        THEANO_FLAGS: cxx=""
       run: |
         pytest
