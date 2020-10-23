@@ -52,7 +52,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/boschresearch/pylife",
     packages=setuptools.find_packages(exclude=['demos', 'tests.*', 'tests']),
-    ext_modules = cythonize(cython_modules, compiler_directives={'linetrace': True}) if use_cython else [],
+    ext_modules = cythonize(cython_modules, compiler_directives={'linetrace': True}) if use_cython else cython_modules,
     include_package_data=True,
 	classifiers=[
             "Programming Language :: Python :: 3",
