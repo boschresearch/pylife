@@ -1,19 +1,66 @@
 # Installation of pyLife
 
-For now we only have the python code repos, no pip or conda packages yet, sorry.
 
-## Download
+## To use pyLife
 
-Clone the git repository and enter it with a unix shell, on windows e.g. `git-bash`.
+### Prerequisites
 
-## Perquisites
+You need a python installation e.g. a virtual environment with `pip` a recent
+(brand new ones might not work) python versions installed. There are several
+ways to achieve that.
 
-pyLife being a Python library needs a running Python installation. As we make
-heavy use of the numpy/scipy/pandas stack and also some other useful libraries
-for numeric and data analysis, we recommend a python package manager like conda
-or pip to set up the python environment.
+#### Using anaconda
 
-### Using anaconda
+Install anaconda or miniconda [http://anaconda.com] on your computer and create
+a virtual environment with the package `pip` installed. See the [conda
+documentation](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
+on how to do that. The newly created environment must be activated.
+
+The following command lines should do it
+```
+conda create -n pylife-env pip
+conda activate pylife-env
+```
+
+#### Using virtualenv
+
+Setup a python virtual environment containing pip according to [these
+instructions](https://docs.python.org/3/tutorial/venv.html) and activate it.
+
+
+#### Using the python installation of your Linux distribution
+
+That's not recommended. If you really want to do that, you probably know how to
+do it.
+
+
+### pip install
+
+The simplest way to install pyLife is just using the pip package
+```
+pip install pylife
+```
+That installs pyLife with all the dependencies to use pyLife in python
+programs. You might want to install some further packages like `jupyter` in
+order to work with jupyter notebooks.
+
+There is no conda package as of now, unfortunately. The reason for that is that
+there is one package that pyLife depends on (mystic), that does not have a
+conda package. So we cannot provide a conda packages that fetches all the
+required dependencies to use all of pyLife's functionality.
+
+
+## For those who want to develop pyLife
+
+### Clone the git repository
+
+Depending on your tools. From the command line
+```
+git clone https://github.com/boschresearch/pylife.git
+```
+will do it.
+
+### Install the dependencies
 
 Create an anaconda environment with all the requirements by running
 ```
@@ -25,36 +72,22 @@ install_pylife_linux.bat
 ```
 on Windows
 
-which will take a couple of minutes, sorry.
+which will take a couple of minutes.
 
 Then activate it:
 ```
 conda activate ./_venv
 ```
 
-### Using pip
 
-tbw.
-
-
-## Installing
-
-### For users of pylife
-
-If you want to use pylife for your project you can install it via pip into your
-active python environment by.
-```
-pip install .
-```
-
-### If you want to develop pylife itself
+### Setup for development
 
 If you intent to develop for pylife you should to
 ```
 python ./setup.py develop
 ```
 
-## Test the installation
+### Test the installation
 
 You can run the test suite by the command
 ```
@@ -69,10 +102,10 @@ If it creates an output ending like below, the installation was successful.
 There might be some `DeprecationWarning`s. Ignore them for now.
 
 
-# Building the documentation
+### Building the documentation (optional)
 
-As long as the docs are not available online, you have to build them yourself
-using the command
+The docs are available at [readthedocs](https://pylife.readthedocs.io). You can
+also build them on your own, in order to check your docstrings.
 ```
 ./batch_scripts/build_docs.sh
 ```
