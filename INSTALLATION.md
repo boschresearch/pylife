@@ -1,4 +1,4 @@
-# Installation / Gatting started
+# Installation / Getting started
 
 ## Just a glimpse
 
