@@ -14,11 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jan 13 08:04:24 2020
 
-@author: KRD2RNG
-"""
 
 import numpy as np
 import pandas as pd
