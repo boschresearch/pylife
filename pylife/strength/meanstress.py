@@ -1,18 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
-'''
-Meanstress routines
-===================
-
-Mean stress transformation methods
-----------------------------------
-
-* FKM Goodman
-* Five Segment Correction
-
-'''
-
 # Copyright (c) 2019 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
@@ -28,6 +13,18 @@ Mean stress transformation methods
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+'''
+Meanstress routines
+===================
+
+Mean stress transformation methods
+----------------------------------
+
+* FKM Goodman
+* Five Segment Correction
+
+'''
 
 __author__ = "Johannes Mueller, Lena Rapp"
 __maintainer__ = "Johannes Mueller"
