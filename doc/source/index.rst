@@ -8,7 +8,7 @@ pyLife Documentation
 
 .. toctree::
    :maxdepth: 1
-   :caption: Installation
+   :caption: Installation / Getting started
 
    installation
 
@@ -18,12 +18,12 @@ pyLife Documentation
 
    user_guide
    signal_api
-   
+
 .. toctree::
    :maxdepth: 1
    :caption: Cookbook
 
-   cookbook   
+   cookbook
 
 .. toctree::
    :maxdepth: 2

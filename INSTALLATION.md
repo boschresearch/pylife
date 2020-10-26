@@ -1,7 +1,13 @@
-# Installation of pyLife
+# Installation / Gatting started
+
+## Just a glimpse
+
+If you just want to check out pyLife's demos, you can use the our notebooks at
+[mybinder](https://mybinder.org/v2/gh/boschresearch/pylife/master?filepath=demos%2Findex.ipynb). We
+will add new notebooks as soon as we have new functionality.
 
 
-## To use pyLife
+## Installation to use pyLife
 
 ### Prerequisites
 
@@ -50,7 +56,9 @@ conda package. So we cannot provide a conda packages that fetches all the
 required dependencies to use all of pyLife's functionality.
 
 
-## For those who want to develop pyLife
+## Installation to develop pyLife
+
+For general contribution guidelines please read [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ### Clone the git repository
 
@@ -62,7 +70,8 @@ will do it.
 
 ### Install the dependencies
 
-Create an anaconda environment with all the requirements by running
+Install anaconda or miniconda [http://anaconda.com]. Create an anaconda
+environment with all the requirements by running
 ```
 ./install_pylife_linux.sh
 ```
@@ -82,7 +91,7 @@ conda activate ./_venv
 
 ### Setup for development
 
-If you intent to develop for pylife you should to
+In order to make the package usable in your environment do
 ```
 python ./setup.py develop
 ```
