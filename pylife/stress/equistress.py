@@ -414,6 +414,61 @@ def signed_mises_abs_max_principal(s11, s22, s33, s12, s13, s23):
 
 @pd.api.extensions.register_dataframe_accessor("equistress")
 class StressTensorEquistressAccessor(stresssignal.StressTensorVoigtAccessor):
+    def tresca(self):
+        return pd.DataFrame({'tresca': tresca(s11=self._obj['S11'].to_numpy(),
+                                              s22=self._obj['S22'].to_numpy(),
+                                              s33=self._obj['S33'].to_numpy(),
+                                              s12=self._obj['S12'].to_numpy(),
+                                              s13=self._obj['S13'].to_numpy(),
+                                              s23=self._obj['S23'].to_numpy())},
+                            index=self._obj.index)
+
+    def signed_tresca_trace(self):
+        return pd.DataFrame({'signed_tresca_trace': signed_tresca_trace(s11=self._obj['S11'].to_numpy(),
+                                                                        s22=self._obj['S22'].to_numpy(),
+                                                                        s33=self._obj['S33'].to_numpy(),
+                                                                        s12=self._obj['S12'].to_numpy(),
+                                                                        s13=self._obj['S13'].to_numpy(),
+                                                                        s23=self._obj['S23'].to_numpy())},
+                            index=self._obj.index)
+
+    def signed_tresca_abs_max_principal(self):
+        return pd.DataFrame({'signed_tresca_abs_max_principal':
+                             signed_tresca_abs_max_principal(s11=self._obj['S11'].to_numpy(),
+                                                             s22=self._obj['S22'].to_numpy(),
+                                                             s33=self._obj['S33'].to_numpy(),
+                                                             s12=self._obj['S12'].to_numpy(),
+                                                             s13=self._obj['S13'].to_numpy(),
+                                                             s23=self._obj['S23'].to_numpy())},
+                            index=self._obj.index)
+
+    def abs_max_principal(self):
+        return pd.DataFrame({'abs_max_principal': abs_max_principal(s11=self._obj['S11'].to_numpy(),
+                                                                    s22=self._obj['S22'].to_numpy(),
+                                                                    s33=self._obj['S33'].to_numpy(),
+                                                                    s12=self._obj['S12'].to_numpy(),
+                                                                    s13=self._obj['S13'].to_numpy(),
+                                                                    s23=self._obj['S23'].to_numpy())},
+                            index=self._obj.index)
+
+    def max_principal(self):
+        return pd.DataFrame({'max_principal': max_principal(s11=self._obj['S11'].to_numpy(),
+                                                            s22=self._obj['S22'].to_numpy(),
+                                                            s33=self._obj['S33'].to_numpy(),
+                                                            s12=self._obj['S12'].to_numpy(),
+                                                            s13=self._obj['S13'].to_numpy(),
+                                                            s23=self._obj['S23'].to_numpy())},
+                            index=self._obj.index)
+
+    def min_principal(self):
+        return pd.DataFrame({'min_principal': min_principal(s11=self._obj['S11'].to_numpy(),
+                                                            s22=self._obj['S22'].to_numpy(),
+                                                            s33=self._obj['S33'].to_numpy(),
+                                                            s12=self._obj['S12'].to_numpy(),
+                                                            s13=self._obj['S13'].to_numpy(),
+                                                            s23=self._obj['S23'].to_numpy())},
+                            index=self._obj.index)
+
     def mises(self):
         return pd.DataFrame({'mises': mises(s11=self._obj['S11'].to_numpy(),
                                             s22=self._obj['S22'].to_numpy(),
@@ -423,6 +478,21 @@ class StressTensorEquistressAccessor(stresssignal.StressTensorVoigtAccessor):
                                             s23=self._obj['S23'].to_numpy())},
                             index=self._obj.index)
 
+    def signed_mises_trace(self):
+        return pd.DataFrame({'signed_mises_trace': signed_mises_trace(s11=self._obj['S11'].to_numpy(),
+                                                                      s22=self._obj['S22'].to_numpy(),
+                                                                      s33=self._obj['S33'].to_numpy(),
+                                                                      s12=self._obj['S12'].to_numpy(),
+                                                                      s13=self._obj['S13'].to_numpy(),
+                                                                      s23=self._obj['S23'].to_numpy())},
+                            index=self._obj.index)
 
-if __name__ == '__main__':
-    pass
+    def signed_mises_abs_max_principal(self):
+        return pd.DataFrame({'signed_mises_abs_max_principal':
+                             signed_mises_abs_max_principal(s11=self._obj['S11'].to_numpy(),
+                                                            s22=self._obj['S22'].to_numpy(),
+                                                            s33=self._obj['S33'].to_numpy(),
+                                                            s12=self._obj['S12'].to_numpy(),
+                                                            s13=self._obj['S13'].to_numpy(),
+                                                            s23=self._obj['S23'].to_numpy())},
+                            index=self._obj.index)
