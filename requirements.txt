@@ -1,13 +1,8 @@
 numpy
-pytest
-spyder
 scipy
 pandas
+tables
 cython
 mystic
-tables
-jupyter
-matplotlib
-xlrd
 pymc3
-pytest-cov
+matplotlib
