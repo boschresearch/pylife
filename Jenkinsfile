@@ -22,9 +22,7 @@ pipeline {
         stage('PyTest') {
             steps {
                 // Running unit tests
-                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                    bat 'batch_scripts/run_pylife_tests.bat'
-                }                
+                bat 'batch_scripts/run_pylife_tests.bat'
             }
         }
         // Test code coverage
