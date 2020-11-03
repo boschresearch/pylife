@@ -19,17 +19,21 @@ pipeline {
             }
         }
         // Test Python packages with PyTest
-        stage('PyTest & Code coverage') {
+        stage('PyTest') {
             steps {
                 // Running unit tests
                 bat 'batch_scripts/run_pylife_tests.bat'
-                
+            }
+        }
+        // Test code coverage
+        stage('Coverage check') {
+            steps {                
                 // Running code coverage tool
                 catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                     bat 'batch_scripts/run_test_cov_analysis.bat'
                 }
             }
-        }
+        }        
         // Static code analysis with Flake8
         stage('Flake8') {
             steps {
