@@ -24,16 +24,7 @@ pipeline {
                 // Running unit tests
                 bat 'batch_scripts/run_pylife_tests.bat'
             }
-        }
-        // Test code coverage
-        stage('Coverage check') {
-            steps {                
-                // Running code coverage tool
-                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                    bat 'batch_scripts/run_test_cov_analysis.bat'
-                }
-            }
-        }        
+        }      
         // Static code analysis with Flake8
         stage('Flake8') {
             steps {
@@ -50,26 +41,45 @@ pipeline {
                 }
             }
         }
-        // Publish Test results with MSTest
-        stage('Publish Test Results') {
+        stage ('Publish Test Results') {
             steps {
                 // JUnit Test results
                 junit 'junit.xml'
-
-                // Test Coverage results
-                publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'coverage_report.xml')], failNoReports: true, sourceFileResolver: sourceFiles('NEVER_STORE')
                 
-                // Test Coverage html
                 publishHTML target: [
                     allowMissing: false,
                     alwaysLinkToLastBuild: false,
                     keepAll: true,
                     reportDir: 'coverage_report',
                     reportFiles: 'index.html',
-                    reportName: 'Coverage Report html'
+                    reportName: 'Test coverage'
                 ] 
-
-                // Documentation
+            }
+        }
+        stage ('Publish coverage report') {    
+            steps{
+                script {
+                    cobertura(
+                        coberturaReportFile: "coverage_report.xml",
+                        onlyStable: false,
+                        failNoReports: true,
+                        failUnhealthy: false,
+                        failUnstable: false,
+                        autoUpdateHealth: true,
+                        autoUpdateStability: true,
+                        zoomCoverageChart: true,
+                        maxNumberOfBuilds: 0,
+                        lineCoverageTargets: '80, 80, 80',
+                        conditionalCoverageTargets: '80, 80, 80',
+                        classCoverageTargets: '80, 80, 80',
+                        methodCoverageTargets: '80, 80, 80',
+                        fileCoverageTargets: '80, 80, 80',
+                    ) 
+                }
+            }
+        }
+        stage ('Publish documentation') {
+            steps{
                 publishHTML target: [
                     allowMissing: false,
                     alwaysLinkToLastBuild: false,
@@ -77,8 +87,8 @@ pipeline {
                     reportDir: 'doc/build/html',
                     reportFiles: 'index.html',
                     reportName: 'Documentation'
-                ]                  
-            }                
+                ]   
+            }
         }
     }
     // Post-build actions
