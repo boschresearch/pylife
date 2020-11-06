@@ -51,7 +51,7 @@ pipeline {
                     echo params.PYLIFE_COVERAGE
                     if (env.BRANCH_NAME.startsWith('dev')){
                         Integer cov = testResultSummary.totalCount
-                        properties([parameters([number(name: 'PYLIFE_COVERAGE', defaultValue: cov.toString())])])
+                        properties([parameters([string(name: 'PYLIFE_COVERAGE', defaultValue: cov.toString())])])
                         echo "Test result of dev has been stored: '${params.PYLIFE_COVERAGE}'"
                     } else if (env.BRANCH_NAME.startsWith('PR')) {  
                         if (params.PYLIFE_COVERAGE != null) {
