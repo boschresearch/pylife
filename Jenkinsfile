@@ -1,3 +1,5 @@
+import hudson.tasks.junit.TestResultSummary
+
 pipeline {
     // Which Build Node?
     agent any
@@ -43,8 +45,27 @@ pipeline {
         }
         stage ('Publish Test Results') {
             steps {
-                // JUnit Test results
-                junit 'junit.xml'
+                script {
+                    // JUnit Test results
+                    TestResultSummary testResultSummary = junit 'junit.xml'
+                    echo params.PYLIFE_COVERAGE
+                    if (env.BRANCH_NAME.startsWith('dev')){
+                        Integer cov = testResultSummary.totalCount
+                        properties([parameters([number(name: 'PYLIFE_COVERAGE', defaultValue: cov.toString())])])
+                        echo "Test result of dev has been stored: '${params.PYLIFE_COVERAGE}'"
+                    } else if (env.BRANCH_NAME.startsWith('PR')) {  
+                        if (params.PYLIFE_COVERAGE != null) {
+                            if (params.PYLIFE_COVERAGE.toInteger() > testResultSummary.totalCount) {
+                                echo "Test result has been dropping from '${params.PYLIFE_COVERAGE}' to '${testResultSummary.totalCount}'"
+                                currentBuild.result = "FAILURE"
+                            } else {
+                                echo "Test coverage is sufficient, previous was '${params.PYLIFE_COVERAGE}' and now it is '${testResultSummary.totalCount}'"
+                            }
+                        } else {
+                            echo "No previous pyLife coverage is stored"
+                        }
+                    } 
+                }
                 
                 publishHTML target: [
                     allowMissing: false,
