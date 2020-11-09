@@ -48,6 +48,7 @@ pipeline {
                 // JUnit Test results
                 junit 'junit.xml'
                 
+                //Publish
                 publishHTML target: [
                     allowMissing: false,
                     alwaysLinkToLastBuild: false,
