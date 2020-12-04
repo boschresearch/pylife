@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -34,14 +36,37 @@ def test_get_node_variable_displacement(beam_2d_squ):
     pd.testing.assert_frame_equal(var_frame, RD.beam_2d_squ_node_displacement)
 
 
+def test_get_element_variable_evol_no_column_name(beam_3d_hex):
+    with pytest.raises(KeyError, match="No column name for variable EVOL. Please povide with column_names parameter"):
+        beam_3d_hex.variable('1', 'STATE-2', 'EVOL')
+
+
 def test_get_element_variable_evol(beam_3d_hex):
-    var_frame = beam_3d_hex.variable('1', 'STATE-2', 'EVOL')
+    var_frame = beam_3d_hex.variable('1', 'STATE-2', 'EVOL', column_names=['Ve'])
     pd.testing.assert_frame_equal(var_frame, RD.beam_3d_hex_node_displacement)
 
 
 def test_get_element_nodal_variable_stress(beam_2d_squ):
     var_frame = beam_2d_squ.variable('1', 'STATE-2', 'STRESS_CAUCHY')
     pd.testing.assert_frame_equal(var_frame, RD.beam_2d_squ_element_nodal_stress)
+
+
+def test_get_element_nodal_variable_stress_override_column_names(beam_2d_squ):
+    var_frame = beam_2d_squ.variable('1', 'STATE-2', 'STRESS_CAUCHY',
+                                     column_names=['s11', 's22', 's33', 's12', 's13', 's23'])
+    reference = RD.beam_2d_squ_element_nodal_stress
+    reference.columns = ['s11', 's22', 's33', 's12', 's13', 's23']
+    pd.testing.assert_frame_equal(var_frame, reference)
+
+
+def test_get_element_nodal_variable_stress_column_name_list_unmatch(beam_2d_squ):
+    with pytest.raises(ValueError, match=re.escape("Length of column name list (3) does not match variable dimension (6).")):
+        beam_2d_squ.variable('1', 'STATE-2', 'STRESS_CAUCHY', column_names=['s11', 's22', 's33'])
+
+
+def test_get_element_nodal_variable_strain(beam_2d_squ):
+    var_frame = beam_2d_squ.variable('1', 'STATE-2', 'E')
+    pd.testing.assert_frame_equal(var_frame, RD.beam_2d_squ_element_nodal_strain)
 
 
 def test_unsupported_location():

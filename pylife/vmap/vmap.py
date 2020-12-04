@@ -180,7 +180,7 @@ class VMAP:
     _column_names = {
         'DISPLACEMENT': ['dx', 'dy', 'dz'],
         'STRESS_CAUCHY': ['S11', 'S22', 'S33', 'S12', 'S13', 'S23'],
-        'EVOL': ['V_e']
+        'E': ['E11', 'E22', 'E33', 'E12', 'E13', 'E23'],
     }
 
     def __init__(self, filename):
@@ -264,7 +264,7 @@ class VMAP:
 
         return pd.DataFrame(index=self.mesh_index(geometry)).join(self.nodes(geometry))
 
-    def variable(self, geometry, state, varname):
+    def variable(self, geometry, state, varname, column_names=None):
         '''Retrieves a field output variable
 
         Parameters
@@ -275,6 +275,10 @@ class VMAP:
             The load state of which the field variable is to be read
         varname : string
             The name of the field variables
+        column_names : list of string, optional
+            The names of the columns names to be used in the DataFrame
+            If not provided, it will be chosen according to the list shown below.
+            The length of the list must match the dimension of the variable.
 
         Returns
         -------
@@ -288,12 +292,41 @@ class VMAP:
         ------
         KeyError
             if the geometry, state or varname is not found of if the vmap file is corrupted
+        KeyError
+            if there are no column names known for the variable.
+        ValueError
+            if the length of the column_names does not match the dimension of the variable
+
+        Notes
+        -----
+        If the ``column_names`` argument ist not provided the following column names are
+        chosen
+
+        * 'DISPLACEMENT': ``['dx', 'dy', 'dz']``
+        * 'STRESS_CAUCHY': ``['S11', 'S22', 'S33', 'S12', 'S13', 'S23']``
+        * 'E': ``['E11', 'E22', 'E33', 'E12', 'E13', 'E23']``
+
+        If that fails a ``KeyError`` exception is risen.
+
+        TODO
+        ----
+        Write a more central document about pyLife's column names.
         '''
+        if column_names is None:
+            try:
+                column_names = self._column_names[varname]
+            except KeyError:
+                raise KeyError("No column name for variable %s. Please povide with column_names parameter." % varname)
 
         var_tree = self._file["/VMAP/VARIABLES/%s/%s/%s" % (state, geometry, varname)]
+        var_dimension = var_tree.attrs['MYDIMENSION']
+        if len(column_names) != var_dimension:
+            raise ValueError("Length of column name list (%d) does not match variable dimension (%d)."
+                             % (len(column_names), var_dimension))
+
         return pd.DataFrame(
             data=var_tree['MYVALUES'][()],
-            columns=self._column_names[varname],
+            columns=column_names,
             index=self._make_index(var_tree, geometry)
         )
 
