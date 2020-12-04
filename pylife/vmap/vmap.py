@@ -18,8 +18,7 @@
 
 `VMAP <https://www.vmap.eu.com/>`_ *is a vendor-neutral standard
 for CAE data storage to enhance interoperability in virtual
-engineering workflows.* VMAP uses the hdf5 file format to store data
-in a structured way.
+engineering workflows.*
 
 pyLife supports a growing subset of the VMAP standard. That means that
 only features relevant for pyLife's addressed real life use cases are
