@@ -32,8 +32,8 @@ Examples
 --------
 Read in a mesh from a vmap file:
 
->>> df = (pylife.vmap.VMAP('demos/plate_with_hole.vmap')
->>>       .mesh_coords('1')
+>>> vm = pylife.vmap.VMAP('demos/plate_with_hole.vmap')
+>>> df = (vm.mesh_coords('1')
 >>>       .join(vm.variable('1', 'STATE-2', 'STRESS_CAUCHY'))
 >>>       .join(vm.variable('1', 'STATE-2', 'DISPLACEMENT')))
 >>> df.head()
