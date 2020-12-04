@@ -22,6 +22,8 @@ import pandas as pd
 
 import h5py
 
+from .exceptions import *
+
 
 class VMAP:
     _column_names = {
@@ -32,11 +34,6 @@ class VMAP:
 
     def __init__(self, filename):
         self._file = h5py.File(filename, 'r')
-        self._index_gen = {
-            2: self._var_node_index,
-            3: self._var_element_index,
-            6: self._var_element_nodal_index
-        }
 
     def nodes(self, geometry):
         return pd.DataFrame(
@@ -85,12 +82,18 @@ class VMAP:
 
     def _make_index(self, var_tree, geometry):
         location = var_tree.attrs['MYLOCATION']
-        return self._index_gen[location](var_tree, geometry)
+        if location == 2:
+            return self._var_node_index(var_tree)
+        if location == 3:
+            return self._var_element_index(var_tree)
+        if location == 6:
+            return self._var_element_nodal_index(var_tree, geometry)
+        raise FeatureNotSupportedError("Unsupported value location, sorry\nSupported: NODE, ELEMENT, ELEMENT NODAL")
 
-    def _var_node_index(self, var_tree, _):
+    def _var_node_index(self, var_tree):
         return pd.Index(var_tree['MYGEOMETRYIDS'][:, 0], name='node_id')
 
-    def _var_element_index(self, var_tree, _):
+    def _var_element_index(self, var_tree):
         return pd.Index(var_tree['MYGEOMETRYIDS'][:, 0], name='element_id')
 
     def _var_element_nodal_index(self, var_tree, geometry):

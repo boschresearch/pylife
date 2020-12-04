@@ -42,3 +42,10 @@ def test_get_element_variable_evol(beam_3d_hex):
 def test_get_element_nodal_variable_stress(beam_2d_squ):
     var_frame = beam_2d_squ.variable('1', 'STATE-2', 'STRESS_CAUCHY')
     pd.testing.assert_frame_equal(var_frame, RD.beam_2d_squ_element_nodal_stress)
+
+
+def test_unsupported_location():
+    vm = vmap.VMAP('tests/vmap/testfiles/beam_at_integration_points.vmap')
+    with pytest.raises(vmap.FeatureNotSupportedError,
+                       match="Unsupported value location, sorry\nSupported: NODE, ELEMENT, ELEMENT NODAL"):
+        vm.variable('1', 'STATE-2', 'STRESS_CAUCHY')

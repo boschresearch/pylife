@@ -14,5 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .vmap import VMAP
-from .exceptions import *
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
+
+
+class FeatureNotSupportedError(Exception):
+    '''Feature of VMAP standard not supported by pyLife'''
+    pass
