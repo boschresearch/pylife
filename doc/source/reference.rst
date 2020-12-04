@@ -7,7 +7,7 @@ General
    :maxdepth: 2
 
    general/signal
-   
+
 Stress
 ------
 .. toctree::
@@ -49,4 +49,11 @@ Mesh utilities
    mesh/meshplot
    mesh/meshmapping
    mesh/hotspot
-   mesh/gradient   
+   mesh/gradient
+
+VMAP Interface
+--------------
+.. toctree::
+   :maxdepth: 2
+
+   vmap
