@@ -184,6 +184,16 @@ class VMAP:
     def __init__(self, filename):
         self._file = h5py.File(filename, 'r')
 
+    def geometries(self):
+        '''Retuns a list of geometry strings of geometries present in the vmap data
+        '''
+        return self._file["/VMAP/GEOMETRY"].keys()
+
+    def states(self):
+        '''Retuns a list of state strings of states present in the vmap data
+        '''
+        return self._file["/VMAP/VARIABLES/"].keys()
+
     def nodes(self, geometry):
         '''Retrieves the node positions
 

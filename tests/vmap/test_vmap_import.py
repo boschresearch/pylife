@@ -19,6 +19,20 @@ def beam_3d_hex():
     return vmap.VMAP('tests/vmap/testfiles/beam_3d_hex_lin.vmap')
 
 
+def assert_list_equal(l1, l2):
+    assert len(l1) == len(l2)
+    for e in l1:
+        assert e in l2
+
+
+def test_get_geometries(beam_2d_squ):
+    assert_list_equal(beam_2d_squ.geometries(), ['1'])
+
+
+def test_get_states(beam_2d_squ):
+    assert_list_equal(beam_2d_squ.states(), ['STATE-1', 'STATE-2'])
+
+
 def test_get_nodes_2d(beam_2d_squ):
     pd.testing.assert_frame_equal(beam_2d_squ.nodes('1'), RD.beam_2d_squ_nodes)
 
