@@ -46,7 +46,7 @@ Open the vmap file
 
 Read in the geometry along with the mesh connectivity index for geometry ``1``
 
->>> mesh_coords = mesh_coords = vm.mesh_coords('1')
+>>> mesh_coords = vm.mesh_coords('1')
 >>> mesh_coords.head(12)
                             x         y    z
 element_id node_id
@@ -125,7 +125,7 @@ element_id node_id
            14534   -13.276068 -5.419206  0.0  33.804211  2.829817  0.0 -14.580153  0.0  0.0 -0.005371  0.000014  0.0
 
 
-Supportet features
+Supported features
 ------------------
 
 So far the following data can be read from a vmap file
@@ -259,7 +259,6 @@ class VMAP:
         KeyError
             if the geometry is not found of if the vmap file is corrupted
         '''
-
         return pd.DataFrame(index=self.mesh_index(geometry)).join(self.nodes(geometry))
 
     def variable(self, geometry, state, varname, column_names=None):
@@ -282,7 +281,7 @@ class VMAP:
         -------
         variable_values : DataFrame
             a DataFrame with the value of the field variable.
-            The column names are the pyLife typical names for the variable.
+            The column names are given by ``column_names`` or by the list below.
             The index is depending on the variable's location either the element id,
             the node id or the element node index.
 
@@ -291,14 +290,13 @@ class VMAP:
         KeyError
             if the geometry, state or varname is not found of if the vmap file is corrupted
         KeyError
-            if there are no column names known for the variable.
+            if there are no column names given and known for the variable.
         ValueError
             if the length of the column_names does not match the dimension of the variable
 
         Notes
         -----
-        If the ``column_names`` argument ist not provided the following column names are
-        chosen
+        If the ``column_names`` argument is not provided the following column names are chosen
 
         * 'DISPLACEMENT': ``['dx', 'dy', 'dz']``
         * 'STRESS_CAUCHY': ``['S11', 'S22', 'S33', 'S12', 'S13', 'S23']``
