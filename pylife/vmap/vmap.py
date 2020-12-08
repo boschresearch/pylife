@@ -194,6 +194,12 @@ class VMAP:
         '''
         return self._file["/VMAP/VARIABLES/"].keys()
 
+    def node_sets(self, geometry):
+        return self._geometry_sets(geometry, 'nsets').keys()
+
+    def element_sets(self, geometry):
+        return self._geometry_sets(geometry, 'elsets').keys()
+
     def nodes(self, geometry):
         '''Retrieves the node positions
 
@@ -219,7 +225,7 @@ class VMAP:
             index=self._node_index(geometry)
         )
 
-    def mesh_index(self, geometry):
+    def mesh_index(self, geometry, node_set=None, element_set=None):
         '''Retrieves the node element index
 
         Parameters
@@ -237,6 +243,9 @@ class VMAP:
         KeyError
             if the geometry is not found of if the vmap file is corrupted
         '''
+        if node_set is not None and element_set is not None:
+            raise ValueError(("Cannot make mesh index for element set and node set at same time\n"
+                              "Please specify at most one of element_set or node_set. Not both of them."))
         connectivity = self._element_connectivity(geometry).connectivity
         length = sum([el.shape[0] for el in connectivity])
         index_np = np.empty((2, length), dtype=np.int64)
@@ -248,7 +257,17 @@ class VMAP:
             index_np[1, i:i_next] = node_ids
             i = i_next
 
-        return pd.MultiIndex.from_arrays(index_np, names=['element_id', 'node_id'])
+        mesh_index = pd.MultiIndex.from_arrays(index_np, names=['element_id', 'node_id'])
+
+        if node_set is not None:
+            node_set_ids = self._node_set_ids(geometry, node_set)
+            return pd.DataFrame(index=mesh_index).loc[(slice(None), node_set_ids), :].index
+
+        if element_set is not None:
+            element_set_ids = self._element_set_ids(geometry, element_set)
+            return pd.DataFrame(index=mesh_index).loc[(element_set_ids, slice(None)), :].index
+
+        return mesh_index
 
     def mesh_coords(self, geometry):
         '''Retrieves the mesh with its coordinates
@@ -373,3 +392,24 @@ class VMAP:
                 .merge(mesh_index_frame)
                 .set_index(['element_id', 'node_id'])
                 .index)
+
+    def _geometry_sets(self, geometry, set_type):
+        s_type = 0 if set_type == 'nsets' else 1
+        geometry_sets = self._file["/VMAP/GEOMETRY/%s/GEOMETRYSETS" % geometry]
+        gsets = {}
+        for key, gset in geometry_sets.items():
+            if gset.attrs['MYSETTYPE'] == s_type:
+                gsets[gset.attrs['MYSETNAME'].decode('UTF-8')] = gset['MYGEOMETRYSETDATA'][()]
+        return gsets
+
+    def _node_set_ids(self, geometry, node_set):
+        try:
+            return self._geometry_sets(geometry, 'nsets')[node_set].T[0]
+        except KeyError:
+            raise KeyError("Node set '%s' not found in geometry '%s'" % (node_set, geometry))
+
+    def _element_set_ids(self, geometry, element_set):
+        try:
+            return self._geometry_sets(geometry, 'elsets')[element_set].T[0]
+        except KeyError:
+            raise KeyError("Element set '%s' not found in geometry '%s'" % (element_set, geometry))

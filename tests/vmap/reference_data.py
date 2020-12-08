@@ -32,6 +32,30 @@ beam_2d_squ_mesh_index = pd.MultiIndex.from_arrays(
     names=['element_id', 'node_id']
 )
 
+beam_2d_squ_mesh_index_load = pd.MultiIndex.from_arrays(
+    [
+        [8],
+        [9]
+    ],
+    names=['element_id', 'node_id']
+)
+
+beam_2d_squ_mesh_index_fix = pd.MultiIndex.from_arrays(
+    [
+        [1, 1],
+        [1, 10]
+    ],
+    names=['element_id', 'node_id']
+)
+
+rotsym_quad_mesh_index_ysym = pd.MultiIndex.from_arrays(
+    [
+        [7, 7, 7, 7, 8, 8, 8, 8],
+        [5, 4, 13, 14, 14, 13, 2, 6]
+    ],
+    names=['element_id', 'node_id']
+)
+
 beam_2d_squ_mesh_coords = pd.DataFrame(data=np.array(
     [
         [-30., 25., 0.],  #  1
