@@ -183,6 +183,8 @@ class VMAP:
 
     def __init__(self, filename):
         self._file = h5py.File(filename, 'r')
+        self._mesh = None
+        self._geometry = None
 
     def geometries(self):
         '''Retuns a list of geometry strings of geometries present in the vmap data
@@ -224,6 +226,24 @@ class VMAP:
             columns=['x', 'y', 'z'],
             index=self._node_index(geometry)
         )
+
+    def make_mesh(self, geometry, node_set=None, element_set=None):
+        self._mesh = pd.DataFrame(index=self.mesh_index(geometry, node_set, element_set))
+        self._geometry = geometry
+        return self
+
+    def join_coordinates(self):
+        if self._mesh is None:
+            raise APIUseError("Need to make_mesh() before joining the coordinates.")
+        self._mesh = self._mesh.join(self.mesh_coords(self._geometry).loc[self._mesh.index])
+        return self
+
+    def to_frame(self):
+        if self._mesh is None:
+            raise(APIUseError("Need to make_mesh() before requesting a resulting frame."))
+        ret = self._mesh
+        self._mesh = None
+        return ret
 
     def mesh_index(self, geometry, node_set=None, element_set=None):
         '''Retrieves the node element index
@@ -354,6 +374,14 @@ class VMAP:
             columns=column_names,
             index=self._make_index(var_tree, geometry)
         )
+
+    def join_variable(self, state, var_name, column_names=None):
+        if self._mesh is None:
+            raise APIUseError("Need to make_mesh() before joining a variable.")
+        variable_data = (pd.DataFrame(index=self._mesh.index)
+                         .join(self.variable(self._geometry, state, var_name, column_names)))
+        self._mesh = self._mesh.join(variable_data.loc[self._mesh.index])
+        return self
 
     def _element_connectivity(self, geometry):
         elements = self._file['/VMAP/GEOMETRY/'+geometry+'/ELEMENTS/MYELEMENTS']

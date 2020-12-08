@@ -21,3 +21,8 @@ __maintainer__ = __author__
 class FeatureNotSupportedError(Exception):
     '''Feature of VMAP standard not supported by pyLife'''
     pass
+
+
+class APIUseError(Exception):
+    '''The API has been used in a wrong way'''
+    pass
