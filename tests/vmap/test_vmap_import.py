@@ -87,8 +87,8 @@ def test_make_mesh_join_coordinates_element_set_ysym(beam_2d_squ):
 
 
 def test_get_make_mesh_fail_elset_nset(beam_2d_squ):
-    with pytest.raises(ValueError, match=("Cannot make mesh index for element set and node set at same time\n"
-                                          "Please specify at most one of element_set or node_set. Not both of them.")):
+    with pytest.raises(vmap.APIUseError, match=("Cannot make mesh index for element set and node set at same time\n"
+                                                "Please specify at most one of element_set or node_set. Not both of them.")):
         beam_2d_squ.make_mesh('1', node_set='FIX', element_set='ALL')
 
 
@@ -297,8 +297,8 @@ def test_get_mesh_index_rotsym_quad_element_set_ysym(rotsym_quad):
 
 
 def test_get_mesh_index_fail_elset_nset(beam_2d_squ):
-    with pytest.raises(ValueError, match=("Cannot make mesh index for element set and node set at same time\n"
-                                          "Please specify at most one of element_set or node_set. Not both of them.")):
+    with pytest.raises(vmap.APIUseError, match=("Cannot make mesh index for element set and node set at same time\n"
+                                                "Please specify at most one of element_set or node_set. Not both of them.")):
         beam_2d_squ.mesh_index('1', node_set='FIX', element_set='ALL')
 
 

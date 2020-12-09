@@ -32,10 +32,12 @@ Examples
 --------
 Read in a mesh from a vmap file:
 
->>> vm = pylife.vmap.VMAP('demos/plate_with_hole.vmap')
->>> df = (vm.mesh_coords('1')
->>>       .join(vm.variable('1', 'STATE-2', 'STRESS_CAUCHY'))
->>>       .join(vm.variable('1', 'STATE-2', 'DISPLACEMENT')))
+
+>>> df = (vm = pylife.vmap.VMAP('demos/plate_with_hole.vmap')
+             .make_mesh('1', 'STATE-2')
+             .join_variable('STRESS_CAUCHY')
+             .join_variable('DISPLACEMENT')
+             .to_frame())
 >>> df.head()
                             x         y    z        S11       S22  S33        S12  S13  S23        dx        dy   dz
 element_id node_id

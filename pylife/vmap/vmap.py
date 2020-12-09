@@ -35,94 +35,30 @@ a certain geometry ``1`` and a certain load state ``STATE-2`` out of the
 vmap file. The vmap interface provides you the nodal geometry (node
 coordinates), the mesh connectivity index and the field variables.
 
-Steps
-.....
+You can retrieve a DataFrame of the mesh with the desired variables in just
+one statement.
 
-Open the vmap file
-
->>> import pylife.vmap
->>>
->>> vm = pylife.vmap.VMAP('demos/plate_with_hole.vmap')
-
-Read in the geometry along with the mesh connectivity index for geometry ``1``
-
->>> mesh_coords = vm.mesh_coords('1')
->>> mesh_coords.head(12)
-                            x         y    z
+>>> (pylife.vmap.VMAP('demos/plate_with_hole.vmap')
+     .make_mesh('1', 'STATE-2')
+     .join_coordinates()
+     .join_variable('STRESS_CAUCHY')
+     .join_variable('E')
+     .to_frame())
+                            x         y    z        S11       S22  S33        S12  S13  S23       E11       E22  E33       E12  E13  E23
 element_id node_id
-1          1734     14.897208  5.269875  0.0
-           1582     14.555333  5.355806  0.0
-           1596     14.630658  4.908741  0.0
-           4923     14.726271  5.312840  0.0
-           4924     14.592996  5.132274  0.0
-           4925     14.763933  5.089308  0.0
-2          1730     14.184048  4.278657  0.0
-           1601     13.863862  4.341518  0.0
-           576      14.066248  4.005180  0.0
-           4926     14.023954  4.310088  0.0
-           4927     13.965055  4.173349  0.0
-           4928     14.125148  4.141919  0.0
+1          1734     14.897208  5.269875  0.0  27.080811  6.927080  0.0 -13.687358  0.0  0.0  0.000119 -0.000006  0.0 -0.000169  0.0  0.0
+           1582     14.555333  5.355806  0.0  28.319006  1.178649  0.0 -10.732705  0.0  0.0  0.000133 -0.000035  0.0 -0.000133  0.0  0.0
+           1596     14.630658  4.908741  0.0  47.701195  5.512213  0.0 -17.866833  0.0  0.0  0.000219 -0.000042  0.0 -0.000221  0.0  0.0
+           4923     14.726271  5.312840  0.0  27.699907  4.052865  0.0 -12.210032  0.0  0.0  0.000126 -0.000020  0.0 -0.000151  0.0  0.0
+           4924     14.592996  5.132274  0.0  38.010101  3.345431  0.0 -14.299768  0.0  0.0  0.000176 -0.000038  0.0 -0.000177  0.0  0.0
+...                       ...       ...  ...        ...       ...  ...        ...  ...  ...       ...       ...  ...       ...  ...  ...
+4770       3812    -13.189782 -5.691876  0.0  36.527439  2.470588  0.0 -14.706686  0.0  0.0  0.000170 -0.000040  0.0 -0.000182  0.0  0.0
+           12418   -13.560289 -5.278386  0.0  32.868889  3.320898  0.0 -14.260107  0.0  0.0  0.000152 -0.000031  0.0 -0.000177  0.0  0.0
+           14446   -13.673285 -5.569107  0.0  34.291058  3.642457  0.0 -13.836027  0.0  0.0  0.000158 -0.000032  0.0 -0.000171  0.0  0.0
+           14614   -13.389065 -5.709927  0.0  36.063541  2.828889  0.0 -13.774759  0.0  0.0  0.000168 -0.000038  0.0 -0.000171  0.0  0.0
+           14534   -13.276068 -5.419206  0.0  33.804211  2.829817  0.0 -14.580153  0.0  0.0  0.000157 -0.000035  0.0 -0.000181  0.0  0.0
 
-Read in and the variable ``STRESS_CAUCHY`` of geometry ``1`` and load state
-``STATE-2``.
-
->>> stress = vm.variable('1', 'STATE-2', 'STRESS_CAUCHY')
->>> stress.head(12)
-                          S11       S22  S33        S12  S13  S23
-element_id node_id
-1          1734     27.080811  6.927080  0.0 -13.687358  0.0  0.0
-           1582     28.319006  1.178649  0.0 -10.732705  0.0  0.0
-           1596     47.701195  5.512213  0.0 -17.866833  0.0  0.0
-           4923     27.699907  4.052865  0.0 -12.210032  0.0  0.0
-           4924     38.010101  3.345431  0.0 -14.299768  0.0  0.0
-           4925     37.391003  6.219646  0.0 -15.777096  0.0  0.0
-2          1730     26.149452  9.321044  0.0 -16.487396  0.0  0.0
-           1601     23.324717  1.107580  0.0 -13.920287  0.0  0.0
-           576      35.546097  4.856305  0.0 -14.435610  0.0  0.0
-           4926     24.737087  5.214312  0.0 -15.203842  0.0  0.0
-           4927     29.435410  2.981942  0.0 -14.177948  0.0  0.0
-           4928     30.847776  7.088674  0.0 -15.461502  0.0  0.0
-
-Next you join those together to one `pandas.DataFrame`
-
->>> df = mesh_coords.join(stress)
->>> df.head(12)
-                            x         y    z        S11       S22  S33        S12  S13  S23
-element_id node_id
-1          1734     14.897208  5.269875  0.0  27.080811  6.927080  0.0 -13.687358  0.0  0.0
-           1582     14.555333  5.355806  0.0  28.319006  1.178649  0.0 -10.732705  0.0  0.0
-           1596     14.630658  4.908741  0.0  47.701195  5.512213  0.0 -17.866833  0.0  0.0
-           4923     14.726271  5.312840  0.0  27.699907  4.052865  0.0 -12.210032  0.0  0.0
-           4924     14.592996  5.132274  0.0  38.010101  3.345431  0.0 -14.299768  0.0  0.0
-           4925     14.763933  5.089308  0.0  37.391003  6.219646  0.0 -15.777096  0.0  0.0
-2          1730     14.184048  4.278657  0.0  26.149452  9.321044  0.0 -16.487396  0.0  0.0
-           1601     13.863862  4.341518  0.0  23.324717  1.107580  0.0 -13.920287  0.0  0.0
-           576      14.066248  4.005180  0.0  35.546097  4.856305  0.0 -14.435610  0.0  0.0
-           4926     14.023954  4.310088  0.0  24.737087  5.214312  0.0 -15.203842  0.0  0.0
-           4927     13.965055  4.173349  0.0  29.435410  2.981942  0.0 -14.177948  0.0  0.0
-           4928     14.125148  4.141919  0.0  30.847776  7.088674  0.0 -15.461502  0.0  0.0
-
-
-Of course you can also do this in one step
-
->>> vm = pylife.vmap.VMAP('demos/plate_with_hole.vmap')
->>> df = (vm.mesh_coords('1')
->>>       .join(vm.variable('1', 'STATE-2', 'STRESS_CAUCHY'))
->>>       .join(vm.variable('1', 'STATE-2', 'DISPLACEMENT')))
->>> df.head(12)
-                            x         y    z        S11       S22  S33        S12  S13  S23        dx        dy   dz
-element_id node_id
-1          1734     14.897208  5.269875  0.0  27.080811  6.927080  0.0 -13.687358  0.0  0.0  0.005345  0.000015  0.0
-           1582     14.555333  5.355806  0.0  28.319006  1.178649  0.0 -10.732705  0.0  0.0  0.005285  0.000003  0.0
-           1596     14.630658  4.908741  0.0  47.701195  5.512213  0.0 -17.866833  0.0  0.0  0.005376  0.000019  0.0
-           4923     14.726271  5.312840  0.0  27.699907  4.052865  0.0 -12.210032  0.0  0.0  0.005315  0.000009  0.0
-           4924     14.592996  5.132274  0.0  38.010101  3.345431  0.0 -14.299768  0.0  0.0  0.005326  0.000013  0.0
-...                       ...       ...  ...        ...       ...  ...        ...  ...  ...       ...       ...  ...
-4770       3812    -13.189782 -5.691876  0.0  36.527439  2.470588  0.0 -14.706686  0.0  0.0 -0.005300  0.000027  0.0
-           12418   -13.560289 -5.278386  0.0  32.868889  3.320898  0.0 -14.260107  0.0  0.0 -0.005444  0.000002  0.0
-           14446   -13.673285 -5.569107  0.0  34.291058  3.642457  0.0 -13.836027  0.0  0.0 -0.005404  0.000009  0.0
-           14614   -13.389065 -5.709927  0.0  36.063541  2.828889  0.0 -13.774759  0.0  0.0 -0.005330  0.000022  0.0
-           14534   -13.276068 -5.419206  0.0  33.804211  2.829817  0.0 -14.580153  0.0  0.0 -0.005371  0.000014  0.0
+[37884 rows x 15 columns]
 
 
 Supported features
@@ -197,9 +133,13 @@ class VMAP:
         return self._file["/VMAP/VARIABLES/"].keys()
 
     def node_sets(self, geometry):
+        '''Returns a list of the node_sets present in the vmap file
+        '''
         return self._geometry_sets(geometry, 'nsets').keys()
 
     def element_sets(self, geometry):
+        '''Returns a list of the element_sets present in the vmap file
+        '''
         return self._geometry_sets(geometry, 'elsets').keys()
 
     def nodes(self, geometry):
@@ -228,18 +168,127 @@ class VMAP:
         )
 
     def make_mesh(self, geometry, state=None, node_set=None, element_set=None):
+        '''Makes the initial mesh
+
+        Parameters
+        ----------
+        geometry : string
+            The geometry defined in the vmap file
+        state : string, optional
+            The load state of which the field variable is to be read.
+            If not given, the state must be defined in ``join_variable()``.
+        node_set : string, optional
+            The node set defined in the vmap file as gemetry set to which
+            the mesh is to be restricted to.
+        element_set : string, optional
+            The element set defined in the vmap file as gemetry set to which
+            the mesh is to be restricted to.
+
+        Returns
+        -------
+        self
+
+        Raises
+        ------
+        KeyError
+            if the ``geometry`` is not found of if the vmap file is corrupted
+        KeyError
+            if the ``node_set`` or ``element_set`` is not found in the geometry.
+        APIUseError
+            if both, a ``node_set`` and an ``element_set`` are given
+
+        Notes
+        -----
+        This methods defines the initial mesh to which coordinate data can be joined by ``join_coordinates()``
+        and field varaibles can be joined by ``join_variable()``
+
+        Examples
+        --------
+        Get the mesh data with the coordinates of geometry '1' and the stress tensor of 'STATE-2'
+
+        >>> (pylife.vmap.VMAP('demos/plate_with_hole.vmap')
+             .make_mesh('1', 'STATE-2')
+             .join_coordinates()
+             .join_variable('STRESS_CAUCHY')
+             .to_frame()
+                                    x         y    z        S11       S22  S33        S12  S13  S23
+        element_id node_id
+        1          1734     14.897208  5.269875  0.0  27.080811  6.927080  0.0 -13.687358  0.0  0.0
+                   1582     14.555333  5.355806  0.0  28.319006  1.178649  0.0 -10.732705  0.0  0.0
+                   1596     14.630658  4.908741  0.0  47.701195  5.512213  0.0 -17.866833  0.0  0.0
+                   4923     14.726271  5.312840  0.0  27.699907  4.052865  0.0 -12.210032  0.0  0.0
+                   4924     14.592996  5.132274  0.0  38.010101  3.345431  0.0 -14.299768  0.0  0.0
+        ...                       ...       ...  ...        ...       ...  ...        ...  ...  ...
+        4770       3812    -13.189782 -5.691876  0.0  36.527439  2.470588  0.0 -14.706686  0.0  0.0
+                   12418   -13.560289 -5.278386  0.0  32.868889  3.320898  0.0 -14.260107  0.0  0.0
+                   14446   -13.673285 -5.569107  0.0  34.291058  3.642457  0.0 -13.836027  0.0  0.0
+                   14614   -13.389065 -5.709927  0.0  36.063541  2.828889  0.0 -13.774759  0.0  0.0
+                   14534   -13.276068 -5.419206  0.0  33.804211  2.829817  0.0 -14.580153  0.0  0.0
+        '''
         self._mesh = pd.DataFrame(index=self.mesh_index(geometry, node_set, element_set))
         self._geometry = geometry
         self._state = state
         return self
 
     def join_coordinates(self):
+        '''Join the coordinates of the predefined geometry in the mesh
+
+        Returns
+        -------
+        self
+
+        Raises
+        ------
+        APIUseError
+            If the mesh has not been initialized using ``make_mesh()``
+
+
+        Examples
+        --------
+        Receive the mesh with the node coordinates
+
+        >>> pylife.vmap.VMAP('demos/plate_with_hole.vmap').make_mesh('1').join_coordinates().to_frame()
+                                    x         y    z
+        element_id node_id
+        1          1734     14.897208  5.269875  0.0
+                   1582     14.555333  5.355806  0.0
+                   1596     14.630658  4.908741  0.0
+                   4923     14.726271  5.312840  0.0
+                   4924     14.592996  5.132274  0.0
+        ...                       ...       ...  ...
+        4770       3812    -13.189782 -5.691876  0.0
+                   12418   -13.560289 -5.278386  0.0
+                   14446   -13.673285 -5.569107  0.0
+                   14614   -13.389065 -5.709927  0.0
+                   14534   -13.276068 -5.419206  0.0
+
+        [37884 rows x 3 columns]
+
+        '''
         if self._mesh is None:
             raise APIUseError("Need to make_mesh() before joining the coordinates.")
         self._mesh = self._mesh.join(self.mesh_coords(self._geometry).loc[self._mesh.index])
         return self
 
     def to_frame(self):
+        '''Returns the mesh and resets the mesh
+
+        Returns
+        -------
+        mesh : DataFrame
+            The mesh data joined so far
+
+        Raises
+        ------
+        APIUseError
+            if there is no mesh present, i.e. make_mesh() has not been called yet
+            or the mesh has been reset in the meantime.
+
+        Notes
+        -----
+        This method resets the mesh, i.e. ``make_mesh()`` must be called again in order to
+        fetch more mesh data in another mesh.
+        '''
         if self._mesh is None:
             raise(APIUseError("Need to make_mesh() before requesting a resulting frame."))
         ret = self._mesh
@@ -258,15 +307,25 @@ class VMAP:
         -------
         node_element_index : MultiIndex
             a MultiIndex with the node ids and element ids
+        node_set : string, optional
+            The node set defined in the vmap file as gemetry set to which
+            the mesh index is to be restricted to.
+        element_set : string, optional
+            The element set defined in the vmap file as gemetry set to which
+            the mesh index is to be restricted to.
 
         Raises
         ------
         KeyError
-            if the geometry is not found of if the vmap file is corrupted
+            if the ``geometry`` is not found of if the vmap file is corrupted
+        KeyError
+            if the ``node_set`` or ``element_set`` is not found in the geometry.
+        APIUseError
+            if both, a ``node_set`` and an ``element_set`` are given
         '''
         if node_set is not None and element_set is not None:
-            raise ValueError(("Cannot make mesh index for element set and node set at same time\n"
-                              "Please specify at most one of element_set or node_set. Not both of them."))
+            raise APIUseError("Cannot make mesh index for element set and node set at same time\n"
+                              "Please specify at most one of element_set or node_set. Not both of them.")
         connectivity = self._element_connectivity(geometry).connectivity
         length = sum([el.shape[0] for el in connectivity])
         index_np = np.empty((2, length), dtype=np.int64)
@@ -343,20 +402,6 @@ class VMAP:
             if there are no column names given and known for the variable.
         ValueError
             if the length of the column_names does not match the dimension of the variable
-
-        Notes
-        -----
-        If the ``column_names`` argument is not provided the following column names are chosen
-
-        * 'DISPLACEMENT': ``['dx', 'dy', 'dz']``
-        * 'STRESS_CAUCHY': ``['S11', 'S22', 'S33', 'S12', 'S13', 'S23']``
-        * 'E': ``['E11', 'E22', 'E33', 'E12', 'E13', 'E23']``
-
-        If that fails a ``KeyError`` exception is risen.
-
-        TODO
-        ----
-        Write a more central document about pyLife's column names.
         '''
         if column_names is None:
             try:
@@ -377,6 +422,77 @@ class VMAP:
         )
 
     def join_variable(self, var_name, state=None, column_names=None):
+        '''Joins a field output variable to the mesh
+
+        Parameters
+        ----------
+        varname : string
+            The name of the field variables
+        state : string, opional
+            The load state of which the field variable is to be read
+            If not given, the last defined state, either defined in ``make_mesh()``
+            or defeined in ``join_variable()`` is used.
+        column_names : list of string, optional
+            The names of the columns names to be used in the DataFrame
+            If not provided, it will be chosen according to the list shown below.
+            The length of the list must match the dimension of the variable.
+
+        Returns
+        -------
+        self
+
+        Raises
+        ------
+        APIUseError
+            if the mesh has not been initialized using ``make_mesh()``
+        KeyError
+            if the geometry, state or varname is not found of if the vmap file is corrupted
+        KeyError
+            if there are no column names given and known for the variable.
+        ValueError
+            if the length of the column_names does not match the dimension of the variable
+
+        Notes
+        -----
+        The mesh must be initialized with ``make_mesh()``. The final DataFrame can be retrieved with ``to_frame()``.
+
+        If the ``column_names`` argument is not provided the following column names are chosen
+
+        * 'DISPLACEMENT': ``['dx', 'dy', 'dz']``
+        * 'STRESS_CAUCHY': ``['S11', 'S22', 'S33', 'S12', 'S13', 'S23']``
+        * 'E': ``['E11', 'E22', 'E33', 'E12', 'E13', 'E23']``
+
+        If that fails a ``KeyError`` exception is risen.
+
+        Examples
+        --------
+        Receiving the 'DISPLACEMENT' of 'STATE-1' , the stress and strain tensors of 'STATE-2'
+
+        >>> (pylife.vmap.VMAP('demos/plate_with_hole.vmap')
+             .make_mesh('1')
+             .join_variable('DISPLACEMENT', 'STATE-1')
+             .join_variable('STRESS_CAUCHY', 'STATE-2')
+             .join_variable('E').to_frame())
+                             dx   dy   dz        S11       S22  S33        S12  S13  S23       E11       E22  E33       E12  E13  E23
+        element_id node_id
+        1          1734     0.0  0.0  0.0  27.080811  6.927080  0.0 -13.687358  0.0  0.0  0.000119 -0.000006  0.0 -0.000169  0.0  0.0
+                   1582     0.0  0.0  0.0  28.319006  1.178649  0.0 -10.732705  0.0  0.0  0.000133 -0.000035  0.0 -0.000133  0.0  0.0
+                   1596     0.0  0.0  0.0  47.701195  5.512213  0.0 -17.866833  0.0  0.0  0.000219 -0.000042  0.0 -0.000221  0.0  0.0
+                   4923     0.0  0.0  0.0  27.699907  4.052865  0.0 -12.210032  0.0  0.0  0.000126 -0.000020  0.0 -0.000151  0.0  0.0
+                   4924     0.0  0.0  0.0  38.010101  3.345431  0.0 -14.299768  0.0  0.0  0.000176 -0.000038  0.0 -0.000177  0.0  0.0
+        ...                 ...  ...  ...        ...       ...  ...        ...  ...  ...       ...       ...  ...       ...  ...  ...
+        4770       3812     0.0  0.0  0.0  36.527439  2.470588  0.0 -14.706686  0.0  0.0  0.000170 -0.000040  0.0 -0.000182  0.0  0.0
+                   12418    0.0  0.0  0.0  32.868889  3.320898  0.0 -14.260107  0.0  0.0  0.000152 -0.000031  0.0 -0.000177  0.0  0.0
+                   14446    0.0  0.0  0.0  34.291058  3.642457  0.0 -13.836027  0.0  0.0  0.000158 -0.000032  0.0 -0.000171  0.0  0.0
+                   14614    0.0  0.0  0.0  36.063541  2.828889  0.0 -13.774759  0.0  0.0  0.000168 -0.000038  0.0 -0.000171  0.0  0.0
+                   14534    0.0  0.0  0.0  33.804211  2.829817  0.0 -14.580153  0.0  0.0  0.000157 -0.000035  0.0 -0.000181  0.0  0.0
+
+        [37884 rows x 15 columns]
+
+        TODO
+        ----
+        Write a more central document about pyLife's column names.
+        '''
         if self._mesh is None:
             raise APIUseError("Need to make_mesh() before joining a variable.")
         if state is None:
