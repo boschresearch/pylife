@@ -227,9 +227,10 @@ class VMAP:
             index=self._node_index(geometry)
         )
 
-    def make_mesh(self, geometry, node_set=None, element_set=None):
+    def make_mesh(self, geometry, state=None, node_set=None, element_set=None):
         self._mesh = pd.DataFrame(index=self.mesh_index(geometry, node_set, element_set))
         self._geometry = geometry
+        self._state = state
         return self
 
     def join_coordinates(self):
@@ -375,9 +376,15 @@ class VMAP:
             index=self._make_index(var_tree, geometry)
         )
 
-    def join_variable(self, state, var_name, column_names=None):
+    def join_variable(self, var_name, state=None, column_names=None):
         if self._mesh is None:
             raise APIUseError("Need to make_mesh() before joining a variable.")
+        if state is None:
+            state = self._state
+        if state is None:
+            raise APIUseError("No state name given.\n"
+                              "Must be either given in make_mesh() or in join_variable() as optional state argument.")
+        self._state = state
         variable_data = (pd.DataFrame(index=self._mesh.index)
                          .join(self.variable(self._geometry, state, var_name, column_names)))
         self._mesh = self._mesh.join(variable_data.loc[self._mesh.index])

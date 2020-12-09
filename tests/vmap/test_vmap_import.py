@@ -1,5 +1,6 @@
 import re
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -148,7 +149,7 @@ def test_get_element_nodal_variable_stress_column_name_list_unmatch(beam_2d_squ)
 
 
 def test_get_element_nodal_variable_strain(beam_2d_squ):
-    var_frame = beam_2d_squ.make_mesh('1').join_variable('STATE-2', 'E').to_frame()
+    var_frame = beam_2d_squ.make_mesh('1').join_variable('E', 'STATE-2').to_frame()
     pd.testing.assert_frame_equal(var_frame, RD.beam_2d_squ_element_nodal_strain)
 
 
@@ -158,7 +159,7 @@ def test_join_variable_no_mesh(beam_2d_squ):
 
 
 def test_join_node_variable_displacement(beam_2d_squ):
-    var_frame = beam_2d_squ.make_mesh('1').join_variable('STATE-2', 'DISPLACEMENT').to_frame()
+    var_frame = beam_2d_squ.make_mesh('1').join_variable('DISPLACEMENT', 'STATE-2').to_frame()
     groups = var_frame.groupby('node_id')
     pd.testing.assert_frame_equal(groups.mean(), RD.beam_2d_squ_node_displacement)
     pd.testing.assert_frame_equal(groups.min(), RD.beam_2d_squ_node_displacement)
@@ -167,11 +168,11 @@ def test_join_node_variable_displacement(beam_2d_squ):
 
 def test_join_element_variable_evol_no_column_name(beam_3d_hex):
     with pytest.raises(KeyError, match="No column name for variable EVOL. Please povide with column_names parameter"):
-        beam_3d_hex.variable('1', 'STATE-2', 'EVOL')
+        beam_3d_hex.make_mesh('1').join_variable('EVOL', 'STATE-2')
 
 
 def test_join_element_variable_evol(beam_3d_hex):
-    var_frame = beam_3d_hex.make_mesh('1').join_variable('STATE-2', 'EVOL', column_names=['Ve']).to_frame()
+    var_frame = beam_3d_hex.make_mesh('1').join_variable('EVOL', 'STATE-2', column_names=['Ve']).to_frame()
     groups = var_frame.groupby('element_id')
     pd.testing.assert_frame_equal(groups.mean(), RD.beam_3d_hex_element_volume)
     pd.testing.assert_frame_equal(groups.min(), RD.beam_3d_hex_element_volume)
@@ -179,12 +180,12 @@ def test_join_element_variable_evol(beam_3d_hex):
 
 
 def test_join_element_nodal_variable_stress(beam_2d_squ):
-    var_frame = beam_2d_squ.make_mesh('1').join_variable('STATE-2', 'STRESS_CAUCHY').to_frame()
+    var_frame = beam_2d_squ.make_mesh('1').join_variable('STRESS_CAUCHY', 'STATE-2').to_frame()
     pd.testing.assert_frame_equal(var_frame, RD.beam_2d_squ_element_nodal_stress)
 
 
 def test_join_element_nodal_variable_stress_override_column_names(beam_2d_squ):
-    var_frame = (beam_2d_squ.make_mesh('1').join_variable('STATE-2', 'STRESS_CAUCHY',
+    var_frame = (beam_2d_squ.make_mesh('1').join_variable('STRESS_CAUCHY', 'STATE-2',
                                                           column_names=['s11', 's22', 's33', 's12', 's13', 's23'])
                  .to_frame())
     reference = RD.beam_2d_squ_element_nodal_stress.copy()
@@ -195,25 +196,25 @@ def test_join_element_nodal_variable_stress_override_column_names(beam_2d_squ):
 def test_join_element_nodal_variable_stress_column_name_list_unmatch(beam_2d_squ):
     with pytest.raises(ValueError,
                        match=re.escape("Length of column name list (3) does not match variable dimension (6).")):
-        beam_2d_squ.make_mesh('1').join_variable('STATE-2', 'STRESS_CAUCHY', column_names=['s11', 's22', 's33'])
+        beam_2d_squ.make_mesh('1').join_variable('STRESS_CAUCHY', 'STATE-2', column_names=['s11', 's22', 's33'])
 
 
 def test_join_element_nodal_variable_strain(beam_2d_squ):
-    var_frame = beam_2d_squ.make_mesh('1').join_variable('STATE-2', 'E').to_frame()
+    var_frame = beam_2d_squ.make_mesh('1').join_variable('E', 'STATE-2').to_frame()
     pd.testing.assert_frame_equal(var_frame, RD.beam_2d_squ_element_nodal_strain)
 
 
 def test_join_element_nodal_variable_node_set(beam_2d_squ):
     pd.testing.assert_frame_equal(beam_2d_squ
                                   .make_mesh('1', node_set='FIX')
-                                  .join_variable('STATE-2', 'STRESS_CAUCHY')
+                                  .join_variable('STRESS_CAUCHY', 'STATE-2')
                                   .to_frame(),
                                   RD.beam_2d_squ_element_nodal_stress.loc[RD.beam_2d_squ_mesh_index_fix])
 
 
 def test_join_element_nodal_variable_element_set(rotsym_quad):
     pd.testing.assert_frame_equal(rotsym_quad.make_mesh('1', element_set='YSYM')
-                                  .join_variable('STATE-2', 'STRESS_CAUCHY')
+                                  .join_variable('STRESS_CAUCHY', 'STATE-2')
                                   .to_frame(),
                                   RD.rotsym_quad_stress_cauchy.loc[RD.rotsym_quad_mesh_index_ysym])
 
@@ -221,8 +222,8 @@ def test_join_element_nodal_variable_element_set(rotsym_quad):
 def test_join_element_nodal_variable_stress_element_variable_evol(beam_3d_hex):
     var_frame = (beam_3d_hex
                  .make_mesh('1')
-                 .join_variable('STATE-2', 'STRESS_CAUCHY')
-                 .join_variable('STATE-2', 'EVOL', column_names=['V_e'])
+                 .join_variable('STRESS_CAUCHY', 'STATE-2')
+                 .join_variable('EVOL', column_names=['V_e'])
                  .to_frame())
     pd.testing.assert_frame_equal(var_frame, RD.beam_3d_hex_stress_element_volume, rtol=1e-4)
 
@@ -231,7 +232,33 @@ def test_join_variable_unsupported_location():
     vm = vmap.VMAP('tests/vmap/testfiles/beam_at_integration_points.vmap').make_mesh('1')
     with pytest.raises(vmap.FeatureNotSupportedError,
                        match="Unsupported value location, sorry\nSupported: NODE, ELEMENT, ELEMENT NODAL"):
-        vm.join_variable('STATE-2', 'STRESS_CAUCHY')
+        vm.join_variable('STRESS_CAUCHY', 'STATE-2')
+
+
+def test_get_element_nodal_variable_strain_predefined_state(beam_2d_squ):
+    var_frame = beam_2d_squ.make_mesh('1', 'STATE-2').join_variable('E').to_frame()
+    pd.testing.assert_frame_equal(var_frame, RD.beam_2d_squ_element_nodal_strain)
+
+
+def test_get_variables_multiple_states(beam_2d_squ):
+    var_frame = (beam_2d_squ.make_mesh('1')
+                 .join_variable('STRESS_CAUCHY', 'STATE-1', column_names=['S11_0', 'S22_0', 'S33_0', 'S12_0', 'S13_0', 'S23_0'])
+                 .join_variable('E', 'STATE-2')
+                 .join_variable('STRESS_CAUCHY')
+                 .to_frame())
+    strain = RD.beam_2d_squ_element_nodal_strain
+    stress = RD.beam_2d_squ_element_nodal_stress
+    zero_stress = pd.DataFrame(np.zeros((strain.shape[0], 6)),
+                               columns=['S11_0', 'S22_0', 'S33_0', 'S12_0', 'S13_0', 'S23_0'],
+                               index=strain.index)
+    pd.testing.assert_frame_equal(var_frame, zero_stress.join(strain).join(stress))
+
+
+def test_join_variable_no_given_state(beam_2d_squ):
+    with pytest.raises(vmap.APIUseError,
+                       match=re.escape("No state name given.\n"
+                                       "Must be either given in make_mesh() or in join_variable() as optional state argument.")):
+        beam_2d_squ.make_mesh('1').join_variable('STRESS_CAUCHY')
 
 
 def test_unsupported_location():
