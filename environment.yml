@@ -12,7 +12,7 @@ dependencies:
 - matplotlib
 - pymc3
 - jupyter
-- pip
+- pip = 20.2
 - pip:
   - mystic
   - tables
