@@ -547,11 +547,10 @@ class VMAP:
     def _geometry_sets(self, geometry, set_type):
         s_type = 0 if set_type == 'nsets' else 1
         geometry_sets = self._file["/VMAP/GEOMETRY/%s/GEOMETRYSETS" % geometry]
-        gsets = {}
-        for key, gset in geometry_sets.items():
-            if gset.attrs['MYSETTYPE'] == s_type:
-                gsets[gset.attrs['MYSETNAME'].decode('UTF-8')] = gset['MYGEOMETRYSETDATA'][()]
-        return gsets
+        return {
+            gset.attrs['MYSETNAME'].decode('UTF-8'): gset['MYGEOMETRYSETDATA'][()]
+            for (_, gset) in geometry_sets.items() if gset.attrs['MYSETTYPE'] == s_type
+        }
 
     def _node_set_ids(self, geometry, node_set):
         try:
