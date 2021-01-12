@@ -6,6 +6,8 @@ build
 .pytest_cache
 __pycache__
 _venv*
+.venv*
+.python-version
 .spyproject
 *.so
 *.pyd
