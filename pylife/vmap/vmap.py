@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 '''VMAP interface for pyLife
 ============================
 
@@ -80,7 +81,7 @@ from the following locations:
 * node
 * element nodal
 
-In particular, field variables at intergration point location *cannot*
+In particular, field variables at integration point location *cannot*
 cannot be read, as that would require extrapolating them to the node
 positions. This functionality is not available in pyLife.
 
@@ -178,10 +179,10 @@ class VMAP:
             The load state of which the field variable is to be read.
             If not given, the state must be defined in ``join_variable()``.
         node_set : string, optional
-            The node set defined in the vmap file as gemetry set to which
+            The node set defined in the vmap file as geometry set to which
             the mesh is to be restricted to.
         element_set : string, optional
-            The element set defined in the vmap file as gemetry set to which
+            The element set defined in the vmap file as geometry set to which
             the mesh is to be restricted to.
 
         Returns
@@ -200,7 +201,7 @@ class VMAP:
         Notes
         -----
         This methods defines the initial mesh to which coordinate data can be joined by ``join_coordinates()``
-        and field varaibles can be joined by ``join_variable()``
+        and field variables can be joined by ``join_variable()``
 
         Examples
         --------
@@ -308,20 +309,20 @@ class VMAP:
         node_element_index : MultiIndex
             a MultiIndex with the node ids and element ids
         node_set : string, optional
-            The node set defined in the vmap file as gemetry set to which
+            The node set defined in the vmap file as geometry set to which
             the mesh index is to be restricted to.
         element_set : string, optional
-            The element set defined in the vmap file as gemetry set to which
+            The element set defined in the vmap file as geometry set to which
             the mesh index is to be restricted to.
 
         Raises
         ------
         KeyError
-            if the ``geometry`` is not found of if the vmap file is corrupted
+            if the ``geometry`` is not found of if the vmap file is corrupted.
         KeyError
             if the ``node_set`` or ``element_set`` is not found in the geometry.
         APIUseError
-            if both, a ``node_set`` and an ``element_set`` are given
+            if both, a ``node_set`` and an ``element_set`` are given.
         '''
         if node_set is not None and element_set is not None:
             raise APIUseError("Cannot make mesh index for element set and node set at same time\n"
