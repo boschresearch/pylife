@@ -1,7 +1,6 @@
 numpy
 scipy
 pandas
-tables
 cython
 mystic
 pymc3
