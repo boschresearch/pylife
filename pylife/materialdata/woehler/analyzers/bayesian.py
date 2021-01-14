@@ -70,11 +70,10 @@ class Bayesian(Elementary):
 
     def _specific_analysis(self, wc, nsamples=1000, **kw):
         self._nsamples = nsamples
-        self._loglike = self._LogLike(Likelihood(self._fd))
         nburn = self._nsamples // 10
 
-        tune = 1000 if 'tune' not in kw else kw.pop('tune')
-        random_seed = None if 'random_seed' not in kw else kw.pop('random_seed')
+        tune = kw.pop('tune', 1000)
+        random_seed = kw.pop('random_seed', None)
 
         slope_trace = self._slope_trace(tune=tune, random_seed=random_seed, **kw)
         TN_trace = self._TN_trace(tune=tune, random_seed=random_seed, **kw)
@@ -103,32 +102,50 @@ class Bayesian(Elementary):
         with pm.Model():
             family = pm.glm.families.StudentT()
             pm.glm.GLM.from_formula('y ~ x', data_dict, family=family)
-            trace_robust = pm.sample(self._nsamples, target_accept=0.99, random_seed=random_seed, chains=chains, tune=tune, **kw)
+            trace_robust = pm.sample(self._nsamples,
+                                     target_accept=0.99,
+                                     random_seed=random_seed,
+                                     chains=chains,
+                                     tune=tune,
+                                     **kw)
 
             return trace_robust
 
     def _TN_trace(self, chains=3, random_seed=None, tune=1000, **kw):
         with pm.Model():
             log_N_shift = np.log10(self._pearl_chain_estimator.normed_cycles)
-            stdev = pm.HalfNormal('stdev', sd=1.3)  # sd standard wert (log-normal/ beat Verteilung/exp lambda)
-            mu = pm.Normal('mu', mu=log_N_shift.mean(), sd=log_N_shift.std())  # mu könnte von FKM gegeben
-            _ = pm.Normal('y', mu=mu, sd=stdev, observed=log_N_shift)  # lognormal
+            stdev = pm.HalfNormal('stdev', sigma=1.3)  # sigma standard wert (log-normal/ beat Verteilung/exp lambda)
+            mu = pm.Normal('mu', mu=log_N_shift.mean(), sigma=log_N_shift.std())
+            _ = pm.Normal('y', mu=mu, sigma=stdev, observed=log_N_shift)
 
-            trace_TN = pm.sample(self._nsamples, target_accept=0.99, random_seed=random_seed, chains=chains, tune=tune, **kw)
+            trace_TN = pm.sample(self._nsamples,
+                                 target_accept=0.99,
+                                 random_seed=random_seed,
+                                 chains=chains,
+                                 tune=tune,
+                                 **kw)
 
         return trace_TN
 
     def _SD_TS_trace(self, chains=3, random_seed=None, tune=1000, **kw):
+        loglike = self._LogLike(Likelihood(self._fd))
+
         with pm.Model():
             inf_load = self._fd.infinite_zone.load
-            SD = pm.Normal('SD_50', mu=inf_load.mean(), sd=inf_load.std()*5)
-            TS = pm.Lognormal('TS_50', mu=np.log10(1.1), sd=np.log10(0.5))
+            SD = pm.Normal('SD_50', mu=inf_load.mean(), sigma=inf_load.std()*5)
+            TS = pm.Lognormal('TS_50', mu=np.log10(1.1), sigma=np.log10(0.5))
 
             # convert m and c to a tensor vector
             var = tt.as_tensor_variable([SD, TS])
 
-            pm.Potential('likelihood', self._loglike(var))
+            pm.Potential('likelihood', loglike(var))
 
-            trace_SD_TS = pm.sample(self._nsamples, cores=1, chains=chains, random_seed=random_seed, discard_tuned_samples=True, tune=tune, **kw)
+            trace_SD_TS = pm.sample(self._nsamples,
+                                    cores=1,
+                                    chains=chains,
+                                    random_seed=random_seed,
+                                    discard_tuned_samples=True,
+                                    tune=tune,
+                                    **kw)
 
         return trace_SD_TS
