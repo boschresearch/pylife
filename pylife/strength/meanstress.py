@@ -126,7 +126,7 @@ def FKM_goodman(Sa, Sm, M, M2, R_goal):
     :param M2: the mean stress sensitivity beyond R=0
     :param R_goal: the R-value to transform to
 
-    :returns: the transformed stress amplitude
+    :returns: the transformed stress range
     '''
 
     if R_goal == 1:
@@ -193,7 +193,7 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
     :param R12: R-value between M1 and M2
     :param R23: R-value between M2 and M3
 
-    :returns: the transformed stress amplitude
+    :returns: the transformed stress range
     '''
 
     if R_goal == 1:
