@@ -70,7 +70,7 @@ loads = pd.DataFrame([[1.227E5, 1.114E5, 1.829E5], [2.433E4, 3.117E4, 16],
                      index=load_index())
 
 
-@pytest.mark.parametrize("method, expected", zip(material, nCode_reference_results()))
+@pytest.mark.parametrize('method, expected', zip(material, nCode_reference_results()))
 def test_calc_damage(method, expected):
     damage_calc = sn_curve.FiniteLifeCurve(**material[method])
     damage = damage_calc.calc_damage(loads, method=method)
@@ -79,8 +79,8 @@ def test_calc_damage(method, expected):
 
 def test_calc_damage_index_name():
     foo_loads = loads.copy()
-    foo_loads.index.name = "foo"
+    foo_loads.index.name = 'foo'
     damage = sn_curve.FiniteLifeCurve(**material['elementar']).calc_damage(foo_loads,
                                                                            method='elementar',
                                                                            index_name='foo')
-    assert damage.index.name == "foo"
+    assert damage.index.name == 'foo'
