@@ -14,26 +14,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__author__ = "Daniel Christopher Kreuter"
+__maintainer__ = "Johannes Mueller"
+
 
 import numpy as np
 import pandas as pd
 
-def combine_hist(hist_list, method='sum',nbins=64):
-    """
-    Performes the combination of multiple Histograms.
 
-    Parameters:
+def combine_hist(hist_list, method='sum', nbins=64):
+    """
+    Performs the combination of multiple Histograms.
+
+    Parameters
     ----------
 
     hist_list: list
-        list of histograms with all histograms (saved as Dataframes in pyLife format)
+        list of histograms with all histograms (saved as DataFrames in pyLife format)
     method: str
         method: 'sum', 'min', 'max', 'mean', 'std'  default is 'sum'
     nbins: int
         number of bins of the combined histogram
 
-    Returns:
-    --------
+    Returns
+    -------
 
     DataFrame:
         Combined histogram
@@ -47,6 +51,7 @@ def combine_hist(hist_list, method='sum',nbins=64):
     index_max = hist_combined.index.right.max()
 
     kwargs = {'ddof': 0} if method == 'std' else {}
-    return (hist_combined.groupby(pd.cut(hist_combined.index.mid.values, np.linspace(index_min, index_max, nbins+1)))
+    return (hist_combined
+            .groupby(pd.cut(hist_combined.index.mid.values, np.linspace(index_min, index_max, nbins+1)))
             .agg(method, **kwargs)
-            .set_index(pd.interval_range(index_min,index_max, nbins, name='range')))
+            .set_index(pd.interval_range(index_min, index_max, nbins, name='range')))
