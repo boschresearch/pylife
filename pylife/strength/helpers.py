@@ -23,6 +23,7 @@ __maintainer__ = "Johannes Mueller"
 
 import numpy as np
 
+
 def solidity_haibach(collective, k):
     """Compute solidity according to Haibach
 
@@ -32,14 +33,15 @@ def solidity_haibach(collective, k):
     Parameters
     ----------
     collective : np.ndarray
-        numpy array of shape (:, 2)
-        where ":" depends on the number of classes defined
-        for the rainflow counting
+        numpy array of shape (:, 2) where ":" depends on the number of classes
+        defined for the rainflow counting
+
             1. column: class values in ascending order
-            2. column: accumulated number of cycles
-                first entry is the total number of cycles
-                then in a descending manner till the
-                number of cycles of the highest stress class
+
+            2. column: accumulated number of cycles first entry is the total
+               number of cycles then in a descending manner till the number of
+               cycles of the highest stress class
+
     k : float
         slope of the S/N curve
 
@@ -47,6 +49,7 @@ def solidity_haibach(collective, k):
     -------
     V : np.ndarray (1,)
         Völligkeitswert (solidity)
+
     """
 
     S = collective[:, 0]
@@ -82,21 +85,21 @@ def solidity_fkm(collective, k):
     Parameters
     ----------
     collective : np.ndarray
-        numpy array of shape (:, 2)
-        where ":" depends on the number of classes defined
-        for the rainflow counting
+        numpy array of shape (:, 2) where ":" depends on the number of classes
+        defined for the rainflow counting
+
             1. column: class values in ascending order
-            2. column: accumulated number of cycles
-                first entry is the total number of cycles
-                then in a descending manner till the
-                number of cycles of the highest stress class
-    k : float
-        slope of the S/N curve
+
+            2. column: accumulated number of cycles first entry is the total
+               number of cycles then in a descending manner till the number of
+               cycles of the highest stress class k : float slope of the S/N
+               curve
 
     Returns
     -------
     V : np.ndarray
         Völligkeitswert (solidity)
+
     """
 
     V_haibach = solidity_haibach(collective, k)

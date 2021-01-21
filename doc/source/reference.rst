@@ -7,7 +7,7 @@ General
    :maxdepth: 2
 
    general/signal
-   
+
 Stress
 ------
 .. toctree::
@@ -17,6 +17,8 @@ Stress
    stress/rainflow
    stress/stresssignal
    stress/timesignal
+   stress/frequencysignal
+   stress/histogram
 
 Strength
 --------
@@ -27,12 +29,15 @@ Strength
    strength/meanstress
    strength/failure_probability
    strength/miner
+   strength/sn_curve
+   strength/helpers
 
 Materialdata
 ------------
 .. toctree::
    :maxdepth: 2
 
+   materialdata/woehler/accessors
    materialdata/woehler/analyzers/bayesian
    materialdata/woehler/analyzers/elementary
    materialdata/woehler/analyzers/likelihood
@@ -49,4 +54,12 @@ Mesh utilities
    mesh/meshplot
    mesh/meshmapping
    mesh/hotspot
-   mesh/gradient   
+   mesh/gradient
+
+Utils
+-----
+.. toctree::
+   :maxdepth: 2
+
+   utils/functions
+   utils/probability_data
