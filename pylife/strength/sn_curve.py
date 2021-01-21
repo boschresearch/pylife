@@ -158,10 +158,10 @@ class FiniteLifeCurve(FiniteLifeBase):
 
     The formula for calculation is taken from
     "Betriebsfestigkeit", Haibach, 3. Auflage 2006
-    
+
     **Consider:** load collective and life curve have to be consistent:
-    
-        * range vs range 
+
+        * range vs range
         * amplitude vs amplitude
 
     Parameters
@@ -242,10 +242,10 @@ class FiniteLifeCurve(FiniteLifeBase):
          * Miner elementar (k_2 = k)
          * Miner Haibach (k_2 = 2k-1)
          * Miner original (k_2 = -\inf)
-         
+
         **Consider:** load collective and life curve have to be consistent:
-    
-        * range vs range 
+
+        * range vs range
         * amplitude vs amplitude
 
         Parameters
