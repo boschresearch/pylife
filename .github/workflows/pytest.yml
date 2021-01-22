@@ -5,6 +5,8 @@ on: [push]
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    env: 
+      MPLBACKEND: svg
     strategy:
       matrix:
         os: [ubuntu-18.04, windows-latest]
