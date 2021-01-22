@@ -25,8 +25,9 @@ import matplotlib.pyplot as plt
 import time
 from tsfresh import extract_features
 
+
 class TimeSignalGenerator:
-    '''Generates mixed time signals
+    """Generates mixed time signals
 
     The generated time signal is a mixture of random sets of
 
@@ -57,27 +58,35 @@ class TimeSignalGenerator:
     So the whole sinus :math:`S` set is given by the following expression:
 
             :math:`S = \sum^n_i A_i \sin(\omega_i t + \phi_i) + c_i`.
-    '''
+    """
 
     def __init__(self, sample_rate, sine_set, gauss_set, log_gauss_set):
-        sine_amplitudes = stats.norm.rvs(loc=sine_set['amplitude_median'],
-                                         scale=sine_set['amplitude_std_dev'],
-                                         size=sine_set['number'])
-        sine_frequencies = stats.norm.rvs(loc=sine_set['frequency_median'],
-                                          scale=sine_set['frequency_std_dev'],
-                                          size=sine_set['number'])
-        sine_offsets = stats.norm.rvs(loc=sine_set['offset_median'],
-                                      scale=sine_set['offset_std_dev'],
-                                      size=sine_set['number'])
-        sine_phases = 2. * np.pi * np.random.rand(sine_set['number'])
+        sine_amplitudes = stats.norm.rvs(
+            loc=sine_set["amplitude_median"],
+            scale=sine_set["amplitude_std_dev"],
+            size=sine_set["number"],
+        )
+        sine_frequencies = stats.norm.rvs(
+            loc=sine_set["frequency_median"],
+            scale=sine_set["frequency_std_dev"],
+            size=sine_set["number"],
+        )
+        sine_offsets = stats.norm.rvs(
+            loc=sine_set["offset_median"],
+            scale=sine_set["offset_std_dev"],
+            size=sine_set["number"],
+        )
+        sine_phases = 2.0 * np.pi * np.random.rand(sine_set["number"])
 
-        self.sine_set = list(zip(sine_amplitudes, sine_frequencies, sine_phases, sine_offsets))
+        self.sine_set = list(
+            zip(sine_amplitudes, sine_frequencies, sine_phases, sine_offsets)
+        )
 
         self.sample_rate = sample_rate
         self.time_position = 0.0
 
     def query(self, sample_num):
-        '''Gets a sample chunk of the time signal
+        """Gets a sample chunk of the time signal
 
         Parameters
         ----------
@@ -92,9 +101,9 @@ class TimeSignalGenerator:
 
         You can query multiple times, the newly delivered samples
         will smoothly attach to the previously queried ones.
-        '''
+        """
         samples = np.zeros(sample_num)
-        end_time_position = self.time_position + (sample_num-1) / self.sample_rate
+        end_time_position = self.time_position + (sample_num - 1) / self.sample_rate
 
         for ampl, omega, phi, offset in self.sine_set:
             periods = np.floor(self.time_position / omega)
@@ -103,25 +112,24 @@ class TimeSignalGenerator:
             time = np.linspace(start, end, sample_num)
             samples += ampl * np.sin(omega * time + phi) + offset
 
-        self.time_position = end_time_position + 1. / self.sample_rate
+        self.time_position = end_time_position + 1.0 / self.sample_rate
 
         return samples
 
     def reset(self):
-        ''' Resets the generator
+        """ Resets the generator
 
         A resetted generator behaves like a new generator.
-        '''
+        """
         self.time_position = 0.0
 
 
 class TimeSignalPrep:
-
-    def __init__(self,df):
+    def __init__(self, df):
 
         self.df = df
 
-    def resample_acc(self,sample_rate_new = 1):
+    def resample_acc(self, sample_rate_new=1):
         """ Resampling the time series
 
         Parameters
@@ -137,13 +145,22 @@ class TimeSignalPrep:
         -------
         DataFrame
         """
-#        dfResample.index =  np.arange(self.df.index.min(),self.df.index.max(),1/sample_rate_new)
-        index_new =  np.linspace(self.df.index.min(),
-                                 self.df.index.min() + np.floor((self.df.index.max()-self.df.index.min())*sample_rate_new)/sample_rate_new,
-                                 int(np.floor(self.df.index.max()-self.df.index.min())*sample_rate_new + 1))
-        dfResample = pd.DataFrame(index = index_new)
+        #        dfResample.index =  np.arange(self.df.index.min(),self.df.index.max(),1/sample_rate_new)
+        index_new = np.linspace(
+            self.df.index.min(),
+            self.df.index.min()
+            + np.floor((self.df.index.max() - self.df.index.min()) * sample_rate_new)
+            / sample_rate_new,
+            int(
+                np.floor(self.df.index.max() - self.df.index.min()) * sample_rate_new
+                + 1
+            ),
+        )
+        dfResample = pd.DataFrame(index=index_new)
         for colakt in self.df.columns:
-            dfResample[colakt] = np.interp(dfResample.index,self.df.index,self.df[colakt])
+            dfResample[colakt] = np.interp(
+                dfResample.index, self.df.index, self.df[colakt]
+            )
         return dfResample
 
     def butter_bandpass(self, lowcut, highcut, fs, order=5):
@@ -151,9 +168,10 @@ class TimeSignalPrep:
         nyq = 0.5 * fs
         low = lowcut / nyq
         high = highcut / nyq
-        b, a = signal.butter(order, [low, high], btype='band')
+        b, a = signal.butter(order, [low, high], btype="band")
         TSout = signal.filtfilt(b, a, self.df)
         return TSout
+
     def prepare_rolling(self, df):
         """
         Adds ID, time for TsFresh
@@ -170,19 +188,18 @@ class TimeSignalPrep:
 
         """
 
-
         start = time.time()
         df["id"] = 0
         df["time"] = df.index.values
-        df["time"]=df["time"].subtract(df['time'].values[0])
-        df.index=df["time"]
+        df["time"] = df["time"].subtract(df["time"].values[0])
+        df.index = df["time"]
         print(df)
         ende = time.time()
 
-        print('Prepare_rolling: {:5.3f}s'.format(ende-start))
+        print("Prepare_rolling: {:5.3f}s".format(ende - start))
         return df
 
-    def roll_dataset(self, input, timeshift=1000, rolling_direction = 800):
+    def roll_dataset(self, input, timeshift=1000, rolling_direction=800):
         """
 
         Parameters
@@ -201,35 +218,35 @@ class TimeSignalPrep:
 
         """
 
-        #Create Rolled Dataset with Parameter rolling_direction & timeshift
-        #throws away the last halfshift
-        pd.options.mode.chained_assignment = None #stops the copyslice warning
+        # Create Rolled Dataset with Parameter rolling_direction & timeshift
+        # throws away the last halfshift
+        pd.options.mode.chained_assignment = None  # stops the copyslice warning
         start = time.time()
-        cycles = int(len(input)/rolling_direction)-1
-        df_rolled_is_empty=True
-        #shiften
+        cycles = int(len(input) / rolling_direction) - 1
+        df_rolled_is_empty = True
+        # shiften
         for i in range(cycles):
-            position=(rolling_direction)*i
-            shift= input.iloc[position:position+timeshift,:]
-            #change IDs to format (id,time)
-            shift.loc[:,("max_time")] = max(shift.loc[:,("time")])
-            df= shift.loc[:,("id","max_time")]
-            shift.loc[:,("id")]=pd.MultiIndex.from_frame(df)
-            #delete max_time
+            position = (rolling_direction) * i
+            shift = input.iloc[position : position + timeshift, :]
+            # change IDs to format (id,time)
+            shift.loc[:, ("max_time")] = max(shift.loc[:, ("time")])
+            df = shift.loc[:, ("id", "max_time")]
+            shift.loc[:, ("id")] = pd.MultiIndex.from_frame(df)
+            # delete max_time
             shift.pop("max_time")
-            if(df_rolled_is_empty==True):
-                df_rolled=shift
-                df_rolled_is_empty=False
+            if df_rolled_is_empty == True:
+                df_rolled = shift
+                df_rolled_is_empty = False
             else:
-                df_rolled= df_rolled.append(shift,ignore_index=True)
+                df_rolled = df_rolled.append(shift, ignore_index=True)
 
         ende = time.time()
-        print('roll_dataset: {:5.3f}s'.format(ende-start))
+        print("roll_dataset: {:5.3f}s".format(ende - start))
         return df_rolled
 
     def extract_features_df(self, df, feature="maximum"):
-        """
 
+        """
 
         Parameters
         ----------
@@ -246,20 +263,34 @@ class TimeSignalPrep:
             Dataframe of extraced features
 
         """
-        #extract features
+        # extract features
         start = time.time()
 
-        #fc_parameters = {"abs_energy", "maximum"}
+        # fc_parameters = {"abs_energy", "maximum"}
         fc_parameters = {
             feature: None,
         }
-        extracted_features = extract_features(df, column_id="id", column_sort="time",default_fc_parameters = fc_parameters,n_jobs=0)
+        extracted_features = extract_features(
+            df,
+            column_id="id",
+            column_sort="time",
+            default_fc_parameters=fc_parameters,
+            n_jobs=0,
+        )
         extracted_features.index = range(len(extracted_features))
         ende = time.time()
-        print('extract_features_df: {:5.3f}s'.format(ende-start))
+        print("extract_features_df: {:5.3f}s".format(ende - start))
         return extracted_features
 
-    def select_relevant_windows(self, df, percentage_max, extracted_features,timeshift=1000,rolling_direction=800):
+    def select_relevant_windows(
+        self,
+        df,
+        percentage_max,
+        extracted_features,
+        timeshift=1000,
+        rolling_direction=800,
+    ):
+
         """
 
         Parameters
@@ -281,23 +312,27 @@ class TimeSignalPrep:
             dataframe with NaN's in the windows with too low extracted features
 
         """
-        #get added up abs energy of interval x, if too low set None
+        # get added up abs energy of interval x, if too low set None
         start = time.time()
-        added_feature=np.zeros(len(extracted_features))
-        for i in range(df.shape[1]-2):
-            added_feature += extracted_features.iloc[:,i]
+        added_feature = np.zeros(len(extracted_features))
+        for i in range(df.shape[1] - 2):
+            added_feature += extracted_features.iloc[:, i]
 
         plt.show()
 
         for i in range(len(extracted_features)):
-            if(added_feature.iloc[i]<=(max(added_feature)*percentage_max)):
-                #set those rows 0 in ts_data
-                df.iloc[0+i*rolling_direction:timeshift+i*rolling_direction,0:df.shape[1]-2] = None
+            if added_feature.iloc[i] <= (max(added_feature) * percentage_max):
+                # set those rows 0 in ts_data
+                df.iloc[
+                    0 + i * rolling_direction : timeshift + i * rolling_direction,
+                    0 : df.shape[1] - 2,
+                ] = None
         ende = time.time()
-        print('select_relevant_windows: {:5.3f}s'.format(ende-start))
+        print("select_relevant_windows: {:5.3f}s".format(ende - start))
         return df
 
     def create_gridpoints(self, df, n_gridpoints=3):
+
         """
 
         Parameters
@@ -313,27 +348,29 @@ class TimeSignalPrep:
             reduces number of NaN's to n_gridpoints
 
         """
-        # let at any gap exactly Parameter n NaN's - these will be used to remove jumps
+        # let at any gap exactly Parameter n NaN's -
+        # these will be used to remove jumps
         start = time.time()
-        list=[]
-        for i in range(len(df)-n_gridpoints):
-            istrue=True
-            if(~(df.iloc[i:i+n_gridpoints+1,0].isna().all())):
-                istrue=False
-            if(istrue==True):
-                #add to delete list
+        list = []
+        for i in range(len(df) - n_gridpoints):
+            istrue = True
+            if ~(df.iloc[i : i + n_gridpoints + 1, 0].isna().all()):
+                istrue = False
+            if istrue == True:
+                # add to delete list
                 list.append(df.index[i])
 
         ende = time.time()
-        print('create_gridpoints Part 1: {:5.3f}s'.format(ende-start))
+        print("create_gridpoints Part 1: {:5.3f}s".format(ende - start))
 
         start = time.time()
         df.drop(list, axis=0, inplace=True)
         ende = time.time()
-        print('create_gridpoints Part 2: {:5.3f}s'.format(ende-start))
+        print("create_gridpoints Part 2: {:5.3f}s".format(ende - start))
         return df
 
-    def polyfit_gridpoints(self , df, ts_time, order=3, verbose=False, n_gridpoints=3):
+    def polyfit_gridpoints(self, df, ts_time, order=3, verbose=False, n_gridpoints=3):
+
         """
 
 
@@ -356,80 +393,90 @@ class TimeSignalPrep:
             DataFrame with polynomial values at the gridpoints.
         """
         start = time.time()
-        #add a null row at the start and reset time index
-        top_row=df.iloc[0,:]
-        top_row.name=df.iloc[0,df.shape[1]-1]-df.iloc[2,df.shape[1]-1]+df.iloc[1,df.shape[1]-1]
-        top_row= pd.DataFrame(top_row)
-        top_row=top_row.transpose()
+        # add a null row at the start and reset time index
+        top_row = df.iloc[0, :]
+        top_row.name = (
+            df.iloc[0, df.shape[1] - 1]
+            - df.iloc[2, df.shape[1] - 1]
+            + df.iloc[1, df.shape[1] - 1]
+        )
+        top_row = pd.DataFrame(top_row)
+        top_row = top_row.transpose()
         top_row.head()
-        g=0
-        df=pd.concat([top_row, df])#,ignore_index=True)
+        g = 0
+        df = pd.concat([top_row, df])  # ,ignore_index=True)
         ts_time = ts_time.head(len(df))
-        df["time"]=ts_time["time"].values
-        df.index=df["time"]
-        df.iloc[0,:]=0
+        df["time"] = ts_time["time"].values
+        df.index = df["time"]
+        df.iloc[0, :] = 0
         #%% smooth the gaps with polynomial values
-        #plot polynomials
-        for i in range(len(df)-n_gridpoints-1):
-            if(df.iloc[i,:].isna()[0]):
-                g+=1
-                #calculate time axis
-                t_2=df.iloc[i-1,df.shape[1]-1]
-                t_3=df.iloc[i+n_gridpoints,df.shape[1]-1]
-                t_4=df.iloc[i+n_gridpoints+1,df.shape[1]-1]
-                if(i-3<0):
-                    t_1 = t_3-t_4
+        # plot polynomials
+        for i in range(len(df) - n_gridpoints - 1):
+            if df.iloc[i, :].isna()[0]:
+                g += 1
+                # calculate time axis
+                t_2 = df.iloc[i - 1, df.shape[1] - 1]
+                t_3 = df.iloc[i + n_gridpoints, df.shape[1] - 1]
+                t_4 = df.iloc[i + n_gridpoints + 1, df.shape[1] - 1]
+                if i - 3 < 0:
+                    t_1 = t_3 - t_4
                 else:
-                    t_1=df.iloc[i-2,df.shape[1]-1]
+                    t_1 = df.iloc[i - 2, df.shape[1] - 1]
 
                 x = np.array([t_1, t_2, t_3, t_4])
-                #print(x)
-                for j in range(df.shape[1]-2):
+                # print(x)
+                for j in range(df.shape[1] - 2):
                     ##calculate values instead of Non, y-values polynomials
-                    p_2 = df.iloc[i-1,j]
+                    p_2 = df.iloc[i - 1, j]
 
-                    if(i-3<0):#|np.isnan(p_1)):
-                        p_1=p_2
+                    if i - 3 < 0:  # |np.isnan(p_1)):
+                        p_1 = p_2
                     else:
-                        p_1 = df.iloc[i-2,j]
+                        p_1 = df.iloc[i - 2, j]
 
-                    p_3 = df.iloc[i+n_gridpoints,j]
+                    p_3 = df.iloc[i + n_gridpoints, j]
 
-                    #if(np.isnan(p_3)):
-                        #p_3=0
+                    # if(np.isnan(p_3)):
+                    # p_3=0
 
-                    p_4 = df.iloc[i+n_gridpoints+1,j]
+                    p_4 = df.iloc[i + n_gridpoints + 1, j]
 
-                    if(np.isnan(p_4)):
-                        p_4=p_3
+                    if np.isnan(p_4):
+                        p_4 = p_3
 
                     y = np.array([p_1, p_2, p_3, p_4])
-                    #print(y)
+                    # print(y)
                     z = np.polyfit(x, y, order)
                     p = np.poly1d(z)
-                    x1=[]
-                    y1=[]
+                    x1 = []
+                    y1 = []
                     for k in range(n_gridpoints):
-                        #write elements into dataset
-                        df.iloc[i+k,j]=p(df.iloc[i+k,df.shape[1]-1])
-                        x1.append(df.iloc[i+k,df.shape[1]-1])
-                        y1.append(p(df.iloc[i+k,df.shape[1]-1]))
+                        # write elements into dataset
+                        df.iloc[i + k, j] = p(df.iloc[i + k, df.shape[1] - 1])
+                        x1.append(df.iloc[i + k, df.shape[1] - 1])
+                        y1.append(p(df.iloc[i + k, df.shape[1] - 1]))
 
                     xp = np.linspace(t_1, t_4, 200)
-                    if(verbose==True):
-                        plt.plot(xp,p(xp))
-                        plt.plot(x,y,'o')
-                        plt.plot(x1,y1,'*')
+                    if verbose == True:
+                        plt.plot(xp, p(xp))
+                        plt.plot(x, y, "o")
+                        plt.plot(x1, y1, "*")
                         plt.show()
         print("Number of gaps:", g)
         ende = time.time()
-        print('polyfit_gridpoints: {:5.3f}s'.format(ende-start))
+        print("polyfit_gridpoints: {:5.3f}s".format(ende - start))
         return df
 
-
-
-    def clean_dataset(self, df, timeshift=1000, rolling_direction = 800, feature="abs_energy", n_gridpoints=3,percentage_max=0.05,order=3):
-
+    def clean_dataset(
+        self,
+        df,
+        timeshift=1000,
+        rolling_direction=800,
+        feature="abs_energy",
+        n_gridpoints=3,
+        percentage_max=0.05,
+        order=3,
+    ):
 
         """
 
@@ -459,38 +506,52 @@ class TimeSignalPrep:
 
             """
 
-
-
-
-
         start = time.time()
 
         ts_prepared = self.prepare_rolling(df)
 
-        #get copy for indexing after deleting row
+        # get copy for indexing after deleting row
         ts_time = ts_prepared.copy()
-        #add 1line to ts_time -we add a line to the data--> If we dont delete anything ts_data>ts_time--> add one line at the end
-        last_row = ts_time.iloc[0,:]
-        #calculate t of the next step
-        last_row.name=ts_time.iloc[len(ts_time)-1, df.shape[1]-1]+ts_time.iloc[len(ts_time)-1, df.shape[1]-1]-ts_time.iloc[len(ts_time)-2, df.shape[1]-1]
-        last_row=pd.DataFrame(last_row)
-        last_row=last_row.transpose()
-        ts_time=ts_time.append(last_row)
+        # add 1line to ts_time -we add a line to the data--> 
+        # If we dont delete anything ts_data>ts_time--> add one line at the end
+        last_row = ts_time.iloc[0, :]
+        # calculate t of the next step
+        last_row.name = (
+            ts_time.iloc[len(ts_time) - 1, df.shape[1] - 1]
+            + ts_time.iloc[len(ts_time) - 1, df.shape[1] - 1]
+            - ts_time.iloc[len(ts_time) - 2, df.shape[1] - 1]
+        )
+        last_row = pd.DataFrame(last_row)
+        last_row = last_row.transpose()
+        ts_time = ts_time.append(last_row)
 
-
-        df_rolled = self.roll_dataset(df,timeshift=timeshift, rolling_direction = rolling_direction)
+        df_rolled = self.roll_dataset(
+            df, timeshift=timeshift, rolling_direction=rolling_direction
+        )
         extracted_features = self.extract_features_df(df_rolled, feature)
-        ts_selected = self.select_relevant_windows(ts_prepared, percentage_max, extracted_features, timeshift, rolling_direction)
-        #ts_selected.plot(subplots=True, sharex=True, figsize=(10,10))
-        #plt.show()
+        ts_selected = self.select_relevant_windows(
+            ts_prepared,
+            percentage_max,
+            extracted_features,
+            timeshift,
+            rolling_direction,
+        )
+        # ts_selected.plot(subplots=True, sharex=True, figsize=(10,10))
+        # plt.show()
         ts_grid = self.create_gridpoints(ts_selected, n_gridpoints=n_gridpoints)
-        df_poly = self.polyfit_gridpoints(ts_grid, order=order, verbose=False, n_gridpoints=n_gridpoints, ts_time=ts_time)
+        df_poly = self.polyfit_gridpoints(
+            ts_grid,
+            order=order,
+            verbose=False,
+            n_gridpoints=n_gridpoints,
+            ts_time=ts_time,
+        )
 
-        #Remove NaN's at the end - should be maximum 2n
-        l=df_poly.shape[0]
-        df_poly.dropna(axis=0, how='any', thresh=None, subset=None, inplace=True)
-        print("Number of NaN's dropped at END:", l-df_poly.shape[0])
+        # Remove NaN's at the end - should be maximum 2n
+        l = df_poly.shape[0]
+        df_poly.dropna(axis=0, how="any", thresh=None, subset=None, inplace=True)
+        print("Number of NaN's dropped at END:", l - df_poly.shape[0])
         ende = time.time()
-        print('Total Cleaning: {:5.3f}s'.format(ende-start))
+        print("Total Cleaning: {:5.3f}s".format(ende - start))
 
         return df_poly
