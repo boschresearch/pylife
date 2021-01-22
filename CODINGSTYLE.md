@@ -5,13 +5,14 @@
 One crucial quality criteria of program code is maintainability. In order to
 maintain code, the code has to be written clearly so that it is easily readable
 to someone who has not written it. Therefore it is helpful to have a consistent
-coding style with consistent naming conventions. However the coding style
-rules are not supposed to be strict rules. They can be ignored if there are
-good reasons to ignore them.
+coding style with consistent naming conventions. However, the coding style
+rules are not supposed to be strict rules. They can be disobeyed if there are
+good reasons to do so.
 
 As we are programming in Python we vastly stick to the [PEP8 coding style
 guide][1]. That document is generally recommendable to python programmers. This
-document therefore covers only things that go beyond the PEP8.
+document therefore covers only things that go beyond the PEP8. So please read
+PEP8 for the general recommendations on python programming.
 
 
 ### Clean code
@@ -28,6 +29,25 @@ might want to take the time and watch [these two]
 (https://www.youtube.com/watch?v=7EmboKQH8lM), they are fun to watch.
 
 
+## Use a linter and let your editor help you
+
+A linter is a tool that scans your code and shows you where you are not
+following the coding style guidelines. The anaconda environment of
+`environment.yml` comes with flake8 and pep8-naming, which warns about a lot of
+things. Best is to configure your editor in a way that it shows you the linter
+warnings as you type.
+
+Many editors have some other useful helpers. For example whitespace cleanup,
+i.e. delete any trailing whitespace as soon as you save the file.
+
+
+## Line lengths
+
+Lines should not often exceed the 90 characters. Exceeding it sometimes by a
+bit is ok, though. Please do *never* exceed 125 characters because that's the
+width of the GitHub code viewer.
+
+
 ## Naming conventions
 
 By naming conventions the programmer can give some indications to the reader of
@@ -35,19 +55,22 @@ the program, what an identifier is supposed to be or what it is referring
 to. Therefore some consistency guidelines.
 
 
-### Descriptive naming styles
+### Class names
 
 Class names are usually short and a single or compound noun. For these short
 names we use the so called `CamelCase` style:
 ```python
 class DataObjectReader:
-...
+    ...
 ```
+
+### Function names
 
 Function and variable names can be longer than class names. Especially function
 names tend to be actual sentences like:
 ```python
-def calc_all_data_from_scratch()
+def calc_all_data_from_scratch():
+    ...
 ```
 These are way more readable in the so called `lowercase_with_underscores`
 style.
@@ -68,10 +91,8 @@ glimpse.
 There are a couple of conventions that make it easier to understand an API of a
 class.
 
-To access the data items of a class we usually use getter and setter
-functions. The setter functions are supposed to do sanity checks to ensure that
-the internal data structure of the class remains consistent. The following
-example illustrates the naming conventions:
+To access the data items of a class we used to use getter and setter
+functions. A better and more modern way is python's `@property` decorator.
 ```python
 class ExampleClass:
 	def __init__(self):
@@ -79,12 +100,14 @@ class ExampleClass:
 		self._bar = 42
 		self._sum = None
 
-	def foo(self):
+    @property
+    def foo(self):
 		''' getter functions have the name of the accessed data item
 		'''
 		return self._foo
 
-	def set_foo(self, v):
+    @foo.setter
+	def foo(self, v):
 		''' setter functions have the name of the accessed data item prefixed
 			with `set_`
 		'''
@@ -96,8 +119,13 @@ class ExampleClass:
 		'''	class methods whose name does not imply that they return data
 			should not return anything.
 		'''
-		self.sum = self.foo + self.bar
+		self._sum = self._foo + self._bar
 ```
+
+The old style getter and setter function like `set_foo(self, new_foo)`are still
+tolerable but should be avoided in new code. Before major releases we might dig
+to the code and replace them with `@property` where feasible.
+
 
 ### Data encapsulation
 
@@ -126,42 +154,106 @@ class Foo:
 
 ### Object orientation
 
-Usually it makes sense to compound data structures and the functions into
-classes. The data structures then become class members and the functions become
-class methods. This object oriented way of doing things is recommendable but
-not always necessary. Sets of simple utility routines can also be autonomous
-functions.
+Usually it makes sense to compound data structures and the functions using
+these data structures into classes. The data structures then become class
+members and the functions become class methods. This object oriented way of
+doing things is recommendable but not always necessary. Sets of simple utility
+routines can also be autonomous functions.
 
 As a rule of thumb: If the user of some functionality needs to keep around a
 data structure for a longer time and make several different function calls that
 deal with the same data structure, it is probably a good idea to put everything
 into a class.
 
+Do not just put functions into a class because they belong semantically
+together. That is what python modules are there for.
+
+
 ### Functions and methods
 
 Functions are not only there for sharing code but also to divide code into
-easily overseeable pieces. Therefore functions should be short and sweet and do
+easily manageable pieces. Therefore functions should be short and sweet and do
 just one thing. If a function does not fit into your editor window, you should
 consider to split it into smaller pieces. Even more so, if you need to scroll
-in order to find out, where a loop or an if statement begins and ends.
+in order to find out, where a loop or an if statement begins and ends. Ideally
+a function should be as short, that it is no longer *possible* to extract a
+piece of it.
 
-Rule of thumb: The best functions fit on your screen together with their
-docstring, so that you can see what they are doing and how they are doing it.
-
-### Docstrings
-
-Document your public functions using docstrings following the [Numpy style]
-(https://numpydoc.readthedocs.io/en/latest/format.html).
 
 ### Commenting
 
-Commenting is important. That's programmers are taught in the basic programming
-lessons. However this does not mean that the more comments the better. Comments
-should in the first place document what a function is doing. Not so much how it
-does things. Once the reader knows what the code is supposed to do, well
-written code explains on its own how it does it. On the other hand, if the
-reader does not know what the code is supposed to do, even the most detailed
-comments do not help.
+Programmers are taught in the basic programming lessons that comments are
+important. However, a more modern point of view is, that comments are only the
+last resort, if the code is so obscure that the reader needs the comment to
+understand it. Generally it would be better to write the code in a way that it
+speaks for itself. That's why keeping functions short is so
+important. Extracting a code block of a function into another function makes
+the code more readable, because the new function has a name.
+
+
+*Bad* example:
+
+```python
+def some_function(data, parameters):
+	... # a bunch of code
+	... # over several lines
+	... # hard to figure out
+	... # what it is doing
+	if parameters['use_method_1']:
+        ... # a bunch of code
+		... # over several lines
+		... # hard to figure out
+		... # what it is doing
+	else:
+		... # a bunch of code
+		... # over several lines
+		... # hard to figure out
+		... # what it is doing
+	... # a bunch of code
+	... # over several lines
+	... # hard to figure out
+	... # what it is doing
+```
+
+*Good* example
+
+```python
+def prepare(data, parameters):
+	... # a bunch of code
+	... # over several lines
+	... # easily understandable
+	... # by the function's name
+
+def cleanup(data, parameters):
+	... # a bunch of code
+	... # over several lines
+	... # easily understandable
+	... # by the function's name
+
+def method_1(data):
+	... # a bunch of code
+	... # over several lines
+	... # easily understandable
+	... # by the function's name
+
+def other_method(data):
+	... # a bunch of code
+	... # over several lines
+	... # easily understandable
+	... # by the function's name
+
+def some_function(data, parameters):
+	prepare(data, parameters)
+	if parameters['use_method_1']:
+		method_1(data)
+	else:
+		other_method(data)
+	cleanup(data, parameters)
+```
+
+
+Ideally the only comments that you need are docstrings that document the public
+interface of your functions and classes.
 
 Compare the following functions:
 
@@ -196,9 +288,9 @@ def hypot(triangle):
 
     https://en.wikipedia.org/wiki/Law_of_cosines
     '''
-    a = triangle.a()
-    b = triangle.b()
-    gamma = triangle.gamma()
+    a = triangle.a
+    b = triangle.b
+    gamma = triangle.gamma
 
     return np.sqrt(a*a + b*b - 2*a*b*np.cos(gamma))
 ```
