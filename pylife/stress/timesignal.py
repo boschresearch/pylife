@@ -157,20 +157,20 @@ class TimeSignalPrep:
     def prepare_rolling(self, df):
         """
         Adds ID, time for TsFresh
-        
+
         Parameters
         ----------
         df : pandas DataFrame
             input data
-        
+
         Returns
         -------
         df : pandas DataFrame
             output DataFrame with added id, time
-        
+
         """
-        
-            
+
+
         start = time.time()
         df["id"] = 0
         df["time"] = df.index.values
@@ -178,13 +178,13 @@ class TimeSignalPrep:
         df.index=df["time"]
         print(df)
         ende = time.time()
-        
+
         print('Prepare_rolling: {:5.3f}s'.format(ende-start))
         return df
-       
+
     def roll_dataset(self, input, timeshift=1000, rolling_direction = 800):
         """
-    
+
         Parameters
         ----------
         input : pandas DataFrame
@@ -193,14 +193,14 @@ class TimeSignalPrep:
              window size -the default is 1000.
         rolling_direction : int, optional
              windowshift -The default is 800.
-    
+
         Returns
         -------
         df_rolled : pandas DataFrame
             rolled DataFrame
-    
+
         """
-    
+
         #Create Rolled Dataset with Parameter rolling_direction & timeshift
         #throws away the last halfshift
         pd.options.mode.chained_assignment = None #stops the copyslice warning
@@ -222,15 +222,15 @@ class TimeSignalPrep:
                 df_rolled_is_empty=False
             else:
                 df_rolled= df_rolled.append(shift,ignore_index=True)
-    
+
         ende = time.time()
         print('roll_dataset: {:5.3f}s'.format(ende-start))
         return df_rolled
-        
+
     def extract_features_df(self, df, feature="maximum"):
         """
-    
-    
+
+
         Parameters
         ----------
         df : pandas DataFrame
@@ -239,16 +239,16 @@ class TimeSignalPrep:
             Extracted feature - only supports one at a time -
             and only features form tsfresh that dont need extra parameters.
             The default is "maximum".
-    
+
         Returns
         -------
         extracted_features : pandas DataFrame
             Dataframe of extraced features
-    
+
         """
         #extract features
         start = time.time()
-    
+
         #fc_parameters = {"abs_energy", "maximum"}
         fc_parameters = {
             feature: None,
@@ -258,10 +258,10 @@ class TimeSignalPrep:
         ende = time.time()
         print('extract_features_df: {:5.3f}s'.format(ende-start))
         return extracted_features
-        
+
     def select_relevant_windows(self, df, percentage_max, extracted_features,timeshift=1000,rolling_direction=800):
         """
-    
+
         Parameters
         ----------
         df : pandas DataFrame
@@ -274,21 +274,21 @@ class TimeSignalPrep:
             window size -the default is 1000.
         rolling_direction : TYPE
             window shift- the default is 800
-    
+
         Returns
         -------
         df : pandas DataFrame
             dataframe with NaN's in the windows with too low extracted features
-    
+
         """
         #get added up abs energy of interval x, if too low set None
         start = time.time()
         added_feature=np.zeros(len(extracted_features))
         for i in range(df.shape[1]-2):
             added_feature += extracted_features.iloc[:,i]
-    
+
         plt.show()
-    
+
         for i in range(len(extracted_features)):
             if(added_feature.iloc[i]<=(max(added_feature)*percentage_max)):
                 #set those rows 0 in ts_data
@@ -296,22 +296,22 @@ class TimeSignalPrep:
         ende = time.time()
         print('select_relevant_windows: {:5.3f}s'.format(ende-start))
         return df
-        
+
     def create_gridpoints(self, df, n_gridpoints=3):
         """
-    
+
         Parameters
         ----------
         df : pandas DataFrame
             dataframe with NaN's from select_relevant_windows(...)
         n_gridpoints : int, optional
             Number of gridpoints for polynomial smoothing. The default is 3.
-    
+
         Returns
         -------
         df : pandas DataFrame
             reduces number of NaN's to n_gridpoints
-    
+
         """
         # let at any gap exactly Parameter n NaN's - these will be used to remove jumps
         start = time.time()
@@ -323,20 +323,20 @@ class TimeSignalPrep:
             if(istrue==True):
                 #add to delete list
                 list.append(df.index[i])
-    
+
         ende = time.time()
         print('create_gridpoints Part 1: {:5.3f}s'.format(ende-start))
-    
+
         start = time.time()
         df.drop(list, axis=0, inplace=True)
         ende = time.time()
         print('create_gridpoints Part 2: {:5.3f}s'.format(ende-start))
         return df
-        
+
     def polyfit_gridpoints(self , df, ts_time, order=3, verbose=False, n_gridpoints=3):
         """
-        
-        
+
+
         Parameters
         ----------
         df : pandas DataFrame
@@ -349,7 +349,7 @@ class TimeSignalPrep:
             If true plots polyfits. The default is False.
         n_gridpoints : TYPE, optional
             Number of gridpoints. The default is 3.
-    
+
         Returns
         -------
         df : pandas DataFrame
@@ -381,28 +381,28 @@ class TimeSignalPrep:
                     t_1 = t_3-t_4
                 else:
                     t_1=df.iloc[i-2,df.shape[1]-1]
-    
+
                 x = np.array([t_1, t_2, t_3, t_4])
                 #print(x)
                 for j in range(df.shape[1]-2):
                     ##calculate values instead of Non, y-values polynomials
                     p_2 = df.iloc[i-1,j]
-    
+
                     if(i-3<0):#|np.isnan(p_1)):
                         p_1=p_2
                     else:
                         p_1 = df.iloc[i-2,j]
-    
+
                     p_3 = df.iloc[i+n_gridpoints,j]
-    
+
                     #if(np.isnan(p_3)):
                         #p_3=0
-    
+
                     p_4 = df.iloc[i+n_gridpoints+1,j]
-    
+
                     if(np.isnan(p_4)):
                         p_4=p_3
-    
+
                     y = np.array([p_1, p_2, p_3, p_4])
                     #print(y)
                     z = np.polyfit(x, y, order)
@@ -414,7 +414,7 @@ class TimeSignalPrep:
                         df.iloc[i+k,j]=p(df.iloc[i+k,df.shape[1]-1])
                         x1.append(df.iloc[i+k,df.shape[1]-1])
                         y1.append(p(df.iloc[i+k,df.shape[1]-1]))
-    
+
                     xp = np.linspace(t_1, t_4, 200)
                     if(verbose==True):
                         plt.plot(xp,p(xp))
@@ -425,14 +425,14 @@ class TimeSignalPrep:
         ende = time.time()
         print('polyfit_gridpoints: {:5.3f}s'.format(ende-start))
         return df
-        
-    
+
+
 
     def clean_dataset(self, df, timeshift=1000, rolling_direction = 800, feature="abs_energy", n_gridpoints=3,percentage_max=0.05,order=3):
-        
-        
+
+
         """
-    
+
         Parameters
         ----------
         df : pandas DataFrame
@@ -451,22 +451,22 @@ class TimeSignalPrep:
             min percentage of the maximum to keep the window. The default is 0.05.
         order : int, optional
             order of polynom The default is 3.
-    
+
         Returns
         -------
         df_poly : pandas DataFrame
             cleaned DataFrame
-        
-            """
-            
 
-       
-        
-        
+            """
+
+
+
+
+
         start = time.time()
-    
+
         ts_prepared = self.prepare_rolling(df)
-    
+
         #get copy for indexing after deleting row
         ts_time = ts_prepared.copy()
         #add 1line to ts_time -we add a line to the data--> If we dont delete anything ts_data>ts_time--> add one line at the end
@@ -476,8 +476,8 @@ class TimeSignalPrep:
         last_row=pd.DataFrame(last_row)
         last_row=last_row.transpose()
         ts_time=ts_time.append(last_row)
-    
-    
+
+
         df_rolled = self.roll_dataset(df,timeshift=timeshift, rolling_direction = rolling_direction)
         extracted_features = self.extract_features_df(df_rolled, feature)
         ts_selected = self.select_relevant_windows(ts_prepared, percentage_max, extracted_features, timeshift, rolling_direction)
@@ -485,15 +485,12 @@ class TimeSignalPrep:
         #plt.show()
         ts_grid = self.create_gridpoints(ts_selected, n_gridpoints=n_gridpoints)
         df_poly = self.polyfit_gridpoints(ts_grid, order=order, verbose=False, n_gridpoints=n_gridpoints, ts_time=ts_time)
-    
+
         #Remove NaN's at the end - should be maximum 2n
         l=df_poly.shape[0]
         df_poly.dropna(axis=0, how='any', thresh=None, subset=None, inplace=True)
         print("Number of NaN's dropped at END:", l-df_poly.shape[0])
         ende = time.time()
         print('Total Cleaning: {:5.3f}s'.format(ende-start))
-        
-        return df_poly
-        
-        
 
+        return df_poly
