@@ -172,14 +172,14 @@ class TimeSignalPrep:
         TSout = signal.filtfilt(b, a, self.df)
         return TSout
 
-    def prepare_rolling(self, df):
+    def prepare_rolling(self):
         """
         Adds ID, time for TsFresh
 
         Parameters
         ----------
-        df : pandas DataFrame
-            input data
+        self : TimeSignalPrep class
+            
 
         Returns
         -------
@@ -187,25 +187,24 @@ class TimeSignalPrep:
             output DataFrame with added id, time
 
         """
-
+        self.prep_roll = self.df
         start = time.time()
-        df["id"] = 0
-        df["time"] = df.index.values
-        df["time"] = df["time"].subtract(df["time"].values[0])
-        df.index = df["time"]
-        print(df)
-        ende = time.time()
+        self.prep_roll["id"] = 0
+        self.prep_roll["time"] = self.df.index.values
+        self.prep_roll["time"] = self.prep_roll["time"].subtract(self.prep_roll["time"].values[0])
+        self.prep_roll.index = self.prep_roll["time"]
+        end = time.time()
 
-        print("Prepare_rolling: {:5.3f}s".format(ende - start))
-        return df
+        print("Prepare_rolling: {:5.3f}s".format(end - start))
+        return self.prep_roll
 
-    def roll_dataset(self, input, timeshift=1000, rolling_direction=800):
+    def roll_dataset(self, timeshift=1000, rolling_direction=800):
         """
 
         Parameters
         ----------
-        input : pandas DataFrame
-             input DataFrame prepared by prepare_rolling
+        self.prep_roll : 
+             
         timeshift : int , optional
              window size -the default is 1000.
         rolling_direction : int, optional
@@ -222,12 +221,12 @@ class TimeSignalPrep:
         # throws away the last halfshift
         pd.options.mode.chained_assignment = None  # stops the copyslice warning
         start = time.time()
-        cycles = int(len(input) / rolling_direction) - 1
+        cycles = int(len(self.prep_roll) / rolling_direction) - 1
         df_rolled_is_empty = True
         # shiften
         for i in range(cycles):
             position = (rolling_direction) * i
-            shift = input.iloc[position : position + timeshift, :]
+            shift = self.prep_roll.iloc[position : position + timeshift, :]
             # change IDs to format (id,time)
             shift.loc[:, ("max_time")] = max(shift.loc[:, ("time")])
             df = shift.loc[:, ("id", "max_time")]
@@ -235,22 +234,22 @@ class TimeSignalPrep:
             # delete max_time
             shift.pop("max_time")
             if df_rolled_is_empty == True:
-                df_rolled = shift
+                self.df_rolled = shift
                 df_rolled_is_empty = False
             else:
-                df_rolled = df_rolled.append(shift, ignore_index=True)
+                self.df_rolled = self.df_rolled.append(shift, ignore_index=True)
 
         ende = time.time()
         print("roll_dataset: {:5.3f}s".format(ende - start))
-        return df_rolled
+        return self.df_rolled
 
-    def extract_features_df(self, df, feature="maximum"):
+    def extract_features_df(self, feature="maximum"):
 
         """
 
         Parameters
         ----------
-        df : pandas DataFrame
+        self.df_rolled : pandas DataFrame
             rolled DataFrame
         feature : string, optional
             Extracted feature - only supports one at a time -
@@ -271,7 +270,7 @@ class TimeSignalPrep:
             feature: None,
         }
         extracted_features = extract_features(
-            df,
+            self.df_rolled,
             column_id="id",
             column_sort="time",
             default_fc_parameters=fc_parameters,
@@ -282,20 +281,14 @@ class TimeSignalPrep:
         print("extract_features_df: {:5.3f}s".format(ende - start))
         return extracted_features
 
-    def select_relevant_windows(
-        self,
-        df,
-        percentage_max,
-        extracted_features,
-        timeshift=1000,
-        rolling_direction=800,
-    ):
+    def select_relevant_windows(self, percentage_max, extracted_features,
+                                timeshift=1000, rolling_direction=800):
 
         """
 
         Parameters
         ----------
-        df : pandas DataFrame
+       self.prep_roll : pandas DataFrame
             input data - normally output from perpare_rolling(df)
         percentage_max : float
             min percentage of the maximum of the extraced feature.
@@ -315,7 +308,7 @@ class TimeSignalPrep:
         # get added up abs energy of interval x, if too low set None
         start = time.time()
         added_feature = np.zeros(len(extracted_features))
-        for i in range(df.shape[1] - 2):
+        for i in range(self.prep_roll.shape[1] - 2):
             added_feature += extracted_features.iloc[:, i]
 
         plt.show()
@@ -323,13 +316,13 @@ class TimeSignalPrep:
         for i in range(len(extracted_features)):
             if added_feature.iloc[i] <= (max(added_feature) * percentage_max):
                 # set those rows 0 in ts_data
-                df.iloc[
+                self.prep_roll.iloc[
                     0 + i * rolling_direction : timeshift + i * rolling_direction,
-                    0 : df.shape[1] - 2,
+                    0 : self.prep_roll.shape[1] - 2,
                 ] = None
         ende = time.time()
         print("select_relevant_windows: {:5.3f}s".format(ende - start))
-        return df
+        return self.relevant_windows
 
     def create_gridpoints(self, df, n_gridpoints=3):
 
