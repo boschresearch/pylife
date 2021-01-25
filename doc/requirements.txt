@@ -2,6 +2,7 @@ numpy
 pytest
 scipy
 pandas
+tables
 cython
 mystic
 pymc3
