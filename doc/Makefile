@@ -48,7 +48,7 @@ help:
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILDDIR)/*
+	rm -rf $(BUILDDIR)/* `git check-ignore source/demos/*`
 
 .PHONY: html
 html:
