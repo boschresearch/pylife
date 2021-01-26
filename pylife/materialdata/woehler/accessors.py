@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2020 - for information on the respective copyright owner
+# Copyright (c) 2019-2021 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -34,6 +34,13 @@ class WoehlerCurveAccessor(WoehlerCurveElementaryAccessor):
 
 @pd.api.extensions.register_dataframe_accessor('fatigue_data')
 class FatigueDataAccessor(signal.PylifeSignal):
+    '''Accessor class for fatigue data
+
+    Mandatory keys are
+        * ``load`` : float, the load level
+        * ``cycles`` : float, the cycles of failure or runout
+        * ``fracture``: bool, ``True`` iff the test is a runout
+     '''
 
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['load', 'cycles', 'fracture'])
@@ -41,56 +48,67 @@ class FatigueDataAccessor(signal.PylifeSignal):
 
     @property
     def num_tests(self):
+        '''The number of tests'''
         return self._obj.shape[0]
 
     @property
     def num_fractures(self):
+        '''The number of fractures'''
         return self.fractures.shape[0]
 
     @property
     def num_runouts(self):
+        '''The number of runouts'''
         return self.runouts.shape[0]
 
     @property
     def fractures(self):
+        '''Only the fracture tests'''
         return self._obj[self._obj.fracture == True]
 
     @property
     def runouts(self):
+        '''Only the runout tests'''
         return self._obj[self._obj.fracture == False]
 
     @property
     def load(self):
+        '''The load levels'''
         return self._obj.load
 
     @property
     def cycles(self):
+        '''the cycle numbers'''
         return self._obj.cycles
 
     @property
     def fatigue_limit(self):
+        '''The start value of the load endurance limit.
+
+        It is determined by searching for the lowest load level before the
+        appearance of a runout data point, and the first load level where a
+        runout appears.  Then the median of the two load levels is the start
+        value.
+        '''
         if self._fatigue_limit is None:
             self._calc_finite_zone()
         return self._fatigue_limit
 
     @property
     def finite_zone(self):
+        '''All the tests with load levels above ``fatigue_limit``, i.e. the finite zone'''
         if self._fatigue_limit is None:
             self._calc_finite_zone()
         return self._finite_zone
 
     @property
     def infinite_zone(self):
+        '''All the tests with load levels below ``fatigue_limit``, i.e. the infinite zone'''
         if self._fatigue_limit is None:
             self._calc_finite_zone()
         return self._infinite_zone
 
     def _calc_finite_zone(self):
-        '''
-        Computes the start value of the load endurance limit. This is done by searching for the lowest load
-        level before the appearance of a runout data point, and the first load level where a runout appears.
-        Then the median of the two load levels is the start value.
-        '''
         if len(self.runouts) == 0:
             self._fatigue_limit = 0
             self._finite_zone = self._obj[:0]
@@ -104,6 +122,23 @@ class FatigueDataAccessor(signal.PylifeSignal):
 
 
 def determine_fractures(df, load_cycle_limit=None):
+    '''Adds a fracture column according to defined load cycle limit
+
+    Parameters
+    ----------
+    df : DataFrame
+        A ``DataFrame`` containing ``fatigue_data`` without ``fractures`` column
+    load_cycle_limit : float, optional
+        If given, all the tests of ``df`` with ``cycles`` equal od above
+        ``load_cycle_limit`` are considered as runouts. Others as fractures.
+        If not given the maximum cycle number in ``df`` is used as load cycle
+        limit.
+
+    Returns
+    -------
+    df : DataFrame
+        A ``DataFrame`` with the column ``fracture`` added
+    '''
     DataValidator().fail_if_key_missing(df, ['load', 'cycles'])
     if load_cycle_limit is None:
         load_cycle_limit = df.cycles.max()

@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2020 - for information on the respective copyright owner
+# Copyright (c) 2019-2021 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -159,6 +159,11 @@ class FiniteLifeCurve(FiniteLifeBase):
     The formula for calculation is taken from
     "Betriebsfestigkeit", Haibach, 3. Auflage 2006
 
+    **Consider:** load collective and life curve have to be consistent:
+
+        * range vs range
+        * amplitude vs amplitude
+
     Parameters
     ----------
     k : float
@@ -232,11 +237,16 @@ class FiniteLifeCurve(FiniteLifeBase):
                                      ))
         return self.ND_50 * (S / self.SD_50)**(-self.k_1)
 
-    def calc_damage(self, loads, method="elementar"):
+    def calc_damage(self, loads, method="elementar", index_name="range"):
         """Calculate the damage based on the methods
          * Miner elementar (k_2 = k)
          * Miner Haibach (k_2 = 2k-1)
          * Miner original (k_2 = -\inf)
+
+        **Consider:** load collective and life curve have to be consistent:
+
+        * range vs range
+        * amplitude vs amplitude
 
         Parameters
         ----------
@@ -253,7 +263,7 @@ class FiniteLifeCurve(FiniteLifeBase):
             damage for every load horizont based on the load collective and the method
         """
         damage = pd.DataFrame(index=loads.index,columns=loads.columns, data=0)
-        load_values = loads.index.get_level_values('range').mid.values
+        load_values = loads.index.get_level_values(index_name).mid.values
         # Miner elementar
         cycles_SN = self.calc_N(load_values, ignore_limits=True)
         if method == 'original':
