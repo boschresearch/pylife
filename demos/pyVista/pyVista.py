@@ -12,7 +12,7 @@ import numpy as np
 import pylife.vmap
 import pylife.stress.equistress
 #%%
-filename = "demos/plate_with_hole.vmap"
+filename = "../plate_with_hole.vmap"
 
 vm_mesh = pylife.vmap.VMAP(filename)
 pyLife_mesh = df = (vm_mesh.mesh_coords('1')
