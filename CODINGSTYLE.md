@@ -54,6 +54,12 @@ By naming conventions the programmer can give some indications to the reader of
 the program, what an identifier is supposed to be or what it is referring
 to. Therefore some consistency guidelines.
 
+### Module names
+
+For module names, try to find one word names like `rainflow`, `gradient`. If
+you by all means need word separation in a module name, use
+`snake_case`. *Never* use dashes (`-`) and capital letters in module
+names. They lead to all kinds of problems.
 
 ### Class names
 
