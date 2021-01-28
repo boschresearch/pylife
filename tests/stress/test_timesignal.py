@@ -54,7 +54,7 @@ size_df = 10
 ts_inp = pd.DataFrame(index=np.arange(size_df)+1,
               data=np.arange(size_df)**2)
 ts_inp_test =ts_inp.copy()
-ts_test1 = tsig.TimeSignalPrep(ts_inp)   
+  
 
     
 
@@ -65,17 +65,17 @@ def test_prepare_rolling():
     exact_res['id']=0
     exact_res['time']=np.int64(np.arange(size_df))
     exact_res.index=exact_res["time"]
-    
-    ts_prep_rolling = ts_test1.prepare_rolling()
+    global ts_prep_rolling
+    ts_prep_rolling = tsig._prepare_rolling(ts_inp)
     
     pd.testing.assert_frame_equal(exact_res, ts_prep_rolling)
     return ts_prep_rolling
 
 
-  
+
 def test_roll_dataset():
-    
-    ts_test1.roll_dataset(timeshift=3, rolling_direction = 2)
+    global df_rolled
+    df_rolled = tsig._roll_dataset(ts_prep_rolling, timeshift=3, rolling_direction = 2)
     exact_res = pd.DataFrame()
     x = np.array([0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 8])
     df=pd.DataFrame()
@@ -90,44 +90,49 @@ def test_roll_dataset():
     exact_res["id"]=pd.MultiIndex.from_frame(df)
     exact_res['time']=np.int64(x)
     
-    pd.testing.assert_frame_equal(exact_res, ts_test1.df_rolled)
-    return ts_test1.df_rolled
+    pd.testing.assert_frame_equal(exact_res, df_rolled)
+    return df_rolled
+
 
 
 def test_extract_features_df():
-    ts_test1.extract_features_df(feature="maximum")
+    global extracted_features
+    extracted_features = tsig._extract_features_df(df_rolled, feature="maximum")
     exact_res = pd.DataFrame()
     exact_res["0__maximum"]= [4.,16.,36.,64.]
-    pd.testing.assert_frame_equal(exact_res, ts_test1.extracted_features)
-    return ts_test1.extracted_features
-
+    pd.testing.assert_frame_equal(exact_res, extracted_features)
+    return extracted_features
 
 
 def test_select_relevant_windows():
     
-    ts_prep_selected = ts_test1.prep_roll.copy()
-    ts_test1.select_relevant_windows(percentage_max=0.24, timeshift=3, rolling_direction=2)
+    ts_prep_selected = ts_prep_rolling.copy()
+    global relevant_windows
+    relevant_windows = tsig._select_relevant_windows(ts_prep_rolling, extracted_features, fraction_max=0.24, timeshift=3, rolling_direction=2)
     ts_prep_selected.iloc[0:3, 0] =None  
     exact_res = ts_prep_selected
-    pd.testing.assert_frame_equal(exact_res, ts_test1.relevant_windows) 
-    return ts_test1.relevant_windows
+    pd.testing.assert_frame_equal(exact_res, relevant_windows) 
+    return relevant_windows
+
 
 
 
 def test_create_gridpoints1():
     
-    ts_selected_test = ts_test1.relevant_windows.copy()
-    ts_test1.create_gridpoints(n_gridpoints=2)
+    ts_selected_test = relevant_windows.copy()
+    global grid_points
+    grid_points=tsig._create_gridpoints(relevant_windows, n_gridpoints=2)
     exact_res = ts_selected_test.drop(0, axis=0)
-    pd.testing.assert_frame_equal(exact_res, ts_test1.grid_points)
-    return ts_test1.grid_points
+    pd.testing.assert_frame_equal(exact_res, grid_points)
+    return grid_points
 
 
-#%%
+
 def test_polyfit_gridpoints1():
     
-    ts_grid_test= ts_test1.grid_points.copy()
-    ts_test1.polyfit_gridpoints(order=1, verbose=False, n_gridpoints=2)  
+    ts_grid_test= grid_points.copy()
+    global poly_gridpoints
+    poly_gridpoints = tsig._polyfit_gridpoints(grid_points, ts_prep_rolling, order=1, verbose=False, n_gridpoints=2)  
     x= [-1,0,3,4]
     y= [0, 0, 9, 16]    
     z = np.polyfit(x, y, 1)
@@ -145,17 +150,17 @@ def test_polyfit_gridpoints1():
     exact_res["time"]=np.int64(exact_res["time"])
     exact_res.index= exact_res["time"]
     
-    pd.testing.assert_frame_equal(exact_res, ts_test1.poly_gridpoints)
-    return ts_test1.poly_gridpoints
-  
-#%%                 
+    pd.testing.assert_frame_equal(exact_res, poly_gridpoints)
+    return poly_gridpoints
+
+                
 
 def test_clean_dataset():
-
-    ts_cleaned = tsig.TimeSignalPrep(ts_inp_test).clean_dataset(timeshift = 3, rolling_direction = 2, feature="maximum", n_gridpoints=2,percentage_max=0.24,order=1)    
-    ts_test1.poly_gridpoints.pop("id")
-    
-    pd.testing.assert_frame_equal(ts_test1.poly_gridpoints, ts_cleaned)
+    global ts_cleaned
+    ts_cleaned = tsig.clean_dataset(ts_inp_test, timeshift = 3, rolling_direction = 2, feature="maximum", n_gridpoints=2,percentage_max=0.24,order=1)    
+    poly_gridpoints.pop("id")
+    poly_gridpoints.index = poly_gridpoints["time"]
+    pd.testing.assert_frame_equal(poly_gridpoints, ts_cleaned)
     return ts_cleaned, 
 
     
@@ -169,42 +174,43 @@ ts_gaps = pd.DataFrame(index=t,
           data=np.array([y1,y2]).T)
 ts_gaps_test=ts_gaps.copy()
 
-ts_test2 = tsig.TimeSignalPrep(ts_gaps)
-ts_test2.prepare_rolling()
-ts_test2.roll_dataset(timeshift= 5, rolling_direction = 3)
-ts_test2.extract_features_df(feature="maximum")
+
+df_gaps_prep = tsig._prepare_rolling(ts_gaps)
+df_gaps_rolled = tsig._roll_dataset(df_gaps_prep ,timeshift= 5, rolling_direction = 3)
+extraced_feature_gaps = tsig._extract_features_df(df_gaps_rolled, feature="maximum")
 
 
 def test_select_relevant_windows2():
-    ts_gaps_selected = ts_test2.prep_roll.copy()
-    ts_test2.select_relevant_windows(percentage_max=0.91, timeshift=5, rolling_direction=3)
+    ts_gaps_selected = df_gaps_prep.copy()
+    global relevant_windows_gaps
+    relevant_windows_gaps = tsig._select_relevant_windows(df_gaps_prep, extraced_feature_gaps,fraction_max=0.91, timeshift=5, rolling_direction=3)
     ts_gaps_selected.iloc[0:5,0:2] =np.nan
     ts_gaps_selected.iloc[3*2:3*2+5,0:2] =np.nan
     
-    pd.testing.assert_frame_equal(ts_gaps_selected, ts_test2.relevant_windows) 
-    return ts_test2.relevant_windows
-
+    pd.testing.assert_frame_equal(ts_gaps_selected, relevant_windows_gaps) 
+    return relevant_windows_gaps
 #%%
 def test_create_gridpoints2(): 
    
-    ts_selected_gaps = ts_test2.relevant_windows.copy()
-    ts_test2.create_gridpoints(n_gridpoints=3)
+    ts_selected_gaps = relevant_windows_gaps.copy()
+    global grid_points_gaps
+    grid_points_gaps=tsig._create_gridpoints(relevant_windows_gaps,n_gridpoints=3)
     list=[ts_selected_gaps.index[0],ts_selected_gaps.index[1],ts_selected_gaps.index[6],ts_selected_gaps.index[7]]
     exact_res = ts_selected_gaps.drop(list, axis=0)
-    pd.testing.assert_frame_equal(exact_res, ts_test2.grid_points)
-    return ts_test2.grid_points
-
+    pd.testing.assert_frame_equal(exact_res, grid_points_gaps)
+    return grid_points_gaps
 #%%
 def test_polyfit_gridpoints2():
-    ts_test2.polyfit_gridpoints(order=3, verbose=False, n_gridpoints=3)
+    global poly_gridpoints_gaps
+    poly_gridpoints_gaps=tsig._polyfit_gridpoints(grid_points_gaps, df_gaps_prep,order=3, verbose=False, n_gridpoints=3)
     
-    ts_g= ts_test2.grid_points.copy()
+    ts_g= grid_points_gaps.copy()
     ts_time = np.linspace(0, np.pi+np.pi/19,21)
     y1_time = ts_time
     
     
     ts_time = pd.DataFrame(index=ts_time, data=np.array([y1_time]).T)
-    ts_time= tsig.TimeSignalPrep(ts_time).prepare_rolling()
+    ts_time= tsig._prepare_rolling(ts_time)
 
     top_row= ts_g.iloc[0,:]
     top_row.name=0.
@@ -254,14 +260,13 @@ def test_polyfit_gridpoints2():
     exact_res= ts_g
     exact_res.index= exact_res["time"]
     
-    pd.testing.assert_frame_equal(exact_res, ts_test2.poly_gridpoints)
-    return ts_test2.poly_gridpoints
-
+    pd.testing.assert_frame_equal(exact_res, poly_gridpoints_gaps)
+    return poly_gridpoints_gaps
 #%%
 def test_clean_dataset2():
-    ts_test2.poly_gridpoints.pop("id")
-    exact_res = ts_test2.poly_gridpoints
-    ts_cleaned = tsig.TimeSignalPrep(ts_gaps_test).clean_dataset(timeshift = 5, rolling_direction = 3, feature="maximum", n_gridpoints=3,percentage_max=0.91,order=3)    
+    poly_gridpoints_gaps.pop("id")
+    exact_res = poly_gridpoints_gaps
+    ts_cleaned = tsig.clean_dataset(ts_gaps_test, timeshift = 5, rolling_direction = 3, feature="maximum", n_gridpoints=3,percentage_max=0.91,order=3)    
     pd.testing.assert_frame_equal(exact_res, ts_cleaned)
     return ts_cleaned
 
@@ -284,13 +289,13 @@ def test_clean_dataset3():
     
     
     ts_sin_test=ts_sin.copy()
-    ts_cleaned = tsig.TimeSignalPrep(ts_sin_test).clean_dataset(timeshift = 100, rolling_direction = 1, feature="maximum", n_gridpoints=5,percentage_max=0.1,order=3)
+    ts_cleaned = tsig.clean_dataset(ts_sin_test, timeshift = 100, rolling_direction = 1, feature="maximum", n_gridpoints=5,percentage_max=0.1,order=3)
     #ts_cleaned.plot(subplots=True, sharex=True, figsize=(10,10))
     #plt.show()
-    ts_time=tsig.TimeSignalPrep(ts_sin).prepare_rolling()
+    ts_time=tsig._prepare_rolling(ts_sin)
     
     exact_res= pd.DataFrame(index=t1, data=y1)
-    exact_res = tsig.TimeSignalPrep(exact_res).prepare_rolling()
+    exact_res = tsig._prepare_rolling(exact_res)
     
     top_row= exact_res.iloc[0,:]
     top_row.name=0.
@@ -307,4 +312,4 @@ def test_clean_dataset3():
     exact_res.pop("id")
     pd.testing.assert_frame_equal(exact_res, ts_cleaned)
     return ts_cleaned
-  
+

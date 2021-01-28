@@ -495,7 +495,7 @@ def clean_dataset(df, timeshift=1000, rolling_direction = 800,
     start = time.time()
     
     df_prep = _prepare_rolling(df)
-
+    ts_time = df_prep.copy()
     #add 1line to ts_time -we add a line to the data--> If we dont delete anything ts_data>ts_time--> add one line at the end
     last_row = df_prep.iloc[0,:]
     #calculate t of the next step
@@ -503,7 +503,10 @@ def clean_dataset(df, timeshift=1000, rolling_direction = 800,
     +df_prep.iloc[len(df_prep)-1, df.shape[1]-1]
     -df_prep.iloc[len(df_prep)-2, df.shape[1]-1]
     
+    
+    
     last_row=pd.DataFrame(last_row).transpose()
+    ts_time = pd.concat([ts_time, last_row])
 
     df_rolled = _roll_dataset(df_prep,timeshift=timeshift,
                               rolling_direction=rolling_direction)
@@ -513,12 +516,14 @@ def clean_dataset(df, timeshift=1000, rolling_direction = 800,
    
     grid_points = _create_gridpoints(relevant_windows,
                                      n_gridpoints=n_gridpoints)
-    poly_gridpoints = _polyfit_gridpoints(grid_points,order=order, verbose=False,
+    poly_gridpoints = _polyfit_gridpoints(grid_points, ts_time, order=order, verbose=False,
                                           n_gridpoints=n_gridpoints)
 
     #Remove NaN's at the end - should be maximum 2n
     l=poly_gridpoints.shape[0]
-    cleaned = poly_gridpoints.dropna(axis=0, how='any', thresh=None, subset=None).pop("id")
+    cleaned = poly_gridpoints.dropna(axis=0, how='any', thresh=None, subset=None)
+    cleaned.pop("id")
+    
     print("Number of NaN's dropped at END:", l-poly_gridpoints.shape[0])
     ende = time.time()
     print('Total Cleaning: {:5.3f}s'.format(ende-start))
