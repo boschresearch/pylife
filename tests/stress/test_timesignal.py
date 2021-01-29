@@ -28,13 +28,13 @@ def test_resample_acc():
     ts_sin = pd.DataFrame(np.sin(
         omega*np.arange(0,2,1/1024)),index = np.arange(0,2,1/1024))
     expected_sin = ts_sin.describe().drop( ['count','mean','50%','25%','75%'])
-    test_sin = tsig.TimeSignalPrep(ts_sin).resample_acc(int(12*omega)).describe().drop(
+    test_sin = tsig.resample_acc(ts_sin, int(12*omega)).describe().drop(
         ['count','mean','50%','25%','75%'])
     pd.testing.assert_frame_equal(test_sin,expected_sin, check_less_precise = 2)
     # white noise
     ts_wn = pd.DataFrame(np.random.randn(129),index = np.linspace(0,1,129))
     expected_wn = ts_wn.describe()
-    test_wn = tsig.TimeSignalPrep(ts_wn).resample_acc(128).describe()
+    test_wn = tsig.resample_acc(ts_wn, 128).describe()
     pd.testing.assert_frame_equal(test_wn,expected_wn,check_exact=True)
     # SoR
     t = np.arange(0,20,1/4096)
@@ -45,7 +45,8 @@ def test_resample_acc():
                 index = t,columns = ["Sweep"])
     df['sor'] = df['Sweep'] + 0.1*np.random.randn(len(df))
     expected_sor = df.describe().drop(['count','mean','50%','25%','75%'])
-    test_sor = tsig.TimeSignalPrep(df).resample_acc(2048).describe().drop(['count','mean','50%','25%','75%'])
+    test_sor = tsig.resample_acc(df, 2048).describe().drop(['count','mean','50%','25%','75%'])
+    # return expected_sor, test_sor
     pd.testing.assert_frame_equal(test_sor,expected_sor, check_less_precise = 1)
 #%%
 #Test timeseries 1

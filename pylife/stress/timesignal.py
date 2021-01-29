@@ -136,8 +136,8 @@ def resample_acc(df, fs=1):
         df.index.min() + np.floor((df.index.max()-df.index.min())*fs)/fs,
         int(np.floor(df.index.max()-df.index.min())*fs + 1))
     
-    df_rs = pd.DataFrame(df.apply(lambda x: np.interp(index_new, df.index, x)),
-                    index = index_new)
+    df_rs = pd.DataFrame(df.apply(lambda x: np.interp(index_new, df.index, x)).values,
+                    index = index_new, columns=df.columns)
     return df_rs
 
 def butter_bandpass(df, lowcut, highcut, fs, order=5):
