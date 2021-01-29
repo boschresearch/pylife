@@ -82,7 +82,7 @@ def test_roll_dataset():
     
     df["id"]=np.int64(np.zeros(len(x),dtype=int))
     df["max_time"]= [2,2,2,4,4,4,6,6,6,8,8,8]
-    
+   
     
     exact_res.loc[:,0]=x**2
     
@@ -115,7 +115,7 @@ def test_select_relevant_windows():
     return relevant_windows
 
 
-
+#%%
 
 def test_create_gridpoints1():
     
@@ -127,14 +127,14 @@ def test_create_gridpoints1():
     return grid_points
 
 
-
+#%%
 def test_polyfit_gridpoints1():
     
     ts_grid_test= grid_points.copy()
     global poly_gridpoints
     poly_gridpoints = tsig._polyfit_gridpoints(grid_points, ts_prep_rolling, order=1, verbose=False, n_gridpoints=2)  
-    x= [-1,0,3,4]
-    y= [0, 0, 9, 16]    
+    x= [0, 3]
+    y= [0, 9]    
     z = np.polyfit(x, y, 1)
     p = np.poly1d(z)
     top_row= ts_grid_test.iloc[0,:]
@@ -154,7 +154,7 @@ def test_polyfit_gridpoints1():
     return poly_gridpoints
 
                 
-
+#%%
 def test_clean_dataset():
     global ts_cleaned
     ts_cleaned = tsig.clean_dataset(ts_inp_test, timeshift = 3, rolling_direction = 2, feature="maximum", n_gridpoints=2,percentage_max=0.24,order=1)    
@@ -189,81 +189,23 @@ def test_select_relevant_windows2():
     
     pd.testing.assert_frame_equal(ts_gaps_selected, relevant_windows_gaps) 
     return relevant_windows_gaps
+test_select_relevant_windows2()
 #%%
 def test_create_gridpoints2(): 
-   
+    global check
+    check = relevant_windows_gaps.copy()
     ts_selected_gaps = relevant_windows_gaps.copy()
     global grid_points_gaps
     grid_points_gaps=tsig._create_gridpoints(relevant_windows_gaps,n_gridpoints=3)
     list=[ts_selected_gaps.index[0],ts_selected_gaps.index[1],ts_selected_gaps.index[6],ts_selected_gaps.index[7]]
+    global exact_res
     exact_res = ts_selected_gaps.drop(list, axis=0)
     pd.testing.assert_frame_equal(exact_res, grid_points_gaps)
     return grid_points_gaps
-#%%
-def test_polyfit_gridpoints2():
-    global poly_gridpoints_gaps
-    poly_gridpoints_gaps=tsig._polyfit_gridpoints(grid_points_gaps, df_gaps_prep,order=3, verbose=False, n_gridpoints=3)
-    
-    ts_g= grid_points_gaps.copy()
-    ts_time = np.linspace(0, np.pi+np.pi/19,21)
-    y1_time = ts_time
-    
-    
-    ts_time = pd.DataFrame(index=ts_time, data=np.array([y1_time]).T)
-    ts_time= tsig._prepare_rolling(ts_time)
-
-    top_row= ts_g.iloc[0,:]
-    top_row.name=0.
-    top_row= pd.DataFrame(top_row)
-    top_row=top_row.transpose()
-    top_row.iloc[0,:]=0
-    
-    ts_g=pd.concat([top_row, ts_g])
-    
-    ts_time = ts_time.head(len(ts_g))
-    ts_g["time"]=ts_time["time"].values
-    ts_g.index=ts_g["time"]
-
-    #4 Polynome
-    x1 = [ts_g.index[0]-ts_g.index[1] ,ts_g.index[0],ts_g.index[4], ts_g.index[5]]
-    y1 = [0.,0.,ts_g.iloc[4,0],ts_g.iloc[4,0]]
-    y2 = [0.,0.,ts_g.iloc[4,1],ts_g.iloc[4,1]]
-    
-    z1 = np.polyfit(x1, y1, 3)
-    p1 = np.poly1d(z1)
-    z2 = np.polyfit(x1, y2, 3)
-    p2 = np.poly1d(z2)
-    
-    ts_g.iloc[1,0]=p1(ts_g.index[1])
-    ts_g.iloc[2,0]=p1(ts_g.index[2])
-    ts_g.iloc[3,0]=p1(ts_g.index[3])
-    ts_g.iloc[1,1]=p2(ts_g.index[1])
-    ts_g.iloc[2,1]=p2(ts_g.index[2])
-    ts_g.iloc[3,1]=p2(ts_g.index[3])
-
-    x3 = [ts_g.index[3],ts_g.index[4],ts_g.index[8],ts_g.index[9]]
-    y3 = [ts_g.iloc[3,0], ts_g.iloc[4,0], ts_g.iloc[8,0], ts_g.iloc[9,0]]
-    y4 = [ts_g.iloc[3,1], ts_g.iloc[4,1], ts_g.iloc[8,1], ts_g.iloc[9,1]]
-     
-    z3 = np.polyfit(x3, y3, 3)
-    p3 = np.poly1d(z3)
-    z4 = np.polyfit(x3, y4, 3)
-    p4 = np.poly1d(z4)
-    
-    ts_g.iloc[5,0]=p3(ts_g.index[5])
-    ts_g.iloc[6,0]=p3(ts_g.index[6])
-    ts_g.iloc[7,0]=p3(ts_g.index[7])
-    ts_g.iloc[5,1]=p4(ts_g.index[5])
-    ts_g.iloc[6,1]=p4(ts_g.index[6])
-    ts_g.iloc[7,1]=p4(ts_g.index[7])
-
-    exact_res= ts_g
-    exact_res.index= exact_res["time"]
-    
-    pd.testing.assert_frame_equal(exact_res, poly_gridpoints_gaps)
-    return poly_gridpoints_gaps
+test_create_gridpoints2()
 #%%
 def test_clean_dataset2():
+    poly_gridpoints_gaps=tsig._polyfit_gridpoints(grid_points_gaps, df_gaps_prep,order=3, verbose=False, n_gridpoints=3)
     poly_gridpoints_gaps.pop("id")
     exact_res = poly_gridpoints_gaps
     ts_cleaned = tsig.clean_dataset(ts_gaps_test, timeshift = 5, rolling_direction = 3, feature="maximum", n_gridpoints=3,percentage_max=0.91,order=3)    
@@ -285,8 +227,6 @@ ts_sin = pd.DataFrame(index=t,
 
 #%%
 def test_clean_dataset3():
-    
-    
     
     ts_sin_test=ts_sin.copy()
     ts_cleaned = tsig.clean_dataset(ts_sin_test, timeshift = 100, rolling_direction = 1, feature="maximum", n_gridpoints=5,percentage_max=0.1,order=3)

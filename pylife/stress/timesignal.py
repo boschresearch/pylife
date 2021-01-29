@@ -170,7 +170,7 @@ def butter_bandpass(df, lowcut, highcut, fs, order=5):
 
 def _prepare_rolling(df):
     """
-    Adds ID, time for TsFresh
+    Adds ID, time to the dataset for TsFresh
 
     Parameters
     ----------
@@ -198,7 +198,7 @@ def _prepare_rolling(df):
 
 def _roll_dataset(prep_roll_df, timeshift=1000, rolling_direction=800):
     """
-
+    rolls dataset
     Parameters
     ----------
     prep_roll: output from prepare_rolling
@@ -243,7 +243,7 @@ def _roll_dataset(prep_roll_df, timeshift=1000, rolling_direction=800):
 
 def _extract_features_df(df_rolled, feature="maximum"):
 
-    """
+    """Extracts features like "abs_energy" or "maximum" from the rolled dataset with TsFresh
 
     Parameters
     ----------
@@ -283,7 +283,7 @@ def _extract_features_df(df_rolled, feature="maximum"):
 def _select_relevant_windows(prep_roll, extracted_features, fraction_max=0.25,
                              timeshift=1000, rolling_direction=800):
 
-    """
+    """Writes NaN's into the timeshifts with extracted features lower than fraction_max
 
     Parameters
     ----------
@@ -326,7 +326,9 @@ def _select_relevant_windows(prep_roll, extracted_features, fraction_max=0.25,
     
 def _create_gridpoints(relevant_windows,  n_gridpoints=3):
     """
-
+    Reduces the number of NaN's in a row to n_gridpoints. 
+    These NaN's are filled by polynomial regression in _polyfit_gridpoints later.
+    
     Parameters
     ----------
     relevant_windows : pandas DataFrame
@@ -343,6 +345,7 @@ def _create_gridpoints(relevant_windows,  n_gridpoints=3):
     # let at any gap exactly Parameter n NaN's - these will be used to remove jumps
     # let at any gap exactly Parameter n NaN's -
     # these will be used to remove jumps
+    
     start = time.time()
     list = []
     for i in range(len(relevant_windows) - n_gridpoints):
@@ -360,11 +363,22 @@ def _create_gridpoints(relevant_windows,  n_gridpoints=3):
     grid_points = relevant_windows.drop(list, axis=0)
     ende = time.time()
     print("create_gridpoints Part 2: {:5.3f}s".format(ende - start))
+   
+    """
+    relevant_windows.insert(loc=0, column='shift_f', value=relevant_windows.loc[:,0].shift(periods=n_gridpoints))
+    relevant_windows.insert(loc=0, column='shift_b', value=relevant_windows.loc[:,0].shift(periods= - n_gridpoints))
+    l = relevant_windows.shape
+    check = relevant_windows.iloc[:,:l[1]-2]
+    print(check)
+    print( relevant_windows)
+    grid_points = relevant_windows.drop(relevant_windows[check.isnull().all(axis=1)].index).drop(["shift_f", "shift_b"],axis=1)
+    """
+    
     return grid_points
     
 def _polyfit_gridpoints(grid_points, prep_roll, order=3,
                         verbose=False, n_gridpoints=3):
-    """
+    """Fills gridpoints with polynomial regression
         
     Parameters
     ----------
@@ -395,68 +409,15 @@ def _polyfit_gridpoints(grid_points, prep_roll, order=3,
     top_row = pd.DataFrame(top_row)
     top_row = top_row.transpose()
     top_row.head()
-    g = 0
     poly_gridpoints = pd.concat([top_row, grid_points])  # ,ignore_index=True)
     ts_time = prep_roll.head(len(poly_gridpoints))
     poly_gridpoints["time"] = ts_time["time"].values
     poly_gridpoints.index = poly_gridpoints["time"]
     poly_gridpoints.iloc[0, :] = 0
     #%% smooth the gaps with polynomial values
-    # plot polynomials
-    for i in range(len(poly_gridpoints) - n_gridpoints - 1):
-        if poly_gridpoints.iloc[i, :].isna()[0]:
-            g += 1
-            # calculate time axis
-            t_2 = poly_gridpoints.iloc[i - 1, poly_gridpoints.shape[1] - 1]
-            t_3 = poly_gridpoints.iloc[i + n_gridpoints, poly_gridpoints.shape[1] - 1]
-            t_4 = poly_gridpoints.iloc[i + n_gridpoints + 1, poly_gridpoints.shape[1] - 1]
-            if i - 3 < 0:
-                t_1 = t_3 - t_4
-            else:
-                t_1 = poly_gridpoints.iloc[i - 2, poly_gridpoints.shape[1] - 1]
-
-            x = np.array([t_1, t_2, t_3, t_4])
-            # print(x)
-            for j in range(poly_gridpoints.shape[1] - 2):
-                ##calculate values instead of Non, y-values polynomials
-                p_2 = poly_gridpoints.iloc[i - 1, j]
-
-                if i - 3 < 0:  # |np.isnan(p_1)):
-                    p_1 = p_2
-                else:
-                    p_1 = poly_gridpoints.iloc[i - 2, j]
-
-                p_3 = poly_gridpoints.iloc[i + n_gridpoints, j]
-
-                # if(np.isnan(p_3)):
-                # p_3=0
-
-                p_4 = poly_gridpoints.iloc[i + n_gridpoints + 1, j]
-
-                if np.isnan(p_4):
-                    p_4 = p_3
-
-                y = np.array([p_1, p_2, p_3, p_4])
-                # print(y)
-                z = np.polyfit(x, y, order)
-                p = np.poly1d(z)
-                x1 = []
-                y1 = []
-                for k in range(n_gridpoints):
-                    # write elements into dataset
-                    poly_gridpoints.iloc[i + k, j] = p(poly_gridpoints.iloc[i + k, poly_gridpoints.shape[1] - 1])
-                    x1.append(poly_gridpoints.iloc[i + k, poly_gridpoints.shape[1] - 1])
-                    y1.append(p(poly_gridpoints.iloc[i + k, poly_gridpoints.shape[1] - 1]))
-
-                xp = np.linspace(t_1, t_4, 200)
-                if verbose == True:
-                    plt.plot(xp, p(xp))
-                    plt.plot(x, y, "o")
-                    plt.plot(x1, y1, "*")
-                    plt.show()
-    print("Number of gaps:", g)
+    poly_gridpoints.interpolate(method='polynomial',order=order,inplace=True)
     ende = time.time()
-    print("polyfit_gridpoints: {:5.3f}s".format(ende - start))
+    print('Total Cleaning: {:5.3f}s'.format(ende-start))
     return poly_gridpoints
     
 
@@ -466,7 +427,7 @@ def clean_dataset(df, timeshift=1000, rolling_direction = 800,
                   percentage_max=0.05,order=3):
     
     
-    """
+    """ Removes irrelevant parts of the data and fills the gaps with polynomial regression
 
     Parameters
     ----------
