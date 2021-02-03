@@ -126,7 +126,7 @@ class AbstractRainflowCounter:
         return np.histogram2d(self.loops_from, self.loops_to, bins)
 
     def get_rainflow_matrix_frame(self, bins):
-        '''Calculates a histogram of the recorded loops into a pandas.Dataframe.
+        '''Calculates a histogram of the recorded loops into a pandas.DataFrame.
 
         An interval index is used to index the bins.
 
