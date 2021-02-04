@@ -30,17 +30,20 @@ class Elementary:
         self._lh = Likelihood(self._fd)
 
     def analyze(self, **kw):
+        wc = self._common_analysis()
+        wc = self._specific_analysis(wc, **kw)
+        self.__calc_bic(wc)
+        return wc
+
+    def _common_analysis(self):
         self._slope, self._lg_intercept = self._fit_slope()
         TN_inv, TS_inv = self._pearl_chain_method()
-        wc = pd.Series({
+        return pd.Series({
             'k_1': -self._slope,
             'ND_50': self._transition_cycles(self._fd.fatigue_limit),
             'SD_50': self._fd.fatigue_limit, '1/TN': TN_inv, '1/TS': TS_inv
         })
 
-        wc = self._specific_analysis(wc, **kw)
-        self.__calc_bic(wc)
-        return wc
 
     def _specific_analysis(self, wc):
         return wc
