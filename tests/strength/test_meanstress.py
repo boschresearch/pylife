@@ -140,6 +140,12 @@ def test_five_segment_plain_sm():
     res = MST.five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal)
     assert np.equal(res,0.)
 
+    Sm = np.array([5, 5])
+    Sa = np.array([0, 0])
+    R_goal = 0.1
+    res = MST.five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal)
+    assert np.array_equal(res,np.array([0., 0.]))
+
 
 def test_five_segment_single_M_sm():
     cyclic_signal = five_segment_signal_sm()

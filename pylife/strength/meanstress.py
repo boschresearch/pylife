@@ -205,9 +205,6 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
 
     ignored_states = np.seterr(**old_err_state)
 
-    R12 = np.broadcast_to(R12, Sa.shape)
-    R23 = np.broadcast_to(R23, Sa.shape)
-
     c4 = np.where(R > 1.)
     c0 = np.where(R <= 0.)
     c1 = np.where((R > 0.) & (R <= R12))
@@ -232,8 +229,8 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
     S_12 = np.zeros_like(Sa)
     S_23 = np.zeros_like(Sa)
 
-    B_12 = (1.+R12)/(1.-R12)
-    B_23 = (1.+R23)/(1.-R23)
+    B_12 = np.broadcast_to((1.+R12)/(1.-R12), Sa.shape)
+    B_23 = np.broadcast_to((1.+R23)/(1.-R23), Sa.shape)
 
     r4 = c4
     r = np.append(c0, c1)
