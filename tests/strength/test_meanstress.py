@@ -23,6 +23,7 @@ import pandas as pd
 import numpy.testing as testing
 
 import pylife.strength.meanstress as MST
+from pylife.strength.sn_curve import FiniteLifeCurve
 
 
 def goodman_signal_sm():
@@ -325,3 +326,27 @@ def test_full_histogram():
     print(res)
     print(res['frequency'].sum() - df['frequency'].sum())
     assert res['frequency'].sum() == df['frequency'].sum()
+
+
+@pytest.mark.parametrize("N_c, M_sigma", [  # Calculated by pencil and paper
+    (None, 0.2),
+    (3*10**6, 0.2),
+    (10**6, 0.3784),
+    (10**5, 0.0140)
+])
+def test_experimental_mean_stress_sensitivity(N_c, M_sigma):
+    sn_curve_R0 = FiniteLifeCurve(SD_50=100, ND_50=10 ** 6, k_1=3)
+    sn_curve_Rn1 = FiniteLifeCurve(SD_50=120, ND_50=2 * 10 ** 6, k_1=5)
+
+    testing.assert_almost_equal(
+        actual=MST.experimental_mean_stress_sensitivity(sn_curve_R0=sn_curve_R0, sn_curve_Rn1=sn_curve_Rn1, N_c=N_c),
+        desired=M_sigma,
+        decimal=4)
+
+
+def test_experimental_mean_stress_sensitivity_plausible():
+    sn_curve_R0 = FiniteLifeCurve(SD_50=100, ND_50=10 ** 6, k_1=3)
+    sn_curve_Rn1 = FiniteLifeCurve(SD_50=120, ND_50=2 * 10 ** 6, k_1=5)
+    with testing.assert_raises(ValueError):
+        # Should lead to -0.27
+        MST.experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=10**4)
