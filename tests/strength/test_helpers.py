@@ -75,3 +75,61 @@ class TestStressRelations:
             R=R
         )
         np.testing.assert_almost_equal(mean_stress, mean_stress_calculated)
+
+
+def test_irregularity_factor():
+    """
+    Consider the turning points series with 8 bins from 0 to 7:
+    1 - 5 - 4 - 5 - 1 - 2 - 1 - 5 (mean bin = 3)
+
+    The resulting rainflow matrix contains:
+        - 5 -> 4
+        - 5 -> 1 (2 mean value crossings: 1x upwards, 1x downwards)
+        - 1 -> 2
+
+    With the residuals:
+        - 1 -> 5 (1 mean value crossing: 1x upwards)
+
+    The two sided irregularity factor is the quotient of
+        - the sum of mean value crossings (which is 3) and
+        - the sum of turnings points (which is 8)
+
+    So the irregularity factor is 3 / 8 = 0.375
+    """
+    rfm = np.array([
+        #         to
+        # 0  1  2  3  4  5  6  7
+        [0, 0, 0, 0, 0, 0, 0, 0],  # 0
+        [0, 0, 1, 0, 0, 0, 0, 0],  # 1
+        [0, 0, 0, 0, 0, 0, 0, 0],  # 2 f
+        [0, 0, 0, 0, 0, 0, 0, 0],  # 3 r
+        [0, 0, 0, 0, 0, 0, 0, 0],  # 4 o
+        [0, 1, 0, 0, 1, 0, 0, 0],  # 5 m
+        [0, 0, 0, 0, 0, 0, 0, 0],  # 6
+        [0, 0, 0, 0, 0, 0, 0, 0],  # 7
+    ])
+
+    residuals = np.array(
+        [1, 5]
+    )
+
+    duplicated_residuals = np.array(
+        [1, 1, 1, 5, 5]
+    )
+
+    # Calculated correctly
+    np.testing.assert_almost_equal(hlp.irregularity_factor(rfm, residuals), 3./8, 4)
+
+    # Decision bin inferred correctly
+    np.testing.assert_almost_equal(hlp.irregularity_factor(rfm, decision_bin=None, residuals=residuals),
+                                   hlp.irregularity_factor(rfm, decision_bin=3, residuals=residuals), 4)
+
+    # Decision bin broadcast
+    np.testing.assert_almost_equal(hlp.irregularity_factor(rfm, residuals, decision_bin=3.), 3./8, 4)
+    with np.testing.assert_raises(ValueError):
+        hlp.irregularity_factor(rfm, residuals, decision_bin="three")
+
+    # Duplicates removed correctly
+    np.testing.assert_almost_equal(hlp.irregularity_factor(rfm, residuals=residuals),
+                                   hlp.irregularity_factor(rfm, residuals=duplicated_residuals), 4)
+
