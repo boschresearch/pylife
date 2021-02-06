@@ -83,6 +83,16 @@ class MeanstressHist:
     def FKM_goodman(self, haigh, R_goal):
         haigh.FKM_Goodman
         Dsig = FKM_goodman(self._Sa, self._Sm, haigh.M, haigh.M2, R_goal) * 2.
+        return self._rebin_results(Dsig)
+
+    def five_segment(self, haigh, R_goal):
+        haigh.haigh_five_segment
+        Dsig = five_segment_correction(self._Sa, self._Sm,
+                                       haigh.M0, haigh.M1, haigh.M2, haigh.M3, haigh.M4, haigh.R12,
+                                       haigh.R23, R_goal) * 2.
+        return self._rebin_results(Dsig)
+
+    def _rebin_results(self, Dsig):
         Dsig_max = Dsig.max()
         binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
         bincount = int(np.ceil(Dsig_max / binsize))
