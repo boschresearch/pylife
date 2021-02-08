@@ -298,7 +298,8 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
     .. math::
         M_{\sigma} = {S_a}^{R=-1}(N_c) / {S_a}^{R=0}(N_c) - 1
 
-    Alternatively the mean stress sensitivity is calculated based on both SD_50 values (if N_c is `None`).
+    Alternatively the mean stress sensitivity is calculated based on both SD_50 values
+    (if N_c is not given).
 
     Parameters
     ----------
