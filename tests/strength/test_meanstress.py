@@ -329,7 +329,6 @@ def test_full_histogram():
 
 
 @pytest.mark.parametrize("N_c, M_sigma", [  # Calculated by pencil and paper
-    (np.inf, 0.2),
     (3*10**6, 0.2),
     (10**6, 0.3784),
     (10**5, 0.0140)
@@ -339,8 +338,18 @@ def test_experimental_mean_stress_sensitivity(N_c, M_sigma):
     sn_curve_Rn1 = FiniteLifeCurve(SD_50=120, ND_50=2 * 10 ** 6, k_1=5)
 
     testing.assert_almost_equal(
-        actual=MST.experimental_mean_stress_sensitivity(sn_curve_R0=sn_curve_R0, sn_curve_Rn1=sn_curve_Rn1, N_c=N_c),
+        actual=MST.experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=N_c),
         desired=M_sigma,
+        decimal=4)
+
+
+def test_experimental_mean_stress_sensitivity_no_Nc():
+    sn_curve_R0 = FiniteLifeCurve(SD_50=100, ND_50=10 ** 6, k_1=3)
+    sn_curve_Rn1 = FiniteLifeCurve(SD_50=120, ND_50=2 * 10 ** 6, k_1=5)
+
+    testing.assert_almost_equal(
+        actual=MST.experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1),
+        desired=0.2,
         decimal=4)
 
 
