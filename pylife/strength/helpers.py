@@ -124,7 +124,7 @@ class StressRelations:
         return amplitude * (1 + R) / (1 - R)
 
 
-def irregularity_factor(rainflow_matrix, residuals=None, decision_bin=None):
+def irregularity_factor(rainflow_matrix, residuals=np.empty(0), decision_bin=None):
     """
     Calculate the irregularity factor of a turning point sequence based on a rainflow matrix and its residuals.
 
@@ -161,16 +161,15 @@ def irregularity_factor(rainflow_matrix, residuals=None, decision_bin=None):
     """
     # Ensure input types
     assert isinstance(rainflow_matrix, np.ndarray)
-    assert isinstance(residuals, np.ndarray) or residuals is None
+    assert isinstance(residuals, np.ndarray)
     assert rainflow_matrix.shape[0] == rainflow_matrix.shape[1]
 
     # Remove duplicates from residuals
-    if residuals is not None:
-        diffs = np.diff(residuals)
-        if np.any(diffs == 0.0):
-            # Remove the duplicates
-            duplicates = np.concatenate([diffs == 0, [False]])
-            residuals = residuals[~duplicates]
+    diffs = np.diff(residuals)
+    if np.any(diffs == 0.0):
+        # Remove the duplicates
+        duplicates = np.concatenate([diffs == 0, [False]])
+        residuals = residuals[~duplicates]
 
     # Infer decision bin as mean if necessary
     if decision_bin is None:
@@ -184,7 +183,7 @@ def irregularity_factor(rainflow_matrix, residuals=None, decision_bin=None):
             row_sum += i * row
             col_sum += i * col
 
-        total_counts += residuals.shape[0] if residuals is not None else 0
+        total_counts += residuals.shape[0]
         res_sum = residuals.sum()
 
         decision_bin = int((row_sum + col_sum + res_sum) / total_counts)
@@ -197,9 +196,8 @@ def irregularity_factor(rainflow_matrix, residuals=None, decision_bin=None):
     total_mean_crossing = 2 * (positive_mean_bin_crossing + negative_mean_bin_crossing)
     amount_of_turning_points = 2 * rainflow_matrix.sum()
 
-    if residuals is not None:
-        amount_of_turning_points += residuals.shape[0]
-        for i in range(residuals.shape[0] - 1):
-            if (residuals[i] - decision_bin) * (residuals[i+1] - decision_bin) < 0:
-                total_mean_crossing += 1
+    amount_of_turning_points += residuals.shape[0]
+    for i in range(residuals.shape[0] - 1):
+        if (residuals[i] - decision_bin) * (residuals[i+1] - decision_bin) < 0:
+            total_mean_crossing += 1
     return total_mean_crossing / amount_of_turning_points
