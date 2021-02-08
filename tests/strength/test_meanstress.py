@@ -329,7 +329,7 @@ def test_full_histogram():
 
 
 @pytest.mark.parametrize("N_c, M_sigma", [  # Calculated by pencil and paper
-    (None, 0.2),
+    (np.inf, 0.2),
     (3*10**6, 0.2),
     (10**6, 0.3784),
     (10**5, 0.0140)
