@@ -287,7 +287,7 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
         return S_inf*(1.-M4)*(1.-M4/(M4+1./B_goal))
 
 
-def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=None):
+def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
     """
     Estimate the mean stress sensitivity from two `FiniteLifeCurve` objects for the same amount of cycles `N_c`.
 
@@ -306,9 +306,9 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=None):
         Instance of FiniteLifeCurve for R == 0
     sn_curve_Rn1: pylife.strength.sn_curve.FiniteLifeCurve
         Instance of FiniteLifeCurve for R == -1
-    N_c: float, (default=None)
-        Amount of cycles where the amplitude should be compared.
-        If N_c is higher than a kink cycle number for the SN-Curves, SD_50 is taken.
+    N_c: float, (default=np.inf)
+        Amount of cycles where the amplitudes should be compared.
+        If N_c is higher than a fatigue transition point (ND_50) for the SN-Curves, SD_50 is taken.
         If N_c is None, SD_50 values are taken as stress amplitudes instead.
 
     Returns
@@ -322,12 +322,8 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=None):
         If the resulting M_sigma doesn't lie in the range from 0 to 1 a ValueError is raised, as this value would
         suggest higher strength with additional loads.
     """
-    if N_c is None:
-        S_a_R0 = sn_curve_R0.SD_50
-        S_a_Rn1 = sn_curve_Rn1.SD_50
-    else:
-        S_a_R0 = sn_curve_R0.calc_S(N_c) if N_c < sn_curve_R0.ND_50 else sn_curve_R0.SD_50
-        S_a_Rn1 = sn_curve_Rn1.calc_S(N_c) if N_c < sn_curve_Rn1.ND_50 else sn_curve_Rn1.SD_50
+    S_a_R0 = sn_curve_R0.calc_S(N_c) if N_c < sn_curve_R0.ND_50 else sn_curve_R0.SD_50
+    S_a_Rn1 = sn_curve_Rn1.calc_S(N_c) if N_c < sn_curve_Rn1.ND_50 else sn_curve_Rn1.SD_50
     M_sigma = S_a_Rn1 / S_a_R0 - 1
     if not 0 <= M_sigma <= 1:
         raise ValueError("M_sigma: %.2f exceeds the interval [0, 1] which is not plausible." % M_sigma)
