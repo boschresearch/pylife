@@ -14,7 +14,6 @@ guide][1]. That document is generally recommendable to python programmers. This
 document therefore covers only things that go beyond the PEP8. So please read
 PEP8 for the general recommendations on python programming.
 
-
 ### Clean code
 
 The notion of code quality that keeps software maintainable, makes it easier to
@@ -54,6 +53,12 @@ By naming conventions the programmer can give some indications to the reader of
 the program, what an identifier is supposed to be or what it is referring
 to. Therefore some consistency guidelines.
 
+### Module names
+
+For module names, try to find one word names like `rainflow`, `gradient`. If
+you by all means need word separation in a module name, use
+`snake_case`. *Never* use dashes (`-`) and capital letters in module
+names. They lead to all kinds of problems.
 
 ### Class names
 
@@ -75,7 +80,6 @@ def calc_all_data_from_scratch():
 These are way more readable in the so called `lowercase_with_underscores`
 style.
 
-
 ### Variable names
 
 Variable names can be shorter as long as they are local. For example when you
@@ -84,7 +88,6 @@ return, don't call it `result_to_be_returned` but only `res`. A rule of thumb
 is that the name of a variable needs to be descriptive, if the code part in
 which the variable is used, exceeds the area that you can capture with one eye
 glimpse.
-
 
 ### Class method names
 
@@ -127,6 +130,8 @@ tolerable but should be avoided in new code. Before major releases we might dig
 to the code and replace them with `@property` where feasible.
 
 
+## Structuring of the code
+
 ### Data encapsulation
 
 One big advantage for object oriented programming is the so called data
@@ -149,9 +154,6 @@ class Foo:
 	def _private_method(self):
 ```
 
-
-## Structuring of the code
-
 ### Object orientation
 
 Usually it makes sense to compound data structures and the functions using
@@ -168,7 +170,6 @@ into a class.
 Do not just put functions into a class because they belong semantically
 together. That is what python modules are there for.
 
-
 ### Functions and methods
 
 Functions are not only there for sharing code but also to divide code into
@@ -179,7 +180,6 @@ in order to find out, where a loop or an if statement begins and ends. Ideally
 a function should be as short, that it is no longer *possible* to extract a
 piece of it.
 
-
 ### Commenting
 
 Programmers are taught in the basic programming lessons that comments are
@@ -189,7 +189,6 @@ understand it. Generally it would be better to write the code in a way that it
 speaks for itself. That's why keeping functions short is so
 important. Extracting a code block of a function into another function makes
 the code more readable, because the new function has a name.
-
 
 *Bad* example:
 
@@ -295,5 +294,5 @@ def hypot(triangle):
     return np.sqrt(a*a + b*b - 2*a*b*np.cos(gamma))
 ```
 
-
+___
 [1]: https://www.python.org/dev/peps/pep-0008/

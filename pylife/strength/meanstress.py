@@ -83,6 +83,16 @@ class MeanstressHist:
     def FKM_goodman(self, haigh, R_goal):
         haigh.FKM_Goodman
         Dsig = FKM_goodman(self._Sa, self._Sm, haigh.M, haigh.M2, R_goal) * 2.
+        return self._rebin_results(Dsig)
+
+    def five_segment(self, haigh, R_goal):
+        haigh.haigh_five_segment
+        Dsig = five_segment_correction(self._Sa, self._Sm,
+                                       haigh.M0, haigh.M1, haigh.M2, haigh.M3, haigh.M4, haigh.R12,
+                                       haigh.R23, R_goal) * 2.
+        return self._rebin_results(Dsig)
+
+    def _rebin_results(self, Dsig):
         Dsig_max = Dsig.max()
         binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
         bincount = int(np.ceil(Dsig_max / binsize))
@@ -205,9 +215,6 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
 
     ignored_states = np.seterr(**old_err_state)
 
-    R12 = np.broadcast_to(R12, Sa.shape)
-    R23 = np.broadcast_to(R23, Sa.shape)
-
     c4 = np.where(R > 1.)
     c0 = np.where(R <= 0.)
     c1 = np.where((R > 0.) & (R <= R12))
@@ -232,8 +239,8 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
     S_12 = np.zeros_like(Sa)
     S_23 = np.zeros_like(Sa)
 
-    B_12 = (1.+R12)/(1.-R12)
-    B_23 = (1.+R23)/(1.-R23)
+    B_12 = np.broadcast_to((1.+R12)/(1.-R12), Sa.shape)
+    B_23 = np.broadcast_to((1.+R23)/(1.-R23), Sa.shape)
 
     r4 = c4
     r = np.append(c0, c1)
@@ -285,3 +292,47 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
 
     if R_goal > 1.:
         return S_inf*(1.-M4)*(1.-M4/(M4+1./B_goal))
+
+
+def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
+    """
+    Estimate the mean stress sensitivity from two `FiniteLifeCurve` objects for the same amount of cycles `N_c`.
+
+    The formula for calculation is taken from: "Betriebsfestigkeit", Haibach, 3. Auflage 2006
+
+    Formula (2.1-24):
+
+    .. math::
+        M_{\sigma} = {S_a}^{R=-1}(N_c) / {S_a}^{R=0}(N_c) - 1
+
+    Alternatively the mean stress sensitivity is calculated based on both SD_50 values
+    (if N_c is not given).
+
+    Parameters
+    ----------
+    sn_curve_R0: pylife.strength.sn_curve.FiniteLifeCurve
+        Instance of FiniteLifeCurve for R == 0
+    sn_curve_Rn1: pylife.strength.sn_curve.FiniteLifeCurve
+        Instance of FiniteLifeCurve for R == -1
+    N_c: float, (default=np.inf)
+        Amount of cycles where the amplitudes should be compared.
+        If N_c is higher than a fatigue transition point (ND_50) for the SN-Curves, SD_50 is taken.
+        If N_c is None, SD_50 values are taken as stress amplitudes instead.
+
+    Returns
+    -------
+    float
+        Mean stress sensitivity M_sigma
+
+    Raises
+    ------
+    ValueError
+        If the resulting M_sigma doesn't lie in the range from 0 to 1 a ValueError is raised, as this value would
+        suggest higher strength with additional loads.
+    """
+    S_a_R0 = sn_curve_R0.calc_S(N_c) if N_c < sn_curve_R0.ND_50 else sn_curve_R0.SD_50
+    S_a_Rn1 = sn_curve_Rn1.calc_S(N_c) if N_c < sn_curve_Rn1.ND_50 else sn_curve_Rn1.SD_50
+    M_sigma = S_a_Rn1 / S_a_R0 - 1
+    if not 0 <= M_sigma <= 1:
+        raise ValueError("M_sigma: %.2f exceeds the interval [0, 1] which is not plausible." % M_sigma)
+    return M_sigma

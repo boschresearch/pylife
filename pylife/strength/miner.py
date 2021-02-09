@@ -28,22 +28,10 @@ The source will be given in the function/class
 
 References
 ----------
-@book{Waechter2017
-doi = {10.1007/978-3-658-17459-0},
-url = {https://doi.org/10.1007/978-3-658-17459-0},
-year = {2017},
-publisher = {Springer Fachmedien Wiesbaden},
-author = {Michael W\"{a}chter and Christian M\"{u}ller and Alfons Esderts},
-title = {Angewandter Festigkeitsnachweis nach {FKM}-Richtlinie}
-}
-@book{haibach06,
-author = {Haibach, Erwin},
-doi = {10.1007/3-540-29364-7},
-url = {https://doi.org/10.1007/3-540-29364-7},
-year = {2006},
-publisher = {Springer-Verlag},
-title = {Betriebsfestigkeit}
-}
+M. Wächter, C. Müller and A. Esderts, "Angewandter Festigkeitsnachweis nach {FKM}-Richtlinie"
+Springer Fachmedien Wiesbaden 2017, https://doi.org/10.1007/978-3-658-17459-0
+
+E. Haibach, "Betriebsfestigkeit", Springer-Verlag 2006, https://doi.org/10.1007/3-540-29364-7
 """
 
 __author__ = "Cedric Philip Wagner"

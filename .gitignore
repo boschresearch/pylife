@@ -28,3 +28,6 @@ doc/source/demos/*.h5
 doc/source/demos/*csv
 doc/source/demos/*.vmap
 doc/source/demos/pic
+/doc/source/demos/data/
+.idea/
+prof/

@@ -25,13 +25,13 @@ class PylifeSignal:
 
     Parameters
     ----------
-    pandas_obj : pandas.DataFame or pandas.Series
+    pandas_obj : pandas.DataFrame or pandas.Series
 
     Notes
     -----
     Derived classes need to implement the method `_validate(self, obj)`
     that gets `pandas_obj` as `obj` parameter. This `validate()` method
-    must rais an Exception (e.g. AttributeError or ValueError) in case
+    must raise an Exception (e.g. AttributeError or ValueError) in case
     `obj` is not a valid DataFrame for the kind of signal.
 
     For these validation :func:`fail_if_key_missing()` and
@@ -80,7 +80,7 @@ class PylifeSignal:
 
 
 def register_method(cls, method_name):
-    '''Registeres a method to a class derived from :class:`PyifeSignal`
+    '''Registers a method to a class derived from :class:`PyifeSignal`
 
     Parameters
     ----------
