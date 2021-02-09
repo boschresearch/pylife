@@ -137,7 +137,7 @@ def irregularity_factor(rainflow_matrix, residuals=np.empty(0), decision_bin=Non
     Parameters
     ----------
     rainflow_matrix: np.ndarray[int, int]
-        2D-rainflow matrix (quadratic)
+        2D-rainflow matrix (must be square shaped)
     residuals: np.ndarray[int], Optional
         1D array of residuals to consider for accurate calculation. Consecutive duplicates are removed beforehand.
         Residuals must be provided as bin numbers.
@@ -162,7 +162,8 @@ def irregularity_factor(rainflow_matrix, residuals=np.empty(0), decision_bin=Non
     # Ensure input types
     assert isinstance(rainflow_matrix, np.ndarray)
     assert isinstance(residuals, np.ndarray)
-    assert rainflow_matrix.shape[0] == rainflow_matrix.shape[1]
+    if rainflow_matrix.shape[0] != rainflow_matrix.shape[1]:
+        raise ValueError("Rainflow matrix must be square shaped in order to calculate the irregularity factor.")
 
     # Remove duplicates from residuals
     diffs = np.diff(residuals)

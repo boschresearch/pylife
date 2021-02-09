@@ -133,3 +133,20 @@ def test_irregularity_factor():
     np.testing.assert_almost_equal(hlp.irregularity_factor(rfm, residuals=residuals),
                                    hlp.irregularity_factor(rfm, residuals=duplicated_residuals), 4)
 
+
+
+def test_irregularity_factor_non_square_rainflow():
+    rfm = np.array([
+        #         to
+        # 0  1  2  3  4  5  6  7
+        [0, 0, 0, 0, 0, 0, 0, 0],  # 0
+        [0, 0, 1, 0, 0, 0, 0, 0],  # 1
+        [0, 0, 0, 0, 0, 0, 0, 0],  # 2 f
+        [0, 0, 0, 0, 0, 0, 0, 0],  # 3 r
+        [0, 0, 0, 0, 0, 0, 0, 0],  # 4 o
+        [0, 1, 0, 0, 1, 0, 0, 0],  # 5 m
+        [0, 0, 0, 0, 0, 0, 0, 0],  # 6
+    ])
+
+    with pytest.raises(ValueError, match=r"Rainflow matrix must be square shaped in order to calculate the irregularity factor."):
+        hlp.irregularity_factor(rfm)
