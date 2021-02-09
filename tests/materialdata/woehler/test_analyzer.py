@@ -312,7 +312,7 @@ def test_bayesian_slope_trace(pm):
     assert formula == 'y ~ x'
     pd.testing.assert_series_equal(data_dict['x'], np.log10(fd.fractures.load))
     np.testing.assert_array_equal(data_dict['y'], np.log10(fd.fractures.cycles.to_numpy()))
-    family = pm.glm.GLM.from_formula.call_args.kwargs['family']
+    family = pm.glm.GLM.from_formula.call_args[1]['family']  # Consider switch to kwargs property when py3.7 is dropped
     assert family is pm.glm.families.StudentT()
 
     pm.sample.assert_called_with(1000, target_accept=0.99, random_seed=None, chains=2, tune=1000)
@@ -336,7 +336,7 @@ def test_bayesian_TN_trace(pm):
     assert pm.Normal.call_args_list[0] == mock.call('mu', mu=expected_mu, sigma=expected_sigma)
 
     assert pm.Normal.call_args_list[1][0] == ('y',)
-    observed = pm.Normal.call_args_list[1].kwargs['observed']
+    observed = pm.Normal.call_args_list[1][1]['observed'] # Consider switch to kwargs property when py3.7 is dropped
     assert observed.mean() == expected_mu
     assert observed.std() == expected_sigma
 
