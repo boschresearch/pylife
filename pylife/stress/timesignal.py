@@ -24,6 +24,8 @@ import scipy.signal as signal
 import matplotlib.pyplot as plt
 import time
 from tsfresh import extract_features
+from pandas.core.common import flatten
+
 
 class TimeSignalGenerator:
     '''Generates mixed time signals
@@ -131,22 +133,23 @@ def resample_acc(df, fs=1):
     -------
     DataFrame
     """
-    index_new =  np.linspace(
+    index_new = np.linspace(
         df.index.min(),
         df.index.min() + np.floor((df.index.max()-df.index.min())*fs)/fs,
         int(np.floor(df.index.max()-df.index.min())*fs + 1))
-    
+
     df_rs = pd.DataFrame(df.apply(lambda x: np.interp(index_new, df.index, x)).values,
-                    index = index_new, columns=df.columns)
+                         index=index_new, columns=df.columns)
     return df_rs
+
 
 def butter_bandpass(df, lowcut, highcut, fs, order=5):
     """ Use the functonality of scipy
-    
+
 
     Parameters
     ----------
-    
+
     df: DataFrame
     lowcut : float
         low frequency
@@ -166,7 +169,8 @@ def butter_bandpass(df, lowcut, highcut, fs, order=5):
     low = lowcut / nyq
     high = highcut / nyq
     b, a = signal.butter(order, [low, high], btype='band')
-    return df.apply(lambda x: signal.filtfilt(b,a,x))
+    return df.apply(lambda x: signal.filtfilt(b, a, x))
+
 
 def _prepare_rolling(df):
     """
@@ -177,7 +181,7 @@ def _prepare_rolling(df):
     df: pandas DataFrame
         input data
     self : TimeSignalPrep class
-        
+
 
     Returns
     -------
@@ -196,13 +200,14 @@ def _prepare_rolling(df):
     print("Prepare_rolling: {:5.3f}s".format(end - start))
     return prep_roll
 
+
 def _roll_dataset(prep_roll_df, timeshift=1000, rolling_direction=800):
     """
     rolls dataset
     Parameters
     ----------
     prep_roll: output from prepare_rolling
-         
+
     timeshift : int , optional
          window size -the default is 1000.
     rolling_direction : int, optional
@@ -224,7 +229,7 @@ def _roll_dataset(prep_roll_df, timeshift=1000, rolling_direction=800):
     # shiften
     for i in range(cycles):
         position = (rolling_direction) * i
-        shift = prep_roll_df.iloc[position : position + timeshift, :]
+        shift = prep_roll_df.iloc[position: position + timeshift, :]
         # change IDs to format (id,time)
         shift.loc[:, ("max_time")] = max(shift.loc[:, ("time")])
         df = shift.loc[:, ("id", "max_time")]
@@ -241,8 +246,8 @@ def _roll_dataset(prep_roll_df, timeshift=1000, rolling_direction=800):
     print("roll_dataset: {:5.3f}s".format(ende - start))
     return df_rolled
 
-def _extract_features_df(df_rolled, feature="maximum"):
 
+def _extract_features_df(df_rolled, feature="maximum"):
     """Extracts features like "abs_energy" or "maximum" from the rolled dataset with TsFresh
 
     Parameters
@@ -280,9 +285,8 @@ def _extract_features_df(df_rolled, feature="maximum"):
     return extracted_features
 
 
-def _select_relevant_windows(prep_roll, extracted_features, fraction_max=0.25,
-                             timeshift=1000, rolling_direction=800):
-
+def _select_relevant_windows(prep_roll, extracted_features, comparison_column, fraction_max=0.25,
+                             timeshift=1000, rolling_direction=800, n_gridpoints=3):
     """Writes NaN's into the timeshifts with extracted features lower than fraction_max
 
     Parameters
@@ -290,7 +294,7 @@ def _select_relevant_windows(prep_roll, extracted_features, fraction_max=0.25,
     prep_roll : pandas DataFrame
         input data - normally output from perpare_rolling(df)
     extracted_features : pandas Dataframe
-        DataFrame of features    
+        DataFrame of features
     fraction_max : float
         percentage of the maximum of the extraced feature.
     timeshift : int
@@ -309,77 +313,45 @@ def _select_relevant_windows(prep_roll, extracted_features, fraction_max=0.25,
     added_feature = np.zeros(len(extracted_features))
     for i in range(prep_roll.shape[1] - 2):
         added_feature += extracted_features.iloc[:, i]
+    relevant_feature = extracted_features[comparison_column]
 
-    plt.show()
     relevant_windows = prep_roll.copy()
+    just_added_NaNs = False
+    liste = []
     for i in range(len(extracted_features)):
-        if added_feature.iloc[i] <= (max(added_feature) * fraction_max):
-            # set those rows 0 in ts_data
-            relevant_windows.iloc[
-                0 + i * rolling_direction : timeshift + i * rolling_direction,
-                0 : relevant_windows.shape[1] - 2,
-            ] = None
+        if relevant_feature.iloc[i] <= (max(relevant_feature) * fraction_max):
+            if just_added_NaNs is True:
+                liste.append(list(range(0 + i * rolling_direction,
+                                        timeshift + i * rolling_direction)))
+
+            else:
+                liste.append(list(range(0 + i * rolling_direction,
+                                        timeshift + i * rolling_direction - n_gridpoints)))
+                relevant_windows.iloc[i * rolling_direction + timeshift - n_gridpoints:i *
+                                      rolling_direction + timeshift,
+                                      0:relevant_windows.shape[1]-2] = None
+                just_added_NaNs = True
+        else:
+            just_added_NaNs = False
+
+    index_liste = []
+
+    liste = list(flatten(liste))
+    liste = list(set(liste))
+    print(liste)
+    for i in range(len(liste)):
+        index_liste.append(relevant_windows.index[liste[i]])
+
+    relevant_windows = relevant_windows.drop(index_liste, axis=0)
     ende = time.time()
     print("select_relevant_windows: {:5.3f}s".format(ende - start))
     return relevant_windows
 
-    
-def _create_gridpoints(relevant_windows,  n_gridpoints=3):
-    """
-    Reduces the number of NaN's in a row to n_gridpoints. 
-    These NaN's are filled by polynomial regression in _polyfit_gridpoints later.
-    
-    Parameters
-    ----------
-    relevant_windows : pandas DataFrame
-        dataframe with NaN's from select_relevant_windows(...)
-    n_gridpoints : int, optional
-        Number of gridpoints for polynomial smoothing. The default is 3.
 
-    Returns
-    -------
-    df : pandas DataFrame
-        reduces number of NaN's to n_gridpoints
-
-    """
-    # let at any gap exactly Parameter n NaN's - these will be used to remove jumps
-    # let at any gap exactly Parameter n NaN's -
-    # these will be used to remove jumps
-    
-    start = time.time()
-    list = []
-    for i in range(len(relevant_windows) - n_gridpoints):
-        istrue = True
-        if ~(relevant_windows.iloc[i : i + n_gridpoints + 1, 0].isna().all()):
-            istrue = False
-        if istrue == True:
-            # add to delete list
-            list.append(relevant_windows.index[i])
-
-    ende = time.time()
-    print("create_gridpoints Part 1: {:5.3f}s".format(ende - start))
-
-    start = time.time()
-    grid_points = relevant_windows.drop(list, axis=0)
-    ende = time.time()
-    print("create_gridpoints Part 2: {:5.3f}s".format(ende - start))
-   
-    """
-    relevant_windows.insert(loc=0, column='shift_f', value=relevant_windows.loc[:,0].shift(periods=n_gridpoints))
-    relevant_windows.insert(loc=0, column='shift_b', value=relevant_windows.loc[:,0].shift(periods= - n_gridpoints))
-    l = relevant_windows.shape
-    check = relevant_windows.iloc[:,:l[1]-2]
-    print(check)
-    print( relevant_windows)
-    grid_points = relevant_windows.drop(relevant_windows[check.isnull().all(axis=1)].index).drop(["shift_f", "shift_b"],axis=1)
-    """
-    
-    return grid_points
-    
 def _polyfit_gridpoints(grid_points, prep_roll, order=3,
                         verbose=False, n_gridpoints=3):
     """Fills gridpoints with polynomial regression
-        
+
     Parameters
     ----------
     gridpoints : pandas DataFrame
@@ -400,33 +372,28 @@ def _polyfit_gridpoints(grid_points, prep_roll, order=3,
     """
     start = time.time()
     # add a null row at the start and reset time index
-    top_row = grid_points.iloc[0, :]
-    top_row.name = (
-        grid_points.iloc[0, grid_points.shape[1] - 1]
-        - grid_points.iloc[2, grid_points.shape[1] - 1]
-        + grid_points.iloc[1, grid_points.shape[1] - 1]
-    )
-    top_row = pd.DataFrame(top_row)
-    top_row = top_row.transpose()
-    top_row.head()
-    poly_gridpoints = pd.concat([top_row, grid_points])  # ,ignore_index=True)
+
+    delta_t = prep_roll.index[1]-prep_roll.index[0]
+    grid_points.loc[-delta_t] = grid_points.loc[0]  # adding a row
+    grid_points.index = grid_points.index + delta_t  # shifting index
+    poly_gridpoints = grid_points.sort_index()  # sorting by index
+
     ts_time = prep_roll.head(len(poly_gridpoints))
-    poly_gridpoints["time"] = ts_time["time"].values
+
+    poly_gridpoints["time"] = ts_time.index.values
     poly_gridpoints.index = poly_gridpoints["time"]
     poly_gridpoints.iloc[0, :] = 0
-    #%% smooth the gaps with polynomial values
-    poly_gridpoints.interpolate(method='polynomial',order=order,inplace=True)
+    # %% smooth the gaps with polynomial values
+    print(poly_gridpoints)
+    poly_gridpoints.interpolate(method='polynomial', order=order, inplace=True)
     ende = time.time()
     print('Total Cleaning: {:5.3f}s'.format(ende-start))
     return poly_gridpoints
-    
 
 
-def clean_dataset(df, timeshift=1000, rolling_direction = 800,
+def clean_dataset(df, comparison_column, timeshift=1000, rolling_direction=800,
                   feature="abs_energy", n_gridpoints=3,
-                  percentage_max=0.05,order=3):
-    
-    
+                  percentage_max=0.05, order=3):
     """ Removes irrelevant parts of the data and fills the gaps with polynomial regression
 
     Parameters
@@ -450,45 +417,35 @@ def clean_dataset(df, timeshift=1000, rolling_direction = 800,
     -------
     df_poly : pandas DataFrame
         cleaned DataFrame
-    
+
         """
-        
+
     start = time.time()
-    
+
     df_prep = _prepare_rolling(df)
     ts_time = df_prep.copy()
-    #add 1line to ts_time -we add a line to the data--> If we dont delete anything ts_data>ts_time--> add one line at the end
-    last_row = df_prep.iloc[0,:]
-    #calculate t of the next step
-    last_row.name=df_prep.iloc[len(df_prep)-1, df.shape[1]-1]
-    +df_prep.iloc[len(df_prep)-1, df.shape[1]-1]
-    -df_prep.iloc[len(df_prep)-2, df.shape[1]-1]
-    
-    
-    
-    last_row=pd.DataFrame(last_row).transpose()
-    ts_time = pd.concat([ts_time, last_row])
 
-    df_rolled = _roll_dataset(df_prep,timeshift=timeshift,
+    delta_t = ts_time.index[1]-ts_time.index[0]
+    ts_time.loc[-delta_t] = ts_time.loc[0]  # adding a row
+    ts_time.index = ts_time.index + delta_t  # shifting index
+    ts_time = ts_time.sort_index()  # sorting by index
+
+    df_rolled = _roll_dataset(df_prep, timeshift=timeshift,
                               rolling_direction=rolling_direction)
     extracted_features = _extract_features_df(df_rolled, feature)
-    relevant_windows = _select_relevant_windows(df_prep, extracted_features,
-                             percentage_max, timeshift, rolling_direction)
-   
-    grid_points = _create_gridpoints(relevant_windows,
-                                     n_gridpoints=n_gridpoints)
+    grid_points = _select_relevant_windows(df_prep, extracted_features, comparison_column,
+                                           percentage_max, timeshift, rolling_direction)
+    print(grid_points)
     poly_gridpoints = _polyfit_gridpoints(grid_points, ts_time, order=order, verbose=False,
                                           n_gridpoints=n_gridpoints)
 
-    #Remove NaN's at the end - should be maximum 2n
-    l=poly_gridpoints.shape[0]
+    # Remove NaN's at the end - should be maximum 2n
+    len_poly = poly_gridpoints.shape[0]
     cleaned = poly_gridpoints.dropna(axis=0, how='any', thresh=None, subset=None)
     cleaned.pop("id")
-    
-    print("Number of NaN's dropped at END:", l-poly_gridpoints.shape[0])
+
+    print("Number of NaN's dropped at END:", len_poly-poly_gridpoints.shape[0])
     ende = time.time()
     print('Total Cleaning: {:5.3f}s'.format(ende-start))
-    
+
     return cleaned
-        
-        
