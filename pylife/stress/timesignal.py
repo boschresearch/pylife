@@ -21,10 +21,8 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 import scipy.signal as signal
-import matplotlib.pyplot as plt
 import time
-from tsfresh import extract_features
-from pandas.core.common import flatten
+import tsfresh as ts
 
 
 class TimeSignalGenerator:
@@ -174,7 +172,8 @@ def butter_bandpass(df, lowcut, highcut, fs, order=5):
 
 def _prepare_rolling(df):
     """
-    Adds ID, time to the dataset for TsFresh
+    Adds ID, time to the dataset for TsFresh, We would need different ID's if we had
+    independant timeseries -like timeseries for different robots.
 
     Parameters
     ----------
@@ -201,17 +200,17 @@ def _prepare_rolling(df):
     return prep_roll
 
 
-def _roll_dataset(prep_roll_df, timeshift=1000, rolling_direction=800):
+def _roll_dataset(prep_roll_df, window_size=1000, overlap=200):
     """
-    rolls dataset
+    Rolls dataset in windows so we can later extract features from every window
     Parameters
     ----------
     prep_roll: output from prepare_rolling
 
-    timeshift : int , optional
-         window size -the default is 1000.
-    rolling_direction : int, optional
-         windowshift -The default is 800.
+    window_size : int , optional
+         window size of the rolled segments  -the default is 1000.
+    overlap : int, optional
+         overlap between 2 adjecent windows -The default is 200.
 
     Returns
     -------
@@ -220,34 +219,30 @@ def _roll_dataset(prep_roll_df, timeshift=1000, rolling_direction=800):
 
     """
 
-    # Create Rolled Dataset with Parameter rolling_direction & timeshift
+    # Create Rolled Dataset with Parameter rolling_direction & window_size
     # throws away the last halfshift
-    pd.options.mode.chained_assignment = None  # stops the copyslice warning
     start = time.time()
+    rolling_direction = window_size - overlap
     cycles = int(len(prep_roll_df) / rolling_direction) - 1
-    df_rolled_is_empty = True
+    df_rolled = pd.DataFrame()
     # shiften
     for i in range(cycles):
         position = (rolling_direction) * i
-        shift = prep_roll_df.iloc[position: position + timeshift, :]
+        shift = prep_roll_df.iloc[position: position + window_size, :]
         # change IDs to format (id,time)
-        shift.loc[:, ("max_time")] = max(shift.loc[:, ("time")])
-        df = shift.loc[:, ("id", "max_time")]
-        shift.loc[:, ("id")] = pd.MultiIndex.from_frame(df)
-        # delete max_time
-        shift.pop("max_time")
-        if df_rolled_is_empty:
-            df_rolled = shift
-            df_rolled_is_empty = False
-        else:
-            df_rolled = df_rolled.append(shift, ignore_index=True)
+        df = pd.DataFrame({'id': np.int64(np.zeros(len(shift), dtype=int)),
+                           'max_time': shift.iloc[-1, -1]})
+
+        shift.loc[:, "id"] = pd.MultiIndex.from_frame(df)
+
+        df_rolled = df_rolled.append(shift, ignore_index=True)
 
     ende = time.time()
     print("roll_dataset: {:5.3f}s".format(ende - start))
     return df_rolled
 
 
-def _extract_features_df(df_rolled, feature="maximum"):
+def _extract_feature_df(df_rolled, feature="maximum"):
     """Extracts features like "abs_energy" or "maximum" from the rolled dataset with TsFresh
 
     Parameters
@@ -272,7 +267,7 @@ def _extract_features_df(df_rolled, feature="maximum"):
     fc_parameters = {
         feature: None,
     }
-    extracted_features = extract_features(
+    extracted_features = ts.extract_features(
         df_rolled,
         column_id="id",
         column_sort="time",
@@ -285,9 +280,10 @@ def _extract_features_df(df_rolled, feature="maximum"):
     return extracted_features
 
 
-def _select_relevant_windows(prep_roll, extracted_features, comparison_column, fraction_max=0.25,
-                             timeshift=1000, rolling_direction=800, n_gridpoints=3):
-    """Writes NaN's into the timeshifts with extracted features lower than fraction_max
+def _select_relevant_windows(prep_roll, extracted_features, comparison_column_ex, fraction_max=0.25,
+                             window_size=1000, overlap=200, n_gridpoints=3):
+    """ Writes n_gridpoints NaN's into the window_sizes with extracted features
+    lower than fraction_max
 
     Parameters
     ----------
@@ -295,12 +291,15 @@ def _select_relevant_windows(prep_roll, extracted_features, comparison_column, f
         input data - normally output from perpare_rolling(df)
     extracted_features : pandas Dataframe
         DataFrame of features
+    comparison_column_ex: string - name of the extraced feature column 
+        it is build: comparison_column + '__' + feauture
     fraction_max : float
         percentage of the maximum of the extraced feature.
-    timeshift : int
-        window size -the default is 1000.
-    rolling_direction : TYPE
-        window shift- the default is 800
+    window_size : int
+        window size of the rolled segments  -the default is 1000.
+    overlap : int, optional
+         overlap between 2 adjecent windows -The default is 200.
+
 
     Returns
     -------
@@ -310,25 +309,24 @@ def _select_relevant_windows(prep_roll, extracted_features, comparison_column, f
     """
     # get added up abs energy of interval x, if too low set None
     start = time.time()
-    added_feature = np.zeros(len(extracted_features))
-    for i in range(prep_roll.shape[1] - 2):
-        added_feature += extracted_features.iloc[:, i]
-    relevant_feature = extracted_features[comparison_column]
+    rolling_direction = window_size - overlap
 
+    relevant_feature = extracted_features[comparison_column_ex]
     relevant_windows = prep_roll.copy()
     just_added_NaNs = False
     liste = []
+
     for i in range(len(extracted_features)):
-        if relevant_feature.iloc[i] <= (max(relevant_feature) * fraction_max):
+        if relevant_feature[i] <= relevant_feature.max() * fraction_max:
             if just_added_NaNs is True:
                 liste.append(list(range(0 + i * rolling_direction,
-                                        timeshift + i * rolling_direction)))
+                                        window_size + i * rolling_direction)))
 
             else:
                 liste.append(list(range(0 + i * rolling_direction,
-                                        timeshift + i * rolling_direction - n_gridpoints)))
-                relevant_windows.iloc[i * rolling_direction + timeshift - n_gridpoints:i *
-                                      rolling_direction + timeshift,
+                                        window_size + i * rolling_direction - n_gridpoints)))
+                relevant_windows.iloc[i * rolling_direction + window_size - n_gridpoints:i *
+                                      rolling_direction + window_size,
                                       0:relevant_windows.shape[1]-2] = None
                 just_added_NaNs = True
         else:
@@ -336,9 +334,8 @@ def _select_relevant_windows(prep_roll, extracted_features, comparison_column, f
 
     index_liste = []
 
-    liste = list(flatten(liste))
+    liste = list(pd.core.common.flatten(liste))
     liste = list(set(liste))
-    print(liste)
     for i in range(len(liste)):
         index_liste.append(relevant_windows.index[liste[i]])
 
@@ -371,37 +368,40 @@ def _polyfit_gridpoints(grid_points, prep_roll, order=3,
         DataFrame with polynomial values at the gridpoints.
     """
     start = time.time()
+
     # add a null row at the start and reset time index
-
     delta_t = prep_roll.index[1]-prep_roll.index[0]
-    grid_points.loc[-delta_t] = grid_points.loc[0]  # adding a row
-    grid_points.index = grid_points.index + delta_t  # shifting index
-    poly_gridpoints = grid_points.sort_index()  # sorting by index
-
-    ts_time = prep_roll.head(len(poly_gridpoints))
+    line = pd.DataFrame(grid_points.iloc[:1], index=[- delta_t])
+    grid_points = grid_points.append(line, ignore_index=False)
+    poly_gridpoints = grid_points.sort_index()
+    poly_gridpoints.iloc[0, :] = 0
+    ts_time = prep_roll.iloc[:len(poly_gridpoints)]
 
     poly_gridpoints["time"] = ts_time.index.values
     poly_gridpoints.index = poly_gridpoints["time"]
-    poly_gridpoints.iloc[0, :] = 0
+
     # %% smooth the gaps with polynomial values
-    print(poly_gridpoints)
     poly_gridpoints.interpolate(method='polynomial', order=order, inplace=True)
     ende = time.time()
-    print('Total Cleaning: {:5.3f}s'.format(ende-start))
+    print('Polyfit: {:5.3f}s'.format(ende-start))
     return poly_gridpoints
 
 
-def clean_dataset(df, comparison_column, timeshift=1000, rolling_direction=800,
-                  feature="abs_energy", n_gridpoints=3,
-                  percentage_max=0.05, order=3):
-    """ Removes irrelevant parts of the data and fills the gaps with polynomial regression
+def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
+                     feature="abs_energy", n_gridpoints=3,
+                     percentage_max=0.05, order=3):
+    """ Removes segments of the data in which the extracted feature value is lower as
+    percentage_max and fills the gaps with polynomial regression
 
     Parameters
     ----------
-    timeshift : int, optional
-        window size - The default is 1000.
-    rolling_direction : int, optional
-        window shift - The default is 800.
+    df : input pandas DataFrame that shall be cleaned
+    comparison_column: column that is used for the feature 
+        comparison with percentage max
+    window_size : int, optional
+        window size of the rolled segments - The default is 1000.
+    overlap : int, optional
+         overlap between 2 adjecent windows -The default is 200.
     feature : string, optional
         extracted feature - only supports one at a time -
         and only features form tsfresh that dont need extra parameters.
@@ -424,27 +424,26 @@ def clean_dataset(df, comparison_column, timeshift=1000, rolling_direction=800,
 
     df_prep = _prepare_rolling(df)
     ts_time = df_prep.copy()
-
+    # adding a row
     delta_t = ts_time.index[1]-ts_time.index[0]
-    ts_time.loc[-delta_t] = ts_time.loc[0]  # adding a row
-    ts_time.index = ts_time.index + delta_t  # shifting index
-    ts_time = ts_time.sort_index()  # sorting by index
+    line = pd.DataFrame(ts_time.iloc[:1], index=[- delta_t])
+    ts_time = ts_time.append(line, ignore_index=False)
+    ts_time = ts_time.sort_index()
+    ts_time.index = ts_time.index + delta_t
+    ts_time['time'] = ts_time.index.values
 
-    df_rolled = _roll_dataset(df_prep, timeshift=timeshift,
-                              rolling_direction=rolling_direction)
-    extracted_features = _extract_features_df(df_rolled, feature)
-    grid_points = _select_relevant_windows(df_prep, extracted_features, comparison_column,
-                                           percentage_max, timeshift, rolling_direction)
-    print(grid_points)
+    comparison_column_ex = comparison_column + '__'+feature
+    df_rolled = _roll_dataset(df_prep, window_size=window_size,
+                              overlap=overlap)
+    extracted_features = _extract_feature_df(df_rolled, feature)
+    grid_points = _select_relevant_windows(df_prep, extracted_features, comparison_column_ex,
+                                           percentage_max, window_size, overlap)
     poly_gridpoints = _polyfit_gridpoints(grid_points, ts_time, order=order, verbose=False,
                                           n_gridpoints=n_gridpoints)
 
     # Remove NaN's at the end - should be maximum 2n
-    len_poly = poly_gridpoints.shape[0]
     cleaned = poly_gridpoints.dropna(axis=0, how='any', thresh=None, subset=None)
     cleaned.pop("id")
-
-    print("Number of NaN's dropped at END:", len_poly-poly_gridpoints.shape[0])
     ende = time.time()
     print('Total Cleaning: {:5.3f}s'.format(ende-start))
 
