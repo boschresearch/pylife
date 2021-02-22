@@ -14,7 +14,7 @@ import pylife.stress.equistress
 #%%
 filename = "../plate_with_hole.vmap"
 
-vm_mesh = pylife.vmap.VMAP(filename)
+vm_mesh = pylife.vmap.VMAPImport(filename)
 pyLife_mesh = df = (vm_mesh.mesh_coords('1')
                     .join(vm_mesh.variable('1', 'STATE-2', 'STRESS_CAUCHY'))
                     .join(vm_mesh.variable('1', 'STATE-2', 'DISPLACEMENT')))

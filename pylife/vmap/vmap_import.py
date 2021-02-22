@@ -39,7 +39,7 @@ coordinates), the mesh connectivity index and the field variables.
 You can retrieve a DataFrame of the mesh with the desired variables in just
 one statement.
 
->>> (pylife.vmap.VMAP('demos/plate_with_hole.vmap')
+>>> (pylife.vmap.VMAPImport('demos/plate_with_hole.vmap')
      .make_mesh('1', 'STATE-2')
      .join_coordinates()
      .join_variable('STRESS_CAUCHY')
@@ -87,7 +87,7 @@ positions. This functionality is not available in pyLife.
 
 '''
 __author__ = "Johannes Mueller"
-__amintainer__ = __author__
+__maintainer__ = __author__
 
 import numpy as np
 import pandas as pd
@@ -97,7 +97,7 @@ import h5py
 from .exceptions import *
 
 
-class VMAP:
+class VMAPImport:
     '''The interface class to access a vmap file
 
     Parameters
@@ -122,6 +122,7 @@ class VMAP:
         self._file = h5py.File(filename, 'r')
         self._mesh = None
         self._geometry = None
+        self._state = None
 
     def geometries(self):
         '''Retuns a list of geometry strings of geometries present in the vmap data
@@ -207,7 +208,7 @@ class VMAP:
         --------
         Get the mesh data with the coordinates of geometry '1' and the stress tensor of 'STATE-2'
 
-        >>> (pylife.vmap.VMAP('demos/plate_with_hole.vmap')
+        >>> (pylife.vmap.VMAPImport('demos/plate_with_hole.vmap')
              .make_mesh('1', 'STATE-2')
              .join_coordinates()
              .join_variable('STRESS_CAUCHY')
@@ -226,7 +227,8 @@ class VMAP:
                    14614   -13.389065 -5.709927  0.0  36.063541  2.828889  0.0 -13.774759  0.0  0.0
                    14534   -13.276068 -5.419206  0.0  33.804211  2.829817  0.0 -14.580153  0.0  0.0
         '''
-        self._mesh = pd.DataFrame(index=self.mesh_index(geometry, node_set, element_set))
+        ind = self.mesh_index(geometry, node_set, element_set)
+        self._mesh = pd.DataFrame(index=ind)
         self._geometry = geometry
         self._state = state
         return self
@@ -248,7 +250,7 @@ class VMAP:
         --------
         Receive the mesh with the node coordinates
 
-        >>> pylife.vmap.VMAP('demos/plate_with_hole.vmap').make_mesh('1').join_coordinates().to_frame()
+        >>> pylife.vmap.VMAPImport('demos/plate_with_hole.vmap').make_mesh('1').join_coordinates().to_frame()
                                     x         y    z
         element_id node_id
         1          1734     14.897208  5.269875  0.0
@@ -291,7 +293,7 @@ class VMAP:
         fetch more mesh data in another mesh.
         '''
         if self._mesh is None:
-            raise(APIUseError("Need to make_mesh() before requesting a resulting frame."))
+            raise (APIUseError("Need to make_mesh() before requesting a resulting frame."))
         ret = self._mesh
         self._mesh = None
         return ret
@@ -327,7 +329,8 @@ class VMAP:
         if node_set is not None and element_set is not None:
             raise APIUseError("Cannot make mesh index for element set and node set at same time\n"
                               "Please specify at most one of element_set or node_set. Not both of them.")
-        connectivity = self._element_connectivity(geometry).connectivity
+        x = self._element_connectivity(geometry)
+        connectivity = x.connectivity
         length = sum([el.shape[0] for el in connectivity])
         index_np = np.empty((2, length), dtype=np.int64)
 
@@ -342,7 +345,10 @@ class VMAP:
 
         if node_set is not None:
             node_set_ids = self._node_set_ids(geometry, node_set)
-            return pd.DataFrame(index=mesh_index).loc[(slice(None), node_set_ids), :].index
+            df = pd.DataFrame(index=mesh_index)
+            location = df.loc[(slice(None), node_set_ids), :]
+            ind = location.index
+            return ind
 
         if element_set is not None:
             element_set_ids = self._element_set_ids(geometry, element_set)
@@ -469,7 +475,7 @@ class VMAP:
         --------
         Receiving the 'DISPLACEMENT' of 'STATE-1' , the stress and strain tensors of 'STATE-2'
 
-        >>> (pylife.vmap.VMAP('demos/plate_with_hole.vmap')
+        >>> (pylife.vmap.VMAPImport('demos/plate_with_hole.vmap')
              .make_mesh('1')
              .join_variable('DISPLACEMENT', 'STATE-1')
              .join_variable('STRESS_CAUCHY', 'STATE-2')
@@ -508,11 +514,12 @@ class VMAP:
         return self
 
     def _element_connectivity(self, geometry):
-        elements = self._file['/VMAP/GEOMETRY/'+geometry+'/ELEMENTS/MYELEMENTS']
+        elements = self._file['/VMAP/GEOMETRY/' + geometry + '/ELEMENTS/MYELEMENTS']
         element_connectivity = elements['myIdentifier', 'myConnectivity'][:, 0]
         element_ids = [elid for elid, _ in element_connectivity]
         connectivity = [conn for _, conn in element_connectivity]
-        return pd.DataFrame(data={'element_id': element_ids, 'connectivity': connectivity}).set_index('element_id')
+        df = pd.DataFrame(data={'element_id': element_ids, 'connectivity': connectivity}).set_index('element_id')
+        return df
 
     def _node_index(self, geometry):
         return pd.Index(
@@ -555,7 +562,10 @@ class VMAP:
 
     def _node_set_ids(self, geometry, node_set):
         try:
-            return self._geometry_sets(geometry, 'nsets')[node_set].T[0]
+            x = self._geometry_sets(geometry, 'nsets')
+            y = x[node_set]
+            ret = y.T[0]
+            return ret
         except KeyError:
             raise KeyError("Node set '%s' not found in geometry '%s'" % (node_set, geometry))
 

@@ -14,5 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .vmap import VMAP
+from .vmap_import import VMAPImport
+from .vmap_export import VMAPExport
 from .exceptions import *

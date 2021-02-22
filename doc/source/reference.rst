@@ -56,7 +56,7 @@ Mesh utilities
    mesh/hotspot
    mesh/gradient
 
-VMAP Interface
+VMAPImport Interface
 --------------
 .. toctree::
    :maxdepth: 2

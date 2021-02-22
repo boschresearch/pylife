@@ -15,7 +15,7 @@ import pylife.vmap
 
 #%% Import 
 
-vm_mesh = pylife.vmap.VMAP("plate_with_hole.vmap")
+vm_mesh = pylife.vmap.VMAPImport("plate_with_hole.vmap")
 coords = vm_mesh.mesh_coords("1")
 pyLife_mesh = (vm_mesh.mesh_coords('1')
                     .join(vm_mesh.variable('1', 'STATE-2', 'STRESS_CAUCHY'))

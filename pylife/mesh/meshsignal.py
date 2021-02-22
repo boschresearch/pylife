@@ -33,7 +33,7 @@ Examples
 Read in a mesh from a vmap file:
 
 
->>> df = (vm = pylife.vmap.VMAP('demos/plate_with_hole.vmap')
+>>> df = (vm = pylife.vmap.VMAPImport('demos/plate_with_hole.vmap')
              .make_mesh('1', 'STATE-2')
              .join_variable('STRESS_CAUCHY')
              .join_variable('DISPLACEMENT')
