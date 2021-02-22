@@ -41,11 +41,6 @@ def test_get_states(beam_2d_squ):
 def test_get_nodes_2d(beam_2d_squ):
     pd.testing.assert_frame_equal(beam_2d_squ.nodes('1'), RD.beam_2d_squ_nodes)
 
-
-def test_get_mesh_coords(beam_2d_squ):
-    pd.testing.assert_frame_equal(beam_2d_squ.mesh_coords('1'), RD.beam_2d_squ_mesh_coords)
-
-
 def test_make_mesh_no_set(beam_2d_squ):
     df = beam_2d_squ.make_mesh('1').to_frame()
     assert df.shape[1] == 0
@@ -53,22 +48,22 @@ def test_make_mesh_no_set(beam_2d_squ):
 
 
 def test_get_make_mesh_beam_2d_sq_node_set_load(beam_2d_squ):
-    pd.testing.assert_index_equal(beam_2d_squ.make_mesh('1', node_set='LOAD').to_frame().index,
+    pd.testing.assert_index_equal(beam_2d_squ.make_mesh('1').filter_node_set('LOAD').to_frame().index,
                                   RD.beam_2d_squ_mesh_index_load)
 
 
 def test_get_make_mesh_beam_2d_sq_node_set_fix(beam_2d_squ):
-    pd.testing.assert_index_equal(beam_2d_squ.make_mesh('1', node_set='FIX').to_frame().index,
+    pd.testing.assert_index_equal(beam_2d_squ.make_mesh('1').filter_node_set('FIX').to_frame().index,
                                   RD.beam_2d_squ_mesh_index_fix)
 
 
 def test_get_make_mesh_rotsym_quad_element_set_ysym(rotsym_quad):
-    pd.testing.assert_index_equal(rotsym_quad.make_mesh('1', element_set='YSYM').to_frame().index,
+    pd.testing.assert_index_equal(rotsym_quad.make_mesh('1').filter_element_set('YSYM').to_frame().index,
                                   RD.rotsym_quad_mesh_index_ysym)
 
 
 def test_make_mesh_join_coordinates(beam_2d_squ):
-    pd.testing.assert_frame_equal(beam_2d_squ.make_mesh('1', node_set='ALL').join_coordinates().to_frame(), RD.beam_2d_squ_mesh_coords)
+    pd.testing.assert_frame_equal(beam_2d_squ.make_mesh('1').filter_node_set('ALL').join_coordinates().to_frame(), RD.beam_2d_squ_mesh_coords)
 
 
 def test_make_mesh_join_coordinates_no_mesh(beam_2d_squ):
@@ -77,29 +72,33 @@ def test_make_mesh_join_coordinates_no_mesh(beam_2d_squ):
 
 
 def test_make_mesh_join_coordinates_node_set_load(rotsym_quad):
-    pd.testing.assert_frame_equal(rotsym_quad.make_mesh('1', element_set='YSYM').join_coordinates().to_frame(),
+    pd.testing.assert_frame_equal(rotsym_quad.make_mesh('1').filter_element_set('YSYM').join_coordinates().to_frame(),
                                   RD.rotsym_quad_mesh_coords_ysym.loc[RD.rotsym_quad_mesh_index_ysym])
 
 
 def test_make_mesh_join_coordinates_element_set_ysym(beam_2d_squ):
-    pd.testing.assert_frame_equal(beam_2d_squ.make_mesh('1', node_set='LOAD').join_coordinates().to_frame(),
+    pd.testing.assert_frame_equal(beam_2d_squ.make_mesh('1').filter_node_set('LOAD').join_coordinates().to_frame(),
                                   RD.beam_2d_squ_mesh_coords.loc[RD.beam_2d_squ_mesh_index_load])
-
-
-def test_get_make_mesh_fail_elset_nset(beam_2d_squ):
-    with pytest.raises(vmap.APIUseError, match=("Cannot make mesh index for element set and node set at same time\n"
-                                                "Please specify at most one of element_set or node_set. Not both of them.")):
-        beam_2d_squ.make_mesh('1', node_set='FIX', element_set='ALL')
 
 
 def test_get_make_mesh_fail_nonexistant_node_set(beam_2d_squ):
     with pytest.raises(KeyError, match="Node set 'foo' not found in geometry '1'"):
-        beam_2d_squ.make_mesh('1', node_set='foo')
+        beam_2d_squ.make_mesh('1').filter_node_set('foo')
 
 
 def test_get_make_mesh_fail_nonexistant_element_set(beam_2d_squ):
     with pytest.raises(KeyError, match="Element set 'foo' not found in geometry '1'"):
-        beam_2d_squ.make_mesh('1', element_set='foo')
+        beam_2d_squ.make_mesh('1').filter_element_set('foo')
+
+
+def test_filter_node_set_no_mesh(beam_2d_squ):
+    with pytest.raises(vmap.APIUseError, match=re.escape("Need to make_mesh() before filtering node or element sets.")):
+        beam_2d_squ.filter_node_set('FIX')
+
+
+def test_filter_element_set_no_mesh(beam_2d_squ):
+    with pytest.raises(vmap.APIUseError, match=re.escape("Need to make_mesh() before filtering node or element sets.")):
+        beam_2d_squ.filter_element_set('YSYM')
 
 
 def test_to_frame_no_mesh(beam_2d_squ):
@@ -112,45 +111,6 @@ def test_to_frame_twice(beam_2d_squ):
     vm.to_frame()
     with pytest.raises(vmap.APIUseError, match=re.escape("Need to make_mesh() before requesting a resulting frame.")):
         vm.to_frame()
-
-
-def test_get_node_variable_displacement(beam_2d_squ):
-    var_frame = beam_2d_squ.variable('1', 'STATE-2', 'DISPLACEMENT')
-    pd.testing.assert_frame_equal(var_frame, RD.beam_2d_squ_node_displacement)
-
-
-def test_get_element_variable_evol_no_column_name(beam_3d_hex):
-    with pytest.raises(KeyError, match="No column name for variable EVOL. Please povide with column_names parameter"):
-        beam_3d_hex.variable('1', 'STATE-2', 'EVOL')
-
-
-def test_get_element_variable_evol(beam_3d_hex):
-    var_frame = beam_3d_hex.variable('1', 'STATE-2', 'EVOL', column_names=['Ve'])
-    pd.testing.assert_frame_equal(var_frame, RD.beam_3d_hex_element_volume)
-
-
-def test_get_element_nodal_variable_stress(beam_2d_squ):
-    var_frame = beam_2d_squ.variable('1', 'STATE-2', 'STRESS_CAUCHY')
-    pd.testing.assert_frame_equal(var_frame, RD.beam_2d_squ_element_nodal_stress)
-
-
-def test_get_element_nodal_variable_stress_override_column_names(beam_2d_squ):
-    var_frame = beam_2d_squ.variable('1', 'STATE-2', 'STRESS_CAUCHY',
-                                     column_names=['s11', 's22', 's33', 's12', 's13', 's23'])
-    reference = RD.beam_2d_squ_element_nodal_stress.copy()
-    reference.columns = ['s11', 's22', 's33', 's12', 's13', 's23']
-    pd.testing.assert_frame_equal(var_frame, reference)
-
-
-def test_get_element_nodal_variable_stress_column_name_list_unmatch(beam_2d_squ):
-    with pytest.raises(ValueError,
-                       match=re.escape("Length of column name list (3) does not match variable dimension (6).")):
-        beam_2d_squ.variable('1', 'STATE-2', 'STRESS_CAUCHY', column_names=['s11', 's22', 's33'])
-
-
-def test_get_element_nodal_variable_strain(beam_2d_squ):
-    var_frame = beam_2d_squ.make_mesh('1').join_variable('E', 'STATE-2').to_frame()
-    pd.testing.assert_frame_equal(var_frame, RD.beam_2d_squ_element_nodal_strain)
 
 
 def test_join_variable_no_mesh(beam_2d_squ):
@@ -206,14 +166,16 @@ def test_join_element_nodal_variable_strain(beam_2d_squ):
 
 def test_join_element_nodal_variable_node_set(beam_2d_squ):
     pd.testing.assert_frame_equal(beam_2d_squ
-                                  .make_mesh('1', node_set='FIX')
+                                  .make_mesh('1')
+                                  .filter_node_set('FIX')
                                   .join_variable('STRESS_CAUCHY', 'STATE-2')
                                   .to_frame(),
                                   RD.beam_2d_squ_element_nodal_stress.loc[RD.beam_2d_squ_mesh_index_fix])
 
 
 def test_join_element_nodal_variable_element_set(rotsym_quad):
-    pd.testing.assert_frame_equal(rotsym_quad.make_mesh('1', element_set='YSYM')
+    pd.testing.assert_frame_equal(rotsym_quad.make_mesh('1')
+                                  .filter_element_set('YSYM')
                                   .join_variable('STRESS_CAUCHY', 'STATE-2')
                                   .to_frame(),
                                   RD.rotsym_quad_stress_cauchy.loc[RD.rotsym_quad_mesh_index_ysym])
@@ -229,7 +191,7 @@ def test_join_element_nodal_variable_stress_element_variable_evol(beam_3d_hex):
 
 
 def test_join_variable_unsupported_location():
-    vm = vmap.VMAP('tests/vmap/testfiles/beam_at_integration_points.vmap').make_mesh('1')
+    vm = vmap.VMAPImport('tests/vmap/testfiles/beam_at_integration_points.vmap').make_mesh('1')
     with pytest.raises(vmap.FeatureNotSupportedError,
                        match="Unsupported value location, sorry\nSupported: NODE, ELEMENT, ELEMENT NODAL"):
         vm.join_variable('STRESS_CAUCHY', 'STATE-2')
@@ -261,13 +223,6 @@ def test_join_variable_no_given_state(beam_2d_squ):
         beam_2d_squ.make_mesh('1').join_variable('STRESS_CAUCHY')
 
 
-def test_unsupported_location():
-    vm = vmap.VMAP('tests/vmap/testfiles/beam_at_integration_points.vmap')
-    with pytest.raises(vmap.FeatureNotSupportedError,
-                       match="Unsupported value location, sorry\nSupported: NODE, ELEMENT, ELEMENT NODAL"):
-        vm.variable('1', 'STATE-2', 'STRESS_CAUCHY')
-
-
 def test_get_node_sets_beam(beam_2d_squ):
     assert_list_equal(beam_2d_squ.node_sets('1'), ['ALL', 'FIX', 'LOAD'])
 
@@ -284,29 +239,11 @@ def test_get_element_sets_rotsym(rotsym_quad):
     assert_list_equal(rotsym_quad.element_sets('1'), ['ALL', 'LOAD', 'YSYM', 'ROTSYM', 'SLOPEDSURFACE', 'LOADSURFACE'])
 
 
-def test_get_mesh_index_beam_2d_sq_node_set_load(beam_2d_squ):
-    pd.testing.assert_index_equal(beam_2d_squ.mesh_index('1', node_set='LOAD'), RD.beam_2d_squ_mesh_index_load)
-
-
-def test_get_mesh_index_beam_2d_sq_node_set_fix(beam_2d_squ):
-    pd.testing.assert_index_equal(beam_2d_squ.mesh_index('1', node_set='FIX'), RD.beam_2d_squ_mesh_index_fix)
-
-
-def test_get_mesh_index_rotsym_quad_element_set_ysym(rotsym_quad):
-    pd.testing.assert_index_equal(rotsym_quad.mesh_index('1', element_set='YSYM'), RD.rotsym_quad_mesh_index_ysym)
-
-
-def test_get_mesh_index_fail_elset_nset(beam_2d_squ):
-    with pytest.raises(vmap.APIUseError, match=("Cannot make mesh index for element set and node set at same time\n"
-                                                "Please specify at most one of element_set or node_set. Not both of them.")):
-        beam_2d_squ.mesh_index('1', node_set='FIX', element_set='ALL')
-
-
 def test_get_mesh_index_fail_nonexistant_node_set(beam_2d_squ):
     with pytest.raises(KeyError, match="Node set 'foo' not found in geometry '1'"):
-        beam_2d_squ.mesh_index('1', node_set='foo')
+        beam_2d_squ.make_mesh('1').filter_node_set('foo')
 
 
 def test_get_mesh_index_fail_nonexistant_element_set(beam_2d_squ):
     with pytest.raises(KeyError, match="Element set 'foo' not found in geometry '1'"):
-        beam_2d_squ.mesh_index('1', element_set='foo')
+        beam_2d_squ.make_mesh('1').filter_element_set('foo')
