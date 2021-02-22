@@ -168,7 +168,7 @@ class VMAP:
             index=self._node_index(geometry)
         )
 
-    def make_mesh(self, geometry, state=None, node_set=None, element_set=None):
+    def make_mesh(self, geometry, state=None):
         '''Makes the initial mesh
 
         Parameters
@@ -178,12 +178,6 @@ class VMAP:
         state : string, optional
             The load state of which the field variable is to be read.
             If not given, the state must be defined in ``join_variable()``.
-        node_set : string, optional
-            The node set defined in the vmap file as geometry set to which
-            the mesh is to be restricted to.
-        element_set : string, optional
-            The element set defined in the vmap file as geometry set to which
-            the mesh is to be restricted to.
 
         Returns
         -------
@@ -226,10 +220,58 @@ class VMAP:
                    14614   -13.389065 -5.709927  0.0  36.063541  2.828889  0.0 -13.774759  0.0  0.0
                    14534   -13.276068 -5.419206  0.0  33.804211  2.829817  0.0 -14.580153  0.0  0.0
         '''
-        self._mesh = pd.DataFrame(index=self.mesh_index(geometry, node_set, element_set))
+        self._mesh = pd.DataFrame(index=self._mesh_index(geometry))
         self._geometry = geometry
         self._state = state
         return self
+
+    def filter_node_set(self, node_set):
+        '''Filters a node set out of the current mesh
+
+        Parameters
+        ----------
+        node_set : string
+            The node set defined in the vmap file as geometry set
+
+        Returns
+        -------
+        self
+
+        Raises
+        ------
+        APIUseError
+            If the mesh has not been initialized using ``make_mesh()``
+        '''
+        self._check_mesh_for_filtering()
+        node_set_ids = self._node_set_ids(self._geometry, node_set)
+        self._mesh = self._mesh.loc[(slice(None), node_set_ids), :]
+        return self
+
+    def filter_element_set(self, element_set):
+        '''Filters a node set out of the current mesh
+
+        Parameters
+        ----------
+        element_set : string, optional
+            The element set defined in the vmap file as geometry set
+
+        Returns
+        -------
+        self
+
+        Raises
+        ------
+        APIUseError
+            If the mesh has not been initialized using ``make_mesh()``
+        '''
+        self._check_mesh_for_filtering()
+        element_set_ids = self._element_set_ids(self._geometry, element_set)
+        self._mesh = self._mesh.loc[(element_set_ids, slice(None)), :]
+        return self
+
+    def _check_mesh_for_filtering(self):
+        if self._mesh is None:
+            raise APIUseError("Need to make_mesh() before filtering node or element sets.")
 
     def join_coordinates(self):
         '''Join the coordinates of the predefined geometry in the mesh
@@ -268,7 +310,7 @@ class VMAP:
         '''
         if self._mesh is None:
             raise APIUseError("Need to make_mesh() before joining the coordinates.")
-        self._mesh = self._mesh.join(self.mesh_coords(self._geometry).loc[self._mesh.index])
+        self._mesh = self._mesh.join(self.nodes(self._geometry))
         return self
 
     def to_frame(self):
@@ -295,132 +337,6 @@ class VMAP:
         ret = self._mesh
         self._mesh = None
         return ret
-
-    def mesh_index(self, geometry, node_set=None, element_set=None):
-        '''Retrieves the node element index
-
-        Parameters
-        ----------
-        geometry : string
-            The geometry defined in the vmap file
-
-        Returns
-        -------
-        node_element_index : MultiIndex
-            a MultiIndex with the node ids and element ids
-        node_set : string, optional
-            The node set defined in the vmap file as geometry set to which
-            the mesh index is to be restricted to.
-        element_set : string, optional
-            The element set defined in the vmap file as geometry set to which
-            the mesh index is to be restricted to.
-
-        Raises
-        ------
-        KeyError
-            if the ``geometry`` is not found of if the vmap file is corrupted.
-        KeyError
-            if the ``node_set`` or ``element_set`` is not found in the geometry.
-        APIUseError
-            if both, a ``node_set`` and an ``element_set`` are given.
-        '''
-        if node_set is not None and element_set is not None:
-            raise APIUseError("Cannot make mesh index for element set and node set at same time\n"
-                              "Please specify at most one of element_set or node_set. Not both of them.")
-        connectivity = self._element_connectivity(geometry).connectivity
-        length = sum([el.shape[0] for el in connectivity])
-        index_np = np.empty((2, length), dtype=np.int64)
-
-        i = 0
-        for element_id, node_ids in connectivity.iteritems():
-            i_next = i + node_ids.shape[0]
-            index_np[0, i:i_next] = element_id
-            index_np[1, i:i_next] = node_ids
-            i = i_next
-
-        mesh_index = pd.MultiIndex.from_arrays(index_np, names=['element_id', 'node_id'])
-
-        if node_set is not None:
-            node_set_ids = self._node_set_ids(geometry, node_set)
-            return pd.DataFrame(index=mesh_index).loc[(slice(None), node_set_ids), :].index
-
-        if element_set is not None:
-            element_set_ids = self._element_set_ids(geometry, element_set)
-            return pd.DataFrame(index=mesh_index).loc[(element_set_ids, slice(None)), :].index
-
-        return mesh_index
-
-    def mesh_coords(self, geometry):
-        '''Retrieves the mesh with its coordinates
-
-        Parameters
-        ----------
-        geometry : string
-            The geometry defined in the vmap file
-
-        Returns
-        -------
-        mesh_data : DataFrame
-            a DataFrame with the element nodal index and the columns 'x', 'y' and 'z' for the
-            node coordinates.
-
-        Raises
-        ------
-        KeyError
-            if the geometry is not found of if the vmap file is corrupted
-        '''
-        return pd.DataFrame(index=self.mesh_index(geometry)).join(self.nodes(geometry))
-
-    def variable(self, geometry, state, varname, column_names=None):
-        '''Retrieves a field output variable
-
-        Parameters
-        ----------
-        geometry : string
-            The geometry defined in the vmap file
-        state : string
-            The load state of which the field variable is to be read
-        varname : string
-            The name of the field variables
-        column_names : list of string, optional
-            The names of the columns names to be used in the DataFrame
-            If not provided, it will be chosen according to the list shown below.
-            The length of the list must match the dimension of the variable.
-
-        Returns
-        -------
-        variable_values : DataFrame
-            a DataFrame with the value of the field variable.
-            The column names are given by ``column_names`` or by the list below.
-            The index is depending on the variable's location either the element id,
-            the node id or the element node index.
-
-        Raises
-        ------
-        KeyError
-            if the geometry, state or varname is not found of if the vmap file is corrupted
-        KeyError
-            if there are no column names given and known for the variable.
-        ValueError
-            if the length of the column_names does not match the dimension of the variable
-        '''
-        if column_names is None:
-            try:
-                column_names = self._column_names[varname]
-            except KeyError:
-                raise KeyError("No column name for variable %s. Please povide with column_names parameter." % varname)
-
-        var_tree = self._file["/VMAP/VARIABLES/%s/%s/%s" % (state, geometry, varname)]
-        var_dimension = var_tree.attrs['MYDIMENSION']
-        if len(column_names) != var_dimension:
-            raise ValueError("Length of column name list (%d) does not match variable dimension (%d)."
-                             % (len(column_names), var_dimension))
-
-        return pd.DataFrame(
-            data=var_tree['MYVALUES'][()],
-            columns=column_names,
-            index=self._make_index(var_tree, geometry)
-        )
 
     def join_variable(self, var_name, state=None, column_names=None):
         '''Joins a field output variable to the mesh
@@ -503,9 +419,42 @@ class VMAP:
                               "Must be either given in make_mesh() or in join_variable() as optional state argument.")
         self._state = state
         variable_data = (pd.DataFrame(index=self._mesh.index)
-                         .join(self.variable(self._geometry, state, var_name, column_names)))
+                         .join(self._variable(self._geometry, state, var_name, column_names)))
         self._mesh = self._mesh.join(variable_data.loc[self._mesh.index])
         return self
+
+    def _mesh_index(self, geometry):
+        connectivity = self._element_connectivity(geometry).connectivity
+        length = sum([el.shape[0] for el in connectivity])
+        index_np = np.empty((2, length), dtype=np.int64)
+
+        i = 0
+        for element_id, node_ids in connectivity.iteritems():
+            i_next = i + node_ids.shape[0]
+            index_np[0, i:i_next] = element_id
+            index_np[1, i:i_next] = node_ids
+            i = i_next
+
+        return pd.MultiIndex.from_arrays(index_np, names=['element_id', 'node_id'])
+
+    def _variable(self, geometry, state, varname, column_names):
+        if column_names is None:
+            try:
+                column_names = self._column_names[varname]
+            except KeyError:
+                raise KeyError("No column name for variable %s. Please povide with column_names parameter." % varname)
+
+        var_tree = self._file["/VMAP/VARIABLES/%s/%s/%s" % (state, geometry, varname)]
+        var_dimension = var_tree.attrs['MYDIMENSION']
+        if len(column_names) != var_dimension:
+            raise ValueError("Length of column name list (%d) does not match variable dimension (%d)."
+                             % (len(column_names), var_dimension))
+
+        return pd.DataFrame(
+            data=var_tree['MYVALUES'][()],
+            columns=column_names,
+            index=self._make_index(var_tree, geometry)
+        )
 
     def _element_connectivity(self, geometry):
         elements = self._file['/VMAP/GEOMETRY/'+geometry+'/ELEMENTS/MYELEMENTS']
@@ -537,7 +486,7 @@ class VMAP:
         return pd.Index(var_tree['MYGEOMETRYIDS'][:, 0], name='element_id')
 
     def _var_element_nodal_index(self, var_tree, geometry):
-        mesh_index_frame = self.mesh_index(geometry).to_frame(index=False)
+        mesh_index_frame = self._mesh_index(geometry).to_frame(index=False)
         index_frame = pd.DataFrame(var_tree['MYGEOMETRYIDS'], columns=['element_id'])
 
         return (index_frame
