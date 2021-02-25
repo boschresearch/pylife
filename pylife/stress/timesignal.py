@@ -189,14 +189,11 @@ def _prepare_rolling(df):
 
     """
     prep_roll = df.copy()
-    start = time.time()
     prep_roll["id"] = 0
     prep_roll["time"] = df.index.values
     prep_roll["time"] = prep_roll["time"].subtract(prep_roll["time"].values[0])
     prep_roll.index = prep_roll["time"]
-    end = time.time()
 
-    print("Prepare_rolling: {:5.3f}s".format(end - start))
     return prep_roll
 
 
@@ -221,7 +218,6 @@ def _roll_dataset(prep_roll_df, window_size=1000, overlap=200):
 
     # Create Rolled Dataset with Parameter rolling_direction & window_size
     # throws away the last halfshift
-    start = time.time()
     rolling_direction = window_size - overlap
     cycles = int(len(prep_roll_df) / rolling_direction) - 1
     df_rolled = pd.DataFrame()
@@ -237,8 +233,6 @@ def _roll_dataset(prep_roll_df, window_size=1000, overlap=200):
 
         df_rolled = df_rolled.append(shift, ignore_index=True)
 
-    ende = time.time()
-    print("roll_dataset: {:5.3f}s".format(ende - start))
     return df_rolled
 
 
@@ -261,7 +255,6 @@ def _extract_feature_df(df_rolled, feature="maximum"):
 
     """
     # extract features
-    start = time.time()
 
     # fc_parameters = {"abs_energy", "maximum"}
     fc_parameters = {
@@ -275,8 +268,6 @@ def _extract_feature_df(df_rolled, feature="maximum"):
         n_jobs=0,
     )
     extracted_features.index = range(len(extracted_features))
-    ende = time.time()
-    print("extract_features_df: {:5.3f}s".format(ende - start))
     return extracted_features
 
 
