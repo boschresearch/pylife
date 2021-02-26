@@ -20,26 +20,24 @@ import pandas as pd
 from scipy import signal as sg
 from pylife.stress import timesignal as tsig
 
-# %%
+#%%
 
 
 def test_resample_acc():
+    t=t = np.arange(0, 10, 1/4096) 
     # sine
-    omega = 10*2*np.pi  # Hz
-    ts_sin = pd.DataFrame(np.sin(
-        omega*np.arange(0, 2, 1/1024)), index=np.arange(0, 2, 1/1024))
+    ts_sin = pd.DataFrame(np.sin(10 * 2 * np.pi * t), index=t)
     expected_sin = ts_sin.describe().drop(
         ['count', 'mean', '50%', '25%', '75%'])
-    test_sin = tsig.resample_acc(ts_sin, int(12*omega)).describe().drop(
+    test_sin = tsig.resample_acc(ts_sin, 2048).describe().drop(
         ['count', 'mean', '50%', '25%', '75%'])
-    pd.testing.assert_frame_equal(test_sin, expected_sin, check_less_precise=2)
-    # white noise
-    ts_wn = pd.DataFrame(np.random.randn(129), index=np.linspace(0, 1, 129))
-    expected_wn = ts_wn.describe()
-    test_wn = tsig.resample_acc(ts_wn, 128).describe()
-    pd.testing.assert_frame_equal(test_wn, expected_wn, check_exact=True)
+    pd.testing.assert_frame_equal(test_sin, expected_sin, rtol=1e-2)
+    # sawtooth
+    ts_st = pd.DataFrame(sg.sawtooth(2 * np.pi * 1 * t), index=t)
+    expected_st = ts_st.describe().drop(['count', '50%', 'mean'])
+    test_st = tsig.resample_acc(ts_st, 1024).describe().drop(['count', '50%', 'mean'])
+    pd.testing.assert_frame_equal(test_st, expected_st, rtol=1e-2)
     # SoR
-    t = np.arange(0, 20, 1/4096)
     f = np.logspace(np.log10(1), np.log10(10), num=len(t))
     df = pd.DataFrame(data=np.multiply(
         np.interp(f, np.array([1, 10]), np.array([0.5, 5]), left=0, right=0),
@@ -50,7 +48,8 @@ def test_resample_acc():
     test_sor = tsig.resample_acc(df, 2048).describe().drop(
         ['count', 'mean', '50%', '25%', '75%'])
     # return expected_sor, test_sor
-    pd.testing.assert_frame_equal(test_sor, expected_sor, check_less_precise=1)
+    pd.testing.assert_frame_equal(test_sor, expected_sor, rtol=1e-2)
+    return
 
 
 # %%

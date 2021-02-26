@@ -298,7 +298,6 @@ def _select_relevant_windows(prep_roll, extracted_features, comparison_column_ex
 
     """
     # get added up abs energy of interval x, if too low set None
-    start = time.time()
     rolling_direction = window_size - overlap
 
     relevant_feature = extracted_features[comparison_column_ex]
@@ -333,8 +332,6 @@ def _select_relevant_windows(prep_roll, extracted_features, comparison_column_ex
         index_liste.append(relevant_windows.index[liste[i]])
 
     relevant_windows = relevant_windows.drop(index_liste, axis=0)
-    ende = time.time()
-    print("select_relevant_windows: {:5.3f}s".format(ende - start))
     return relevant_windows
 
 
@@ -360,7 +357,6 @@ def _polyfit_gridpoints(grid_points, prep_roll, order=3,
     df : pandas DataFrame
         DataFrame with polynomial values at the gridpoints.
     """
-    start = time.time()
 
     # add a null row at the start and reset time index
     delta_t = prep_roll.index[1]-prep_roll.index[0]
@@ -376,8 +372,7 @@ def _polyfit_gridpoints(grid_points, prep_roll, order=3,
 
     # %% smooth the gaps with polynomial values
     poly_gridpoints.interpolate(method='polynomial', order=order, inplace=True)
-    ende = time.time()
-    print('Polyfit: {:5.3f}s'.format(ende-start))
+
     return poly_gridpoints
 
 
