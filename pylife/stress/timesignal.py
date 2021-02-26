@@ -71,7 +71,8 @@ class TimeSignalGenerator:
                                       size=sine_set['number'])
         sine_phases = 2. * np.pi * np.random.rand(sine_set['number'])
 
-        self.sine_set = list(zip(sine_amplitudes, sine_frequencies, sine_phases, sine_offsets))
+        self.sine_set = list(
+            zip(sine_amplitudes, sine_frequencies, sine_phases, sine_offsets))
 
         self.sample_rate = sample_rate
         self.time_position = 0.0
@@ -94,7 +95,8 @@ class TimeSignalGenerator:
         will smoothly attach to the previously queried ones.
         '''
         samples = np.zeros(sample_num)
-        end_time_position = self.time_position + (sample_num-1) / self.sample_rate
+        end_time_position = self.time_position + \
+            (sample_num-1) / self.sample_rate
 
         for ampl, omega, phi, offset in self.sine_set:
             periods = np.floor(self.time_position / omega)
@@ -131,7 +133,7 @@ def resample_acc(df, fs=1):
     -------
     DataFrame
     """
-    index_new = np.arange(df.index.min(),df.index.max(),1/fs)
+    index_new = np.arange(df.index.min(), df.index.max(), 1/fs)
 
     df_rs = pd.DataFrame(df.apply(lambda x: np.interp(index_new, df.index, x)).values,
                          index=index_new, columns=df.columns)
@@ -216,7 +218,7 @@ def _roll_dataset(prep_roll_df, window_size=1000, overlap=200):
     # Create Rolled Dataset with Parameter rolling_direction & window_size
     # throws away the last halfshift
     rolling_direction = window_size - overlap
-    cycles = int(len(prep_roll_df) / rolling_direction) - 1
+    cycles = int((len(prep_roll_df)-window_size) / rolling_direction)+1
     df_rolled = pd.DataFrame()
     # shiften
     for i in range(cycles):
@@ -303,7 +305,6 @@ def _select_relevant_windows(prep_roll, extracted_features, comparison_column_ex
     relevant_windows = prep_roll.copy()
     just_added_NaNs = False
     liste = []
-
     for i in range(len(extracted_features)):
         if relevant_feature[i] <= relevant_feature.max() * fraction_max:
             if just_added_NaNs is True:
@@ -321,7 +322,11 @@ def _select_relevant_windows(prep_roll, extracted_features, comparison_column_ex
             just_added_NaNs = False
 
     index_liste = []
-
+    '''
+    tail = (len(prep_roll)-window_size) % rolling_direction+1
+    for i in range(tail):
+        liste.append(len(prep_roll)-i-1)
+    '''
     liste = list(pd.core.common.flatten(liste))
     liste = list(set(liste))
     for i in range(len(liste)):
@@ -361,6 +366,7 @@ def _polyfit_gridpoints(grid_points, prep_roll, order=3,
     delta_t = prep_roll.index[1]-prep_roll.index[0]
     line = pd.DataFrame(grid_points.iloc[:1], index=[- delta_t])
     grid_points = grid_points.append(line, ignore_index=False)
+    grid_points.index = grid_points.index + delta_t
     poly_gridpoints = grid_points.sort_index()
     poly_gridpoints.iloc[0, :] = 0
     ts_time = prep_roll.iloc[:len(poly_gridpoints)]
@@ -408,15 +414,15 @@ def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
 
         """
 
-
     df_prep = _prepare_rolling(df)
     ts_time = df_prep.copy()
     # adding a row
     delta_t = ts_time.index[1]-ts_time.index[0]
     line = pd.DataFrame(ts_time.iloc[:1], index=[- delta_t])
     ts_time = ts_time.append(line, ignore_index=False)
-    ts_time = ts_time.sort_index()
     ts_time.index = ts_time.index + delta_t
+    ts_time = ts_time.sort_index()
+
     ts_time['time'] = ts_time.index.values
 
     comparison_column_ex = comparison_column + '__'+feature
@@ -425,11 +431,13 @@ def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
     extracted_features = _extract_feature_df(df_rolled, feature)
     grid_points = _select_relevant_windows(df_prep, extracted_features, comparison_column_ex,
                                            percentage_max, window_size, overlap)
+
     poly_gridpoints = _polyfit_gridpoints(grid_points, ts_time, order=order, verbose=False,
                                           n_gridpoints=n_gridpoints)
 
     # Remove NaN's at the end - should be maximum 2n
-    cleaned = poly_gridpoints.dropna(axis=0, how='any', thresh=None, subset=None)
+    cleaned = poly_gridpoints.dropna(
+        axis=0, how='any', thresh=None, subset=None)
     cleaned.pop("id")
 
     return cleaned

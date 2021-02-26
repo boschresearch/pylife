@@ -28,7 +28,8 @@ def test_resample_acc():
     omega = 10*2*np.pi  # Hz
     ts_sin = pd.DataFrame(np.sin(
         omega*np.arange(0, 2, 1/1024)), index=np.arange(0, 2, 1/1024))
-    expected_sin = ts_sin.describe().drop(['count', 'mean', '50%', '25%', '75%'])
+    expected_sin = ts_sin.describe().drop(
+        ['count', 'mean', '50%', '25%', '75%'])
     test_sin = tsig.resample_acc(ts_sin, int(12*omega)).describe().drop(
         ['count', 'mean', '50%', '25%', '75%'])
     pd.testing.assert_frame_equal(test_sin, expected_sin, check_less_precise=2)
@@ -46,7 +47,8 @@ def test_resample_acc():
         index=t, columns=["Sweep"])
     df['sor'] = df['Sweep'] + 0.1*np.random.randn(len(df))
     expected_sor = df.describe().drop(['count', 'mean', '50%', '25%', '75%'])
-    test_sor = tsig.resample_acc(df, 2048).describe().drop(['count', 'mean', '50%', '25%', '75%'])
+    test_sor = tsig.resample_acc(df, 2048).describe().drop(
+        ['count', 'mean', '50%', '25%', '75%'])
     # return expected_sor, test_sor
     pd.testing.assert_frame_equal(test_sor, expected_sor, check_less_precise=1)
 
@@ -159,7 +161,6 @@ def test_polyfit_gridpoints1():
     ts_grid_test.iloc[3, 0] = p(3)
     exact_res = ts_grid_test
     exact_res["time"] = exact_res.index.values
-    print(exact_res)
     pd.testing.assert_frame_equal(exact_res, poly_gridpoints)
     return poly_gridpoints
 
@@ -204,7 +205,8 @@ def df_gaps_rolled(df_gaps_prep):
 
 @pytest.fixture
 def extraced_feature_gaps(df_gaps_rolled):
-    extraced_feature_gaps = tsig._extract_feature_df(df_gaps_rolled, feature="maximum")
+    extraced_feature_gaps = tsig._extract_feature_df(
+        df_gaps_rolled, feature="maximum")
     return extraced_feature_gaps
 
 
@@ -212,14 +214,14 @@ def test_select_relevant_windows2(df_gaps_prep, extraced_feature_gaps):
     ts_gaps_selected = df_gaps_prep.copy()
     global grid_points_gaps
     grid_points_gaps = tsig._select_relevant_windows(df_gaps_prep, extraced_feature_gaps,
-                                                     "0__maximum", fraction_max=0.93,
+                                                     "0__maximum", fraction_max=0.80,
                                                      window_size=5, overlap=2)
-
     ts_gaps_selected.iloc[3*2:3*2+5, 0:2] = np.nan
-    list = [ts_gaps_selected.index[6], ts_gaps_selected.index[7]]
+    ts_gaps_selected.iloc[15:20, 0:2] = np.nan
+    list = [ts_gaps_selected.index[6], ts_gaps_selected.index[7],
+            ts_gaps_selected.index[15], ts_gaps_selected.index[16]]
     global exact_res
     exact_res = ts_gaps_selected.drop(list, axis=0)
-
     pd.testing.assert_frame_equal(exact_res, grid_points_gaps)
     return grid_points_gaps
 
@@ -230,6 +232,8 @@ def test_select_relevant_windows2(df_gaps_prep, extraced_feature_gaps):
 def test_clean_timeseries2(ts_gaps, df_gaps_prep):
     poly_gridpoints_gaps = tsig._polyfit_gridpoints(
         grid_points_gaps, df_gaps_prep, order=3, verbose=False, n_gridpoints=3)
+    poly_gridpoints_gaps = poly_gridpoints_gaps.dropna(
+        axis=0, how='any', thresh=None, subset=None)
     poly_gridpoints_gaps.pop("id")
     exact_res = poly_gridpoints_gaps
     ts_cleaned = tsig.clean_timeseries(ts_gaps, "0", window_size=5,
@@ -255,7 +259,7 @@ def test_clean_timeseries3():
     ts_sin_test = ts_sin.copy()
     ts_cleaned = tsig.clean_timeseries(ts_sin_test, "0", window_size=100,
                                        overlap=99, feature="maximum", n_gridpoints=5,
-                                       percentage_max=0.2, order=3)
+                                       percentage_max=0.3, order=3)
 
     ts_time = tsig._prepare_rolling(ts_sin)
 
@@ -272,4 +276,7 @@ def test_clean_timeseries3():
     exact_res.pop('id')
 
     pd.testing.assert_frame_equal(exact_res, ts_cleaned)
-    return ts_cleaned
+    return ts_cleaned, exact_res, ts_sin
+
+
+ts_cleaned, exact_res, ts_sin = test_clean_timeseries3()
