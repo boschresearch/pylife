@@ -131,10 +131,7 @@ def resample_acc(df, fs=1):
     -------
     DataFrame
     """
-    index_new = np.linspace(
-        df.index.min(),
-        df.index.min() + np.floor((df.index.max()-df.index.min())*fs)/fs,
-        int(np.floor(df.index.max()-df.index.min())*fs + 1))
+    index_new = np.arange(df.index.min(),df.index.max(),1/fs)
 
     df_rs = pd.DataFrame(df.apply(lambda x: np.interp(index_new, df.index, x)).values,
                          index=index_new, columns=df.columns)
@@ -411,7 +408,6 @@ def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
 
         """
 
-    start = time.time()
 
     df_prep = _prepare_rolling(df)
     ts_time = df_prep.copy()
@@ -435,7 +431,5 @@ def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
     # Remove NaN's at the end - should be maximum 2n
     cleaned = poly_gridpoints.dropna(axis=0, how='any', thresh=None, subset=None)
     cleaned.pop("id")
-    ende = time.time()
-    print('Total Cleaning: {:5.3f}s'.format(ende-start))
 
     return cleaned
