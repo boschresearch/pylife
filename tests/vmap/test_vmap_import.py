@@ -11,17 +11,17 @@ import reference_data as RD
 
 @pytest.fixture
 def beam_2d_squ():
-    return vmap.VMAP('tests/vmap/testfiles/beam_2d_squ_lin.vmap')
+    return vmap.VMAPImport('tests/vmap/testfiles/beam_2d_squ_lin.vmap')
 
 
 @pytest.fixture
 def beam_3d_hex():
-    return vmap.VMAP('tests/vmap/testfiles/beam_3d_hex_lin.vmap')
+    return vmap.VMAPImport('tests/vmap/testfiles/beam_3d_hex_lin.vmap')
 
 
 @pytest.fixture
 def rotsym_quad():
-    return vmap.VMAP('tests/vmap/testfiles/rotsym_quad_lin.vmap')
+    return vmap.VMAPImport('tests/vmap/testfiles/rotsym_quad_lin.vmap')
 
 
 def assert_list_equal(l1, l2):

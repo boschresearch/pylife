@@ -47,8 +47,9 @@ class VMAPExport:
 
     def __init__(self, filename):
         self._file = h5py.File(filename, 'w')
+        self._create_groups()
 
-    def create_vmap_groups(self):
+    def _create_groups(self):
         vmap_group = self._file.create_group('VMAP')
         vmap_group.create_group('GEOMETRY')
         vmap_group.create_group('MATERIAL')
@@ -60,3 +61,34 @@ class VMAPExport:
         # g1 = self._file.create_group('group1')
         # g1.create_dataset('dataset_2', data=d2)
         # self._file.close()
+
+    def create_geometry(self, geometry_name, mesh):
+        geometry = self.create_geometry_groups(geometry_name)
+        points_group = geometry.get('POINTS')
+        node_ids_info = mesh.groupby('node_id').first()
+        self.create_points_ids_dataset(node_ids_info, points_group)
+        self.create_points_conn_dataset(mesh, points_group)
+        self._file.close()
+        return self
+
+    def create_geometry_groups(self, geometry_name):
+        geometry_group = self._file["/VMAP/GEOMETRY"]
+        geometry = geometry_group.create_group(geometry_name)
+        geometry.create_group('ELEMENTS')
+        geometry.create_group('GEOMETRYSETS')
+        geometry.create_group('POINTS')
+        return geometry
+
+    def create_points_ids_dataset(self, node_ids_info, point_group):
+        # element_ids = mesh_index.get_level_values('element_id')
+        # mesh_index = mesh.index
+        # node_ids = mesh_index.get_level_values('node_id').drop_duplicates()
+        # mesh_columns = mesh.columns
+        # node_ids_info = mesh.groupby('node_id').first()
+        point_group.create_dataset('MYIDENTIFIERS', data=node_ids_info.index)
+        point_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y', 'z']].values)
+        return self
+
+    def create_points_conn_dataset(self, mesh, point_group):
+        coordinates = mesh['x']
+        return self

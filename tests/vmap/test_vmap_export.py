@@ -11,8 +11,14 @@ import reference_data as RD
 
 @pytest.fixture
 def config():
-    return vmap.VMAPExport('d:/repos/pylife/dev/tests/vmap/testfiles/test.vmap')
+    return vmap.VMAPExport('tests/vmap/testfiles/test.vmap')
 
 
 def test_export(config):
-    config.create_vmap_groups()
+    vmap_import = vmap.VMAPImport('demos/plate_with_hole.vmap')
+    mesh = (vmap_import.make_mesh('1', 'STATE-2')
+            .join_coordinates()
+            .join_variable('STRESS_CAUCHY')
+            .join_variable('DISPLACEMENT')
+            .to_frame())
+    config.create_geometry('1', mesh)
