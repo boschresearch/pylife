@@ -35,10 +35,13 @@ Reading a VMAPImport file
 __author__ = "Gyöngyvér Kiss"
 __maintainer__ = __author__
 
+import os
+import datetime
+
 import numpy as np
 import pandas as pd
-
 import h5py
+from h5py.h5t import string_dtype
 
 from .exceptions import *
 
@@ -47,31 +50,31 @@ class VMAPExport:
 
     def __init__(self, filename):
         self._file = h5py.File(filename, 'w')
-        self._create_groups()
-
-    def _create_groups(self):
-        vmap_group = self._file.create_group('VMAP')
-        vmap_group.create_group('GEOMETRY')
-        vmap_group.create_group('MATERIAL')
-        vmap_group.create_group('SYSTEM')
-        vmap_group.create_group('VARIABLES')
-        # d1 = np.random.random(size=(1000, 20))
-        # d2 = np.random.random(size=(1000, 200))
-        # self._file.create_dataset('dataset_3', data=d1)
-        # g1 = self._file.create_group('group1')
-        # g1.create_dataset('dataset_2', data=d2)
-        # self._file.close()
+        self._create_fundamental_groups()
+        self._dimension = 2
 
     def create_geometry(self, geometry_name, mesh):
-        geometry = self.create_geometry_groups(geometry_name)
+        geometry = self._create_geometry_groups(geometry_name)
         points_group = geometry.get('POINTS')
         node_ids_info = mesh.groupby('node_id').first()
-        self.create_points_ids_dataset(node_ids_info, points_group)
-        self.create_points_conn_dataset(mesh, points_group)
+        self._create_points_datasets(node_ids_info, points_group)
+        self._create_elements_dataset(mesh)
         self._file.close()
         return self
 
-    def create_geometry_groups(self, geometry_name):
+    def _create_fundamental_groups(self):
+        self._vmap_group = self._file.create_group('VMAP')
+        self._create_compound_attribute('VERSION', ["myMajor", "myMinor", "myPatch"],
+                                        ['<i4', '<i4', '<i4'], ('0', '5', '2'))
+        self._vmap_group.create_group('GEOMETRY')
+        self._vmap_group.create_group('MATERIAL')
+        self._vmap_group.create_group('SYSTEM')
+        self._create_system_metadata()
+        self._create_unit_system()
+        self._vmap_group.create_group('VARIABLES')
+        # self._file.close()
+
+    def _create_geometry_groups(self, geometry_name):
         geometry_group = self._file["/VMAP/GEOMETRY"]
         geometry = geometry_group.create_group(geometry_name)
         geometry.create_group('ELEMENTS')
@@ -79,16 +82,71 @@ class VMAPExport:
         geometry.create_group('POINTS')
         return geometry
 
-    def create_points_ids_dataset(self, node_ids_info, point_group):
+    def _create_points_datasets(self, node_ids_info, point_group):
         # element_ids = mesh_index.get_level_values('element_id')
         # mesh_index = mesh.index
         # node_ids = mesh_index.get_level_values('node_id').drop_duplicates()
         # mesh_columns = mesh.columns
         # node_ids_info = mesh.groupby('node_id').first()
         point_group.create_dataset('MYIDENTIFIERS', data=node_ids_info.index)
-        point_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y', 'z']].values)
+        if 'z' in node_ids_info:
+            z = node_ids_info['z'].to_numpy()
+            if not (z[0] == z).all():
+                self._dimension = 3
+            point_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y', 'z']].values)
+        else:
+            point_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y']].values)
         return self
 
-    def create_points_conn_dataset(self, mesh, point_group):
-        coordinates = mesh['x']
+    def _create_compound_attribute(self, attr_name, field_names, field_types, field_values):
+        # dt2 = np.dtype({"names": ["myMajor", "myMinor", "myPatch"], "formats": ['<i4', '<i4', '<i4']})
+        # arr2 = np.array([('0', '5', '2')], dt2)
+        dt = np.dtype({"names": field_names, "formats": field_types})
+        compound_attribute = np.array([field_values], dt)
+        self._vmap_group.attrs.create(attr_name, compound_attribute)
+
+    def _create_attribute(self, attr_name, attr_value):
+        self._vmap_group.attrs[attr_name] = attr_value
+
+    def _create_system_metadata(self):
+        analysis_type = None
+        user_id = os.getlogin()
+        current_date = datetime.datetime.now().date()
+        current_time = datetime.datetime.now().time()
+        metadata_d = {'0': ['ExporterName', 'FileDate', 'FileTime', 'Description', 'Analysis Type', 'User Id'],
+                      '1': ['pyLife', current_date, current_time, 'Test description', analysis_type, user_id]}
+        metadata_df = pd.DataFrame(data=metadata_d)
+        system_group = self._file["/VMAP/SYSTEM"]
+        system_group.create_dataset('METADATA', data=metadata_df, dtype=string_dtype())
+
+    def _create_unit_system(self):
+        unit_system_dtype: object = np.dtype([('myIdentifier', 'i'),
+                                              ('mySISCALE', 'f8'),
+                                              ('mySIShift', 'f8'),
+                                              ('myUnitSymbol', string_dtype()),
+                                              ('myUnitQuantity', string_dtype())])
+
+        unit_system_d = np.array([(1, 1.0, 0.0, 'm', 'LENGTH'),
+                                  (2, 1.0, 0.0, 'kg', 'MASS'),
+                                  (3, 1.0, 0.0, 's', 'TIME'),
+                                  (4, 1.0, 0.0, 'A', 'ELECTRIC CURRENT'),
+                                  (5, 1.0, 0.0, 'K', 'TEMPERATURE'),
+                                  (6, 1.0, 0.0, 'mol', 'AMOUNT OF SUBSTANCE'),
+                                  (7, 1.0, 0.0, 'cd', 'LUMINOUS INTENSITY')], dtype=unit_system_dtype)
+
+        system_group = self._file["/VMAP/SYSTEM"]
+        system_group.create_dataset('UNITSYSTEM', (7,), unit_system_dtype, unit_system_d)
+
+    def _count_nodes_for_element(self, mesh_index):
+        index_arrays = list(zip(*mesh_index.tolist()))
+        node_number = index_arrays[0].count(index_arrays[0][0])
+        return node_number
+
+    def _determine_element_type(self, conn_number):
+        if self._dimension == 3:
+            x = 5
+
+    def _create_elements_dataset(self, mesh):
+        mesh_index = mesh.index
+        node_number = self._cound_nodes_for_element(mesh_index)
         return self
