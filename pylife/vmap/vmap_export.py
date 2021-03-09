@@ -42,6 +42,7 @@ import numpy as np
 import pandas as pd
 import h5py
 from h5py.h5t import string_dtype
+from h5py.h5t import vlen_dtype
 
 from .exceptions import *
 
@@ -120,12 +121,16 @@ class VMAPExport:
         system_group.create_dataset('METADATA', data=metadata_df, dtype=string_dtype())
 
     def _create_unit_system(self):
-        unit_system_dtype: object = np.dtype([('myIdentifier', 'i'),
+        """
+        unit_system_dtype = np.dtype([('myIdentifier', 'i'),
                                               ('mySISCALE', 'f8'),
                                               ('mySIShift', 'f8'),
                                               ('myUnitSymbol', string_dtype()),
                                               ('myUnitQuantity', string_dtype())])
-
+        """
+        unit_system_dtype = np.dtype({"names": ["myIdentifier", "mySISCALE", "mySIShift",
+                                                "myUnitSymbol", "myUnitQuantity"],
+                                      "formats": ['<i4', '<f4', '<f4', string_dtype(), string_dtype()]})
         unit_system_d = np.array([(1, 1.0, 0.0, 'm', 'LENGTH'),
                                   (2, 1.0, 0.0, 'kg', 'MASS'),
                                   (3, 1.0, 0.0, 's', 'TIME'),
@@ -176,7 +181,7 @@ class VMAPExport:
     def _create_elements_dataset(self, mesh):
         dt_type = np.dtype({"names": ["myIdentifier", "myElementType", "myCoordinateSystem",
                                       "myMaterialType", "mySectionType", "myConnectivity"],
-                            "formats": ['<i4', '<i4', '<i4', '<i4', '<i4', ('<i4', (20,))]})
+                            "formats": ['<i4', '<i4', '<i4', '<i4', '<i4', h5py.special_dtype(vlen=np.dtype('int32'))]})
         # mesh_index = mesh.index
         # node_number = self._count_nodes_for_element(mesh_index)
         '''
