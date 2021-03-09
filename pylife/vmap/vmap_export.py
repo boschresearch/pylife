@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''VMAPImport interface for pyLife
+"""VMAPImport interface for pyLife
 ============================
 
 `VMAPImport <https://www.vmap.eu.com/>`_ *is a vendor-neutral standard
@@ -31,7 +31,7 @@ request at https://github.com/boschresearch/pylife/issues
 Reading a VMAPImport file
 -------------------
 
-'''
+"""
 __author__ = "Gyöngyvér Kiss"
 __maintainer__ = __author__
 
@@ -137,16 +137,59 @@ class VMAPExport:
         system_group = self._file["/VMAP/SYSTEM"]
         system_group.create_dataset('UNITSYSTEM', (7,), unit_system_dtype, unit_system_d)
 
+    '''
     def _count_nodes_for_element(self, mesh_index):
         index_arrays = list(zip(*mesh_index.tolist()))
         node_number = index_arrays[0].count(index_arrays[0][0])
         return node_number
+    '''
 
-    def _determine_element_type(self, conn_number):
-        if self._dimension == 3:
-            x = 5
+    def _determine_element_type(self, node_ids_for_element):
+        element_type = None
+        if self._dimension == 2:
+            if node_ids_for_element.size == 3:
+                element_type = 'VMAP_ELEM_2D_TRIANGLE_3'
+            elif node_ids_for_element.size == 6:
+                element_type = 'VMAP_ELEM_2D_TRIANGLE_6'
+            elif node_ids_for_element.size == 4:
+                element_type = 'VMAP_ELEM_2D_QUAD_4'
+            elif node_ids_for_element.size == 8:
+                element_type = 'VMAP_ELEM_2D_QUAD_8'
+        elif self._dimension == 3:
+            if node_ids_for_element.size == 4:
+                element_type = 'VMAP_ELEMENT_3D_TETRA_4'
+            elif node_ids_for_element.size == 10:
+                element_type = 'VMAP_ELEMENT_3D_TETRA_10'
+            elif node_ids_for_element.size == 6:
+                element_type = 'VMAP_ELEMENT_3D_WEDGE_6'
+            elif node_ids_for_element.size == 15:
+                element_type = 'VMAP_ELEMENT_3D_WEDGE_15'
+            elif node_ids_for_element.size == 8:
+                element_type = 'VMAP_ELEMENT_3D_HEX_8'
+            elif node_ids_for_element.size == 20:
+                element_type = 'VMAP_ELEMENT_3D_HEX_20'
+        else:
+            raise KeyError("Unknown element type")
+
+        return element_type
 
     def _create_elements_dataset(self, mesh):
-        mesh_index = mesh.index
-        node_number = self._cound_nodes_for_element(mesh_index)
+        dt_type = np.dtype({"names": ["myIdentifier", "myElementType", "myCoordinateSystem",
+                                      "myMaterialType", "mySectionType", "myConnectivity"],
+                            "formats": ['<i4', '<i4', '<i4', '<i4', '<i4', ('<i4', (20,))]})
+        # mesh_index = mesh.index
+        # node_number = self._count_nodes_for_element(mesh_index)
+        '''
+        element_ids = mesh.index.get_level_values('element_id').drop_duplicates()
+        node_ids = []
+        element_types = []
+        for element_id in element_ids:
+            node_ids_for_element = mesh.loc[element_id, :].index
+            node_ids.append(node_ids_for_element)
+            element_type = self._determine_element_type(node_ids_for_element)
+            if element_type not in element_types:
+                element_types.append(element_type)
+        '''
+        points_group = self._file["/VMAP/GEOMETRY/1/ELEMENTS"]
+        points_group.create_dataset("MYELEMENTS", shape=(5,), dtype=dt_type)
         return self
