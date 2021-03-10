@@ -59,7 +59,7 @@ class VMAPExport:
         points_group = geometry.get('POINTS')
         node_ids_info = mesh.groupby('node_id').first()
         self._create_points_datasets(node_ids_info, points_group)
-        self._create_elements_dataset(mesh)
+        self._create_elements_dataset(mesh, geometry_name)
         self._file.close()
         return self
 
@@ -155,11 +155,13 @@ class VMAPExport:
             if node_ids_for_element.size == 3:
                 element_type = 'VMAP_ELEM_2D_TRIANGLE_3'
             elif node_ids_for_element.size == 6:
-                element_type = 'VMAP_ELEM_2D_TRIANGLE_6'
+                # element_type = 'VMAP_ELEM_2D_TRIANGLE_6'
+                element_type = 0
             elif node_ids_for_element.size == 4:
                 element_type = 'VMAP_ELEM_2D_QUAD_4'
             elif node_ids_for_element.size == 8:
-                element_type = 'VMAP_ELEM_2D_QUAD_8'
+                # element_type = 'VMAP_ELEM_2D_QUAD_8'
+                element_type = 1
         elif self._dimension == 3:
             if node_ids_for_element.size == 4:
                 element_type = 'VMAP_ELEMENT_3D_TETRA_4'
@@ -178,23 +180,37 @@ class VMAPExport:
 
         return element_type
 
-    def _create_elements_dataset(self, mesh):
+    def _create_elements_dataset(self, mesh, geometry_name):
+
+        '''
         dt_type = np.dtype({"names": ["myIdentifier", "myElementType", "myCoordinateSystem",
                                       "myMaterialType", "mySectionType", "myConnectivity"],
                             "formats": ['<i4', '<i4', '<i4', '<i4', '<i4', h5py.special_dtype(vlen=np.dtype('int32'))]})
-        # mesh_index = mesh.index
-        # node_number = self._count_nodes_for_element(mesh_index)
         '''
-        element_ids = mesh.index.get_level_values('element_id').drop_duplicates()
-        node_ids = []
-        element_types = []
+
+        dt_type = np.dtype({"names": ["myIdentifier", "myElementType", "myCoordinateSystem",
+                                      "myMaterialType", "mySectionType", "myConnectivity"],
+                            "formats": ['<i4', '<i4', '<i4', '<i4', '<i4', h5py.special_dtype(vlen=np.dtype('int32'))]})
+        element_ids = mesh.index.get_level_values('element_id').drop_duplicates().values
+        node_ids_list = []
+        element_types_list = []
+        coordinate_system = np.empty(element_ids.size, dtype=np.int)
+        coordinate_system.fill(1)
+        material_type = np.empty(element_ids.size, dtype=np.int)
+        material_type.fill(0)
+        section_type = np.empty(element_ids.size, dtype=np.int)
+        section_type.fill(0)
+
         for element_id in element_ids:
-            node_ids_for_element = mesh.loc[element_id, :].index
-            node_ids.append(node_ids_for_element)
+            node_ids_for_element = mesh.loc[element_id, :].index.values
+            node_ids_list.append(node_ids_for_element)
             element_type = self._determine_element_type(node_ids_for_element)
-            if element_type not in element_types:
-                element_types.append(element_type)
-        '''
-        points_group = self._file["/VMAP/GEOMETRY/1/ELEMENTS"]
-        points_group.create_dataset("MYELEMENTS", shape=(5,), dtype=dt_type)
+            element_types_list.append(element_type)
+            # if element_type not in element_types:
+            #    element_types.append(element_type)
+        element_types = np.asarray(element_types_list)
+        connectivity = np.asarray(node_ids_list)
+        d = np.array(list(zip(element_ids, element_types, coordinate_system, material_type, section_type, connectivity)), dtype=dt_type)
+        points_group = self._file["/VMAP/GEOMETRY/%s/ELEMENTS" % geometry_name]
+        points_group.create_dataset("MYELEMENTS", dtype=dt_type, data=d)
         return self

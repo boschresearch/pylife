@@ -443,7 +443,7 @@ class VMAPImport:
             try:
                 column_names = self._column_names[varname]
             except KeyError:
-                raise KeyError("No column name for variable %s. Please povide with column_names parameter." % varname)
+                raise KeyError("No column name for variable %s. Please provide with column_names parameter." % varname)
 
         var_tree = self._file["/VMAP/VARIABLES/%s/%s/%s" % (state, geometry, varname)]
         var_dimension = var_tree.attrs['MYDIMENSION']
