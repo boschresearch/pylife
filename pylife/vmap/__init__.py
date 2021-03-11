@@ -16,4 +16,6 @@
 
 from .vmap_import import VMAPImport
 from .vmap_export import VMAPExport
+from .vmap_integration_type import VMAPIntegrationType
+from .vmap_element_type import VMAPElementType
 from .exceptions import *

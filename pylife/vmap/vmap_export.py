@@ -73,7 +73,86 @@ class VMAPExport:
         self._create_system_metadata()
         self._create_unit_system()
         self._vmap_group.create_group('VARIABLES')
-        # self._file.close()
+
+    '''
+    def create_integration_types(self, type_names, number_of_points, dimensions, offsets,
+                                 abscissas=None, weights=None, subtypes=None):
+        if abscissas is None:
+            abscissas = []
+            for type_name in type_names:
+                abscissas.append([])
+        if weights is None:
+            weights = []
+            for type_name in type_names:
+                weights.append([])
+        if subtypes is None:
+            subtypes = []
+            for type_name in type_names:
+                subtypes.append([])
+
+        dt_type = np.dtype({"names": ["myIdentifier", "myTypeName", "myNumberOfPoints", "myDimensions",
+                                      "myOffset", "myAbscissas", "myWeights", "mySubTypes"],
+                            "formats": ['<i4', string_dtype(), '<i4', '<i4', '<f4',
+                                        h5py.special_dtype(vlen=np.dtype('float64')),
+                                        h5py.special_dtype(vlen=np.dtype('float64')),
+                                        h5py.special_dtype(vlen=np.dtype('float64'))]})
+
+        identifiers = np.arange(len(type_names))
+        abscissas_array = self._convert_2d_list_to_array(abscissas)
+        weights_array = self._convert_2d_list_to_array(weights)
+        subtypes_array = self._convert_2d_list_to_array(subtypes)
+        d = np.array(list(zip(identifiers, np.array(type_names), np.array(number_of_points), np.array(dimensions),
+                              np.array(offsets), abscissas_array, weights_array, subtypes_array)), dtype=dt_type)
+        system_group = self._file["/VMAP/SYSTEM"]
+        system_group.create_dataset("INTEGRATIONTYPES", dtype=dt_type, data=d)
+        self._file.close()
+        return self
+        '''
+
+    def create_integration_types_dataset(self, *args):
+        dt_type = np.dtype({"names": ["myIdentifier", "myTypeName", "myNumberOfPoints", "myDimensions",
+                                      "myOffset", "myAbscissas", "myWeights", "mySubTypes"],
+                            "formats": ['<i4', string_dtype(), '<i4', '<i4', '<f4',
+                                        h5py.special_dtype(vlen=np.dtype('float64')),
+                                        h5py.special_dtype(vlen=np.dtype('float64')),
+                                        h5py.special_dtype(vlen=np.dtype('float64'))]})
+        it_attribute_list = []
+        i = 0
+        for integration_type in args:
+            integration_type.set_identifier(i)
+            it_attribute_list.append(integration_type.attributes)
+            i = i + 1
+        d = np.array(it_attribute_list, dtype=dt_type)
+        system_group = self._file["/VMAP/SYSTEM"]
+        system_group.create_dataset("INTEGRATIONTYPES", dtype=dt_type, data=d)
+        self._file.close()
+        return self
+
+    def create_element_types_dataset(self, *args):
+        dt_type = np.dtype({"names": ["myIdentifier", "myTypeName", "myTypeDescription", "myNumberOfNodes",
+                                      "myDimensions", "myShapeType", "myInterpolationType", "myIntegrationType",
+                                      "myNumberOfNormalComponents", "myNumberOfShearComponents", "myConnectivity",
+                                      "myFaceConnectivity"],
+                            "formats": ['<i4', string_dtype(), string_dtype(), '<i4', '<i4', '<i4', '<i4', '<i4',
+                                        '<i4', '<i4', h5py.special_dtype(vlen=np.dtype('int32')),
+                                        h5py.special_dtype(vlen=np.dtype('int32'))]})
+        et_attribute_list = []
+        i = 0
+        for integration_type in args:
+            integration_type.set_identifier(i)
+            et_attribute_list.append(integration_type.attributes)
+            i = i + 1
+        d = np.array(et_attribute_list, dtype=dt_type)
+        system_group = self._file["/VMAP/SYSTEM"]
+        system_group.create_dataset("ELEMENTTYPES", dtype=dt_type, data=d)
+        self._file.close()
+        return self
+
+    def _convert_2d_list_to_array(self, list_to_convert):
+        result_array = []
+        for element in list_to_convert:
+            result_array.append(np.array(element))
+        return np.array(result_array)
 
     def _create_geometry_groups(self, geometry_name):
         geometry_group = self._file["/VMAP/GEOMETRY"]
@@ -142,13 +221,6 @@ class VMAPExport:
         system_group = self._file["/VMAP/SYSTEM"]
         system_group.create_dataset('UNITSYSTEM', (7,), unit_system_dtype, unit_system_d)
 
-    '''
-    def _count_nodes_for_element(self, mesh_index):
-        index_arrays = list(zip(*mesh_index.tolist()))
-        node_number = index_arrays[0].count(index_arrays[0][0])
-        return node_number
-    '''
-
     def _determine_element_type(self, node_ids_for_element):
         element_type = None
         if self._dimension == 2:
@@ -180,20 +252,22 @@ class VMAPExport:
 
         return element_type
 
-    def _create_elements_dataset(self, mesh, geometry_name):
-
-        '''
+    def _create_element_types_dataset(self, all_element_types):
         dt_type = np.dtype({"names": ["myIdentifier", "myElementType", "myCoordinateSystem",
                                       "myMaterialType", "mySectionType", "myConnectivity"],
                             "formats": ['<i4', '<i4', '<i4', '<i4', '<i4', h5py.special_dtype(vlen=np.dtype('int32'))]})
-        '''
+        identifiers = np.arange(all_element_types.size - 1)
+        type_names = np.array(all_element_types)
+        type_descriptions = np.full((all_element_types.size - 1), 'Description')
 
+    def _create_elements_dataset(self, mesh, geometry_name):
         dt_type = np.dtype({"names": ["myIdentifier", "myElementType", "myCoordinateSystem",
                                       "myMaterialType", "mySectionType", "myConnectivity"],
                             "formats": ['<i4', '<i4', '<i4', '<i4', '<i4', h5py.special_dtype(vlen=np.dtype('int32'))]})
         element_ids = mesh.index.get_level_values('element_id').drop_duplicates().values
         node_ids_list = []
         element_types_list = []
+        all_element_types = []
         coordinate_system = np.empty(element_ids.size, dtype=np.int)
         coordinate_system.fill(1)
         material_type = np.empty(element_ids.size, dtype=np.int)
@@ -206,11 +280,14 @@ class VMAPExport:
             node_ids_list.append(node_ids_for_element)
             element_type = self._determine_element_type(node_ids_for_element)
             element_types_list.append(element_type)
-            # if element_type not in element_types:
-            #    element_types.append(element_type)
+            if element_type not in all_element_types:
+                all_element_types.append(element_type)
         element_types = np.asarray(element_types_list)
         connectivity = np.asarray(node_ids_list)
-        d = np.array(list(zip(element_ids, element_types, coordinate_system, material_type, section_type, connectivity)), dtype=dt_type)
-        points_group = self._file["/VMAP/GEOMETRY/%s/ELEMENTS" % geometry_name]
-        points_group.create_dataset("MYELEMENTS", dtype=dt_type, data=d)
+        d = np.array(list(zip(element_ids, element_types, coordinate_system,
+                              material_type, section_type, connectivity)), dtype=dt_type)
+        elements_group = self._file["/VMAP/GEOMETRY/%s/ELEMENTS" % geometry_name]
+        elements_group.create_dataset("MYELEMENTS", dtype=dt_type, data=d)
+        system_group = self._file["/VMAP/SYSTEM"]
+        system_group.create_dataset("ELEMENTTYPES", data=all_element_types)
         return self
