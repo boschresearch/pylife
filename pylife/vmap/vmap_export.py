@@ -118,16 +118,6 @@ class VMAPExport:
             point_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y']].values)
         return self
 
-    def _create_compound_attribute(self, attr_name, field_names, field_types, field_values):
-        # dt2 = np.dtype({"names": ["myMajor", "myMinor", "myPatch"], "formats": ['<i4', '<i4', '<i4']})
-        # arr2 = np.array([('0', '5', '2')], dt2)
-        dt = np.dtype({"names": field_names, "formats": field_types})
-        compound_attribute = np.array([field_values], dt)
-        self._vmap_group.attrs.create(attr_name, compound_attribute)
-
-    def _create_attribute(self, attr_name, attr_value):
-        self._vmap_group.attrs[attr_name] = attr_value
-
     def _create_system_metadata(self):
         analysis_type = None
         user_id = os.getlogin()
@@ -138,6 +128,14 @@ class VMAPExport:
         metadata_df = pd.DataFrame(data=metadata_d)
         system_group = self._file["/VMAP/SYSTEM"]
         system_group.create_dataset('METADATA', data=metadata_df, dtype=string_dtype())
+
+    def _create_compound_attribute(self, attr_name, field_names, field_types, field_values):
+        dt = np.dtype({"names": field_names, "formats": field_types})
+        compound_attribute = np.array([field_values], dt)
+        self._vmap_group.attrs.create(attr_name, compound_attribute)
+
+    def _create_attribute(self, attr_name, attr_value):
+        self._vmap_group.attrs[attr_name] = attr_value
 
     def _create_unit_system(self):
         length = VMAPUnitSystem(1.0, 0.0, 'm', 'LENGTH')

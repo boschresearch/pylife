@@ -54,7 +54,7 @@ class VMAPUnitSystem(VMAPDataset):
     def attributes(self):
         if self._identifier is None:
             raise (APIUseError("Need to set_identifier() before requesting the attributes."))
-        return self._identifier, self._type_id, self._reference_points, self._axis_vectors
+        return self._identifier, self._si_scale, self._si_shift, self._unit_symbol, self._unit_quantity
 
     @property
     def dtype(self):
