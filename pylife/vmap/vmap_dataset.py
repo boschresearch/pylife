@@ -35,37 +35,31 @@ Reading a VMAPImport file
 __author__ = "Gyöngyvér Kiss"
 __maintainer__ = __author__
 
-from h5py.h5t import string_dtype
-import numpy as np
-
-from .exceptions import *
-from .vmap_dataset import VMAPDataset
+from abc import ABC, abstractmethod
 
 
-class VMAPSection(VMAPDataset):
-    def __init__(self, name, type_id, material, coordinate_system, integration_type, thickness_type):
-        super().__init__()
-        self._name = name
-        self._type_id = type_id
-        self._material = material
-        self._coordinate_system = coordinate_system
-        self._integration_type = integration_type
-        self._thickness_type = thickness_type
+class VMAPDataset(ABC):
+    def __init__(self):
+        self._identifier = None
+
+    def set_identifier(self, identifier):
+        self._identifier = identifier
 
     @property
+    @abstractmethod
     def attributes(self):
-        if self._identifier is None:
-            raise (APIUseError("Need to set_identifier() before requesting the attributes."))
-        return (self._identifier, self._name, self._type_id, self._material, self._coordinate_system,
-                self._integration_type, self._thickness_type)
+        pass
 
     @property
+    @abstractmethod
     def dtype(self):
-        dt_type = np.dtype({"names": ["myIdentifier", "myName", "myType", "myMaterial", "myCoordinateSystem",
-                                      "myIntegrationType", "myThicknessType"],
-                            "formats": ['<i4', string_dtype(), '<i4', '<i4', '<i4', '<i4', '<i4']})
-        return dt_type
+        pass
 
     @property
+    @abstractmethod
     def dataset_name(self):
-        return 'SECTION'
+        pass
+
+    @property
+    def group_path(self):
+        return '/VMAP/SYSTEM'

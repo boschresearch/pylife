@@ -30,13 +30,12 @@ def test_export(config):
                                            0.774597, 0, -0.774597, 0.774597, 0, 0.774597, 0.774597, 0.774597],
                                           [0.308642, 0.493827, 0.308642, 0.493827, 0.790123, 0.493827, 0.308642,
                                            0.493827, 0.308642])
-    config.create_integration_types_dataset(int_type_1, int_type_2)
+    config.create_system_dataset(int_type_1, int_type_2)
     '''
-    '''
+
     coord_system_1 = vmap.VMAPCoordinateSystem(2, [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0])
-    config.create_coordinate_system_dataset(coord_system_1)
-    '''
+    # config.create_system_dataset(coord_system_1)
     element_type_1 = vmap.VMAPElementType('VMAP_ELEM_2D_TRIANGLE_6', 'Abaqus: CPS6M', 6, 2, 7, 5, -1, 3, 1)
     element_type_2 = vmap.VMAPElementType('VMAP_ELEM_2D_QUAD_8', 'Abaqus: CPS8', 8, 2, 9, 6, -1, 3, 1)
-    config.create_element_types_dataset(element_type_1, element_type_2)
-    config.create_geometry('1', mesh)
+    config.create_dataset(element_type_1, element_type_2)
+    # config.create_geometry('1', mesh)

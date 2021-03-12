@@ -45,9 +45,16 @@ from h5py.h5t import string_dtype
 from h5py.h5t import vlen_dtype
 
 from .exceptions import *
+from .vmap_unit_system import VMAPUnitSystem
 
 
 class VMAPExport:
+
+    _column_names = {
+        'DISPLACEMENT': ['dx', 'dy', 'dz'],
+        'STRESS_CAUCHY': ['S11', 'S22', 'S33', 'S12', 'S13', 'S23'],
+        'E': ['E11', 'E22', 'E33', 'E12', 'E13', 'E23'],
+    }
 
     def __init__(self, filename):
         self._file = h5py.File(filename, 'w')
@@ -74,74 +81,22 @@ class VMAPExport:
         self._create_unit_system()
         self._vmap_group.create_group('VARIABLES')
 
-    def create_integration_types_dataset(self, *args):
-        dt_type = np.dtype({"names": ["myIdentifier", "myTypeName", "myNumberOfPoints", "myDimensions",
-                                      "myOffset", "myAbscissas", "myWeights", "mySubTypes"],
-                            "formats": ['<i4', string_dtype(), '<i4', '<i4', '<f4',
-                                        h5py.special_dtype(vlen=np.dtype('float64')),
-                                        h5py.special_dtype(vlen=np.dtype('float64')),
-                                        h5py.special_dtype(vlen=np.dtype('float64'))]})
-        it_attribute_list = []
+    def create_dataset(self, *args):
+        if args is None or len(args) == 0:
+            raise ValueError(
+                "You have to provide at least one VMAP Dataset object")
+        attribute_list = []
         i = 0
-        for integration_type in args:
-            integration_type.set_identifier(i)
-            it_attribute_list.append(integration_type.attributes)
+        for dataset in args:
+            dataset.set_identifier(i)
+            attribute_list.append(dataset.attributes)
             i = i + 1
-        d = np.array(it_attribute_list, dtype=dt_type)
-        system_group = self._file["/VMAP/SYSTEM"]
-        system_group.create_dataset("INTEGRATIONTYPES", dtype=dt_type, data=d)
-        self._file.close()
-        return self
-
-    def create_element_types_dataset(self, *args):
-        dt_type = np.dtype({"names": ["myIdentifier", "myTypeName", "myTypeDescription", "myNumberOfNodes",
-                                      "myDimensions", "myShapeType", "myInterpolationType", "myIntegrationType",
-                                      "myNumberOfNormalComponents", "myNumberOfShearComponents", "myConnectivity",
-                                      "myFaceConnectivity"],
-                            "formats": ['<i4', string_dtype(), string_dtype(), '<i4', '<i4', '<i4', '<i4', '<i4',
-                                        '<i4', '<i4', h5py.special_dtype(vlen=np.dtype('int32')),
-                                        h5py.special_dtype(vlen=np.dtype('int32'))]})
-        et_attribute_list = []
-        i = 0
-        for integration_type in args:
-            integration_type.set_identifier(i)
-            et_attribute_list.append(integration_type.attributes)
-            i = i + 1
-        d = np.array(et_attribute_list, dtype=dt_type)
-        system_group = self._file["/VMAP/SYSTEM"]
-        system_group.create_dataset("ELEMENTTYPES", dtype=dt_type, data=d)
-        # self._file.close()
-        return self
-
-    def create_coordinate_system_dataset(self, *args):
-        dt_type = np.dtype({"names": ["myIdentifier", "myType", "myReferencePoint", "myAxisVectors"],
-                            "formats": ['<i4', '<i4', ('<f4', (3,)), ('<f4', (9,))]})
-        cs_attribute_list = []
-        i = 0
-        for coordinate_system in args:
-            coordinate_system.set_identifier(i)
-            cs_attribute_list.append(coordinate_system.attributes)
-            i = i + 1
-        d = np.array(cs_attribute_list, dtype=dt_type)
-        system_group = self._file["/VMAP/SYSTEM"]
-        system_group.create_dataset("COORDINATESYSTEM", dtype=dt_type, data=d)
-        self._file.close()
-        return self
-
-    def create_section_dataset(self, *args):
-        dt_type = np.dtype({"names": ["myIdentifier", "myName", "myType", "myMaterial", "myCoordinateSystem",
-                                      "myIntegrationType", "myThicknessType"],
-                            "formats": ['<i4', string_dtype(), '<i4', '<i4', '<i4', '<i4', '<i4']})
-        s_attribute_list = []
-        i = 0
-        for section in args:
-            section.set_identifier(i)
-            s_attribute_list.append(section.attributes)
-            i = i + 1
-        d = np.array(s_attribute_list, dtype=dt_type)
-        system_group = self._file["/VMAP/SYSTEM"]
-        system_group.create_dataset("SECTION", dtype=dt_type, data=d)
-        self._file.close()
+        name = args[0].dataset_name
+        dt_type = args[0].dtype
+        path = args[0].group_path
+        d = np.array(attribute_list, dtype=dt_type)
+        system_group = self._file[path]
+        system_group.create_dataset(name, dtype=dt_type, data=d)
         return self
 
     def _create_geometry_groups(self, geometry_name):
@@ -185,19 +140,14 @@ class VMAPExport:
         system_group.create_dataset('METADATA', data=metadata_df, dtype=string_dtype())
 
     def _create_unit_system(self):
-        unit_system_dtype = np.dtype({"names": ["myIdentifier", "mySISCALE", "mySIShift",
-                                                "myUnitSymbol", "myUnitQuantity"],
-                                      "formats": ['<i4', '<f4', '<f4', string_dtype(), string_dtype()]})
-        unit_system_d = np.array([(1, 1.0, 0.0, 'm', 'LENGTH'),
-                                  (2, 1.0, 0.0, 'kg', 'MASS'),
-                                  (3, 1.0, 0.0, 's', 'TIME'),
-                                  (4, 1.0, 0.0, 'A', 'ELECTRIC CURRENT'),
-                                  (5, 1.0, 0.0, 'K', 'TEMPERATURE'),
-                                  (6, 1.0, 0.0, 'mol', 'AMOUNT OF SUBSTANCE'),
-                                  (7, 1.0, 0.0, 'cd', 'LUMINOUS INTENSITY')], dtype=unit_system_dtype)
-
-        system_group = self._file["/VMAP/SYSTEM"]
-        system_group.create_dataset('UNITSYSTEM', (7,), unit_system_dtype, unit_system_d)
+        length = VMAPUnitSystem(1.0, 0.0, 'm', 'LENGTH')
+        mass = VMAPUnitSystem(1.0, 0.0, 'kg', 'MASS')
+        time = VMAPUnitSystem(1.0, 0.0, 's', 'TIME')
+        electric_current = VMAPUnitSystem(1.0, 0.0, 'A', 'ELECTRIC CURRENT')
+        temperature = VMAPUnitSystem(1.0, 0.0, 'K', 'TEMPERATURE')
+        amount_of_substance = VMAPUnitSystem(1.0, 0.0, 'mol', 'AMOUNT OF SUBSTANCE')
+        luminous_intensity = VMAPUnitSystem(1.0, 0.0, 'cd', 'LUMINOUS INTENSITY')
+        self.create_dataset(length, mass, time, electric_current, temperature, amount_of_substance, luminous_intensity)
 
     def _determine_element_type(self, node_ids_for_element):
         type_name = None
@@ -264,3 +214,22 @@ class VMAPExport:
         elements_group = self._file["/VMAP/GEOMETRY/%s/ELEMENTS" % geometry_name]
         elements_group.create_dataset("MYELEMENTS", dtype=dt_type, data=d)
         return self
+
+    def add_variables(self, state, geometry, variable_name, mesh, column_names):
+        try:
+            state_group = self._file["/VMAP/VARIABLES/%s" % state]
+        except:
+            state_group = self._file.create_group(state)
+
+        try:
+            state_id_group = state_group[geometry]
+        except:
+            state_id_group = state_group.create_group(geometry)
+
+        if column_names is None:
+            try:
+                column_names = self._column_names[variable_name]
+            except KeyError:
+                raise KeyError("No column name for variable %s. Please provide with column_names parameter." % variable_name)
+
+

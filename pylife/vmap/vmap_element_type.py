@@ -36,14 +36,18 @@ __author__ = "Gyöngyvér Kiss"
 __maintainer__ = __author__
 
 import numpy as np
+import h5py
+from h5py.h5t import string_dtype
+
 from .exceptions import *
+from .vmap_dataset import VMAPDataset
 
 
-class VMAPElementType:
+class VMAPElementType(VMAPDataset):
     def __init__(self, type_name, type_description, number_of_nodes, dimensions, shape_type, interpolation_type,
                  integration_type, number_of_normal_components, number_of_shear_components,
                  connectivity=None, face_connectivity=None):
-        self._identifier = None
+        super().__init__()
         self._type_name = type_name
         self._type_description = type_description
         self._number_of_nodes = number_of_nodes
@@ -62,9 +66,6 @@ class VMAPElementType:
         if face_connectivity is not None:
             self._face_connectivity = face_connectivity
 
-    def set_identifier(self, identifier):
-        self._identifier = identifier
-
     @property
     def attributes(self):
         if self._identifier is None:
@@ -72,3 +73,18 @@ class VMAPElementType:
         return (self._identifier, self._type_name, self._type_description, self._number_of_nodes, self._dimension,
                 self._shape_type, self._interpolation_type, self._integration_type, self._number_of_normal_components,
                 self._number_of_shear_components, np.array(self._connectivity), np.array(self._face_connectivity))
+
+    @property
+    def dtype(self):
+        dt_type = np.dtype({"names": ["myIdentifier", "myTypeName", "myTypeDescription", "myNumberOfNodes",
+                                      "myDimensions", "myShapeType", "myInterpolationType", "myIntegrationType",
+                                      "myNumberOfNormalComponents", "myNumberOfShearComponents", "myConnectivity",
+                                      "myFaceConnectivity"],
+                            "formats": ['<i4', string_dtype(), string_dtype(), '<i4', '<i4', '<i4', '<i4', '<i4',
+                                        '<i4', '<i4', h5py.special_dtype(vlen=np.dtype('int32')),
+                                        h5py.special_dtype(vlen=np.dtype('int32'))]})
+        return dt_type
+
+    @property
+    def dataset_name(self):
+        return 'ELEMENTTYPES'

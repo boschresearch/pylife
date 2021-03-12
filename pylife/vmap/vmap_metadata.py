@@ -35,52 +35,31 @@ Reading a VMAPImport file
 __author__ = "Gyöngyvér Kiss"
 __maintainer__ = __author__
 
-import h5py
-from h5py.h5t import string_dtype
 import numpy as np
 
 from .exceptions import *
 from .vmap_dataset import VMAPDataset
 
 
-class VMAPIntegrationType(VMAPDataset):
-    def __init__(self, type_name, number_of_points, dimension, offset,
-                 abscissas=None, weights=None, subtypes=None):
+class VMAPMetadata(VMAPDataset):
+    def __init__(self, type_id, reference_points, axis_vectors):
         super().__init__()
-        self._type_name = type_name
-        self._number_of_points = number_of_points
-        self._dimension = dimension
-        self._offset = offset
-
-        self._abscissas = []
-        if abscissas is not None:
-            self._abscissas = abscissas
-
-        self._weights = []
-        if weights is not None:
-            self._weights = weights
-
-        self._subtypes = []
-        if subtypes is not None:
-            self._subtypes = subtypes
+        self._type_id = type_id
+        self._reference_points = reference_points
+        self._axis_vectors = axis_vectors
 
     @property
     def attributes(self):
         if self._identifier is None:
             raise (APIUseError("Need to set_identifier() before requesting the attributes."))
-        return (self._identifier, self._type_name, self._number_of_points, self._dimension, self._offset,
-                np.array(self._abscissas), np.array(self._weights), np.array(self._subtypes))
+        return self._identifier, self._type_id, self._reference_points, self._axis_vectors
 
     @property
     def dtype(self):
-        dt_type = np.dtype({"names": ["myIdentifier", "myTypeName", "myNumberOfPoints", "myDimensions",
-                                      "myOffset", "myAbscissas", "myWeights", "mySubTypes"],
-                            "formats": ['<i4', string_dtype(), '<i4', '<i4', '<f4',
-                                        h5py.special_dtype(vlen=np.dtype('float64')),
-                                        h5py.special_dtype(vlen=np.dtype('float64')),
-                                        h5py.special_dtype(vlen=np.dtype('float64'))]})
+        dt_type = np.dtype({"names": ["myIdentifier", "myType", "myReferencePoint", "myAxisVectors"],
+                            "formats": ['<i4', '<i4', ('<f4', (3,)), ('<f4', (9,))]})
         return dt_type
 
     @property
     def dataset_name(self):
-        return 'INTERGRATIONTYPES'
+        return 'COORDINATESYSTEM'

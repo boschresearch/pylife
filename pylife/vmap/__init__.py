@@ -20,4 +20,5 @@ from .vmap_integration_type import VMAPIntegrationType
 from .vmap_element_type import VMAPElementType
 from .vmap_coordinate_system import VMAPCoordinateSystem
 from .vmap_section import VMAPSection
+from .vmap_dataset import VMAPDataset
 from .exceptions import *
