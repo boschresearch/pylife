@@ -21,24 +21,22 @@ def test_export(config):
             .join_variable('STRESS_CAUCHY')
             .join_variable('DISPLACEMENT')
             .to_frame())
-
-    type_names = ['GAUSS_TRIANGLE_3', 'GAUSS_QUAD_9']
-    number_of_points = [3, 9]
-    dimensions = [2, 2]
-    offsets = [0.0, 0.0]
-    abscissas = [[0.166667, 0.166667, 0.666667, 0.166667, 0.166667, 0.666667],
-                 [-0.774597, -0.774597, 0, -0.774597, 0.774597, -0.774597, -0.774597, 0, 0, 0,
-                  0.774597, 0, -0.774597, 0.774597, 0, 0.774597, 0.774597, 0.774597]]
-
-    weights = [[0.333333, 0.333333, 0.333333],
-               [0.308642, 0.493827, 0.308642, 0.493827, 0.790123, 0.493827, 0.308642, 0.493827, 0.308642]]
-    subtypes = [[], []]
-    # config.create_integration_types(type_names, number_of_points, dimensions, offsets, abscissas, weights, subtypes)
-    # config.create_integration_types(type_names, number_of_points, dimensions, offsets)
-
-    int_type_1 = vmap.VMAPIntegrationType('GAUSS_TRIANGLE_3', 3, 2, 0.0, [0.166667, 0.166667, 0.666667, 0.166667, 0.166667, 0.666667], [0.333333, 0.333333, 0.333333])
-    int_type_2 = vmap.VMAPIntegrationType('GAUSS_QUAD_9', 9, 2, 0.0, [-0.774597, -0.774597, 0, -0.774597, 0.774597, -0.774597, -0.774597, 0, 0, 0,
-                  0.774597, 0, -0.774597, 0.774597, 0, 0.774597, 0.774597, 0.774597], [0.308642, 0.493827, 0.308642, 0.493827, 0.790123, 0.493827, 0.308642, 0.493827, 0.308642])
+    '''
+    int_type_1 = vmap.VMAPIntegrationType('GAUSS_TRIANGLE_3', 3, 2, 0.0,
+                                          [0.166667, 0.166667, 0.666667, 0.166667, 0.166667, 0.666667],
+                                          [0.333333, 0.333333, 0.333333])
+    int_type_2 = vmap.VMAPIntegrationType('GAUSS_QUAD_9', 9, 2, 0.0,
+                                          [-0.774597, -0.774597, 0, -0.774597, 0.774597, -0.774597, -0.774597, 0, 0, 0,
+                                           0.774597, 0, -0.774597, 0.774597, 0, 0.774597, 0.774597, 0.774597],
+                                          [0.308642, 0.493827, 0.308642, 0.493827, 0.790123, 0.493827, 0.308642,
+                                           0.493827, 0.308642])
     config.create_integration_types_dataset(int_type_1, int_type_2)
-
-    # config.create_geometry('1', mesh)
+    '''
+    '''
+    coord_system_1 = vmap.VMAPCoordinateSystem(2, [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0])
+    config.create_coordinate_system_dataset(coord_system_1)
+    '''
+    element_type_1 = vmap.VMAPElementType('VMAP_ELEM_2D_TRIANGLE_6', 'Abaqus: CPS6M', 6, 2, 7, 5, -1, 3, 1)
+    element_type_2 = vmap.VMAPElementType('VMAP_ELEM_2D_QUAD_8', 'Abaqus: CPS8', 8, 2, 9, 6, -1, 3, 1)
+    config.create_element_types_dataset(element_type_1, element_type_2)
+    config.create_geometry('1', mesh)

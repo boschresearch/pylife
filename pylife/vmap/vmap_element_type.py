@@ -53,8 +53,14 @@ class VMAPElementType:
         self._integration_type = integration_type
         self._number_of_normal_components = number_of_normal_components
         self._number_of_shear_components = number_of_shear_components
-        self._connectivity = connectivity
-        self._face_connectivity = face_connectivity
+
+        self._connectivity = []
+        if connectivity is not None:
+            self._connectivity = connectivity
+
+        self._face_connectivity = []
+        if face_connectivity is not None:
+            self._face_connectivity = face_connectivity
 
     def set_identifier(self, identifier):
         self._identifier = identifier

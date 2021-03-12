@@ -34,3 +34,27 @@ Reading a VMAPImport file
 """
 __author__ = "Gyöngyvér Kiss"
 __maintainer__ = __author__
+
+import numpy as np
+from .exceptions import *
+
+
+class VMAPSection:
+    def __init__(self, name, type_id, material, coordinate_system, integration_type, thickness_type):
+        self._identifier = None
+        self._name = name
+        self._type_id = type_id
+        self._material = material
+        self._coordinate_system = coordinate_system
+        self._integration_type = integration_type
+        self._thickness_type = thickness_type
+
+    def set_identifier(self, identifier):
+        self._identifier = identifier
+
+    @property
+    def attributes(self):
+        if self._identifier is None:
+            raise (APIUseError("Need to set_identifier() before requesting the attributes."))
+        return (self._identifier, self._name, self._type_id, self._material, self._coordinate_system,
+                self._integration_type, self._thickness_type)

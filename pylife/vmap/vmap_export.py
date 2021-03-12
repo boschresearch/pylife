@@ -74,41 +74,6 @@ class VMAPExport:
         self._create_unit_system()
         self._vmap_group.create_group('VARIABLES')
 
-    '''
-    def create_integration_types(self, type_names, number_of_points, dimensions, offsets,
-                                 abscissas=None, weights=None, subtypes=None):
-        if abscissas is None:
-            abscissas = []
-            for type_name in type_names:
-                abscissas.append([])
-        if weights is None:
-            weights = []
-            for type_name in type_names:
-                weights.append([])
-        if subtypes is None:
-            subtypes = []
-            for type_name in type_names:
-                subtypes.append([])
-
-        dt_type = np.dtype({"names": ["myIdentifier", "myTypeName", "myNumberOfPoints", "myDimensions",
-                                      "myOffset", "myAbscissas", "myWeights", "mySubTypes"],
-                            "formats": ['<i4', string_dtype(), '<i4', '<i4', '<f4',
-                                        h5py.special_dtype(vlen=np.dtype('float64')),
-                                        h5py.special_dtype(vlen=np.dtype('float64')),
-                                        h5py.special_dtype(vlen=np.dtype('float64'))]})
-
-        identifiers = np.arange(len(type_names))
-        abscissas_array = self._convert_2d_list_to_array(abscissas)
-        weights_array = self._convert_2d_list_to_array(weights)
-        subtypes_array = self._convert_2d_list_to_array(subtypes)
-        d = np.array(list(zip(identifiers, np.array(type_names), np.array(number_of_points), np.array(dimensions),
-                              np.array(offsets), abscissas_array, weights_array, subtypes_array)), dtype=dt_type)
-        system_group = self._file["/VMAP/SYSTEM"]
-        system_group.create_dataset("INTEGRATIONTYPES", dtype=dt_type, data=d)
-        self._file.close()
-        return self
-        '''
-
     def create_integration_types_dataset(self, *args):
         dt_type = np.dtype({"names": ["myIdentifier", "myTypeName", "myNumberOfPoints", "myDimensions",
                                       "myOffset", "myAbscissas", "myWeights", "mySubTypes"],
@@ -145,14 +110,39 @@ class VMAPExport:
         d = np.array(et_attribute_list, dtype=dt_type)
         system_group = self._file["/VMAP/SYSTEM"]
         system_group.create_dataset("ELEMENTTYPES", dtype=dt_type, data=d)
+        # self._file.close()
+        return self
+
+    def create_coordinate_system_dataset(self, *args):
+        dt_type = np.dtype({"names": ["myIdentifier", "myType", "myReferencePoint", "myAxisVectors"],
+                            "formats": ['<i4', '<i4', ('<f4', (3,)), ('<f4', (9,))]})
+        cs_attribute_list = []
+        i = 0
+        for coordinate_system in args:
+            coordinate_system.set_identifier(i)
+            cs_attribute_list.append(coordinate_system.attributes)
+            i = i + 1
+        d = np.array(cs_attribute_list, dtype=dt_type)
+        system_group = self._file["/VMAP/SYSTEM"]
+        system_group.create_dataset("COORDINATESYSTEM", dtype=dt_type, data=d)
         self._file.close()
         return self
 
-    def _convert_2d_list_to_array(self, list_to_convert):
-        result_array = []
-        for element in list_to_convert:
-            result_array.append(np.array(element))
-        return np.array(result_array)
+    def create_section_dataset(self, *args):
+        dt_type = np.dtype({"names": ["myIdentifier", "myName", "myType", "myMaterial", "myCoordinateSystem",
+                                      "myIntegrationType", "myThicknessType"],
+                            "formats": ['<i4', string_dtype(), '<i4', '<i4', '<i4', '<i4', '<i4']})
+        s_attribute_list = []
+        i = 0
+        for section in args:
+            section.set_identifier(i)
+            s_attribute_list.append(section.attributes)
+            i = i + 1
+        d = np.array(s_attribute_list, dtype=dt_type)
+        system_group = self._file["/VMAP/SYSTEM"]
+        system_group.create_dataset("SECTION", dtype=dt_type, data=d)
+        self._file.close()
+        return self
 
     def _create_geometry_groups(self, geometry_name):
         geometry_group = self._file["/VMAP/GEOMETRY"]
@@ -163,11 +153,6 @@ class VMAPExport:
         return geometry
 
     def _create_points_datasets(self, node_ids_info, point_group):
-        # element_ids = mesh_index.get_level_values('element_id')
-        # mesh_index = mesh.index
-        # node_ids = mesh_index.get_level_values('node_id').drop_duplicates()
-        # mesh_columns = mesh.columns
-        # node_ids_info = mesh.groupby('node_id').first()
         point_group.create_dataset('MYIDENTIFIERS', data=node_ids_info.index)
         if 'z' in node_ids_info:
             z = node_ids_info['z'].to_numpy()
@@ -200,13 +185,6 @@ class VMAPExport:
         system_group.create_dataset('METADATA', data=metadata_df, dtype=string_dtype())
 
     def _create_unit_system(self):
-        """
-        unit_system_dtype = np.dtype([('myIdentifier', 'i'),
-                                              ('mySISCALE', 'f8'),
-                                              ('mySIShift', 'f8'),
-                                              ('myUnitSymbol', string_dtype()),
-                                              ('myUnitQuantity', string_dtype())])
-        """
         unit_system_dtype = np.dtype({"names": ["myIdentifier", "mySISCALE", "mySIShift",
                                                 "myUnitSymbol", "myUnitQuantity"],
                                       "formats": ['<i4', '<f4', '<f4', string_dtype(), string_dtype()]})
@@ -222,43 +200,43 @@ class VMAPExport:
         system_group.create_dataset('UNITSYSTEM', (7,), unit_system_dtype, unit_system_d)
 
     def _determine_element_type(self, node_ids_for_element):
-        element_type = None
+        type_name = None
         if self._dimension == 2:
             if node_ids_for_element.size == 3:
-                element_type = 'VMAP_ELEM_2D_TRIANGLE_3'
+                type_name = 'VMAP_ELEM_2D_TRIANGLE_3'
             elif node_ids_for_element.size == 6:
-                # element_type = 'VMAP_ELEM_2D_TRIANGLE_6'
-                element_type = 0
+                type_name = 'VMAP_ELEM_2D_TRIANGLE_6'
             elif node_ids_for_element.size == 4:
-                element_type = 'VMAP_ELEM_2D_QUAD_4'
+                type_name = 'VMAP_ELEM_2D_QUAD_4'
             elif node_ids_for_element.size == 8:
-                # element_type = 'VMAP_ELEM_2D_QUAD_8'
-                element_type = 1
+                type_name = 'VMAP_ELEM_2D_QUAD_8'
         elif self._dimension == 3:
             if node_ids_for_element.size == 4:
-                element_type = 'VMAP_ELEMENT_3D_TETRA_4'
+                type_name = 'VMAP_ELEMENT_3D_TETRA_4'
             elif node_ids_for_element.size == 10:
-                element_type = 'VMAP_ELEMENT_3D_TETRA_10'
+                type_name = 'VMAP_ELEMENT_3D_TETRA_10'
             elif node_ids_for_element.size == 6:
-                element_type = 'VMAP_ELEMENT_3D_WEDGE_6'
+                type_name = 'VMAP_ELEMENT_3D_WEDGE_6'
             elif node_ids_for_element.size == 15:
-                element_type = 'VMAP_ELEMENT_3D_WEDGE_15'
+                type_name = 'VMAP_ELEMENT_3D_WEDGE_15'
             elif node_ids_for_element.size == 8:
-                element_type = 'VMAP_ELEMENT_3D_HEX_8'
+                type_name = 'VMAP_ELEMENT_3D_HEX_8'
             elif node_ids_for_element.size == 20:
-                element_type = 'VMAP_ELEMENT_3D_HEX_20'
+                type_name = 'VMAP_ELEMENT_3D_HEX_20'
         else:
             raise KeyError("Unknown element type")
 
+        element_type = self._find_element_type_name(type_name)
         return element_type
 
-    def _create_element_types_dataset(self, all_element_types):
-        dt_type = np.dtype({"names": ["myIdentifier", "myElementType", "myCoordinateSystem",
-                                      "myMaterialType", "mySectionType", "myConnectivity"],
-                            "formats": ['<i4', '<i4', '<i4', '<i4', '<i4', h5py.special_dtype(vlen=np.dtype('int32'))]})
-        identifiers = np.arange(all_element_types.size - 1)
-        type_names = np.array(all_element_types)
-        type_descriptions = np.full((all_element_types.size - 1), 'Description')
+    def _find_element_type_name(self, type_name):
+        if type_name is None:
+            return None
+        element_types_dataset = self._file["/VMAP/SYSTEM/ELEMENTTYPES"]
+        for element_type in element_types_dataset:
+            if element_type[1] == type_name:
+                return element_type[0]
+        return None
 
     def _create_elements_dataset(self, mesh, geometry_name):
         dt_type = np.dtype({"names": ["myIdentifier", "myElementType", "myCoordinateSystem",
@@ -267,7 +245,6 @@ class VMAPExport:
         element_ids = mesh.index.get_level_values('element_id').drop_duplicates().values
         node_ids_list = []
         element_types_list = []
-        all_element_types = []
         coordinate_system = np.empty(element_ids.size, dtype=np.int)
         coordinate_system.fill(1)
         material_type = np.empty(element_ids.size, dtype=np.int)
@@ -280,14 +257,10 @@ class VMAPExport:
             node_ids_list.append(node_ids_for_element)
             element_type = self._determine_element_type(node_ids_for_element)
             element_types_list.append(element_type)
-            if element_type not in all_element_types:
-                all_element_types.append(element_type)
         element_types = np.asarray(element_types_list)
         connectivity = np.asarray(node_ids_list)
         d = np.array(list(zip(element_ids, element_types, coordinate_system,
                               material_type, section_type, connectivity)), dtype=dt_type)
         elements_group = self._file["/VMAP/GEOMETRY/%s/ELEMENTS" % geometry_name]
         elements_group.create_dataset("MYELEMENTS", dtype=dt_type, data=d)
-        system_group = self._file["/VMAP/SYSTEM"]
-        system_group.create_dataset("ELEMENTTYPES", data=all_element_types)
         return self
