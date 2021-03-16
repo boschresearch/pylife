@@ -20,6 +20,7 @@ def test_export(config):
             .join_coordinates()
             .join_variable('STRESS_CAUCHY')
             .join_variable('DISPLACEMENT')
+            .join_variable('E')
             .to_frame())
     int_type_1 = vmap.VMAPIntegrationType('GAUSS_TRIANGLE_3', 3, 2, 0.0,
                                           [0.166667, 0.166667, 0.666667, 0.166667, 0.166667, 0.666667],
@@ -36,3 +37,5 @@ def test_export(config):
     element_type_2 = vmap.VMAPElementType('VMAP_ELEM_2D_QUAD_8', 'Abaqus: CPS8', 8, 2, 9, 6, -1, 3, 1)
     config.create_dataset(element_type_1, element_type_2)
     config.create_geometry('1', mesh)
+    config.add_variable('STATE-2', '1', 'E', mesh)
+

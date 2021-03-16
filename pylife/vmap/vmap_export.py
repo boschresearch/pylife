@@ -51,17 +51,21 @@ from .vmap_unit_system import VMAPUnitSystem
 class VMAPExport:
 
     _column_names = {
-        'DISPLACEMENT': ['dx', 'dy', 'dz'],
-        'STRESS_CAUCHY': ['S11', 'S22', 'S33', 'S12', 'S13', 'S23'],
-        'E': ['E11', 'E22', 'E33', 'E12', 'E13', 'E23'],
+        'DISPLACEMENT': [['dx', 'dy', 'dz'], 2],
+        'STRESS_CAUCHY': [['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], 6],
+        'E': [['E11', 'E22', 'E33', 'E12', 'E13', 'E23'], 6],
     }
 
-    def __init__(self, filename):
-        self._file = h5py.File(filename, 'w')
+    def __init__(self, file_name):
+        self._file_name = file_name
+        self._file = h5py.File(file_name, 'w')
+        # self._file = h5py.File(filename, 'a')
         self._create_fundamental_groups()
         self._dimension = 2
+        self._file.close()
 
     def create_geometry(self, geometry_name, mesh):
+        self._file = h5py.File(self._file_name, 'a')
         geometry = self._create_geometry_groups(geometry_name)
         points_group = geometry.get('POINTS')
         node_ids_info = mesh.groupby('node_id').first()
@@ -82,6 +86,7 @@ class VMAPExport:
         self._vmap_group.create_group('VARIABLES')
 
     def create_dataset(self, *args):
+        self._file = h5py.File(self._file_name, 'a')
         if args is None or len(args) == 0:
             raise ValueError(
                 "You have to provide at least one VMAP Dataset object")
@@ -97,6 +102,7 @@ class VMAPExport:
         d = np.array(attribute_list, dtype=dt_type)
         system_group = self._file[path]
         system_group.create_dataset(name, dtype=dt_type, data=d)
+        self._file.close()
         return self
 
     def _create_geometry_groups(self, geometry_name):
@@ -213,21 +219,41 @@ class VMAPExport:
         elements_group.create_dataset("MYELEMENTS", dtype=dt_type, data=d)
         return self
 
-    def add_variables(self, state, geometry, variable_name, mesh, column_names):
+    def add_variable(self, state, geometry_name, variable_name, mesh, column_names=None, location=None):
+        self._file = h5py.File(self._file_name, 'a')
         try:
             state_group = self._file["/VMAP/VARIABLES/%s" % state]
         except:
-            state_group = self._file.create_group(state)
+            try:
+                geometry_group = self._file["VMAP/GEOMETRY/%s" % geometry_name]
+                state_group = self._file["/VMAP/VARIABLES"].create_group(state)
+            except:
+                raise KeyError("No geometry with the name %s" % geometry_name)
 
         try:
-            state_id_group = state_group[geometry]
+            geometry_group = state_group[geometry_name]
         except:
-            state_id_group = state_group.create_group(geometry)
+            geometry_group = state_group.create_group(geometry_name)
 
         if column_names is None:
             try:
-                column_names = self._column_names[variable_name]
+                column_names = self._column_names[variable_name][0]
             except KeyError:
-                raise KeyError("No column name for variable %s. Please provide with column_names parameter." % variable_name)
+                raise KeyError("No column name for variable %s. Please provide with column_names parameter."
+                               % variable_name)
+
+        variable_dataset = geometry_group.create_group(variable_name)
+        location = self._column_names[variable_name][1]
+        dimension = len(column_names)
+        if location == 2:
+            node_ids_info = mesh.groupby('node_id').first()
+            variable_dataset.create_dataset('MYGEOMETRYIDS', data=node_ids_info.index)
+            variable_dataset.create_dataset('MYVALUES', data=node_ids_info[column_names].values)
+        if location == 6:
+            element_ids = mesh.index.get_level_values('element_id').drop_duplicates().values
+            variable_dataset.create_dataset('MYGEOMETRYIDS', data=element_ids)
+            variable_dataset.create_dataset('MYVALUES', data=mesh[column_names])
+        self._file.close()
+
 
 
