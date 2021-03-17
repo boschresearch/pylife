@@ -46,6 +46,7 @@ from h5py.h5t import vlen_dtype
 
 from .exceptions import *
 from .vmap_unit_system import VMAPUnitSystem
+from .vmap_element_type import VMAPElementType
 
 
 class VMAPExport:
@@ -56,10 +57,22 @@ class VMAPExport:
         'E': [['E11', 'E22', 'E33', 'E12', 'E13', 'E23'], 6],
     }
 
+    _element_types = {
+        (2, 3): [0, 'VMAP_ELEM_2D_TRIANGLE_3', 'pyLife 2D 3', 3, 2, -1, -1, -1, -1, -1],
+        (2, 6): [1, 'VMAP_ELEM_2D_TRIANGLE_6', 'pyLife 2D 6', 6, 2, -1, -1, -1, -1, -1],
+        (2, 4): [2, 'VMAP_ELEM_2D_QUAD_4', 'pyLife 2D 4', 4, 2, -1, -1, -1, -1, -1],
+        (2, 8): [3, 'VMAP_ELEM_2D_QUAD_8', 'pyLife 2D 8', 8, 2, -1, -1, -1, -1, -1],
+        (3, 4): [4, 'VMAP_ELEMENT_3D_TETRA_4', 'pyLife 3D 4', 4, 3, -1, -1, -1, -1, -1],
+        (3, 10): [5, 'VMAP_ELEMENT_3D_TETRA_10', 'pyLife 3D 10', 10, 3, -1, -1, -1, -1, -1],
+        (3, 6): [6, 'VMAP_ELEMENT_3D_WEDGE_6', 'pyLife 3D 6', 6, 3, -1, -1, -1, -1, -1],
+        (3, 15): [7, 'VMAP_ELEMENT_3D_WEDGE_15', 'pyLife 3D 15', 15, 3, -1, -1, -1, -1, -1],
+        (3, 8): [8, 'VMAP_ELEMENT_3D_HEX_8', 'pyLife 3D 8', 8, 3, -1, -1, -1, -1, -1],
+        (3, 20): [9, 'VMAP_ELEMENT_3D_HEX_20', 'pyLife 3D 20', 20, 3, -1, -1, -1, -1, -1]
+    }
+
     def __init__(self, file_name):
         self._file_name = file_name
         self._file = h5py.File(file_name, 'w')
-        # self._file = h5py.File(filename, 'a')
         self._create_fundamental_groups()
         self._dimension = 2
         self._file.close()
@@ -83,9 +96,10 @@ class VMAPExport:
         self._vmap_group.create_group('SYSTEM')
         self._create_system_metadata()
         self._create_unit_system()
+        self._create_elementtypes()
         self._vmap_group.create_group('VARIABLES')
 
-    def create_dataset(self, *args):
+    def create_VMAP_dataset(self, need_id, *args):
         self._file = h5py.File(self._file_name, 'a')
         if args is None or len(args) == 0:
             raise ValueError(
@@ -93,7 +107,8 @@ class VMAPExport:
         attribute_list = []
         i = 0
         for dataset in args:
-            dataset.set_identifier(i)
+            if need_id:
+                dataset.set_identifier(i)
             attribute_list.append(dataset.attributes)
             i = i + 1
         name = args[0].dataset_name
@@ -124,6 +139,12 @@ class VMAPExport:
             point_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y']].values)
         return self
 
+    def _create_elementtypes(self):
+        element_types = []
+        for element_type in self._element_types.values():
+            element_types.append(VMAPElementType(*element_type))
+        self.create_VMAP_dataset(False, *element_types)
+
     def _create_system_metadata(self):
         analysis_type = None
         user_id = os.getlogin()
@@ -151,46 +172,8 @@ class VMAPExport:
         temperature = VMAPUnitSystem(1.0, 0.0, 'K', 'TEMPERATURE')
         amount_of_substance = VMAPUnitSystem(1.0, 0.0, 'mol', 'AMOUNT OF SUBSTANCE')
         luminous_intensity = VMAPUnitSystem(1.0, 0.0, 'cd', 'LUMINOUS INTENSITY')
-        self.create_dataset(length, mass, time, electric_current, temperature, amount_of_substance, luminous_intensity)
-
-    def _determine_element_type(self, node_ids_for_element):
-        type_name = None
-        if self._dimension == 2:
-            if node_ids_for_element.size == 3:
-                type_name = 'VMAP_ELEM_2D_TRIANGLE_3'
-            elif node_ids_for_element.size == 6:
-                type_name = 'VMAP_ELEM_2D_TRIANGLE_6'
-            elif node_ids_for_element.size == 4:
-                type_name = 'VMAP_ELEM_2D_QUAD_4'
-            elif node_ids_for_element.size == 8:
-                type_name = 'VMAP_ELEM_2D_QUAD_8'
-        elif self._dimension == 3:
-            if node_ids_for_element.size == 4:
-                type_name = 'VMAP_ELEMENT_3D_TETRA_4'
-            elif node_ids_for_element.size == 10:
-                type_name = 'VMAP_ELEMENT_3D_TETRA_10'
-            elif node_ids_for_element.size == 6:
-                type_name = 'VMAP_ELEMENT_3D_WEDGE_6'
-            elif node_ids_for_element.size == 15:
-                type_name = 'VMAP_ELEMENT_3D_WEDGE_15'
-            elif node_ids_for_element.size == 8:
-                type_name = 'VMAP_ELEMENT_3D_HEX_8'
-            elif node_ids_for_element.size == 20:
-                type_name = 'VMAP_ELEMENT_3D_HEX_20'
-        else:
-            raise KeyError("Unknown element type")
-
-        element_type = self._find_element_type_name(type_name)
-        return element_type
-
-    def _find_element_type_name(self, type_name):
-        if type_name is None:
-            return None
-        element_types_dataset = self._file["/VMAP/SYSTEM/ELEMENTTYPES"]
-        for element_type in element_types_dataset:
-            if element_type[1] == type_name:
-                return element_type[0]
-        return None
+        self.create_VMAP_dataset(True, length, mass, time, electric_current, temperature, amount_of_substance,
+                                 luminous_intensity)
 
     def _create_elements_dataset(self, mesh, geometry_name):
         dt_type = np.dtype({"names": ["myIdentifier", "myElementType", "myCoordinateSystem",
@@ -209,7 +192,7 @@ class VMAPExport:
         for element_id in element_ids:
             node_ids_for_element = mesh.loc[element_id, :].index.values
             node_ids_list.append(node_ids_for_element)
-            element_type = self._determine_element_type(node_ids_for_element)
+            element_type = self._element_types[self._dimension, node_ids_for_element.size][0]
             element_types_list.append(element_type)
         element_types = np.asarray(element_types_list)
         connectivity = np.asarray(node_ids_list)

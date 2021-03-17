@@ -44,10 +44,11 @@ from .vmap_dataset import VMAPDataset
 
 
 class VMAPElementType(VMAPDataset):
-    def __init__(self, type_name, type_description, number_of_nodes, dimensions, shape_type, interpolation_type,
+    def __init__(self, identifier, type_name, type_description, number_of_nodes, dimensions, shape_type, interpolation_type,
                  integration_type, number_of_normal_components, number_of_shear_components,
                  connectivity=None, face_connectivity=None):
         super().__init__()
+        self.set_identifier(identifier)
         self._type_name = type_name
         self._type_description = type_description
         self._number_of_nodes = number_of_nodes
@@ -88,3 +89,7 @@ class VMAPElementType(VMAPDataset):
     @property
     def dataset_name(self):
         return 'ELEMENTTYPES'
+
+    @property
+    def type_name(self):
+        return self._type_name
