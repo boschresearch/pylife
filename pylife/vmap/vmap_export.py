@@ -164,6 +164,7 @@ class VMAPExport:
             variable_dataset.create_dataset('MYVALUES', data=mesh[column_names])
         geometry_group.attrs['MYSIZE'] = geometry_group.attrs['MYSIZE'] + 1;
         file.close()
+        return self
 
     def _create_group_with_attributes(self, parent_group, group_name, *args):
         group = parent_group.create_group(group_name)
