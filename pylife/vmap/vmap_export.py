@@ -106,10 +106,8 @@ class VMAPExport:
     def create_geometry(self, geometry_name, mesh):
         file = h5py.File(self._file_name, 'a')
         geometry = self._create_geometry_groups(file, geometry_name)
-        points_group = geometry.get('POINTS')
-        node_ids_info = mesh.groupby('node_id').first()
-        self._create_points_datasets(node_ids_info, points_group)
-        self._create_elements_dataset(file, mesh, geometry_name)
+        self._create_elements_dataset(geometry, mesh)
+        self._create_points_datasets(geometry, mesh)
         file.close()
         return self
 
@@ -239,7 +237,7 @@ class VMAPExport:
                                                          self._coordinate_systems['CARTESIAN'][0]))
         return geometry
 
-    def _create_elements_dataset(self, file, mesh, geometry_name):
+    def _create_elements_dataset(self, geometry, mesh):
         dt_type = np.dtype({"names": ["myIdentifier", "myElementType", "myCoordinateSystem",
                                       "myMaterialType", "mySectionType", "myConnectivity"],
                             "formats": ['<i4', '<i4', '<i4', '<i4', '<i4', h5py.special_dtype(vlen=np.dtype('int32'))]})
@@ -262,18 +260,19 @@ class VMAPExport:
         connectivity = np.asarray(node_ids_list)
         d = np.array(list(zip(element_ids, element_types, coordinate_system,
                               material_type, section_type, connectivity)), dtype=dt_type)
-        elements_group = file["/VMAP/GEOMETRY/%s/ELEMENTS" % geometry_name]
+        elements_group = geometry['ELEMENTS']
         elements_group.create_dataset("MYELEMENTS", dtype=dt_type, data=d)
         elements_group.attrs['MYSIZE'] = element_ids.size
-        return self
 
-    def _create_points_datasets(self, node_ids_info, point_group):
-        point_group.create_dataset('MYIDENTIFIERS', data=node_ids_info.index)
+    def _create_points_datasets(self, geometry, mesh):
+        node_ids_info = mesh.groupby('node_id').first()
+        points_group = geometry['POINTS']
+        points_group.create_dataset('MYIDENTIFIERS', data=node_ids_info.index)
         if 'z' in node_ids_info:
             z = node_ids_info['z'].to_numpy()
             if not (z[0] == z).all():
                 self._dimension = 3
-            point_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y', 'z']].values)
+            points_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y', 'z']].values)
         else:
-            point_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y']].values)
-        return self
+            points_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y']].values)
+        points_group.attrs['MYSIZE'] = node_ids_info.index.size
