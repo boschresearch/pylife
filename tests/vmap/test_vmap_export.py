@@ -30,7 +30,7 @@ def test_export(config):
                                            0.774597, 0, -0.774597, 0.774597, 0, 0.774597, 0.774597, 0.774597],
                                           [0.308642, 0.493827, 0.308642, 0.493827, 0.790123, 0.493827, 0.308642,
                                            0.493827, 0.308642])
-    config.create_vmap_dataset(True, int_type_1, int_type_2)
+    config.create_system_dataset(True, int_type_1, int_type_2)
     config.create_geometry('1', mesh)
     config.add_variable('STATE-2', '1', 'E', mesh)
     config.add_variable('STATE-2', '1', 'DISPLACEMENT', mesh)
