@@ -41,27 +41,20 @@ from .exceptions import *
 from .vmap_dataset import VMAPDataset
 
 
-class VMAPCoordinateSystem(VMAPDataset):
-    def __init__(self, identifier, type_id, reference_points, axis_vectors):
-        super().__init__()
-        self.set_identifier(identifier)
-        self._type_id = type_id
-        self._reference_points = reference_points
-        self._axis_vectors = axis_vectors
+class VMAPAttribute:
+    def __init__(self, attribute_name, attribute_value, attribute_dtype=None):
+        self._name = attribute_name
+        self._value = attribute_value
+        self._dtype = attribute_dtype
 
     @property
-    def attributes(self):
-        if self._identifier is None:
-            raise (APIUseError("Need to set_identifier() before requesting the attributes."))
-        return self._identifier, self._type_id, self._reference_points, self._axis_vectors
+    def name(self):
+        return self._name
 
     @property
-    def dtype(self):
-        dt_type = np.dtype({"names": ["myIdentifier", "myType", "myReferencePoint", "myAxisVectors"],
-                            "formats": ['<i4', '<i4', ('<f4', (3,)), ('<f4', (9,))]})
-        return dt_type
+    def value(self):
+        return self._value
 
     @property
-    def dataset_name(self):
-        return 'COORDINATESYSTEM'
-
+    def data_type(self):
+        return self._dtype
