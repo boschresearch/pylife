@@ -30,7 +30,9 @@ def test_export(config):
                                            0.774597, 0, -0.774597, 0.774597, 0, 0.774597, 0.774597, 0.774597],
                                           [0.308642, 0.493827, 0.308642, 0.493827, 0.790123, 0.493827, 0.308642,
                                            0.493827, 0.308642])
-    config.create_system_dataset(True, int_type_1, int_type_2)
-    config.create_geometry('1', mesh).create_geometry('2', mesh)
+    config._create_system_dataset(True, int_type_1, int_type_2)
+    config.add_geometry('1', mesh).add_geometry('2', mesh)
+    # config.add_node_set()
+    # config.add_element_set()
     config.add_variable('STATE-2', '1', 'E', mesh).add_variable('STATE-2', '1', 'DISPLACEMENT', mesh)
 

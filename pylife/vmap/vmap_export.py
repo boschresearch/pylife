@@ -42,13 +42,12 @@ import numpy as np
 import pandas as pd
 import h5py
 from h5py.h5t import string_dtype
-from h5py.h5t import vlen_dtype
 
-from .exceptions import *
 from .vmap_unit_system import VMAPUnitSystem
 from .vmap_element_type import VMAPElementType
 from .vmap_attribute import VMAPAttribute
 from .vmap_coordinate_system import VMAPCoordinateSystem
+from .vmap_section import VMAPSection
 
 
 class VMAPExport:
@@ -72,7 +71,21 @@ class VMAPExport:
     }
 
     _coordinate_systems = {
-        'CARTESIAN': [0, 2, [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]]
+        'CARTESIAN': [1, 2, [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]]
+    }
+
+    _sections = {
+        'DEFAULT': [0, 'Section-ASSEMBLY_DEFAULT', 1, 0, _coordinate_systems['CARTESIAN'][0], -1, -1]
+    }
+
+    _unit_system = {
+        'LENGTH': [1, 1.0, 0.0, 'm', 'LENGTH'],
+        'MASS': [2, 1.0, 0.0, 'kg', 'MASS'],
+        'TIME': [3, 1.0, 0.0, 's', 'TIME'],
+        'ELECTRIC_CURRENT': [4, 1.0, 0.0, 'A', 'ELECTRIC CURRENT'],
+        'TEMPERATURE': [5, 1.0, 0.0, 'K', 'TEMPERATURE'],
+        'AMOUNT_OF_SUBSTANCE': [6, 1.0, 0.0, 'mol', 'AMOUNT OF SUBSTANCE'],
+        'LUMINOUS_INTENSITY': [7, 1.0, 0.0, 'cd', 'LUMINOUS INTENSITY'],
     }
 
     def __init__(self, file_name):
@@ -82,33 +95,20 @@ class VMAPExport:
         self._dimension = 2
         file.close()
 
-    def create_system_dataset(self, need_id, *args):
-        file = h5py.File(self._file_name, 'a')
-        if args is None or len(args) == 0:
-            raise ValueError(
-                "You have to provide at least one VMAP Dataset object")
-        attribute_list = []
-        i = 0
-        for dataset in args:
-            if need_id:
-                dataset.set_identifier(i)
-            attribute_list.append(dataset.attributes)
-            i = i + 1
-        name = args[0].dataset_name
-        dt_type = args[0].dtype
-        path = args[0].group_path
-        d = np.array(attribute_list, dtype=dt_type)
-        system_group = file[path]
-        system_group.create_dataset(name, dtype=dt_type, data=d)
-        file.close()
-        return self
-
-    def create_geometry(self, geometry_name, mesh):
+    def add_geometry(self, geometry_name, mesh):
         file = h5py.File(self._file_name, 'a')
         geometry = self._create_geometry_groups(file, geometry_name)
         self._create_elements_dataset(geometry, mesh)
         self._create_points_datasets(geometry, mesh)
         file.close()
+        return self
+
+    def add_node_set(self, geometry_name, indexes):
+        self._add_geometry_set(geometry_name, 0, indexes)
+        return self
+
+    def add_element_set(self, geometry_name, indexes):
+        self._add_geometry_set(geometry_name, 1, indexes)
         return self
 
     def add_variable(self, state, geometry_name, variable_name, mesh, column_names=None):
@@ -191,19 +191,53 @@ class VMAPExport:
         self._create_unit_system()
         self._create_elementtypes()
         self._create_coordinate_systems()
+        self._create_sections()
         self._create_group_with_attributes(vmap_group, 'VARIABLES')
+
+    def _create_system_dataset(self, need_id, *args):
+        file = h5py.File(self._file_name, 'a')
+        if args is None or len(args) == 0:
+            raise ValueError(
+                "You have to provide at least one VMAP Dataset object")
+        attribute_list = []
+        i = 0
+        for dataset in args:
+            if need_id:
+                dataset.set_identifier(i)
+            attribute_list.append(dataset.attributes)
+            i = i + 1
+        name = args[0].dataset_name
+        dt_type = args[0].dtype
+        path = args[0].group_path
+        d = np.array(attribute_list, dtype=dt_type)
+        system_group = file[path]
+        system_group.create_dataset(name, dtype=dt_type, data=d)
+        file.close()
+        return self
 
     def _create_coordinate_systems(self):
         coordinate_systems = []
         for coordinate_system in self._coordinate_systems.values():
             coordinate_systems.append(VMAPCoordinateSystem(*coordinate_system))
-        self.create_system_dataset(False, *coordinate_systems)
+        self._create_system_dataset(False, *coordinate_systems)
 
     def _create_elementtypes(self):
         element_types = []
         for element_type in self._element_types.values():
             element_types.append(VMAPElementType(*element_type))
-        self.create_system_dataset(False, *element_types)
+        self._create_system_dataset(False, *element_types)
+
+    def _create_sections(self):
+        sections = []
+        for section in self._sections.values():
+            sections.append(VMAPSection(*section))
+        self._create_system_dataset(False, *sections)
+
+    def _create_unit_system(self):
+        units = []
+        for unit in self._unit_system.values():
+            units.append(VMAPUnitSystem(*unit))
+        self._create_system_dataset(False, *units)
 
     def _create_system_metadata(self, file):
         analysis_type = None
@@ -215,17 +249,6 @@ class VMAPExport:
         metadata_df = pd.DataFrame(data=metadata_d)
         system_group = file["/VMAP/SYSTEM"]
         system_group.create_dataset('METADATA', data=metadata_df, dtype=string_dtype())
-
-    def _create_unit_system(self):
-        length = VMAPUnitSystem(1.0, 0.0, 'm', 'LENGTH')
-        mass = VMAPUnitSystem(1.0, 0.0, 'kg', 'MASS')
-        time = VMAPUnitSystem(1.0, 0.0, 's', 'TIME')
-        electric_current = VMAPUnitSystem(1.0, 0.0, 'A', 'ELECTRIC CURRENT')
-        temperature = VMAPUnitSystem(1.0, 0.0, 'K', 'TEMPERATURE')
-        amount_of_substance = VMAPUnitSystem(1.0, 0.0, 'mol', 'AMOUNT OF SUBSTANCE')
-        luminous_intensity = VMAPUnitSystem(1.0, 0.0, 'cd', 'LUMINOUS INTENSITY')
-        self.create_system_dataset(True, length, mass, time, electric_current, temperature, amount_of_substance,
-                                   luminous_intensity)
 
     def _create_geometry_groups(self, file, geometry_name):
         geometry_group = file["/VMAP/GEOMETRY"]
@@ -250,7 +273,7 @@ class VMAPExport:
         material_type = np.empty(element_ids.size, dtype=np.int)
         material_type.fill(0)
         section_type = np.empty(element_ids.size, dtype=np.int)
-        section_type.fill(0)
+        section_type.fill(self._sections['DEFAULT'][0])
 
         for element_id in element_ids:
             node_ids_for_element = mesh.loc[element_id, :].index.values
@@ -277,3 +300,19 @@ class VMAPExport:
         else:
             points_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y']].values)
         points_group.attrs['MYSIZE'] = node_ids_info.index.size
+
+    def _add_geometry_set(self, geometry_name, object_type, indexes):
+        file = h5py.File(self._file_name, 'a')
+        try:
+            geometry_set_group = file["VMAP/GEOMETRY/%s/GEOMETRYSETS"]
+        except KeyError:
+            raise KeyError("No geometry with the name %s" % geometry_name)
+
+        geometry_set_name = geometry_set_group.attrs['MYSIZE']
+        geometry_set = self._create_group_with_attributes(geometry_set_group, geometry_set_name,
+                                                          VMAPAttribute('MYIDENTIFIER', geometry_set_name),
+                                                          VMAPAttribute('MYSETINDEXTYPE', 1),
+                                                          VMAPAttribute('MYSETNAME', ''),
+                                                          VMAPAttribute('MYSETTYPE', object_type))
+        geometry_set.create_dataset('MYGEOMETRYSETDATA', data=indexes)
+        file.close()

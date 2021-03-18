@@ -78,7 +78,7 @@ class VMAPElementType(VMAPDataset):
     @property
     def dtype(self):
         dt_type = np.dtype({"names": ["myIdentifier", "myTypeName", "myTypeDescription", "myNumberOfNodes",
-                                      "myDimensions", "myShapeType", "myInterpolationType", "myIntegrationType",
+                                      "myDimension", "myShapeType", "myInterpolationType", "myIntegrationType",
                                       "myNumberOfNormalComponents", "myNumberOfShearComponents", "myConnectivity",
                                       "myFaceConnectivity"],
                             "formats": ['<i4', string_dtype(), string_dtype(), '<i4', '<i4', '<i4', '<i4', '<i4',

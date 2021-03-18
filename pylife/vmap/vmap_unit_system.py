@@ -43,8 +43,9 @@ from .vmap_dataset import VMAPDataset
 
 
 class VMAPUnitSystem(VMAPDataset):
-    def __init__(self, si_scale, si_shift, unit_symbol, unit_quantity):
+    def __init__(self, identifier, si_scale, si_shift, unit_symbol, unit_quantity):
         super().__init__()
+        self.set_identifier(identifier)
         self._si_scale = si_scale
         self._si_shift = si_shift
         self._unit_symbol = unit_symbol
