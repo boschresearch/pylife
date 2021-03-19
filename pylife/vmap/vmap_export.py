@@ -14,24 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""VMAPImport interface for pyLife
-============================
-
-`VMAPImport <https://www.vmap.eu.com/>`_ *is a vendor-neutral standard
-for CAE data storage to enhance interoperability in virtual
-engineering workflows.*
-
-pyLife supports a growing subset of the VMAPImport standard. That means that
-only features relevant for pyLife's addressed real life use cases are
-or will be implemented. Probably there are features missing, that are
-important for some valid use cases. In that case please file a feature
-request at https://github.com/boschresearch/pylife/issues
-
-
-Reading a VMAPImport file
--------------------
-
-"""
 __author__ = "Gyöngyvér Kiss"
 __maintainer__ = __author__
 
@@ -41,7 +23,6 @@ import datetime
 import numpy as np
 import pandas as pd
 import h5py
-from h5py.h5t import string_dtype
 
 from .vmap_unit_system import VMAPUnit
 from .vmap_element_type import VMAPElementType
@@ -52,12 +33,30 @@ from .vmap_metadata import VMAPMetadata
 
 
 class VMAPExport:
+    """
+    The interface class to export a vmap file
+
+    Parameters
+    ----------
+    file_name : string
+        The path to the vmap file to be read
+
+    Raises
+    ------
+    Exception
+        If the file cannot be read an exception is raised.
+        So far any exception from the ``h5py`` module is passed through.
+    """
+
     _column_names = {
         'DISPLACEMENT': [['dx', 'dy', 'dz'], 2],
         'STRESS_CAUCHY': [['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], 6],
         'E': [['E11', 'E22', 'E33', 'E12', 'E13', 'E23'], 6],
     }
 
+    """
+    These dictionaries are to provide the data to the SYSTEM datasets. This data is going to come from the import 
+    """
     _element_types = {
         (2, 3): [0, 'VMAP_ELEM_2D_TRIANGLE_3', 'pyLife 2D 3', 3, 2, -1, -1, -1, -1, -1],
         (2, 6): [1, 'VMAP_ELEM_2D_TRIANGLE_6', 'pyLife 2D 6', 6, 2, -1, -1, -1, -1, -1],
@@ -106,6 +105,12 @@ class VMAPExport:
         file.close()
 
     def add_geometry(self, geometry_name, mesh):
+        """
+        Exports geometry with given name and mesh data
+        :param geometry_name: Name of the geometry to add
+        :param mesh: The Data Frame that holds the data of the mesh to export
+        :return: self
+        """
         file = h5py.File(self._file_name, 'a')
         geometry = self._create_geometry_groups(file, geometry_name)
         self._create_elements_dataset(geometry, mesh)
@@ -114,31 +119,54 @@ class VMAPExport:
         return self
 
     def add_node_set(self, geometry_name, indexes, mesh):
+        """
+        Exports node-type geometry set into given geometry
+        :param geometry_name: The geometry to where we want to export the geometry set
+        :param indexes: Array of node indices that we want to export
+        :param mesh: Data frame that holds the entire mesh data
+        :return: self
+        """
         node_id_set = set(mesh.index.get_level_values('node_id'))
         index_set = set(indexes)
         if not index_set.issubset(node_id_set):
-            raise KeyError('Provided index set is not a subset of the node indices')
+            raise KeyError('Provided index set is not a subset of the node indices.')
         self._add_geometry_set(geometry_name, 0, indexes)
         return self
 
     def add_element_set(self, geometry_name, indexes, mesh):
+        """
+        Exports element-type geometry set into given geometry
+        :param geometry_name: The geometry to where we want to export the geometry set
+        :param indexes: The set of element indices that we want to export
+        :param mesh: Data frame that holds the entire mesh data
+        :return: self
+        """
         element_id_set = set(mesh.index.get_level_values('element_id'))
         index_set = set(indexes)
         if not index_set.issubset(element_id_set):
-            raise KeyError('Provided index set is not a subset of the element indices')
+            raise KeyError('Provided index set is not a subset of the element indices.')
         self._add_geometry_set(geometry_name, 1, indexes)
         return self
 
     def add_variable(self, state, geometry_name, variable_name, mesh, column_names=None):
+        """
+        Exports variable into given state and geometry
+        :param state: State where we want to export the parameter
+        :param geometry_name: Geometry where we want to export the parameter
+        :param variable_name: The name of the variable to export
+        :param mesh: Data frame that holds the entire mesh data
+        :param column_names: The columns that the parameter consists of
+        :return: self
+        """
         file = h5py.File(self._file_name, 'a')
         try:
-            geometry_group = file["VMAP/GEOMETRY/%s" % geometry_name]
-        except:
+            file["VMAP/GEOMETRY/%s" % geometry_name]
+        except KeyError:
             raise KeyError("No geometry with the name %s" % geometry_name)
 
         try:
             state_group = file["/VMAP/VARIABLES/%s" % state]
-        except:
+        except KeyError:
             state_group = self._create_group_with_attributes(file['VMAP/VARIABLES'], state,
                                                              VMAPAttribute('MYSTATEINCREMENT', 0),
                                                              VMAPAttribute('MYSTATENAME', state),
@@ -146,7 +174,7 @@ class VMAPExport:
                                                              VMAPAttribute('MYTOTALTIME', 0.0))
         try:
             geometry_group = state_group[geometry_name]
-        except:
+        except KeyError:
             geometry_group = self._create_group_with_attributes(state_group, geometry_name,
                                                                 VMAPAttribute('MYSIZE', 0))
 
@@ -154,8 +182,7 @@ class VMAPExport:
             try:
                 column_names = self._column_names[variable_name][0]
             except KeyError:
-                raise KeyError("No column name for variable %s. Please provide with column_names parameter."
-                               % variable_name)
+                raise KeyError("No column name for variable %s." % variable_name)
 
         location = self._column_names[variable_name][1]
         variable_dataset = self._create_group_with_attributes(geometry_group, variable_name,
@@ -180,7 +207,7 @@ class VMAPExport:
             element_ids = mesh.index.get_level_values('element_id').drop_duplicates().values
             variable_dataset.create_dataset('MYGEOMETRYIDS', data=element_ids)
             variable_dataset.create_dataset('MYVALUES', data=mesh[column_names])
-        geometry_group.attrs['MYSIZE'] = geometry_group.attrs['MYSIZE'] + 1;
+        geometry_group.attrs['MYSIZE'] = geometry_group.attrs['MYSIZE'] + 1
         file.close()
         return self
 
@@ -188,8 +215,7 @@ class VMAPExport:
         group = parent_group.create_group(group_name)
         if args is not None:
             for attr in args:
-                group.attrs[attr.name] = attr.value
-
+                group.att
         return group
 
     def _create_compound_attribute(self, parent, attr_name, field_names, field_types, field_values):

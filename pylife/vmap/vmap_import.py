@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''VMAP interface for pyLife
+"""VMAP interface for pyLife
 ============================
 
 `VMAP <https://www.vmap.eu.com/>`_ *is a vendor-neutral standard
@@ -85,7 +85,7 @@ In particular, field variables at integration point location *cannot*
 cannot be read, as that would require extrapolating them to the node
 positions. This functionality is not available in pyLife.
 
-'''
+"""
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
@@ -98,7 +98,7 @@ from .exceptions import *
 
 
 class VMAPImport:
-    '''The interface class to access a vmap file
+    """The interface class to import a vmap file
 
     Parameters
     ----------
@@ -110,7 +110,7 @@ class VMAPImport:
     Exception
         If the file cannot be read an exception is raised.
         So far any exception from the ``h5py`` module is passed through.
-    '''
+    """
 
     _column_names = {
         'DISPLACEMENT': ['dx', 'dy', 'dz'],
@@ -125,27 +125,27 @@ class VMAPImport:
         self._state = None
 
     def geometries(self):
-        '''Retuns a list of geometry strings of geometries present in the vmap data
-        '''
+        """Returns a list of geometry strings of geometries present in the vmap data
+        """
         return self._file["/VMAP/GEOMETRY"].keys()
 
     def states(self):
-        '''Retuns a list of state strings of states present in the vmap data
-        '''
+        """Returns a list of state strings of states present in the vmap data
+        """
         return self._file["/VMAP/VARIABLES/"].keys()
 
     def node_sets(self, geometry):
-        '''Returns a list of the node_sets present in the vmap file
-        '''
+        """Returns a list of the node_sets present in the vmap file
+        """
         return self._geometry_sets(geometry, 'nsets').keys()
 
     def element_sets(self, geometry):
-        '''Returns a list of the element_sets present in the vmap file
-        '''
+        """Returns a list of the element_sets present in the vmap file
+        """
         return self._geometry_sets(geometry, 'elsets').keys()
 
     def nodes(self, geometry):
-        '''Retrieves the node positions
+        """Retrieves the node positions
 
         Parameters
         ----------
@@ -162,7 +162,7 @@ class VMAPImport:
         ------
         KeyError
             if the geometry is not found of if the vmap file is corrupted
-        '''
+        """
         return pd.DataFrame(
             self._file["/VMAP/GEOMETRY/%s/POINTS/MYCOORDINATES" % geometry][()],
             columns=['x', 'y', 'z'],
@@ -170,7 +170,7 @@ class VMAPImport:
         )
 
     def make_mesh(self, geometry, state=None):
-        '''Makes the initial mesh
+        """Makes the initial mesh
 
         Parameters
         ----------
@@ -220,14 +220,14 @@ class VMAPImport:
                    14446   -13.673285 -5.569107  0.0  34.291058  3.642457  0.0 -13.836027  0.0  0.0
                    14614   -13.389065 -5.709927  0.0  36.063541  2.828889  0.0 -13.774759  0.0  0.0
                    14534   -13.276068 -5.419206  0.0  33.804211  2.829817  0.0 -14.580153  0.0  0.0
-        '''
+        """
         self._mesh = pd.DataFrame(index=self._mesh_index(geometry))
         self._geometry = geometry
         self._state = state
         return self
 
     def filter_node_set(self, node_set):
-        '''Filters a node set out of the current mesh
+        """Filters a node set out of the current mesh
 
         Parameters
         ----------
@@ -242,14 +242,14 @@ class VMAPImport:
         ------
         APIUseError
             If the mesh has not been initialized using ``make_mesh()``
-        '''
+        """
         self._check_mesh_for_filtering()
         node_set_ids = self._node_set_ids(self._geometry, node_set)
         self._mesh = self._mesh.loc[(slice(None), node_set_ids), :]
         return self
 
     def filter_element_set(self, element_set):
-        '''Filters a node set out of the current mesh
+        """Filters a node set out of the current mesh
 
         Parameters
         ----------
@@ -264,7 +264,7 @@ class VMAPImport:
         ------
         APIUseError
             If the mesh has not been initialized using ``make_mesh()``
-        '''
+        """
         self._check_mesh_for_filtering()
         element_set_ids = self._element_set_ids(self._geometry, element_set)
         self._mesh = self._mesh.loc[(element_set_ids, slice(None)), :]
@@ -275,7 +275,7 @@ class VMAPImport:
             raise APIUseError("Need to make_mesh() before filtering node or element sets.")
 
     def join_coordinates(self):
-        '''Join the coordinates of the predefined geometry in the mesh
+        """Join the coordinates of the predefined geometry in the mesh
 
         Returns
         -------
@@ -308,14 +308,14 @@ class VMAPImport:
 
         [37884 rows x 3 columns]
 
-        '''
+        """
         if self._mesh is None:
             raise APIUseError("Need to make_mesh() before joining the coordinates.")
         self._mesh = self._mesh.join(self.nodes(self._geometry))
         return self
 
     def to_frame(self):
-        '''Returns the mesh and resets the mesh
+        """Returns the mesh and resets the mesh
 
         Returns
         -------
@@ -332,7 +332,7 @@ class VMAPImport:
         -----
         This method resets the mesh, i.e. ``make_mesh()`` must be called again in order to
         fetch more mesh data in another mesh.
-        '''
+        """
         if self._mesh is None:
             raise(APIUseError("Need to make_mesh() before requesting a resulting frame."))
         ret = self._mesh
@@ -340,11 +340,11 @@ class VMAPImport:
         return ret
 
     def join_variable(self, var_name, state=None, column_names=None):
-        '''Joins a field output variable to the mesh
+        """Joins a field output variable to the mesh
 
         Parameters
         ----------
-        varname : string
+        var_name : string
             The name of the field variables
         state : string, opional
             The load state of which the field variable is to be read
@@ -410,7 +410,7 @@ class VMAPImport:
         TODO
         ----
         Write a more central document about pyLife's column names.
-        '''
+        """
         if self._mesh is None:
             raise APIUseError("Need to make_mesh() before joining a variable.")
         if state is None:

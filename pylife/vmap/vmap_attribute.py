@@ -14,31 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""VMAPImport interface for pyLife
-============================
-
-`VMAPImport <https://www.vmap.eu.com/>`_ *is a vendor-neutral standard
-for CAE data storage to enhance interoperability in virtual
-engineering workflows.*
-
-pyLife supports a growing subset of the VMAPImport standard. That means that
-only features relevant for pyLife's addressed real life use cases are
-or will be implemented. Probably there are features missing, that are
-important for some valid use cases. In that case please file a feature
-request at https://github.com/boschresearch/pylife/issues
-
-
-Reading a VMAPImport file
--------------------
-
-"""
 __author__ = "Gyöngyvér Kiss"
 __maintainer__ = __author__
-
-import numpy as np
-
-from .exceptions import *
-from .vmap_dataset import VMAPDataset
 
 
 class VMAPAttribute:
