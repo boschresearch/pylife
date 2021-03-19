@@ -113,11 +113,19 @@ class VMAPExport:
         file.close()
         return self
 
-    def add_node_set(self, geometry_name, indexes):
+    def add_node_set(self, geometry_name, indexes, mesh):
+        node_id_set = set(mesh.index.get_level_values('node_id'))
+        index_set = set(indexes)
+        if not index_set.issubset(node_id_set):
+            raise KeyError('Provided index set is not a subset of the node indices')
         self._add_geometry_set(geometry_name, 0, indexes)
         return self
 
-    def add_element_set(self, geometry_name, indexes):
+    def add_element_set(self, geometry_name, indexes, mesh):
+        element_id_set = set(mesh.index.get_level_values('element_id'))
+        index_set = set(indexes)
+        if not index_set.issubset(element_id_set):
+            raise KeyError('Provided index set is not a subset of the element indices')
         self._add_geometry_set(geometry_name, 1, indexes)
         return self
 
@@ -283,15 +291,16 @@ class VMAPExport:
     def _add_geometry_set(self, geometry_name, object_type, indexes):
         file = h5py.File(self._file_name, 'a')
         try:
-            geometry_set_group = file["VMAP/GEOMETRY/%s/GEOMETRYSETS"]
+            geometry_set_group = file["VMAP/GEOMETRY/%s/GEOMETRYSETS" % geometry_name]
         except KeyError:
             raise KeyError("No geometry with the name %s" % geometry_name)
 
         geometry_set_name = geometry_set_group.attrs['MYSIZE']
-        geometry_set = self._create_group_with_attributes(geometry_set_group, geometry_set_name,
+        geometry_set = self._create_group_with_attributes(geometry_set_group, str(f"{geometry_set_name:06d}"),
                                                           VMAPAttribute('MYIDENTIFIER', geometry_set_name),
                                                           VMAPAttribute('MYSETINDEXTYPE', 1),
                                                           VMAPAttribute('MYSETNAME', ''),
                                                           VMAPAttribute('MYSETTYPE', object_type))
-        geometry_set.create_dataset('MYGEOMETRYSETDATA', data=indexes)
+        geometry_set.create_dataset('MYGEOMETRYSETDATA', data=pd.DataFrame(indexes))
+        geometry_set_group.attrs['MYSIZE'] = geometry_set_name + 1
         file.close()

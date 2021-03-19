@@ -32,7 +32,7 @@ def test_export(config):
                                            0.493827, 0.308642])
     config._create_dataset(int_type_1, int_type_2)
     config.add_geometry('1', mesh).add_geometry('2', mesh)
-    # config.add_node_set()
-    # config.add_element_set()
+    id_set = pd.Index([1, 2, 3, 4])
+    config.add_node_set('1', id_set, mesh).add_element_set('1', id_set, mesh)
     config.add_variable('STATE-2', '1', 'E', mesh).add_variable('STATE-2', '1', 'DISPLACEMENT', mesh)
 
