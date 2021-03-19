@@ -22,15 +22,15 @@ def test_export(config):
             .join_variable('DISPLACEMENT')
             .join_variable('E')
             .to_frame())
-    int_type_1 = vmap.VMAPIntegrationType('GAUSS_TRIANGLE_3', 3, 2, 0.0,
+    int_type_1 = vmap.VMAPIntegrationType(0, 'GAUSS_TRIANGLE_3', 3, 2, 0.0,
                                           [0.166667, 0.166667, 0.666667, 0.166667, 0.166667, 0.666667],
                                           [0.333333, 0.333333, 0.333333])
-    int_type_2 = vmap.VMAPIntegrationType('GAUSS_QUAD_9', 9, 2, 0.0,
+    int_type_2 = vmap.VMAPIntegrationType(1, 'GAUSS_QUAD_9', 9, 2, 0.0,
                                           [-0.774597, -0.774597, 0, -0.774597, 0.774597, -0.774597, -0.774597, 0, 0, 0,
                                            0.774597, 0, -0.774597, 0.774597, 0, 0.774597, 0.774597, 0.774597],
                                           [0.308642, 0.493827, 0.308642, 0.493827, 0.790123, 0.493827, 0.308642,
                                            0.493827, 0.308642])
-    config._create_system_dataset(True, int_type_1, int_type_2)
+    config._create_dataset(int_type_1, int_type_2)
     config.add_geometry('1', mesh).add_geometry('2', mesh)
     # config.add_node_set()
     # config.add_element_set()

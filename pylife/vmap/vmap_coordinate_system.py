@@ -43,8 +43,7 @@ from .vmap_dataset import VMAPDataset
 
 class VMAPCoordinateSystem(VMAPDataset):
     def __init__(self, identifier, type_id, reference_points, axis_vectors):
-        super().__init__()
-        self.set_identifier(identifier)
+        super().__init__(identifier)
         self._type_id = type_id
         self._reference_points = reference_points
         self._axis_vectors = axis_vectors

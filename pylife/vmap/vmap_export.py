@@ -43,11 +43,12 @@ import pandas as pd
 import h5py
 from h5py.h5t import string_dtype
 
-from .vmap_unit_system import VMAPUnitSystem
+from .vmap_unit_system import VMAPUnit
 from .vmap_element_type import VMAPElementType
 from .vmap_attribute import VMAPAttribute
 from .vmap_coordinate_system import VMAPCoordinateSystem
 from .vmap_section import VMAPSection
+from .vmap_metadata import VMAPMetadata
 
 
 class VMAPExport:
@@ -86,6 +87,15 @@ class VMAPExport:
         'TEMPERATURE': [5, 1.0, 0.0, 'K', 'TEMPERATURE'],
         'AMOUNT_OF_SUBSTANCE': [6, 1.0, 0.0, 'mol', 'AMOUNT OF SUBSTANCE'],
         'LUMINOUS_INTENSITY': [7, 1.0, 0.0, 'cd', 'LUMINOUS INTENSITY'],
+    }
+
+    _metadata = {
+        'EXPORTER_NAME': ['ExporterName', 'pyLife'],
+        'FILE_DATE': ['FileDate', datetime.datetime.now().date()],
+        'FILE_TIME': ['FileTime', datetime.datetime.now().time()],
+        'DESCRIPTION': ['Description', ''],
+        'ANALYSIS_TYPE': ['Analysis Type', ''],
+        'USERID': ['User Id', os.getlogin()]
     }
 
     def __init__(self, file_name):
@@ -187,25 +197,23 @@ class VMAPExport:
         self._create_group_with_attributes(vmap_group, 'GEOMETRY')
         self._create_group_with_attributes(vmap_group, 'MATERIAL')
         self._create_group_with_attributes(vmap_group, 'SYSTEM')
-        self._create_system_metadata(file)
-        self._create_unit_system()
-        self._create_elementtypes()
-        self._create_coordinate_systems()
-        self._create_sections()
+
+        self._add_dataset(VMAPCoordinateSystem, self._coordinate_systems)
+        self._add_dataset(VMAPElementType, self._element_types)
+        self._add_dataset(VMAPMetadata, self._metadata)
+        self._add_dataset(VMAPSection, self._sections)
+        self._add_dataset(VMAPUnit, self._unit_system)
+
         self._create_group_with_attributes(vmap_group, 'VARIABLES')
 
-    def _create_system_dataset(self, need_id, *args):
+    def _create_dataset(self, *args):
         file = h5py.File(self._file_name, 'a')
         if args is None or len(args) == 0:
             raise ValueError(
                 "You have to provide at least one VMAP Dataset object")
         attribute_list = []
-        i = 0
         for dataset in args:
-            if need_id:
-                dataset.set_identifier(i)
             attribute_list.append(dataset.attributes)
-            i = i + 1
         name = args[0].dataset_name
         dt_type = args[0].dtype
         path = args[0].group_path
@@ -215,40 +223,11 @@ class VMAPExport:
         file.close()
         return self
 
-    def _create_coordinate_systems(self):
-        coordinate_systems = []
-        for coordinate_system in self._coordinate_systems.values():
-            coordinate_systems.append(VMAPCoordinateSystem(*coordinate_system))
-        self._create_system_dataset(False, *coordinate_systems)
-
-    def _create_elementtypes(self):
-        element_types = []
-        for element_type in self._element_types.values():
-            element_types.append(VMAPElementType(*element_type))
-        self._create_system_dataset(False, *element_types)
-
-    def _create_sections(self):
-        sections = []
-        for section in self._sections.values():
-            sections.append(VMAPSection(*section))
-        self._create_system_dataset(False, *sections)
-
-    def _create_unit_system(self):
-        units = []
-        for unit in self._unit_system.values():
-            units.append(VMAPUnitSystem(*unit))
-        self._create_system_dataset(False, *units)
-
-    def _create_system_metadata(self, file):
-        analysis_type = None
-        user_id = os.getlogin()
-        current_date = datetime.datetime.now().date()
-        current_time = datetime.datetime.now().time()
-        metadata_d = {'0': ['ExporterName', 'FileDate', 'FileTime', 'Description', 'Analysis Type', 'User Id'],
-                      '1': ['pyLife', current_date, current_time, 'Test description', analysis_type, user_id]}
-        metadata_df = pd.DataFrame(data=metadata_d)
-        system_group = file["/VMAP/SYSTEM"]
-        system_group.create_dataset('METADATA', data=metadata_df, dtype=string_dtype())
+    def _add_dataset(self, class_name, value_dict):
+        values = []
+        for value in value_dict.values():
+            values.append(class_name(*value))
+        self._create_dataset(*values)
 
     def _create_geometry_groups(self, file, geometry_name):
         geometry_group = file["/VMAP/GEOMETRY"]

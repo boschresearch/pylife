@@ -44,9 +44,9 @@ from .vmap_dataset import VMAPDataset
 
 
 class VMAPIntegrationType(VMAPDataset):
-    def __init__(self, type_name, number_of_points, dimension, offset,
+    def __init__(self, identifier, type_name, number_of_points, dimension, offset,
                  abscissas=None, weights=None, subtypes=None):
-        super().__init__()
+        super().__init__(identifier)
         self._type_name = type_name
         self._number_of_points = number_of_points
         self._dimension = dimension

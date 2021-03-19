@@ -44,8 +44,7 @@ from .vmap_dataset import VMAPDataset
 
 class VMAPSection(VMAPDataset):
     def __init__(self, identifier, name, type_id, material, coordinate_system, integration_type, thickness_type):
-        super().__init__()
-        self.set_identifier(identifier)
+        super().__init__(identifier)
         self._name = name
         self._type_id = type_id
         self._material = material

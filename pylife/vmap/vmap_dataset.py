@@ -39,8 +39,8 @@ from abc import ABC, abstractmethod
 
 
 class VMAPDataset(ABC):
-    def __init__(self):
-        self._identifier = None
+    def __init__(self, identifier):
+        self._identifier = identifier
 
     def set_identifier(self, identifier):
         self._identifier = identifier

@@ -47,8 +47,7 @@ class VMAPElementType(VMAPDataset):
     def __init__(self, identifier, type_name, type_description, number_of_nodes, dimensions, shape_type, interpolation_type,
                  integration_type, number_of_normal_components, number_of_shear_components,
                  connectivity=None, face_connectivity=None):
-        super().__init__()
-        self.set_identifier(identifier)
+        super().__init__(identifier)
         self._type_name = type_name
         self._type_description = type_description
         self._number_of_nodes = number_of_nodes

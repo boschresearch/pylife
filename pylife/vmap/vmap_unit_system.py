@@ -42,10 +42,9 @@ from .exceptions import *
 from .vmap_dataset import VMAPDataset
 
 
-class VMAPUnitSystem(VMAPDataset):
+class VMAPUnit(VMAPDataset):
     def __init__(self, identifier, si_scale, si_shift, unit_symbol, unit_quantity):
-        super().__init__()
-        self.set_identifier(identifier)
+        super().__init__(identifier)
         self._si_scale = si_scale
         self._si_shift = si_shift
         self._unit_symbol = unit_symbol
