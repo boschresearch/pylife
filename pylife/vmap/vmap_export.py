@@ -215,7 +215,7 @@ class VMAPExport:
         group = parent_group.create_group(group_name)
         if args is not None:
             for attr in args:
-                group.att
+                group.attrs[attr.name] = attr.value
         return group
 
     def _create_compound_attribute(self, parent, attr_name, field_names, field_types, field_values):
