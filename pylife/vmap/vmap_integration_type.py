@@ -65,4 +65,4 @@ class VMAPIntegrationType(VMAPDataset):
 
     @property
     def dataset_name(self):
-        return 'INTERGRATIONTYPES'
+        return 'INTEGRATIONTYPES'
