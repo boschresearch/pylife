@@ -31,6 +31,7 @@ from .vmap_attribute import VMAPAttribute
 from .vmap_coordinate_system import VMAPCoordinateSystem
 from .vmap_section import VMAPSection
 from .vmap_metadata import VMAPMetadata
+from .vmap_integration_type import VMAPIntegrationType
 
 
 class VMAPExport:
@@ -216,6 +217,22 @@ class VMAPExport:
         if not index_set.issubset(element_id_set):
             raise KeyError('Provided index set is not a subset of the element indices.')
         self._add_geometry_set(geometry_name, 1, indices)
+        return self
+
+    def add_integration_types(self, content):
+        """
+        Creates system dataset IntegrationTypes with the given content
+
+        Parameters
+        ----------
+        content: the content of the dataset
+
+        Returns
+        -------
+        self
+
+        """
+        self._add_dataset(VMAPIntegrationType, content)
         return self
 
     def add_variable(self, state, geometry_name, variable_name, mesh, column_names=None, location=None):

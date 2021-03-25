@@ -57,7 +57,7 @@ class TestExport(unittest.TestCase):
             assert file[geometry_path].attrs['MYNAME'] == name
 
     def test_add_dataset(self):
-        self._export._add_dataset(vmap.VMAPIntegrationType, RD.integration_type_content)
+        self._export.add_integration_types(RD.integration_type_content)
         dataset_name = 'INTEGRATIONTYPES'
         with h5py.File(self._export.file_name, 'r') as file:
             system_group = self.try_get_vmap_structure(file, 'VMAP/SYSTEM')
