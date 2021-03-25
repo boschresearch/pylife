@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2020 - for information on the respective copyright owner
+# Copyright (c) 2020-2021 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,8 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .vmap_import import VMAPImport
-from .vmap_export import VMAPExport
-from .vmap_integration_type import VMAPIntegrationType
-from .exceptions import *
+__author__ = "Gyöngyvér Kiss"
+__maintainer__ = __author__
 
+column_names = {
+    'DISPLACEMENT': [['dx', 'dy', 'dz'], 2],
+    'STRESS_CAUCHY': [['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], 6],
+    'E': [['E11', 'E22', 'E33', 'E12', 'E13', 'E23'], 6],
+}

@@ -49,6 +49,13 @@ class TestExport(unittest.TestCase):
             assert variables_group is not None
             assert len(variables_group) == 0
 
+    def test_set_object_name(self):
+        geometry_path = 'VMAP/GEOMETRY/1'
+        name = 'PART-1-1'
+        self._export.set_object_name(geometry_path, name)
+        with h5py.File(self._export.file_name, 'r') as file:
+            assert file[geometry_path].attrs['MYNAME'] == name
+
     def test_add_dataset(self):
         self._export._add_dataset(vmap.VMAPIntegrationType, RD.integration_type_content)
         dataset_name = 'INTEGRATIONTYPES'
@@ -93,7 +100,7 @@ class TestExport(unittest.TestCase):
             mesh_actual = (import_actual.make_mesh(geometry_name, state_name)
                            .join_variable(parameter_name)
                            .to_frame())
-        mesh_expected = self._mesh[self._export._column_names[parameter_name][0]]
+        mesh_expected = self._mesh[self._export.get_parameter_column_names(parameter_name)]
         self.assert_dfs_equal(mesh_expected, mesh_actual)
 
     def try_get_vmap_structure(self, parent, structure_name):

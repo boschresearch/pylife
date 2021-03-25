@@ -95,14 +95,10 @@ import pandas as pd
 import h5py
 
 from .exceptions import *
+from . import vmap_structures
 
 
 class VMAPImport:
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        pass
     """The interface class to import a vmap file
 
     Parameters
@@ -117,17 +113,17 @@ class VMAPImport:
         So far any exception from the ``h5py`` module is passed through.
     """
 
-    _column_names = {
-        'DISPLACEMENT': ['dx', 'dy', 'dz'],
-        'STRESS_CAUCHY': ['S11', 'S22', 'S33', 'S12', 'S13', 'S23'],
-        'E': ['E11', 'E22', 'E33', 'E12', 'E13', 'E23'],
-    }
-
     def __init__(self, filename):
         self._file = h5py.File(filename, 'r')
         self._mesh = None
         self._geometry = None
         self._state = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        pass
 
     def geometries(self):
         """Returns a list of geometry strings of geometries present in the vmap data
@@ -443,14 +439,14 @@ class VMAPImport:
 
         return pd.MultiIndex.from_arrays(index_np, names=['element_id', 'node_id'])
 
-    def _variable(self, geometry, state, varname, column_names):
+    def _variable(self, geometry, state, var_name, column_names):
         if column_names is None:
             try:
-                column_names = self._column_names[varname]
+                column_names = vmap_structures.column_names[var_name][0]
             except KeyError:
-                raise KeyError("No column name for variable %s. Please provide with column_names parameter." % varname)
+                raise KeyError("No column name for variable %s. Please provide with column_names parameter." % var_name)
 
-        var_tree = self._file["/VMAP/VARIABLES/%s/%s/%s" % (state, geometry, varname)]
+        var_tree = self._file["/VMAP/VARIABLES/%s/%s/%s" % (state, geometry, var_name)]
         var_dimension = var_tree.attrs['MYDIMENSION']
         if len(column_names) != var_dimension:
             raise ValueError("Length of column name list (%d) does not match variable dimension (%d)."

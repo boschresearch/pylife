@@ -127,7 +127,7 @@ def test_join_node_variable_displacement(beam_2d_squ):
 
 
 def test_join_element_variable_evol_no_column_name(beam_3d_hex):
-    with pytest.raises(KeyError, match="No column name for variable EVOL. Please povide with column_names parameter"):
+    with pytest.raises(KeyError, match="No column name for variable EVOL. Please provide with column_names parameter"):
         beam_3d_hex.make_mesh('1').join_variable('EVOL', 'STATE-2')
 
 
