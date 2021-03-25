@@ -37,3 +37,7 @@ class VMAPMetadata(VMAPDataset):
     @property
     def dataset_name(self):
         return 'METADATA'
+
+    @property
+    def compound_dataset(self):
+        return False

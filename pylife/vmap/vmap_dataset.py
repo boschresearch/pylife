@@ -48,3 +48,7 @@ class VMAPDataset(ABC):
     @property
     def group_path(self):
         return '/VMAP/SYSTEM'
+
+    @property
+    def compound_dataset(self):
+        return True

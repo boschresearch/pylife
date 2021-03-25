@@ -203,11 +203,11 @@ class VMAPExport:
                                                                   VMAPAttribute('MYVARIABLENAME', variable_name))
             if location == 2:
                 node_ids_info = mesh.groupby('node_id').first()
-                variable_dataset.create_dataset('MYGEOMETRYIDS', data=node_ids_info.index)
+                variable_dataset.create_dataset('MYGEOMETRYIDS', data=np.array([node_ids_info.index]).T)
                 variable_dataset.create_dataset('MYVALUES', data=node_ids_info[column_names].values)
             if location == 6:
                 element_ids = mesh.index.get_level_values('element_id').drop_duplicates().values
-                variable_dataset.create_dataset('MYGEOMETRYIDS', data=element_ids)
+                variable_dataset.create_dataset('MYGEOMETRYIDS', data=np.array([element_ids]).T)
                 variable_dataset.create_dataset('MYVALUES', data=mesh[column_names])
             geometry_group.attrs['MYSIZE'] = geometry_group.attrs['MYSIZE'] + 1
         return self
@@ -252,7 +252,11 @@ class VMAPExport:
             name = args[0].dataset_name
             dt_type = args[0].dtype
             path = args[0].group_path
-            d = np.array(attribute_list, dtype=dt_type)
+            compound_dataset = args[0].compound_dataset
+            if compound_dataset:
+                d = np.array([attribute_list], dtype=dt_type).T
+            else:
+                d = np.array(attribute_list, dtype=dt_type)
             system_group = file[path]
             system_group.create_dataset(name, dtype=dt_type, data=d)
         return self
@@ -295,8 +299,8 @@ class VMAPExport:
             element_types_list.append(element_type)
         element_types = np.asarray(element_types_list)
         connectivity = np.asarray(node_ids_list)
-        d = np.array(list(zip(element_ids, element_types, coordinate_system,
-                              material_type, section_type, connectivity)), dtype=dt_type)
+        d = np.array([list(zip(element_ids, element_types, coordinate_system,
+                               material_type, section_type, connectivity))], dtype=dt_type).T
         elements_group = geometry['ELEMENTS']
         elements_group.create_dataset("MYELEMENTS", dtype=dt_type, data=d)
         elements_group.attrs['MYSIZE'] = element_ids.size
@@ -304,7 +308,7 @@ class VMAPExport:
     def _create_points_datasets(self, geometry, mesh):
         node_ids_info = mesh.groupby('node_id').first()
         points_group = geometry['POINTS']
-        points_group.create_dataset('MYIDENTIFIERS', data=node_ids_info.index)
+        points_group.create_dataset('MYIDENTIFIERS', data=np.array([node_ids_info.index]).T)
         if 'z' in node_ids_info:
             z = node_ids_info['z'].to_numpy()
             if not (z[0] == z).all():
@@ -329,4 +333,3 @@ class VMAPExport:
                                                               VMAPAttribute('MYSETTYPE', object_type))
             geometry_set.create_dataset('MYGEOMETRYSETDATA', data=pd.DataFrame(indexes))
             geometry_set_group.attrs['MYSIZE'] = geometry_set_name + 1
-

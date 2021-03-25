@@ -98,6 +98,11 @@ from .exceptions import *
 
 
 class VMAPImport:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        pass
     """The interface class to import a vmap file
 
     Parameters
@@ -502,6 +507,12 @@ class VMAPImport:
             gset.attrs['MYSETNAME'].decode('UTF-8'): gset['MYGEOMETRYSETDATA'][()]
             for (_, gset) in geometry_sets.items() if gset.attrs['MYSETTYPE'] == s_type
         }
+
+    def get_geometry_set(self, geometry_name, geometry_set_name):
+        geometry_set = self._file["/VMAP/GEOMETRY/%s/GEOMETRYSETS/%s/MYGEOMETRYSETDATA"
+                                  % (geometry_name, geometry_set_name)]
+        return geometry_set.value
+
 
     def _node_set_ids(self, geometry, node_set):
         try:
