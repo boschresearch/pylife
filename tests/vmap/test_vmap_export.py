@@ -20,7 +20,8 @@ class TestExport(unittest.TestCase):
         self._export.add_geometry('1', self._mesh)
 
     def tearDown(self):
-        os.remove(self._export.file_name)
+        # os.remove(self._export.file_name)
+        x = 5
 
     def test_fundamental_groups(self):
         with h5py.File(self._export.file_name, 'r') as file:
@@ -52,7 +53,7 @@ class TestExport(unittest.TestCase):
     def test_set_object_name(self):
         geometry_path = 'VMAP/GEOMETRY/1'
         name = 'PART-1-1'
-        self._export.set_object_name(geometry_path, name)
+        self._export.rename_vmap_object(geometry_path, name)
         with h5py.File(self._export.file_name, 'r') as file:
             assert file[geometry_path].attrs['MYNAME'] == name
 
@@ -100,8 +101,14 @@ class TestExport(unittest.TestCase):
             mesh_actual = (import_actual.make_mesh(geometry_name, state_name)
                            .join_variable(parameter_name)
                            .to_frame())
-        mesh_expected = self._mesh[self._export.get_parameter_column_names(parameter_name)]
+        mesh_expected = self._mesh[self._export.parameter_column_names(parameter_name)]
         self.assert_dfs_equal(mesh_expected, mesh_actual)
+
+    def test_all(self):
+        self.test_add_dataset()
+        self.test_add_geometry()
+        self.test_add_geometry_set()
+        self.test_add_variable()
 
     def try_get_vmap_structure(self, parent, structure_name):
         try:
