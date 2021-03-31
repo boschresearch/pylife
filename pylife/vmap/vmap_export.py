@@ -58,12 +58,12 @@ class VMAPExport:
         (2, 6): [1, 'VMAP_ELEM_2D_TRIANGLE_6', 'pyLife 2D 6', 6, 2, -1, -1, -1, -1, -1, [], []],
         (2, 4): [2, 'VMAP_ELEM_2D_QUAD_4', 'pyLife 2D 4', 4, 2, -1, -1, -1, -1, -1, [], []],
         (2, 8): [3, 'VMAP_ELEM_2D_QUAD_8', 'pyLife 2D 8', 8, 2, -1, -1, -1, -1, -1, [], []],
-        (3, 4): [4, 'VMAP_ELEMENT_3D_TETRA_4', 'pyLife 3D 4', 4, 3, -1, -1, -1, -1, -1, [], []],
-        (3, 10): [5, 'VMAP_ELEMENT_3D_TETRA_10', 'pyLife 3D 10', 10, 3, -1, -1, -1, -1, -1, [], []],
+        (3, 4): [4, 'VMAP_ELEMENT_3D_TETRAHEDRON_4', 'pyLife 3D 4', 4, 3, -1, -1, -1, -1, -1, [], []],
+        (3, 10): [5, 'VMAP_ELEMENT_3D_TETRAHEDRON_10', 'pyLife 3D 10', 10, 3, -1, -1, -1, -1, -1, [], []],
         (3, 6): [6, 'VMAP_ELEMENT_3D_WEDGE_6', 'pyLife 3D 6', 6, 3, -1, -1, -1, -1, -1, [], []],
         (3, 15): [7, 'VMAP_ELEMENT_3D_WEDGE_15', 'pyLife 3D 15', 15, 3, -1, -1, -1, -1, -1, [], []],
-        (3, 8): [8, 'VMAP_ELEMENT_3D_HEX_8', 'pyLife 3D 8', 8, 3, -1, -1, -1, -1, -1, [], []],
-        (3, 20): [9, 'VMAP_ELEMENT_3D_HEX_20', 'pyLife 3D 20', 20, 3, -1, -1, -1, -1, -1, [], []]
+        (3, 8): [8, 'VMAP_ELEMENT_3D_HEXAHEDRON_8', 'pyLife 3D 8', 8, 3, -1, -1, -1, -1, -1, [], []],
+        (3, 20): [9, 'VMAP_ELEMENT_3D_HEXAHEDRON_20', 'pyLife 3D 20', 20, 3, -1, -1, -1, -1, -1, [], []]
     }
 
     _coordinate_systems = {
@@ -122,7 +122,7 @@ class VMAPExport:
         """
         return vmap_structures.column_names[parameter_name][0]
 
-    def rename_vmap_object(self, object_path, name):
+    def rename_vmap_object(self, object_path, name, dtype=None):
         """
         Sets the 'MYNAME' attribute of the VMAP objects that has such attribute
 
@@ -132,6 +132,8 @@ class VMAPExport:
             The full path to the object that we want to rename
         name: string
             The name that we want to provide
+        dtype: np.dtype
+            The data type of the attribute
 
         Returns
         -------
@@ -144,7 +146,7 @@ class VMAPExport:
                 raise KeyError('VMAP object %s does not exist.' % object_path)
 
             try:
-                vmap_object.attrs['MYNAME'] = name
+                vmap_object.attrs.create('MYNAME', name, dtype=dtype)
             except KeyError:
                 raise KeyError('VMAP object %s does not have attribute name')
 
@@ -165,11 +167,11 @@ class VMAPExport:
         """
         with h5py.File(self._file_name, 'a') as file:
             geometry = self._create_geometry_groups(file, geometry_name)
-            self._create_elements_dataset(geometry, mesh)
             self._create_points_datasets(geometry, mesh)
+            self._create_elements_dataset(geometry, mesh)
         return self
 
-    def add_node_set(self, geometry_name, indices, mesh):
+    def add_node_set(self, geometry_name, indices, mesh, name=None):
         """
         Exports node-type geometry set into given geometry
 
@@ -181,6 +183,7 @@ class VMAPExport:
             List of node indices that we want to export
         mesh: Pandas DataFrame
             The Data Frame that holds the data of the mesh to export
+        name: value of attribute MYSETNAME
 
         Returns
         -------
@@ -191,10 +194,10 @@ class VMAPExport:
         index_set = set(indices)
         if not index_set.issubset(node_id_set):
             raise KeyError('Provided index set is not a subset of the node indices.')
-        self._add_geometry_set(geometry_name, 0, indices)
+        self._create_geometry_set(geometry_name, 0, indices, name)
         return self
 
-    def add_element_set(self, geometry_name, indices, mesh):
+    def add_element_set(self, geometry_name, indices, mesh, name=None):
         """
         Exports element-type geometry set into given geometry
 
@@ -206,6 +209,7 @@ class VMAPExport:
             List of node indices that we want to export
         mesh: Pandas DataFrame
             The Data Frame that holds the data of the mesh to export
+        name: value of attribute MYSETNAME
 
         Returns
         -------
@@ -216,7 +220,7 @@ class VMAPExport:
         index_set = set(indices)
         if not index_set.issubset(element_id_set):
             raise KeyError('Provided index set is not a subset of the element indices.')
-        self._add_geometry_set(geometry_name, 1, indices)
+        self._create_geometry_set(geometry_name, 1, indices, name)
         return self
 
     def add_integration_types(self, content):
@@ -305,11 +309,13 @@ class VMAPExport:
                                                                   VMAPAttribute('MYVARIABLENAME', variable_name))
             if location == 2:
                 node_ids_info = mesh.groupby('node_id').first()
-                variable_dataset.create_dataset('MYGEOMETRYIDS', data=np.array([node_ids_info.index]).T, chunks=True)
+                variable_dataset.create_dataset('MYGEOMETRYIDS', data=np.array([node_ids_info.index]).T, dtype=np.int32,
+                                                chunks=True)
                 variable_dataset.create_dataset('MYVALUES', data=node_ids_info[column_names].values, chunks=True)
             if location == 6:
                 element_ids = mesh.index.get_level_values('element_id').drop_duplicates().values
-                variable_dataset.create_dataset('MYGEOMETRYIDS', data=np.array([element_ids]).T, chunks=True)
+                variable_dataset.create_dataset('MYGEOMETRYIDS', data=np.array([element_ids]).T, dtype=np.int32,
+                                                chunks=True)
                 variable_dataset.create_dataset('MYVALUES', data=mesh[column_names], chunks=True)
             geometry_group.attrs['MYSIZE'] = geometry_group.attrs['MYSIZE'] + 1
         return self
@@ -318,7 +324,7 @@ class VMAPExport:
         group = parent_group.create_group(group_name)
         if args is not None:
             for attr in args:
-                group.attrs[attr.name] = attr.value
+                group.attrs.create(attr.name, attr.value, dtype=attr.data_type)
         return group
 
     def _create_compound_attribute(self, parent, attr_name, field_names, field_types, field_values):
@@ -354,21 +360,22 @@ class VMAPExport:
         compound_dataset = dataset.compound_dataset
         if compound_dataset:
             d = np.array([attribute_list], dtype=dt_type).T
+            chunked = True
         else:
             d = np.array(attribute_list, dtype=dt_type)
-
+            chunked = None
         with h5py.File(self._file_name, 'a') as file:
             system_group = file[path]
-            system_group.create_dataset(name, dtype=dt_type, data=d, chunks=True)
+            system_group.create_dataset(name, dtype=dt_type, data=d, chunks=chunked)
         return self
 
     def _create_geometry_groups(self, file, geometry_name):
         geometry_group = file["/VMAP/GEOMETRY"]
         geometry = self._create_group_with_attributes(geometry_group, geometry_name)
-        size_attribute = VMAPAttribute('MYSIZE', 0)
-        self._create_group_with_attributes(geometry, 'ELEMENTS', size_attribute)
-        self._create_group_with_attributes(geometry, 'GEOMETRYSETS', size_attribute)
-        self._create_group_with_attributes(geometry, 'POINTS', size_attribute,
+        self._create_group_with_attributes(geometry, 'ELEMENTS', VMAPAttribute('MYSIZE', 0, np.int64))
+        self._create_group_with_attributes(geometry, 'GEOMETRYSETS', VMAPAttribute('MYSIZE', 0))
+        self._create_group_with_attributes(geometry, 'POINTS',
+                                           VMAPAttribute('MYSIZE', 0, np.int64),
                                            VMAPAttribute('MYCOORDINATESYSTEM',
                                                          self._coordinate_systems['CARTESIAN'][0]))
         return geometry
@@ -377,33 +384,37 @@ class VMAPExport:
         dt_type = np.dtype({"names": ["myIdentifier", "myElementType", "myCoordinateSystem",
                                       "myMaterialType", "mySectionType", "myConnectivity"],
                             "formats": ['<i4', '<i4', '<i4', '<i4', '<i4', h5py.special_dtype(vlen=np.dtype('int32'))]})
-        element_ids = mesh.index.get_level_values('element_id').drop_duplicates().values
+        element_connectivities = mesh.groupby('element_id')
+        element_ids = []
         node_ids_list = []
         element_types_list = []
-        coordinate_system = np.empty(element_ids.size, dtype=np.int)
+        coordinate_system = np.empty(len(element_connectivities), dtype=np.int)
         coordinate_system.fill(1)
-        material_type = np.empty(element_ids.size, dtype=np.int)
+        material_type = np.empty(len(element_connectivities), dtype=np.int)
         material_type.fill(0)
-        section_type = np.empty(element_ids.size, dtype=np.int)
+        section_type = np.empty(len(element_connectivities), dtype=np.int)
         section_type.fill(self._sections['DEFAULT'][0])
 
-        for element_id in element_ids:
-            node_ids_for_element = mesh.loc[element_id, :].index.values
-            node_ids_list.append(node_ids_for_element)
-            element_type = self._element_types[self._dimension, node_ids_for_element.size][0]
+        for element_connectivity in element_connectivities:
+            c = element_connectivity[1].index.get_level_values('node_id').values
+            node_ids_list.append(c)
+            element_ids.append(element_connectivity[0])
+            element_type = self._element_types[self._dimension, c.size][0]
             element_types_list.append(element_type)
+
         element_types = np.asarray(element_types_list)
         connectivity = np.asarray(node_ids_list)
         d = np.array([list(zip(element_ids, element_types, coordinate_system,
                                material_type, section_type, connectivity))], dtype=dt_type).T
         elements_group = geometry['ELEMENTS']
         elements_group.create_dataset("MYELEMENTS", dtype=dt_type, data=d, chunks=True)
-        elements_group.attrs['MYSIZE'] = element_ids.size
+        elements_group.attrs['MYSIZE'] = len(element_ids)
 
     def _create_points_datasets(self, geometry, mesh):
         node_ids_info = mesh.groupby('node_id').first()
         points_group = geometry['POINTS']
-        points_group.create_dataset('MYIDENTIFIERS', data=np.reshape(node_ids_info.index, (-1, 1)), chunks=True)
+        points_group.create_dataset('MYIDENTIFIERS', data=np.reshape(node_ids_info.index, (-1, 1)), dtype=np.int32,
+                                    chunks=True)
         if 'z' in node_ids_info:
             z = node_ids_info['z'].to_numpy()
             if not (z[0] == z).all():
@@ -413,7 +424,9 @@ class VMAPExport:
             points_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y']].values, chunks=True)
         points_group.attrs['MYSIZE'] = node_ids_info.index.size
 
-    def _add_geometry_set(self, geometry_name, object_type, indices):
+    def _create_geometry_set(self, geometry_name, object_type, indices, name=None):
+        if name is None:
+            name = ''
         with h5py.File(self._file_name, 'a') as file:
             try:
                 geometry_set_group = file["VMAP/GEOMETRY/%s/GEOMETRYSETS" % geometry_name]
@@ -424,7 +437,7 @@ class VMAPExport:
             geometry_set = self._create_group_with_attributes(geometry_set_group, str(f"{geometry_set_name:06d}"),
                                                               VMAPAttribute('MYIDENTIFIER', geometry_set_name),
                                                               VMAPAttribute('MYSETINDEXTYPE', 1),
-                                                              VMAPAttribute('MYSETNAME', ''),
+                                                              VMAPAttribute('MYSETNAME', name),
                                                               VMAPAttribute('MYSETTYPE', object_type))
-            geometry_set.create_dataset('MYGEOMETRYSETDATA', data=pd.DataFrame(indices), chunks=True)
+            geometry_set.create_dataset('MYGEOMETRYSETDATA', data=pd.DataFrame(indices), dtype=np.int32, chunks=True)
             geometry_set_group.attrs['MYSIZE'] = geometry_set_name + 1

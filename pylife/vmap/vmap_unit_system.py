@@ -41,7 +41,7 @@ class VMAPUnit(VMAPDataset):
     @property
     def dtype(self):
         dt_type = np.dtype({"names": ["myIdentifier", "mySIScale", "mySIShift", "myUnitSymbol", "myUnitQuantity"],
-                            "formats": ['<i4', '<f4', '<f4', string_dtype(), string_dtype()]})
+                            "formats": ['<i4', '<f8', '<f8', string_dtype(), string_dtype()]})
         return dt_type
 
     @property

@@ -39,7 +39,7 @@ class VMAPCoordinateSystem(VMAPDataset):
     @property
     def dtype(self):
         dt_type = np.dtype({"names": ["myIdentifier", "myType", "myReferencePoint", "myAxisVectors"],
-                            "formats": ['<i4', '<i4', ('<f4', (3,)), ('<f4', (9,))]})
+                            "formats": ['<i4', '<i4', ('<f8', (3,)), ('<f8', (9,))]})
         return dt_type
 
     @property

@@ -57,10 +57,10 @@ class VMAPIntegrationType(VMAPDataset):
     def dtype(self):
         dt_type = np.dtype({"names": ["myIdentifier", "myTypeName", "myNumberOfPoints", "myDimension",
                                       "myOffset", "myAbscissas", "myWeights", "mySubTypes"],
-                            "formats": ['<i4', string_dtype(), '<i4', '<i4', '<f4',
+                            "formats": ['<i4', string_dtype(), '<i4', '<i4', '<f8',
                                         h5py.special_dtype(vlen=np.dtype('float64')),
                                         h5py.special_dtype(vlen=np.dtype('float64')),
-                                        h5py.special_dtype(vlen=np.dtype('float64'))]})
+                                        h5py.special_dtype(vlen=np.dtype('float32'))]})
         return dt_type
 
     @property
