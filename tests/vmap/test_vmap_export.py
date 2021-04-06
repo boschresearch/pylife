@@ -1,5 +1,6 @@
 import pandas as pd
 import unittest
+import pytest
 
 import pylife.vmap as vmap
 import h5py
@@ -72,16 +73,13 @@ class TestExport(unittest.TestCase):
             mesh_actual = (import_actual.make_mesh(geometry_name)
                            .join_coordinates()
                            .to_frame())
-            pd.testing.assert_frame_equal(mesh_expected, mesh_actual)
+            pd.testing.assert_frame_equal(mesh_expected.sort_index(), mesh_actual.sort_index())
 
     def test_add_geometry_set(self):
         geometry_name = '1'
         geometry_set_name = '000000'
         geometry_set_expected = self._import_expected.get_geometry_set(geometry_name, geometry_set_name)
-        ind_set = pd.Index([])
-        for ind in geometry_set_expected:
-            ind_set = ind_set.append(pd.Index(ind))
-        self._export.add_node_set(geometry_name, ind_set, self._mesh, 'ALL')
+        self._export.add_node_set(geometry_name, geometry_set_expected, self._mesh, 'ALL')
         with vmap.VMAPImport(self._export.file_name) as import_actual:
             geometry_set_actual = import_actual.get_geometry_set(geometry_name, geometry_set_name)
             assert geometry_set_expected.shape == geometry_set_actual.shape
@@ -99,7 +97,7 @@ class TestExport(unittest.TestCase):
                            .join_variable(parameter_name)
                            .to_frame())
         mesh_expected = self._mesh[self._export.parameter_column_names(parameter_name)]
-        pd.testing.assert_frame_equal(mesh_expected, mesh_actual)
+        pd.testing.assert_frame_equal(mesh_expected.sort_index(), mesh_actual.sort_index())
 
     def test_all(self):
         self.test_add_dataset()
@@ -128,3 +126,53 @@ class TestExport(unittest.TestCase):
                         assert e_2 == a_2
                 except TypeError:
                     assert e_1 == a_1
+
+
+    def assert_dfs_equal(self, df_expected, df_actual):
+        assert df_expected.shape == df_actual.shape
+        assert df_expected.size == df_actual.size
+        index_equal = df_expected.index == df_actual.index
+        assert index_equal.all()
+        values_equal = df_expected == df_actual
+        for column_name in values_equal.keys():
+            assert values_equal[column_name].all()
+
+
+@pytest.mark.parametrize('filename', [
+    'beam_2d_tri_lin.vmap',
+    'beam_2d_tri_quad.vmap',
+    'beam_2d_squ_lin.vmap',
+    'beam_2d_squ_quad.vmap',
+    'beam_3d_tet_lin.vmap',
+    'beam_3d_tet_quad.vmap',
+    'beam_3d_wedge_lin.vmap',
+    'beam_3d_wedge_quad.vmap',
+    'beam_3d_hex_lin.vmap',
+    'beam_3d_hex_quad.vmap',
+    ])
+def test_export_import_round_robin(tmpdir, filename):
+    filename = os.path.join('tests/vmap/testfiles/', filename)
+    import_expected = vmap.VMAPImport(filename)
+    mesh = (import_expected.make_mesh('1', 'STATE-2')
+            .join_coordinates()
+            .join_variable('STRESS_CAUCHY')
+            .join_variable('DISPLACEMENT')
+            .join_variable('E')
+            .to_frame())
+
+    export_filename = os.path.join(tmpdir, 'export.vmap')
+    (vmap.VMAPExport(export_filename)
+     .add_geometry('1', mesh)
+     .add_variable('STATE-2', '1', 'STRESS_CAUCHY', mesh)
+     .add_variable('STATE-2', '1', 'DISPLACEMENT', mesh)
+     .add_variable('STATE-2', '1', 'E', mesh))
+
+    reimport = vmap.VMAPImport(export_filename)
+    reimported_mesh = (reimport.make_mesh('1', 'STATE-2')
+                       .join_coordinates()
+                       .join_variable('STRESS_CAUCHY')
+                       .join_variable('DISPLACEMENT')
+                       .join_variable('E')
+                       .to_frame())
+
+    pd.testing.assert_frame_equal(mesh, reimported_mesh)
