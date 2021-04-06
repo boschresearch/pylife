@@ -1,5 +1,6 @@
 import pandas as pd
 import unittest
+import pytest
 
 import pylife.vmap as vmap
 import h5py
@@ -125,3 +126,53 @@ class TestExport(unittest.TestCase):
                         assert e_2 == a_2
                 except TypeError:
                     assert e_1 == a_1
+
+
+    def assert_dfs_equal(self, df_expected, df_actual):
+        assert df_expected.shape == df_actual.shape
+        assert df_expected.size == df_actual.size
+        index_equal = df_expected.index == df_actual.index
+        assert index_equal.all()
+        values_equal = df_expected == df_actual
+        for column_name in values_equal.keys():
+            assert values_equal[column_name].all()
+
+
+@pytest.mark.parametrize('filename', [
+    'beam_2d_tri_lin.vmap',
+    'beam_2d_tri_quad.vmap',
+    'beam_2d_squ_lin.vmap',
+    'beam_2d_squ_quad.vmap',
+    'beam_3d_tet_lin.vmap',
+    'beam_3d_tet_quad.vmap',
+    'beam_3d_wedge_lin.vmap',
+    'beam_3d_wedge_quad.vmap',
+    'beam_3d_hex_lin.vmap',
+    'beam_3d_hex_quad.vmap',
+    ])
+def test_export_import_round_robin(tmpdir, filename):
+    filename = os.path.join('tests/vmap/testfiles/', filename)
+    import_expected = vmap.VMAPImport(filename)
+    mesh = (import_expected.make_mesh('1', 'STATE-2')
+            .join_coordinates()
+            .join_variable('STRESS_CAUCHY')
+            .join_variable('DISPLACEMENT')
+            .join_variable('E')
+            .to_frame())
+
+    export_filename = os.path.join(tmpdir, 'export.vmap')
+    (vmap.VMAPExport(export_filename)
+     .add_geometry('1', mesh)
+     .add_variable('STATE-2', '1', 'STRESS_CAUCHY', mesh)
+     .add_variable('STATE-2', '1', 'DISPLACEMENT', mesh)
+     .add_variable('STATE-2', '1', 'E', mesh))
+
+    reimport = vmap.VMAPImport(export_filename)
+    reimported_mesh = (reimport.make_mesh('1', 'STATE-2')
+                       .join_coordinates()
+                       .join_variable('STRESS_CAUCHY')
+                       .join_variable('DISPLACEMENT')
+                       .join_variable('E')
+                       .to_frame())
+
+    pd.testing.assert_frame_equal(mesh, reimported_mesh)
