@@ -72,16 +72,13 @@ class TestExport(unittest.TestCase):
             mesh_actual = (import_actual.make_mesh(geometry_name)
                            .join_coordinates()
                            .to_frame())
-            pd.testing.assert_frame_equal(mesh_expected, mesh_actual)
+            pd.testing.assert_frame_equal(mesh_expected.sort_index(), mesh_actual.sort_index())
 
     def test_add_geometry_set(self):
         geometry_name = '1'
         geometry_set_name = '000000'
         geometry_set_expected = self._import_expected.get_geometry_set(geometry_name, geometry_set_name)
-        ind_set = pd.Index([])
-        for ind in geometry_set_expected:
-            ind_set = ind_set.append(pd.Index(ind))
-        self._export.add_node_set(geometry_name, ind_set, self._mesh, 'ALL')
+        self._export.add_node_set(geometry_name, geometry_set_expected, self._mesh, 'ALL')
         with vmap.VMAPImport(self._export.file_name) as import_actual:
             geometry_set_actual = import_actual.get_geometry_set(geometry_name, geometry_set_name)
             assert geometry_set_expected.shape == geometry_set_actual.shape
@@ -99,7 +96,7 @@ class TestExport(unittest.TestCase):
                            .join_variable(parameter_name)
                            .to_frame())
         mesh_expected = self._mesh[self._export.parameter_column_names(parameter_name)]
-        pd.testing.assert_frame_equal(mesh_expected, mesh_actual)
+        pd.testing.assert_frame_equal(mesh_expected.sort_index(), mesh_actual.sort_index())
 
     def test_all(self):
         self.test_add_dataset()

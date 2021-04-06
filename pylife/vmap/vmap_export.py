@@ -324,7 +324,7 @@ class VMAPExport:
         group = parent_group.create_group(group_name)
         if args is not None:
             for attr in args:
-                group.attrs.create(attr.name, attr.value, dtype=attr.data_type)
+                group.attrs.create(attr.name, attr.value)
         return group
 
     def _create_compound_attribute(self, parent, attr_name, field_names, field_types, field_values):
@@ -372,10 +372,10 @@ class VMAPExport:
     def _create_geometry_groups(self, file, geometry_name):
         geometry_group = file["/VMAP/GEOMETRY"]
         geometry = self._create_group_with_attributes(geometry_group, geometry_name)
-        self._create_group_with_attributes(geometry, 'ELEMENTS', VMAPAttribute('MYSIZE', 0, np.int64))
+        self._create_group_with_attributes(geometry, 'ELEMENTS', VMAPAttribute('MYSIZE', np.int64(0)))
         self._create_group_with_attributes(geometry, 'GEOMETRYSETS', VMAPAttribute('MYSIZE', 0))
         self._create_group_with_attributes(geometry, 'POINTS',
-                                           VMAPAttribute('MYSIZE', 0, np.int64),
+                                           VMAPAttribute('MYSIZE', np.int64(0)),
                                            VMAPAttribute('MYCOORDINATESYSTEM',
                                                          self._coordinate_systems['CARTESIAN'][0]))
         return geometry
@@ -408,7 +408,7 @@ class VMAPExport:
                                material_type, section_type, connectivity))], dtype=dt_type).T
         elements_group = geometry['ELEMENTS']
         elements_group.create_dataset("MYELEMENTS", dtype=dt_type, data=d, chunks=True)
-        elements_group.attrs['MYSIZE'] = len(element_ids)
+        elements_group.attrs['MYSIZE'] = np.int64(len(element_ids))
 
     def _create_points_datasets(self, geometry, mesh):
         node_ids_info = mesh.groupby('node_id').first()
@@ -422,7 +422,7 @@ class VMAPExport:
             points_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y', 'z']].values, chunks=True)
         else:
             points_group.create_dataset('MYCOORDINATES', data=node_ids_info[['x', 'y']].values, chunks=True)
-        points_group.attrs['MYSIZE'] = node_ids_info.index.size
+        points_group.attrs['MYSIZE'] = np.int64(node_ids_info.index.size)
 
     def _create_geometry_set(self, geometry_name, object_type, indices, name=None):
         if name is None:

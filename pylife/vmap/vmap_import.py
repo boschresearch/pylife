@@ -507,7 +507,7 @@ class VMAPImport:
     def get_geometry_set(self, geometry_name, geometry_set_name):
         geometry_set = self._file["/VMAP/GEOMETRY/%s/GEOMETRYSETS/%s/MYGEOMETRYSETDATA"
                                   % (geometry_name, geometry_set_name)]
-        return geometry_set.value
+        return pd.Index(geometry_set.value.flatten())
 
 
     def _node_set_ids(self, geometry, node_set):

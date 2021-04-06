@@ -19,10 +19,9 @@ __maintainer__ = __author__
 
 
 class VMAPAttribute:
-    def __init__(self, attribute_name, attribute_value, attribute_dtype=None):
+    def __init__(self, attribute_name, attribute_value):
         self._name = attribute_name
         self._value = attribute_value
-        self._dtype = attribute_dtype
 
     @property
     def name(self):
@@ -31,7 +30,3 @@ class VMAPAttribute:
     @property
     def value(self):
         return self._value
-
-    @property
-    def data_type(self):
-        return self._dtype
