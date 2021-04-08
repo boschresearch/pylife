@@ -63,7 +63,8 @@ def test_get_make_mesh_rotsym_quad_element_set_ysym(rotsym_quad):
 
 
 def test_make_mesh_join_coordinates(beam_2d_squ):
-    pd.testing.assert_frame_equal(beam_2d_squ.make_mesh('1').filter_node_set('ALL').join_coordinates().to_frame(), RD.beam_2d_squ_mesh_coords)
+    pd.testing.assert_frame_equal(beam_2d_squ.make_mesh('1').filter_node_set('ALL').join_coordinates().to_frame(),
+                                  RD.beam_2d_squ_mesh_coords)
 
 
 def test_make_mesh_join_coordinates_no_mesh(beam_2d_squ):

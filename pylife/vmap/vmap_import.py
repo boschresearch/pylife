@@ -504,11 +504,19 @@ class VMAPImport:
             for (_, gset) in geometry_sets.items() if gset.attrs['MYSETTYPE'] == s_type
         }
 
-    def get_geometry_set(self, geometry_name, geometry_set_name):
-        geometry_set = self._file["/VMAP/GEOMETRY/%s/GEOMETRYSETS/%s/MYGEOMETRYSETDATA"
-                                  % (geometry_name, geometry_set_name)]
-        return pd.Index(geometry_set.value.flatten())
+    def try_get_geometry_set(self, geometry_name, geometry_set_name):
+        try:
+            geometry_set = self._file["/VMAP/GEOMETRY/%s/GEOMETRYSETS/%s/MYGEOMETRYSETDATA"
+                                      % (geometry_name, geometry_set_name)]
+        return geometry_set.value
+        except KeyError:
+            return None
 
+    def try_get_vmap_object(self, group_full_path):
+        try:
+            return self._file[group_full_path]
+        except KeyError:
+            return None
 
     def _node_set_ids(self, geometry, node_set):
         try:

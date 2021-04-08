@@ -122,18 +122,18 @@ class VMAPExport:
         """
         return vmap_structures.column_names[parameter_name][0]
 
-    def rename_vmap_object(self, object_path, name, dtype=None):
+    def set_group_attribute(self, object_path, key, value):
         """
-        Sets the 'MYNAME' attribute of the VMAP objects that has such attribute
+        Sets the 'MYNAME' attribute of the VMAP objects
 
         Parameters
         ----------
         object_path: string
             The full path to the object that we want to rename
-        name: string
-            The name that we want to provide
-        dtype: np.dtype
-            The data type of the attribute
+        key: string
+            The key of the attribute that we want to set
+        value: np.dtype
+            The value that we want to set to the attribute
 
         Returns
         -------
@@ -144,11 +144,7 @@ class VMAPExport:
                 vmap_object = file[object_path]
             except KeyError:
                 raise KeyError('VMAP object %s does not exist.' % object_path)
-
-            try:
-                vmap_object.attrs.create('MYNAME', name, dtype=dtype)
-            except KeyError:
-                raise KeyError('VMAP object %s does not have attribute name')
+            vmap_object.attrs.create(key, value)
 
     def add_geometry(self, geometry_name, mesh):
         """
@@ -239,12 +235,12 @@ class VMAPExport:
         self._create_dataset(VMAPIntegrationType, content)
         return self
 
-    def add_variable(self, state, geometry_name, variable_name, mesh, column_names=None, location=None):
+    def add_variable(self, state_name, geometry_name, variable_name, mesh, column_names=None, location=None):
         """
         Exports variable into given state and geometry
         Parameters
         ----------
-        state: string
+        state_name: string
             State where we want to export the parameter
         geometry_name: string
             Geometry where we want to export the parameter
@@ -271,11 +267,12 @@ class VMAPExport:
                 raise KeyError("No geometry with the name %s" % geometry_name)
 
             try:
-                state_group = file["/VMAP/VARIABLES/%s" % state]
+                state_group = file["/VMAP/VARIABLES/%s" % state_name]
             except KeyError:
-                state_group = self._create_group_with_attributes(file['VMAP/VARIABLES'], state,
+                state_group = self._create_group_with_attributes(file['VMAP/VARIABLES'], state_name,
                                                                  VMAPAttribute('MYSTATEINCREMENT', 0),
-                                                                 VMAPAttribute('MYSTATENAME', state),
+                                                                 VMAPAttribute('MYSTATENAME', str.encode(state_name,
+                                                                                                         'UTF8')),
                                                                  VMAPAttribute('MYSTEPTIME', 0.0),
                                                                  VMAPAttribute('MYTOTALTIME', 0.0))
             try:
@@ -303,10 +300,12 @@ class VMAPExport:
                                                                   VMAPAttribute('MYMULTIPLICITY', 1),
                                                                   VMAPAttribute('MYTIMEVALUE', 0.0),
                                                                   VMAPAttribute('MYUNIT', -1),
-                                                                  VMAPAttribute('MYVARIABLEDEPENDENCY', ''),
-                                                                  VMAPAttribute('MYVARIABLEDESCRIPITON',
-                                                                                'pyLife: %s' % variable_name),
-                                                                  VMAPAttribute('MYVARIABLENAME', variable_name))
+                                                                  VMAPAttribute('MYVARIABLEDEPENDENCY', b' '),
+                                                                  VMAPAttribute('MYVARIABLEDESCRIPTION',
+                                                                                str.encode('pyLife: %s' % variable_name,
+                                                                                           'UTF8')),
+                                                                  VMAPAttribute('MYVARIABLENAME',
+                                                                                str.encode(variable_name, 'UTF8')))
             if location == 2:
                 node_ids_info = mesh.groupby('node_id').first()
                 variable_dataset.create_dataset('MYGEOMETRYIDS', data=np.array([node_ids_info.index]).T, dtype=np.int32,
@@ -437,7 +436,7 @@ class VMAPExport:
             geometry_set = self._create_group_with_attributes(geometry_set_group, str(f"{geometry_set_name:06d}"),
                                                               VMAPAttribute('MYIDENTIFIER', geometry_set_name),
                                                               VMAPAttribute('MYSETINDEXTYPE', 1),
-                                                              VMAPAttribute('MYSETNAME', name),
+                                                              VMAPAttribute('MYSETNAME', str.encode(name, 'UTF-8')),
                                                               VMAPAttribute('MYSETTYPE', object_type))
             geometry_set.create_dataset('MYGEOMETRYSETDATA', data=pd.DataFrame(indices), dtype=np.int32, chunks=True)
             geometry_set_group.attrs['MYSIZE'] = geometry_set_name + 1

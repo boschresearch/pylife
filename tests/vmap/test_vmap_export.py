@@ -22,48 +22,68 @@ class TestExport(unittest.TestCase):
         os.remove(self._export.file_name)
 
     def test_fundamental_groups(self):
-        with h5py.File(self._export.file_name, 'r') as file:
-            vmap_group = self.try_get_vmap_structure(file, 'VMAP')
+        with vmap.VMAPImport(self._export.file_name) as import_actual:
+            vmap_group = import_actual.try_get_vmap_object('VMAP')
             assert vmap_group is not None
             assert len(vmap_group) == 4
 
-            geometry_group = self.try_get_vmap_structure(vmap_group, 'GEOMETRY')
+            geometry_group = import_actual.try_get_vmap_object('VMAP/GEOMETRY')
             assert geometry_group is not None
             assert len(geometry_group) == 1
 
-            material_group = self.try_get_vmap_structure(vmap_group, 'MATERIAL')
+            material_group = import_actual.try_get_vmap_object('VMAP/MATERIAL')
             assert material_group is not None
             assert len(material_group) == 0
 
-            system_group = self.try_get_vmap_structure(vmap_group, 'SYSTEM')
+            system_group = import_actual.try_get_vmap_object('VMAP/SYSTEM')
             assert system_group is not None
             assert len(system_group) == 5
-            self.assert_dataset_correct(system_group, 'ELEMENTTYPES', self._export._element_types)
-            self.assert_dataset_correct(system_group, 'METADATA', self._export._metadata, False)
-            self.assert_dataset_correct(system_group, 'SECTION', self._export._sections)
-            self.assert_dataset_correct(system_group, 'UNITSYSTEM', self._export._unit_system)
-            self.assert_dataset_correct(system_group, 'COORDINATESYSTEM', self._export._coordinate_systems)
+            self.assert_dataset_correct(system_group['ELEMENTTYPES'], self._export._element_types)
+            self.assert_dataset_correct(system_group['METADATA'], self._export._metadata, False)
+            self.assert_dataset_correct(system_group['SECTION'], self._export._sections)
+            self.assert_dataset_correct(system_group['UNITSYSTEM'], self._export._unit_system)
+            self.assert_dataset_correct(system_group['COORDINATESYSTEM'], self._export._coordinate_systems)
 
-            variables_group = self.try_get_vmap_structure(vmap_group, 'VARIABLES')
+            variables_group = import_actual.try_get_vmap_object('VMAP/VARIABLES')
             assert variables_group is not None
             assert len(variables_group) == 0
 
-    def test_set_object_name(self):
+    def test_set_geometry_name(self):
         geometry_path = 'VMAP/GEOMETRY/1'
         name = 'PART-1-1'
-        self._export.rename_vmap_object(geometry_path, name)
+        self._export.set_group_attribute(geometry_path, 'MYNAME', name)
         with h5py.File(self._export.file_name, 'r') as file:
             assert file[geometry_path].attrs['MYNAME'] == name
 
     def test_add_dataset(self):
         self._export.add_integration_types(RD.integration_type_content)
         dataset_name = 'INTEGRATIONTYPES'
-        with h5py.File(self._export.file_name, 'r') as file:
-            system_group = self.try_get_vmap_structure(file, 'VMAP/SYSTEM')
-            assert system_group is not None
-            dataset = self.try_get_vmap_structure(system_group, dataset_name)
+        with vmap.VMAPImport(self._export.file_name) as import_actual:
+            dataset = import_actual.try_get_vmap_object('VMAP/SYSTEM/%s' % dataset_name)
             assert dataset is not None
-            self.assert_dataset_correct(system_group, dataset_name, RD.integration_type_content)
+            self.assert_dataset_correct(dataset, RD.integration_type_content)
+
+    def test_geometry(self):
+        geometry_full_path = "VMAP/GEOMETRY/1"
+        with vmap.VMAPImport(self._export.file_name) as import_actual:
+            geometry_actual = import_actual.try_get_vmap_object(geometry_full_path)
+            assert geometry_actual is not None
+            geometry_expected = self._import_expected.try_get_vmap_object(geometry_full_path)
+            assert geometry_expected is not None
+
+            elements_actual = import_actual.try_get_vmap_object("%s/ELEMENTS" % geometry_full_path)
+            assert elements_actual is not None
+            elements_expected = self._import_expected.try_get_vmap_object("%s/ELEMENTS" % geometry_full_path)
+            assert elements_expected is not None
+
+            self.assert_group_attrs_equal(elements_expected, elements_actual)
+
+            points_actual = import_actual.try_get_vmap_object("%s/POINTS" % geometry_full_path)
+            assert points_actual is not None
+            points_expected = self._import_expected.try_get_vmap_object("%s/POINTS" % geometry_full_path)
+            assert points_expected is not None
+
+            self.assert_group_attrs_equal(points_expected, points_actual)
 
     def test_add_geometry(self):
         geometry_name = '2'
@@ -75,47 +95,101 @@ class TestExport(unittest.TestCase):
                            .to_frame())
             pd.testing.assert_frame_equal(mesh_expected.sort_index(), mesh_actual.sort_index())
 
-    def test_add_geometry_set(self):
+    def test_add_node_set(self):
         geometry_name = '1'
         geometry_set_name = '000000'
-        geometry_set_expected = self._import_expected.get_geometry_set(geometry_name, geometry_set_name)
+        geometry_set_full_path = 'VMAP/GEOMETRY/%s/GEOMETRYSETS/%s' % (geometry_name, geometry_set_name)
+        geometry_set_expected = self._import_expected.try_get_geometry_set(geometry_name, geometry_set_name)
+        assert geometry_set_expected is not None
         self._export.add_node_set(geometry_name, geometry_set_expected, self._mesh, 'ALL')
         with vmap.VMAPImport(self._export.file_name) as import_actual:
-            geometry_set_actual = import_actual.get_geometry_set(geometry_name, geometry_set_name)
+            geometry_set_group_expected = self._import_expected.try_get_vmap_object(geometry_set_full_path)
+            assert geometry_set_group_expected is not None
+            geometry_set_group_actual = import_actual.try_get_vmap_object(geometry_set_full_path)
+            assert geometry_set_group_actual is not None
+            self.assert_group_attrs_equal(geometry_set_group_expected, geometry_set_group_actual)
+
+            geometry_set_actual = import_actual.try_get_geometry_set(geometry_name, geometry_set_name)
+        for ind in geometry_set_expected:
             assert geometry_set_expected.shape == geometry_set_actual.shape
             assert geometry_set_expected.size == geometry_set_actual.size
             assert geometry_set_expected.dtype == geometry_set_actual.dtype
             assert (geometry_set_expected == geometry_set_actual).all()
 
+    def test_add_element_set(self):
+        geometry_name = '1'
+        geometry_set_name_expected = '000003'
+        geometry_set_name_actual = '000000'
+        geometry_set_full_path_expected = 'VMAP/GEOMETRY/%s/GEOMETRYSETS/%s' % (geometry_name,
+                                                                                geometry_set_name_expected)
+        geometry_set_full_path_actual = 'VMAP/GEOMETRY/%s/GEOMETRYSETS/%s' % (geometry_name,
+                                                                              geometry_set_name_actual)
+        geometry_set_expected = self._import_expected.try_get_geometry_set(geometry_name, geometry_set_name_expected)
+        assert geometry_set_expected is not None
+        self._export.add_node_set(geometry_name, ind_set, self._mesh, 'ALL')
+        with vmap.VMAPImport(self._export.file_name) as import_actual:
+            geometry_set_group_expected = self._import_expected.try_get_vmap_object(geometry_set_full_path_expected)
+            assert geometry_set_group_expected is not None
+            geometry_set_group_actual = import_actual.try_get_vmap_object(geometry_set_full_path_actual)
+            assert geometry_set_group_actual is not None
+            self.assert_group_attrs_equal(geometry_set_group_expected, geometry_set_group_actual, 'MYIDENTIFIER')
+
+            geometry_set_actual = import_actual.try_get_geometry_set(geometry_name, geometry_set_name_actual)
+            assert geometry_set_actual is not None
+            assert geometry_set_expected.shape == geometry_set_actual.shape
+            assert geometry_set_expected.size == geometry_set_actual.size
+            assert geometry_set_expected.dtype == geometry_set_actual.dtype
+            assert (geometry_set_expected == geometry_set_actual).all()
+
+    def test_add_node_set_invalid(self):
+        geometry_name = '1'
+        invalid_node_set = pd.Index([17, 18, 19])
+        with self.assertRaises(KeyError):
+            self._export.add_node_set(geometry_name, invalid_node_set, self._mesh, 'ALL')
+
     def test_add_variable(self):
         state_name = 'STATE-2'
+        state_full_path = 'VMAP/VARIABLES/%s' % state_name
         geometry_name = '1'
-        parameter_name = 'DISPLACEMENT'
-        self._export.add_variable(state_name, geometry_name, parameter_name, self._mesh)
+        variable_name = 'DISPLACEMENT'
+        variable_full_path = '%s/%s/%s' % (state_full_path, geometry_name, variable_name)
+        self._export.add_variable(state_name, geometry_name, variable_name, self._mesh)
         with vmap.VMAPImport(self._export.file_name) as import_actual:
+            variable_group_expected = self._import_expected.try_get_vmap_object(variable_full_path)
+            assert variable_group_expected is not None
+            variable_group_actual = import_actual.try_get_vmap_object(variable_full_path)
+            assert variable_group_expected is not None
+            self.assert_group_attrs_equal(variable_group_expected, variable_group_actual,
+                                          'MYIDENTIFIER', 'MYTIMEVALUE', 'MYVARIABLEDESCRIPTION')
             mesh_actual = (import_actual.make_mesh(geometry_name, state_name)
-                           .join_variable(parameter_name)
+                           .join_variable(variable_name)
                            .to_frame())
-        mesh_expected = self._mesh[self._export.parameter_column_names(parameter_name)]
+        mesh_expected = self._mesh[self._export.parameter_column_names(variable_name)]
         pd.testing.assert_frame_equal(mesh_expected.sort_index(), mesh_actual.sort_index())
+
+    def test_add_variable_group_invalid(self):
+        state_name = 'STATE-2'
+        geometry_name = '2'
+        variable_name = 'DISPLACEMENT'
+        with self.assertRaises(KeyError):
+            self._export.add_variable(state_name, geometry_name, variable_name, self._mesh)
+
+    def test_add_variable_name_invalid(self):
+        state_name = 'STATE-2'
+        geometry_name = '1'
+        variable_name = 'DISPLACEMENT2'
+        with self.assertRaises(KeyError):
+            self._export.add_variable(state_name, geometry_name, variable_name, self._mesh)
 
     def test_all(self):
         self.test_add_dataset()
         self.test_add_geometry()
-        self.test_add_geometry_set()
+        self.test_add_node_set()
         self.test_add_variable()
 
-    def try_get_vmap_structure(self, parent, structure_name):
-        try:
-            structure = parent[structure_name]
-            return structure
-        except KeyError:
-            return None
-
-    def assert_dataset_correct(self, parent, dataset_name, expected_values, is_compound=True):
-        actual_values = parent[dataset_name]
-        assert len(actual_values) == len(expected_values)
-        for e_key, a_0 in zip(expected_values, actual_values):
+    def assert_dataset_correct(self, dataset, expected_values, is_compound=True):
+        assert len(dataset) == len(expected_values)
+        for e_key, a_0 in zip(expected_values, dataset):
             e_0 = expected_values[e_key]
             if is_compound:
                 a_0 = a_0[0]
@@ -127,16 +201,12 @@ class TestExport(unittest.TestCase):
                 except TypeError:
                     assert e_1 == a_1
 
-
-    def assert_dfs_equal(self, df_expected, df_actual):
-        assert df_expected.shape == df_actual.shape
-        assert df_expected.size == df_actual.size
-        index_equal = df_expected.index == df_actual.index
-        assert index_equal.all()
-        values_equal = df_expected == df_actual
-        for column_name in values_equal.keys():
-            assert values_equal[column_name].all()
-
+    def assert_group_attrs_equal(self, group_expected, group_actual, *args):
+        attributes_expected = list(group_expected.attrs.items())
+        for attr_expected in attributes_expected:
+            assert attr_expected[0] in group_actual.attrs
+            if attr_expected[0] not in args:
+                assert group_actual.attrs[attr_expected[0]] == attr_expected[1]
 
 @pytest.mark.parametrize('filename', [
     'beam_2d_tri_lin.vmap',
