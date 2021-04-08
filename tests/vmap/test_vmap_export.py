@@ -110,7 +110,7 @@ class TestExport(unittest.TestCase):
             self.assert_group_attrs_equal(geometry_set_group_expected, geometry_set_group_actual)
 
             geometry_set_actual = import_actual.try_get_geometry_set(geometry_name, geometry_set_name)
-        for ind in geometry_set_expected:
+            assert geometry_set_actual is not None
             assert geometry_set_expected.shape == geometry_set_actual.shape
             assert geometry_set_expected.size == geometry_set_actual.size
             assert geometry_set_expected.dtype == geometry_set_actual.dtype
@@ -126,7 +126,7 @@ class TestExport(unittest.TestCase):
                                                                               geometry_set_name_actual)
         geometry_set_expected = self._import_expected.try_get_geometry_set(geometry_name, geometry_set_name_expected)
         assert geometry_set_expected is not None
-        self._export.add_node_set(geometry_name, ind_set, self._mesh, 'ALL')
+        self._export.add_element_set(geometry_name, geometry_set_expected, self._mesh, 'ALL')
         with vmap.VMAPImport(self._export.file_name) as import_actual:
             geometry_set_group_expected = self._import_expected.try_get_vmap_object(geometry_set_full_path_expected)
             assert geometry_set_group_expected is not None
