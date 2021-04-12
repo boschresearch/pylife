@@ -1,3 +1,4 @@
+import re
 import pandas as pd
 import unittest
 import pytest
@@ -180,6 +181,32 @@ class TestExport(unittest.TestCase):
         variable_name = 'DISPLACEMENT2'
         with self.assertRaises(KeyError):
             self._export.add_variable(state_name, geometry_name, variable_name, self._mesh)
+
+    def test_add_variable_unknown_location(self):
+        state_name = 'STATE-2'
+        state_full_path = 'VMAP/VARIABLES/%s' % state_name
+        geometry_name = '1'
+        variable_name = 'FORCE_REACTION'
+        mesh_actual = (self._import_expected.make_mesh(geometry_name, state_name)
+                       .join_variable(variable_name, column_names=['RF1', 'RF2', 'RF3'])
+                       .to_frame())
+        with pytest.raises(vmap.APIUseError,
+                           match=re.escape("Need location for unknown variable RF1. Please provide one using 'location' parameter.")):
+            self._export.add_variable(state_name, geometry_name, 'RF1', mesh_actual, column_names=['RF1'])
+
+    def test_add_variable_unknown_column_name(self):
+        state_name = 'STATE-2'
+        geometry_name = '1'
+        variable_name = 'FORCE_REACTION'
+        mesh_actual = (self._import_expected.make_mesh(geometry_name, state_name)
+                       .join_variable(variable_name, column_names=['RF1', 'RF2', 'RF3'])
+                       .to_frame())
+        self._export.add_variable(state_name, geometry_name, 'RF1', mesh_actual, column_names=['RF1'], location=2)
+        mesh_exported = (vmap.VMAPImport(self._export.file_name).make_mesh(geometry_name, state_name)
+                         .join_variable('RF1', column_names=['RF1'])
+                         .to_frame())
+        pd.testing.assert_series_equal(mesh_exported['RF1'], mesh_actual['RF1'])
+
 
     def test_all(self):
         self.test_add_dataset()
