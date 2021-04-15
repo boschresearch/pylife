@@ -24,6 +24,7 @@ import numpy as np
 import pandas as pd
 import h5py
 
+from .exceptions import *
 from . import vmap_structures
 from .vmap_unit_system import VMAPUnit
 from .vmap_element_type import VMAPElementType
@@ -51,7 +52,7 @@ class VMAPExport:
     """
 
     """
-    These dictionaries are to provide the data to the SYSTEM datasets. This data is going to come from the import 
+    These dictionaries are to provide the data to the SYSTEM datasets. This data is going to come from the import
     """
     _element_types = {
         (2, 3): [0, 'VMAP_ELEM_2D_TRIANGLE_3', 'pyLife 2D 3', 3, 2, -1, -1, -1, -1, -1, [], []],
@@ -288,6 +289,8 @@ class VMAPExport:
                     raise KeyError("No column name for variable %s." % variable_name)
 
             if location is None:
+                if variable_name not in vmap_structures.column_names:
+                    raise APIUseError("Need location for unknown variable %s. Please provide one using 'location' parameter." % variable_name)
                 location = vmap_structures.column_names[variable_name][1]
 
             variable_dataset = self._create_group_with_attributes(geometry_group, variable_name,
