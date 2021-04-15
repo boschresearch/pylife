@@ -15,4 +15,3 @@ dependencies:
 - pip = 20.2
 - pip:
   - mystic
-  - tables
