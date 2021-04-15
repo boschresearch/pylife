@@ -29,13 +29,5 @@ doc/source/demos/*csv
 doc/source/demos/*.vmap
 doc/source/demos/pic
 /doc/source/demos/data/
-.idea/
-prof/
-log.txt
-demos/test.vmap
-tests/vmap/testfiles/Job-Zugprobe_3D_V5.vmap
-tests/vmap/testfiles/Job-Zugprobe_3D_V5_element_nodal.vmap
-tests/vmap/testfiles/Job-Zugprobe_3D_V5_extrapolatedS.vmap
-tests/vmap/testfiles/Parking_Data1_WSG.vmap
-tests/vmap/testfiles/Parking_Data1_WSG_element_nodal.vmap
-tests/vmap/testfiles/plate_with_hole.vmap
+.idea*
+prof/*
