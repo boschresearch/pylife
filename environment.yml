@@ -16,4 +16,3 @@ dependencies:
 - pip:
   - mystic
   - tables
-  - pymc3
