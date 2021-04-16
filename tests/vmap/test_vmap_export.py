@@ -234,6 +234,7 @@ class TestExport(unittest.TestCase):
                         assert e_2 == a_2
                     continue
                 e_1 = self.make_bytearray_if_str(e_1)
+                a_1 = self.make_bytearray_if_str(a_1)
                 assert e_1 == a_1
 
     def assert_group_attrs_equal(self, group_expected, group_actual, *args):
