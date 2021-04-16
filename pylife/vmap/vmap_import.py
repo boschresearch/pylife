@@ -508,7 +508,7 @@ class VMAPImport:
         try:
             geometry_set = self._file["/VMAP/GEOMETRY/%s/GEOMETRYSETS/%s/MYGEOMETRYSETDATA"
                                       % (geometry_name, geometry_set_name)]
-            return pd.Index(geometry_set.value.flatten())
+            return pd.Index(geometry_set[()].flatten())
         except KeyError:
             return None
 

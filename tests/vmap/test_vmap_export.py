@@ -207,7 +207,6 @@ class TestExport(unittest.TestCase):
                          .to_frame())
         pd.testing.assert_series_equal(mesh_exported['RF1'], mesh_actual['RF1'])
 
-
     def test_all(self):
         self.test_add_dataset()
         self.test_add_geometry()
@@ -222,18 +221,26 @@ class TestExport(unittest.TestCase):
                 a_0 = a_0[0]
             assert len(e_0) == len(a_0)
             for e_1, a_1 in zip(e_0, a_0):
-                try:
+                if (isinstance(e_1, list)):
                     for e_2, a_2 in zip(e_1, a_1):
                         assert e_2 == a_2
-                except TypeError:
-                    assert e_1 == a_1
+                    continue
+                e_1 = self.make_bytearray_if_str(e_1)
+                assert e_1 == a_1
 
     def assert_group_attrs_equal(self, group_expected, group_actual, *args):
         attributes_expected = list(group_expected.attrs.items())
         for attr_expected in attributes_expected:
             assert attr_expected[0] in group_actual.attrs
             if attr_expected[0] not in args:
-                assert group_actual.attrs[attr_expected[0]] == attr_expected[1]
+                testval = self.make_bytearray_if_str(group_actual.attrs[attr_expected[0]])
+                assert testval == attr_expected[1]
+
+    def make_bytearray_if_str(self, value):
+        if (isinstance(value, str)):
+            return bytearray(value, 'utf-8')
+        return value
+
 
 @pytest.mark.parametrize('filename', [
     'beam_2d_tri_lin.vmap',
