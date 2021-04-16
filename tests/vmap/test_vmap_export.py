@@ -2,6 +2,8 @@ import re
 import pandas as pd
 import unittest
 import pytest
+import tempfile
+import shutil
 
 import pylife.vmap as vmap
 import h5py
@@ -11,7 +13,8 @@ import reference_data as RD
 
 class TestExport(unittest.TestCase):
     def setUp(self):
-        self._export = vmap.VMAPExport('tests/vmap/testfiles/test.vmap')
+        self._tmpdir = tempfile.mkdtemp()
+        self._export = vmap.VMAPExport(os.path.join(self._tmpdir, 'test.vmap'))
         self._import_expected = vmap.VMAPImport('tests/vmap/testfiles/beam_2d_squ_lin.vmap')
         self._mesh = (self._import_expected.make_mesh('1', 'STATE-2')
                       .join_coordinates()
@@ -20,7 +23,7 @@ class TestExport(unittest.TestCase):
         self._export.add_geometry('1', self._mesh)
 
     def tearDown(self):
-        os.remove(self._export.file_name)
+        shutil.rmtree(self._tmpdir)
 
     def test_fundamental_groups(self):
         with vmap.VMAPImport(self._export.file_name) as import_actual:
