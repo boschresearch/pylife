@@ -10,7 +10,10 @@ class RambergOsgood:
 
     def strain(self, stress):
         self._fail_if_negative(stress)
-        return stress/self._E + np.power(stress/self._K, 1./self._n)
+        return stress/self._E + self.plastic_strain(stress)
+
+    def plastic_strain(self, stress):
+        return np.power(stress/self._K, 1./self._n)
 
     def delta_strain(self, delta_stress):
         self._fail_if_negative(delta_stress)
