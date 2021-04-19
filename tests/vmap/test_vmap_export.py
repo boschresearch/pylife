@@ -14,8 +14,7 @@ import reference_data as RD
 class TestExport(unittest.TestCase):
     def setUp(self):
         self._tmpdir = tempfile.mkdtemp()
-        self._export_file = os.path.join(self._tmpdir, 'test.vmap')
-        self._export = vmap.VMAPExport(self._export_file)
+        self._export = vmap.VMAPExport(os.path.join(self._tmpdir, 'test.vmap'))
         self._import_expected = vmap.VMAPImport('tests/vmap/testfiles/beam_2d_squ_lin.vmap')
         self._mesh = (self._import_expected.make_mesh('1', 'STATE-2')
                       .join_coordinates()
@@ -151,7 +150,6 @@ class TestExport(unittest.TestCase):
         invalid_node_set = pd.Index([17, 18, 19])
         with self.assertRaises(KeyError):
             self._export.add_node_set(geometry_name, invalid_node_set, self._mesh, 'ALL')
-        assert not os.path.isfile(self._export_file)
 
     def test_add_variable(self):
         state_name = 'STATE-2'
@@ -179,7 +177,6 @@ class TestExport(unittest.TestCase):
         variable_name = 'DISPLACEMENT'
         with self.assertRaises(KeyError):
             self._export.add_variable(state_name, geometry_name, variable_name, self._mesh)
-        assert not os.path.isfile(self._export_file)
 
     def test_add_variable_name_invalid(self):
         state_name = 'STATE-2'
@@ -187,7 +184,6 @@ class TestExport(unittest.TestCase):
         variable_name = 'DISPLACEMENT2'
         with self.assertRaises(KeyError):
             self._export.add_variable(state_name, geometry_name, variable_name, self._mesh)
-        assert not os.path.isfile(self._export_file)
 
     def test_add_variable_unknown_location(self):
         state_name = 'STATE-2'
@@ -200,7 +196,6 @@ class TestExport(unittest.TestCase):
         with pytest.raises(vmap.APIUseError,
                            match=re.escape("Need location for unknown variable RF1. Please provide one using 'location' parameter.")):
             self._export.add_variable(state_name, geometry_name, 'RF1', mesh_actual, column_names=['RF1'])
-        assert not os.path.isfile(self._export_file)
 
     def test_add_variable_unknown_column_name(self):
         state_name = 'STATE-2'

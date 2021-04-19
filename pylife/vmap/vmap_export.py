@@ -17,7 +17,6 @@
 __author__ = "Gyöngyvér Kiss"
 __maintainer__ = __author__
 
-import os
 import datetime
 import getpass
 
@@ -145,7 +144,7 @@ class VMAPExport:
             try:
                 vmap_object = file[object_path]
             except KeyError:
-                self._abort_export(KeyError('VMAP object %s does not exist.' % object_path), file)
+                raise KeyError('VMAP object %s does not exist.' % object_path)
             vmap_object.attrs.create(key, value)
 
     def add_geometry(self, geometry_name, mesh):
@@ -191,7 +190,7 @@ class VMAPExport:
         node_id_set = set(mesh.index.get_level_values('node_id'))
         index_set = set(indices)
         if not index_set.issubset(node_id_set):
-            self._abort_export(KeyError('Provided index set is not a subset of the node indices.'))
+            raise KeyError('Provided index set is not a subset of the node indices.')
         self._create_geometry_set(geometry_name, 0, indices, name)
         return self
 
@@ -217,7 +216,7 @@ class VMAPExport:
         element_id_set = set(mesh.index.get_level_values('element_id'))
         index_set = set(indices)
         if not index_set.issubset(element_id_set):
-            self._abort_export(KeyError('Provided index set is not a subset of the element indices.'))
+            raise KeyError('Provided index set is not a subset of the element indices.')
         self._create_geometry_set(geometry_name, 1, indices, name)
         return self
 
@@ -266,7 +265,7 @@ class VMAPExport:
             try:
                 file["VMAP/GEOMETRY/%s" % geometry_name]
             except KeyError:
-                self._abort_export(KeyError("No geometry with the name %s" % geometry_name), file)
+                raise KeyError("No geometry with the name %s" % geometry_name)
 
             try:
                 state_group = file["/VMAP/VARIABLES/%s" % state_name]
@@ -287,12 +286,11 @@ class VMAPExport:
                 try:
                     column_names = vmap_structures.column_names[variable_name][0]
                 except KeyError:
-                    self._abort_export(KeyError("No column name for variable %s." % variable_name), file)
+                    raise KeyError("No column name for variable %s." % variable_name)
 
             if location is None:
                 if variable_name not in vmap_structures.column_names:
-                    self._abort_export(APIUseError("Need location for unknown variable %s. "
-                                                   "Please provide one using 'location' parameter." % variable_name), file)
+                    raise APIUseError("Need location for unknown variable %s. Please provide one using 'location' parameter." % variable_name)
                 location = vmap_structures.column_names[variable_name][1]
 
             variable_dataset = self._create_group_with_attributes(geometry_group, variable_name,
@@ -435,7 +433,7 @@ class VMAPExport:
             try:
                 geometry_set_group = file["VMAP/GEOMETRY/%s/GEOMETRYSETS" % geometry_name]
             except KeyError:
-                self._abort_export(KeyError("No geometry with the name %s" % geometry_name), file)
+                raise KeyError("No geometry with the name %s" % geometry_name)
 
             geometry_set_name = geometry_set_group.attrs['MYSIZE']
             geometry_set = self._create_group_with_attributes(geometry_set_group, str(f"{geometry_set_name:06d}"),
@@ -445,9 +443,3 @@ class VMAPExport:
                                                               VMAPAttribute('MYSETTYPE', object_type))
             geometry_set.create_dataset('MYGEOMETRYSETDATA', data=pd.DataFrame(indices), dtype=np.int32, chunks=True)
             geometry_set_group.attrs['MYSIZE'] = geometry_set_name + 1
-
-    def _abort_export(self, exception, file=None):
-        if file is not None:
-            file.close()
-        os.remove(self._file_name)
-        raise exception
