@@ -246,7 +246,7 @@ class VMAPImport:
         """
         self._check_mesh_for_filtering()
         node_set_ids = self._node_set_ids(self._geometry, node_set)
-        self._mesh = self._mesh.loc[(slice(None), node_set_ids), :]
+        self._mesh = self._mesh[self._mesh.index.isin(node_set_ids, level='node_id')]
         return self
 
     def filter_element_set(self, element_set):
@@ -268,7 +268,7 @@ class VMAPImport:
         """
         self._check_mesh_for_filtering()
         element_set_ids = self._element_set_ids(self._geometry, element_set)
-        self._mesh = self._mesh.loc[(element_set_ids, slice(None)), :]
+        self._mesh = self._mesh[self._mesh.index.isin(element_set_ids, level='element_id')]
         return self
 
     def _check_mesh_for_filtering(self):
