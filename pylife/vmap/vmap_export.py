@@ -23,6 +23,7 @@ import getpass
 import numpy as np
 import pandas as pd
 import h5py
+import os
 
 from .exceptions import *
 from . import vmap_structures
@@ -96,9 +97,14 @@ class VMAPExport:
 
     def __init__(self, file_name):
         self._file_name = file_name
-        with h5py.File(file_name, 'w') as file:
-            self._create_fundamental_groups(file)
-        self._dimension = 2
+        try:
+            with h5py.File(file_name, 'w') as file:
+                self._create_fundamental_groups(file)
+            self._dimension = 2
+        except:
+            if os.path.exists(self._file_name):
+                os.remove(self._file_name)
+            raise Exception('An error occurred while creating file %s' % self._file_name)
 
     @property
     def file_name(self):
@@ -107,7 +113,7 @@ class VMAPExport:
         """
         return self._file_name
 
-    def parameter_column_names(self, parameter_name):
+    def variable_column_names(self, parameter_name):
         """
         Gets the column names that the given parameter consists of
 
@@ -122,6 +128,22 @@ class VMAPExport:
 
         """
         return vmap_structures.column_names[parameter_name][0]
+
+    def variable_location(self, parameter_name):
+        """
+        Gets the location of the given parameter
+
+        Parameters
+        ----------
+        parameter_name: string
+            The name of the parameter
+
+        Returns
+        -------
+        The location of the given parameter
+
+        """
+        return vmap_structures.column_names[parameter_name][1]
 
     def set_group_attribute(self, object_path, key, value):
         """
@@ -163,9 +185,16 @@ class VMAPExport:
 
         """
         with h5py.File(self._file_name, 'a') as file:
-            geometry = self._create_geometry_groups(file, geometry_name)
-            self._create_points_datasets(geometry, mesh)
-            self._create_elements_dataset(geometry, mesh)
+            geometry_group = file["/VMAP/GEOMETRY"]
+            if geometry_name in geometry_group:
+                raise KeyError('Geometry %s already exists' % geometry_name)
+            try:
+                geometry = self._create_geometry_groups(file, geometry_group, geometry_name)
+                self._create_points_datasets(geometry, mesh)
+                self._create_elements_dataset(geometry, mesh)
+            except:
+                del geometry_group[geometry_name]
+                raise Exception('An error occurred while creating geometry %s' % geometry_name)
         return self
 
     def add_node_set(self, geometry_name, indices, mesh, name=None):
@@ -233,7 +262,7 @@ class VMAPExport:
         self
 
         """
-        self._create_dataset(VMAPIntegrationType, content)
+        self._create_system_dataset(VMAPIntegrationType, content)
         return self
 
     def add_variable(self, state_name, geometry_name, variable_name, mesh, column_names=None, location=None):
@@ -251,10 +280,10 @@ class VMAPExport:
             The Data Frame that holds the data of the mesh to export
         column_names: List, optional
             The columns that the parameter consists of
-        location: integer, optional
+        location: Enum, optional
             The location of the parameter
                 2 - node
-                3 - element
+                3 - element - not supported yet
                 6 - element nodal
         Returns
         -------
@@ -282,6 +311,9 @@ class VMAPExport:
                 geometry_group = self._create_group_with_attributes(state_group, geometry_name,
                                                                     VMAPAttribute('MYSIZE', 0))
 
+            if variable_name in geometry_group:
+                raise KeyError("Variable already exists in state %s and geometry %s" % (state_name, geometry_name))
+
             if column_names is None:
                 try:
                     column_names = vmap_structures.column_names[variable_name][0]
@@ -290,36 +322,47 @@ class VMAPExport:
 
             if location is None:
                 if variable_name not in vmap_structures.column_names:
-                    raise APIUseError("Need location for unknown variable %s. Please provide one using 'location' parameter." % variable_name)
+                    raise APIUseError(
+                        "Need location for unknown variable %s. Please provide one using 'location' parameter."
+                        % variable_name)
                 location = vmap_structures.column_names[variable_name][1]
 
-            variable_dataset = self._create_group_with_attributes(geometry_group, variable_name,
-                                                                  VMAPAttribute('MYCOORDINATESYSTEM', -1),
-                                                                  VMAPAttribute('MYDIMENSION', len(column_names)),
-                                                                  VMAPAttribute('MYENTITY', 1),
-                                                                  VMAPAttribute('MYIDENTIFIER', len(geometry_group)),
-                                                                  VMAPAttribute('MYINCREMENTVALUE', 1),
-                                                                  VMAPAttribute('MYLOCATION', location),
-                                                                  VMAPAttribute('MYMULTIPLICITY', 1),
-                                                                  VMAPAttribute('MYTIMEVALUE', 0.0),
-                                                                  VMAPAttribute('MYUNIT', -1),
-                                                                  VMAPAttribute('MYVARIABLEDEPENDENCY', b' '),
-                                                                  VMAPAttribute('MYVARIABLEDESCRIPTION',
-                                                                                str.encode('pyLife: %s' % variable_name,
-                                                                                           'UTF8')),
-                                                                  VMAPAttribute('MYVARIABLENAME',
-                                                                                str.encode(variable_name, 'UTF8')))
-            if location == 2:
-                node_ids_info = mesh.groupby('node_id').first()
-                variable_dataset.create_dataset('MYGEOMETRYIDS', data=np.array([node_ids_info.index]).T, dtype=np.int32,
-                                                chunks=True)
-                variable_dataset.create_dataset('MYVALUES', data=node_ids_info[column_names].values, chunks=True)
-            if location == 6:
-                element_ids = mesh.index.get_level_values('element_id').drop_duplicates().values
-                variable_dataset.create_dataset('MYGEOMETRYIDS', data=np.array([element_ids]).T, dtype=np.int32,
-                                                chunks=True)
-                variable_dataset.create_dataset('MYVALUES', data=mesh[column_names], chunks=True)
-            geometry_group.attrs['MYSIZE'] = geometry_group.attrs['MYSIZE'] + 1
+            try:
+                variable_dataset = self._create_group_with_attributes(geometry_group, variable_name,
+                                                                      VMAPAttribute('MYCOORDINATESYSTEM', -1),
+                                                                      VMAPAttribute('MYDIMENSION', len(column_names)),
+                                                                      VMAPAttribute('MYENTITY', 1),
+                                                                      VMAPAttribute('MYIDENTIFIER',
+                                                                                    len(geometry_group)),
+                                                                      VMAPAttribute('MYINCREMENTVALUE', 1),
+                                                                      VMAPAttribute('MYLOCATION', location.value),
+                                                                      VMAPAttribute('MYMULTIPLICITY', 1),
+                                                                      VMAPAttribute('MYTIMEVALUE', 0.0),
+                                                                      VMAPAttribute('MYUNIT', -1),
+                                                                      VMAPAttribute('MYVARIABLEDEPENDENCY', b' '),
+                                                                      VMAPAttribute('MYVARIABLEDESCRIPTION',
+                                                                                    str.encode(
+                                                                                        'pyLife: %s' % variable_name,
+                                                                                        'UTF8')),
+                                                                      VMAPAttribute('MYVARIABLENAME',
+                                                                                    str.encode(variable_name, 'UTF8')))
+                if location == vmap_structures.VariableLocations.NODE:
+                    node_ids_info = mesh.groupby('node_id').first()
+                    variable_dataset.create_dataset('MYGEOMETRYIDS', data=np.array([node_ids_info.index]).T,
+                                                    dtype=np.int32, chunks=True)
+                    variable_dataset.create_dataset('MYVALUES', data=node_ids_info[column_names].values, chunks=True)
+                elif location == vmap_structures.VariableLocations.ELEMENT_NODAL:
+                    element_ids = mesh.index.get_level_values('element_id').drop_duplicates().values
+                    variable_dataset.create_dataset('MYGEOMETRYIDS', data=np.array([element_ids]).T, dtype=np.int32,
+                                                    chunks=True)
+                    variable_dataset.create_dataset('MYVALUES', data=mesh[column_names], chunks=True)
+                else:
+                    raise ValueError('Unknown location')
+
+                geometry_group.attrs['MYSIZE'] = geometry_group.attrs['MYSIZE'] + 1
+            except:
+                del geometry_group[variable_name]
+                raise Exception('An error occurred while creating variable %s' % variable_name)
         return self
 
     def _create_group_with_attributes(self, parent_group, group_name, *args):
@@ -343,15 +386,15 @@ class VMAPExport:
         self._create_group_with_attributes(vmap_group, 'MATERIAL')
         self._create_group_with_attributes(vmap_group, 'SYSTEM')
 
-        self._create_dataset(VMAPCoordinateSystem, self._coordinate_systems)
-        self._create_dataset(VMAPElementType, self._element_types)
-        self._create_dataset(VMAPMetadata, self._metadata)
-        self._create_dataset(VMAPSection, self._sections)
-        self._create_dataset(VMAPUnit, self._unit_system)
+        self._create_system_dataset(VMAPCoordinateSystem, self._coordinate_systems)
+        self._create_system_dataset(VMAPElementType, self._element_types)
+        self._create_system_dataset(VMAPMetadata, self._metadata)
+        self._create_system_dataset(VMAPSection, self._sections)
+        self._create_system_dataset(VMAPUnit, self._unit_system)
 
         self._create_group_with_attributes(vmap_group, 'VARIABLES')
 
-    def _create_dataset(self, class_name, dataset_content):
+    def _create_system_dataset(self, class_name, dataset_content):
         attribute_list = []
         for content_key in dataset_content:
             dataset = class_name(*dataset_content[content_key])
@@ -368,11 +411,17 @@ class VMAPExport:
             chunked = None
         with h5py.File(self._file_name, 'a') as file:
             system_group = file[path]
-            system_group.create_dataset(name, dtype=dt_type, data=d, chunks=chunked)
+            if name in system_group:
+                raise KeyError('Dataset %s already exists in SYSTEM')
+
+            try:
+                system_group.create_dataset(name, dtype=dt_type, data=d, chunks=chunked)
+            except:
+                del system_group[name]
+                raise Exception('An error occurred while creating dataset %s' % name)
         return self
 
-    def _create_geometry_groups(self, file, geometry_name):
-        geometry_group = file["/VMAP/GEOMETRY"]
+    def _create_geometry_groups(self, file, geometry_group, geometry_name):
         geometry = self._create_group_with_attributes(geometry_group, geometry_name)
         self._create_group_with_attributes(geometry, 'ELEMENTS', VMAPAttribute('MYSIZE', np.int64(0)))
         self._create_group_with_attributes(geometry, 'GEOMETRYSETS', VMAPAttribute('MYSIZE', 0))
@@ -434,12 +483,19 @@ class VMAPExport:
                 geometry_set_group = file["VMAP/GEOMETRY/%s/GEOMETRYSETS" % geometry_name]
             except KeyError:
                 raise KeyError("No geometry with the name %s" % geometry_name)
-
-            geometry_set_name = geometry_set_group.attrs['MYSIZE']
-            geometry_set = self._create_group_with_attributes(geometry_set_group, str(f"{geometry_set_name:06d}"),
-                                                              VMAPAttribute('MYIDENTIFIER', geometry_set_name),
-                                                              VMAPAttribute('MYSETINDEXTYPE', 1),
-                                                              VMAPAttribute('MYSETNAME', str.encode(name, 'UTF-8')),
-                                                              VMAPAttribute('MYSETTYPE', object_type))
-            geometry_set.create_dataset('MYGEOMETRYSETDATA', data=pd.DataFrame(indices), dtype=np.int32, chunks=True)
-            geometry_set_group.attrs['MYSIZE'] = geometry_set_name + 1
+            try:
+                set_size = geometry_set_group.attrs['MYSIZE']
+                geometry_set_name = str(f"{set_size:06d}")
+                geometry_set = self._create_group_with_attributes(geometry_set_group, geometry_set_name,
+                                                                  VMAPAttribute('MYIDENTIFIER', set_size),
+                                                                  VMAPAttribute('MYSETINDEXTYPE', 1),
+                                                                  VMAPAttribute('MYSETNAME', str.encode(name, 'UTF-8')),
+                                                                  VMAPAttribute('MYSETTYPE', object_type))
+                geometry_set.create_dataset('MYGEOMETRYSETDATA', data=pd.DataFrame(indices),
+                                            dtype=np.int32, chunks=True)
+                geometry_set_group.attrs['MYSIZE'] = set_size + 1
+            except:
+                del geometry_set_group[geometry_set_name]
+                raise Exception(
+                    'An error occurred while creating geometry set %s in geometry %s'
+                    % (geometry_set_name, geometry_name))

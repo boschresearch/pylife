@@ -17,8 +17,16 @@
 __author__ = "Gyöngyvér Kiss"
 __maintainer__ = __author__
 
+from enum import Enum
+
+
+class VariableLocations(Enum):
+    NODE = 2
+    ELEMENT_NODAL = 6
+
+
 column_names = {
-    'DISPLACEMENT': [['dx', 'dy', 'dz'], 2],
-    'STRESS_CAUCHY': [['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], 6],
-    'E': [['E11', 'E22', 'E33', 'E12', 'E13', 'E23'], 6],
+    'DISPLACEMENT': [['dx', 'dy', 'dz'], VariableLocations.NODE],
+    'STRESS_CAUCHY': [['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], VariableLocations.ELEMENT_NODAL],
+    'E': [['E11', 'E22', 'E33', 'E12', 'E13', 'E23'], VariableLocations.ELEMENT_NODAL],
 }

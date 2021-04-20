@@ -9,12 +9,13 @@ import pylife.vmap as vmap
 import h5py
 import os
 import reference_data as RD
+import pylife.vmap.vmap_structures as structures
 
 
 class TestExport(unittest.TestCase):
     def setUp(self):
-        self._tmpdir = tempfile.mkdtemp()
-        self._export = vmap.VMAPExport(os.path.join(self._tmpdir, 'test.vmap'))
+        self._tmp_dir = tempfile.mkdtemp()
+        self._export = vmap.VMAPExport(os.path.join(self._tmp_dir, 'test.vmap'))
         self._import_expected = vmap.VMAPImport('tests/vmap/testfiles/beam_2d_squ_lin.vmap')
         self._mesh = (self._import_expected.make_mesh('1', 'STATE-2')
                       .join_coordinates()
@@ -23,7 +24,7 @@ class TestExport(unittest.TestCase):
         self._export.add_geometry('1', self._mesh)
 
     def tearDown(self):
-        shutil.rmtree(self._tmpdir)
+        shutil.rmtree(self._tmp_dir)
 
     def test_fundamental_groups(self):
         with vmap.VMAPImport(self._export.file_name) as import_actual:
@@ -67,6 +68,11 @@ class TestExport(unittest.TestCase):
             assert dataset is not None
             self.assert_dataset_correct(dataset, RD.integration_type_content)
 
+    def test_add_dataset_already_exists(self):
+        self._export.add_integration_types(RD.integration_type_content)
+        with self.assertRaises(KeyError):
+            self._export.add_integration_types(RD.integration_type_content)
+
     def test_geometry(self):
         geometry_full_path = "VMAP/GEOMETRY/1"
         with vmap.VMAPImport(self._export.file_name) as import_actual:
@@ -98,6 +104,20 @@ class TestExport(unittest.TestCase):
                            .join_coordinates()
                            .to_frame())
             pd.testing.assert_frame_equal(mesh_expected.sort_index(), mesh_actual.sort_index())
+
+    def test_add_geometry_invalid(self):
+        geometry_name = '2'
+        with self.assertRaises(Exception):
+            self._export.add_geometry(geometry_name, 5)
+
+        with vmap.VMAPImport(self._export.file_name) as import_actual:
+            geometry = import_actual.try_get_vmap_object('VMAP/GEOMETRY/%s' % geometry_name)
+            assert geometry is None
+
+    def test_add_geometry_already_exists(self):
+        geometry_name = '1'
+        with self.assertRaises(KeyError):
+            self._export.add_geometry(geometry_name, self._mesh)
 
     def test_add_node_set(self):
         geometry_name = '1'
@@ -168,7 +188,7 @@ class TestExport(unittest.TestCase):
             mesh_actual = (import_actual.make_mesh(geometry_name, state_name)
                            .join_variable(variable_name)
                            .to_frame())
-        mesh_expected = self._mesh[self._export.parameter_column_names(variable_name)]
+        mesh_expected = self._mesh[self._export.variable_column_names(variable_name)]
         pd.testing.assert_frame_equal(mesh_expected.sort_index(), mesh_actual.sort_index())
 
     def test_add_variable_group_invalid(self):
@@ -187,34 +207,71 @@ class TestExport(unittest.TestCase):
 
     def test_add_variable_unknown_location(self):
         state_name = 'STATE-2'
-        state_full_path = 'VMAP/VARIABLES/%s' % state_name
         geometry_name = '1'
         variable_name = 'FORCE_REACTION'
-        mesh_actual = (self._import_expected.make_mesh(geometry_name, state_name)
-                       .join_variable(variable_name, column_names=['RF1', 'RF2', 'RF3'])
-                       .to_frame())
+        mesh = (self._import_expected.make_mesh(geometry_name, state_name)
+                .join_variable(variable_name, column_names=['RF1', 'RF2', 'RF3'])
+                .to_frame())
         with pytest.raises(vmap.APIUseError,
-                           match=re.escape("Need location for unknown variable RF1. Please provide one using 'location' parameter.")):
-            self._export.add_variable(state_name, geometry_name, 'RF1', mesh_actual, column_names=['RF1'])
+                           match=re.escape(
+                               "Need location for unknown variable RF1. "
+                               "Please provide one using 'location' parameter.")):
+            self._export.add_variable(state_name, geometry_name, 'RF1', mesh, column_names=['RF1'])
 
     def test_add_variable_unknown_column_name(self):
         state_name = 'STATE-2'
         geometry_name = '1'
         variable_name = 'FORCE_REACTION'
-        mesh_actual = (self._import_expected.make_mesh(geometry_name, state_name)
-                       .join_variable(variable_name, column_names=['RF1', 'RF2', 'RF3'])
-                       .to_frame())
-        self._export.add_variable(state_name, geometry_name, 'RF1', mesh_actual, column_names=['RF1'], location=2)
-        mesh_exported = (vmap.VMAPImport(self._export.file_name).make_mesh(geometry_name, state_name)
-                         .join_variable('RF1', column_names=['RF1'])
+        mesh_expected = (self._import_expected.make_mesh(geometry_name, state_name)
+                         .join_variable(variable_name, column_names=['RF1', 'RF2', 'RF3'])
                          .to_frame())
-        pd.testing.assert_series_equal(mesh_exported['RF1'], mesh_actual['RF1'])
+        self._export.add_variable(state_name, geometry_name, 'RF1', mesh_expected, column_names=['RF1'],
+                                  location=structures.VariableLocations.NODE)
+        with vmap.VMAPImport(self._export.file_name) as import_actual:
+            mesh_actual = (import_actual.make_mesh(geometry_name, state_name)
+                           .join_variable('RF1', column_names=['RF1'])
+                           .to_frame())
+            pd.testing.assert_series_equal(mesh_actual['RF1'], mesh_expected['RF1'])
 
+    def test_add_variable_not_present_in_mesh(self):
+        state_name = 'STATE-2'
+        geometry_name = '1'
+        variable_name = 'FORCE_REACTION'
+        with self.assertRaises(Exception):
+            self._export.add_variable(state_name, geometry_name, variable_name, self._mesh,
+                                      column_names=['RF1'], location=structures.VariableLocations.NODE)
+        with vmap.VMAPImport(self._export.file_name) as import_actual:
+            variable = import_actual.try_get_vmap_object(
+                'VMAP/VARIABLES/%s/%s/%s' % (state_name, geometry_name, variable_name))
+            assert variable is None
+
+    def test_add_variable_invalid_location(self):
+        state_name = 'STATE-2'
+        geometry_name = '1'
+        variable_name = 'DISPLACEMENT'
+        with self.assertRaises(Exception):
+            self._export.add_variable(state_name, geometry_name, variable_name, self._mesh,
+                                      column_names=['dx', 'dy', 'dz'], location=4)
+        with vmap.VMAPImport(self._export.file_name) as import_actual:
+            variable = import_actual.try_get_vmap_object(
+                'VMAP/VARIABLES/%s/%s/%s' % (state_name, geometry_name, variable_name))
+            assert variable is None
+
+    def test_add_variable_already_exists(self):
+        state_name = 'STATE-2'
+        geometry_name = '1'
+        variable_name = 'DISPLACEMENT'
+        self._export.add_variable(state_name, geometry_name, variable_name, self._mesh)
+        with self.assertRaises(KeyError):
+            self._export.add_variable(state_name, geometry_name, variable_name, self._mesh)
+
+    """
     def test_all(self):
         self.test_add_dataset()
         self.test_add_geometry()
         self.test_add_node_set()
         self.test_add_variable()
+    """
 
     def assert_dataset_correct(self, dataset, expected_values, is_compound=True):
         assert len(dataset) == len(expected_values)
@@ -224,7 +281,7 @@ class TestExport(unittest.TestCase):
                 a_0 = a_0[0]
             assert len(e_0) == len(a_0)
             for e_1, a_1 in zip(e_0, a_0):
-                if (isinstance(e_1, list)):
+                if isinstance(e_1, list):
                     for e_2, a_2 in zip(e_1, a_1):
                         assert e_2 == a_2
                     continue
@@ -241,7 +298,7 @@ class TestExport(unittest.TestCase):
                 assert testval == attr_expected[1]
 
     def make_bytearray_if_str(self, value):
-        if (isinstance(value, str)):
+        if isinstance(value, str):
             return bytearray(value, 'utf-8')
         return value
 
@@ -257,7 +314,7 @@ class TestExport(unittest.TestCase):
     'beam_3d_wedge_quad.vmap',
     'beam_3d_hex_lin.vmap',
     'beam_3d_hex_quad.vmap',
-    ])
+])
 def test_export_import_round_robin(tmpdir, filename):
     filename = os.path.join('tests/vmap/testfiles/', filename)
     import_expected = vmap.VMAPImport(filename)
