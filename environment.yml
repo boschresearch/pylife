@@ -13,5 +13,6 @@ dependencies:
 - matplotlib
 - jupyter
 - pip = 20.2
+- h5py
 - pip:
   - mystic

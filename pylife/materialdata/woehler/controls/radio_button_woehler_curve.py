@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__author__ = "Mustapha Kassem"
-__maintainer__ = "Johannes Mueller"
+__author__ = "Gyöngyvér Kiss"
+__maintainer__ = __author__
 
 from abc import ABC, abstractmethod
 from IPython.display import display, clear_output
