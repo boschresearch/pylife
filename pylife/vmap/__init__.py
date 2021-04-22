@@ -18,3 +18,4 @@ from .vmap_import import VMAPImport
 from .vmap_export import VMAPExport
 from .exceptions import *
 
+__all__ = ['VMAPImport', 'VMAPExport']
