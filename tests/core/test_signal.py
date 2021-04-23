@@ -53,6 +53,11 @@ class AccessorNone(signal.PylifeSignal):
     def some_property(self):
         return 42
 
+    @property
+    def not_working_property(self):
+        self._missing_attribute
+
+
 @pd.api.extensions.register_dataframe_accessor('test_accessor_one')
 class AccessorOne:
     def __init__(self, pandas_obj):
@@ -102,6 +107,16 @@ def test_getattr_no_method():
     accessor = foo_bar_baz.test_accessor_none
     assert accessor.already_here() == 23
     assert accessor.some_property == 42
+
+
+def test_register_method_missing_attribute():
+    @signal.register_method(AccessorNone, 'another_method')
+    def foo(df):
+        return pd.DataFrame({'baz': df['foo'] + df['bar']})
+
+    accessor = foo_bar_baz.test_accessor_none
+    with pytest.raises(AttributeError, match=r'^\'AccessorNone\' object has no attribute \'_missing_attribute\''):
+        accessor.not_working_property
 
 
 def test_register_method_fail_duplicate():

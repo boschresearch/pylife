@@ -63,9 +63,11 @@ class PylifeSignal:
             return self._method(self._obj, *args, **kwargs)
 
     def __getattr__(self, itemname):
-        if itemname not in self._method_dict.keys():
-            raise AttributeError("Method '%s' not registered", itemname)
-        method = self._method_dict[itemname]
+        method = self._method_dict.get(itemname)
+
+        if method is None:
+            return super(PylifeSignal, self).__getattribute__(itemname)
+
         return self._MethodCaller(method, self._obj)
 
     @classmethod
