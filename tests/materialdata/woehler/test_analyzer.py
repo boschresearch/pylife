@@ -124,6 +124,7 @@ data_infinite_sorted = pd.DataFrame(np.array([
         [3.00e+02, 1.00e+07]
 ]), columns=['load', 'cycles']).sort_values(by='load').reset_index(drop=True)
 
+
 def test_woehler_accessor_missing_keys():
     wc = pd.Series({'k_1': 7, '1/TN': 12.0, 'ND_50': 1e6, 'SD_50': 350., '1/TS': 1.23})
     for k in wc.keys():
@@ -131,6 +132,7 @@ def test_woehler_accessor_missing_keys():
         del _wc[k]
         with pytest.raises(AttributeError, match=r"^.*Missing %s\." % k):
             _wc.woehler
+
 
 def test_fatigue_data_property_methods():
     fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data
@@ -141,9 +143,16 @@ def test_fatigue_data_property_methods():
     assert fd.num_fractures == 22
     print(fd.finite_zone)
     print(data_finite_sorted)
-    pd.testing.assert_frame_equal(fd.finite_zone.sort_values(by='load').reset_index(drop=True)[['load', 'cycles']], data_finite_sorted)
+    pd.testing.assert_frame_equal(fd.finite_zone
+                                  .sort_values(by='load')
+                                  .reset_index(drop=True)[['load', 'cycles']],
+                                  data_finite_sorted)
     fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data
-    pd.testing.assert_frame_equal(fd.infinite_zone.sort_values(by='load').reset_index(drop=True)[['load', 'cycles']], data_infinite_sorted)
+    pd.testing.assert_frame_equal(fd.infinite_zone
+                                  .sort_values(by='load')
+                                  .reset_index(drop=True)[['load', 'cycles']],
+                                  data_infinite_sorted)
+
 
 def test_woehler_fracture_determination_given():
     df = pd.DataFrame({
