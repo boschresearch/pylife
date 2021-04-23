@@ -95,15 +95,12 @@ def test_register_method():
         return pd.DataFrame({'baz': df['foo'] + df['bar']})
 
     accessor = foo_bar_baz.test_accessor_none
-    assert accessor.already_here() == 23
     pd.testing.assert_frame_equal(accessor.foo_method(), pd.DataFrame({'baz': [2.0]}))
-    assert accessor.some_property == 42
 
 
 def test_getattr_no_method():
     accessor = foo_bar_baz.test_accessor_none
     assert accessor.already_here() == 23
-    pd.testing.assert_frame_equal(accessor.foo_method(), pd.DataFrame({'baz': [2.0]}))
     assert accessor.some_property == 42
 
 
