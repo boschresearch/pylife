@@ -112,7 +112,7 @@ class FatigueDataAccessor(signal.PylifeSignal):
         if len(self.runouts) == 0:
             self._fatigue_limit = 0
             self._finite_zone = self._obj[:0]
-            self._infinte_zone = self._obj
+            self._infinite_zone = self._obj
             return
 
         max_runout_load = self.runouts.load.max()
