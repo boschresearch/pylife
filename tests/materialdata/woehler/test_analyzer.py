@@ -333,12 +333,14 @@ def test_bayesian_TN_trace(pm):
     expected_mu = 5.294264482012933
     expected_sigma = 0.2621494419382026
 
-    assert pm.Normal.call_args_list[0] == mock.call('mu', mu=expected_mu, sigma=expected_sigma)
+    assert pm.Normal.call_args_list[0][0] == ('mu',)
+    np.testing.assert_almost_equal(pm.Normal.call_args_list[0][1]['mu'], expected_mu)
+    np.testing.assert_almost_equal(pm.Normal.call_args_list[0][1]['sigma'], expected_sigma)
 
     assert pm.Normal.call_args_list[1][0] == ('y',)
     observed = pm.Normal.call_args_list[1][1]['observed'] # Consider switch to kwargs property when py3.7 is dropped
-    assert observed.mean() == expected_mu
-    assert observed.std() == expected_sigma
+    np.testing.assert_almost_equal(observed.mean(), expected_mu)
+    np.testing.assert_almost_equal(observed.std(), expected_sigma)
 
     pm.sample.assert_called_with(1000, target_accept=0.99, random_seed=None, chains=3, tune=1000)
 
