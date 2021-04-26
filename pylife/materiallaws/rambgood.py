@@ -39,6 +39,10 @@ class RambergOsgood:
         -------
         strain : array-like float
             The resulting strain
+
+        Raises
+        ------
+        ValueError if stress is negative
         '''
         stress = np.asarray(stress)
         return stress/self._E + self.plastic_strain(stress)
@@ -55,6 +59,10 @@ class RambergOsgood:
         -------
         strain : array-like float
             The resulting plastic strain
+
+        Raises
+        ------
+        ValueError if stress is negative
         '''
         self._fail_if_negative(stress)
         return np.power(stress/self._K, 1./self._n)
@@ -71,6 +79,10 @@ class RambergOsgood:
         -------
         delta_strain : array-like float
             The corresponding stress span
+
+        Raises
+        ------
+        ValueError if delta_stress is negative
 
         Notes
         -----
@@ -94,6 +106,10 @@ class RambergOsgood:
         -------
         lower_hysteresis : array-like float
             The lower hysteresis branch from `max_stress` all the way to `stress`
+
+        Raises
+        ------
+        ValueError if stress > max_stress
         '''
         stress = np.asarray(stress)
         if (stress > max_stress).any():
