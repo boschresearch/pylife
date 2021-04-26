@@ -55,9 +55,17 @@ parametrization_data_monotone_plastic = np.array([
 ])
 
 
-@pytest.mark.parametrize('stress, expected', map(tuple, parametrization_data_monotone_plastic))
+@pytest.mark.parametrize('stress, expected', [
+    (parametrization_data_monotone_plastic[:, 0], parametrization_data_monotone_plastic[:, 1])
+])
 def test_rambgood_plastic_strain_scalar(ramberg_osgood_monotone, stress, expected):
+    np.testing.assert_allclose(ramberg_osgood_monotone.plastic_strain(stress), expected, rtol=1e-5)
+
+
+@pytest.mark.parametrize('stress, expected', map(tuple, parametrization_data_monotone_plastic))
+def test_rambgood_plastic_strain_array(ramberg_osgood_monotone, stress, expected):
     np.testing.assert_approx_equal(ramberg_osgood_monotone.plastic_strain(stress), expected, significant=5)
+
 
 @pytest.fixture
 def ramberg_osgood_cyclic():
