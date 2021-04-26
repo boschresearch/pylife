@@ -40,7 +40,7 @@ class RambergOsgood:
         strain : array-like float
             The resulting strain
         '''
-        self._fail_if_negative(stress)
+        stress = np.asarray(stress)
         return stress/self._E + self.plastic_strain(stress)
 
     def plastic_strain(self, stress):
@@ -56,6 +56,7 @@ class RambergOsgood:
         strain : array-like float
             The resulting plastic strain
         '''
+        self._fail_if_negative(stress)
         return np.power(stress/self._K, 1./self._n)
 
     def delta_strain(self, delta_stress):

@@ -2,7 +2,7 @@ import re
 import pytest
 import numpy as np
 
-from  pylife.materiallaws import RambergOsgood
+from pylife.materiallaws import RambergOsgood
 
 
 @pytest.fixture
@@ -47,6 +47,7 @@ def test_rambgood_strain_neg_stress_array(ramberg_osgood_monotone):
                        match=re.escape("Stress value in Ramberg-Osgood equation must not be negative.")):
         ramberg_osgood_monotone.strain([-100.0, 1000.0])
 
+
 parametrization_data_monotone_plastic = np.array([
     [0.0, 0.0],
     [1.0, 1./36.],
@@ -65,6 +66,19 @@ def test_rambgood_plastic_strain_scalar(ramberg_osgood_monotone, stress, expecte
 @pytest.mark.parametrize('stress, expected', map(tuple, parametrization_data_monotone_plastic))
 def test_rambgood_plastic_strain_array(ramberg_osgood_monotone, stress, expected):
     np.testing.assert_approx_equal(ramberg_osgood_monotone.plastic_strain(stress), expected, significant=5)
+
+
+def test_rambgood_plastic_strain_neg_stress_scalar(ramberg_osgood_monotone):
+    with pytest.raises(ValueError,
+                       match=re.escape("Stress value in Ramberg-Osgood equation must not be negative.")):
+        ramberg_osgood_monotone.plastic_strain(-100.0)
+
+
+def test_rambgood_plastic_strain_neg_stress_array(ramberg_osgood_monotone):
+    with pytest.raises(ValueError,
+                       match=re.escape("Stress value in Ramberg-Osgood equation must not be negative.")):
+        ramberg_osgood_monotone.plastic_strain([-100.0, 1000.0])
+
 
 
 @pytest.fixture
