@@ -95,6 +95,9 @@ class RambergOsgood:
         lower_hysteresis : array-like float
             The lower hysteresis branch from `max_stress` all the way to `stress`
         '''
+        stress = np.asarray(stress)
+        if (stress > max_stress).any():
+            raise ValueError("Value for 'stress' must not be higher than 'max_stress'.")
         return self.strain(max_stress) - self.delta_strain(max_stress-stress)
 
     def _fail_if_negative(self, val):

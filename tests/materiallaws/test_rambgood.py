@@ -203,3 +203,13 @@ def test_rambgood_char_lower_hysteresis_scalar(ramberg_osgood, stress, max_stres
 def test_rambgood_char_lower_hysteresis_array(ramberg_osgood, stress, max_stress, expected):
     np.testing.assert_allclose(ramberg_osgood.lower_hysteresis(stress, max_stress),
                                expected, rtol=1e-5)
+
+
+def test_ramgood_lower_hysteresis_above_max_stress_scalar(ramberg_osgood):
+    with pytest.raises(ValueError, match=r'Value for \'stress\' must not be higher than \'max_stress\'.'):
+        ramberg_osgood.lower_hysteresis(200., 100.)
+
+
+def test_ramgood_lower_hysteresis_above_max_stress_array(ramberg_osgood):
+    with pytest.raises(ValueError, match=r'Value for \'stress\' must not be higher than \'max_stress\'.'):
+        ramberg_osgood.lower_hysteresis([50., 200.], 100.)
