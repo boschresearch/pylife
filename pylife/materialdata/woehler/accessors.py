@@ -64,12 +64,12 @@ class FatigueDataAccessor(signal.PylifeSignal):
     @property
     def fractures(self):
         '''Only the fracture tests'''
-        return self._obj[self._obj.fracture == True]
+        return self._obj[self._obj.fracture]
 
     @property
     def runouts(self):
         '''Only the runout tests'''
-        return self._obj[self._obj.fracture == False]
+        return self._obj[~self._obj.fracture]
 
     @property
     def load(self):
@@ -112,7 +112,7 @@ class FatigueDataAccessor(signal.PylifeSignal):
         if len(self.runouts) == 0:
             self._fatigue_limit = 0
             self._finite_zone = self._obj[:0]
-            self._infinte_zone = self._obj
+            self._infinite_zone = self._obj
             return
 
         max_runout_load = self.runouts.load.max()
@@ -143,5 +143,5 @@ def determine_fractures(df, load_cycle_limit=None):
     if load_cycle_limit is None:
         load_cycle_limit = df.cycles.max()
     ret = df.copy()
-    ret['fracture'] = pd.Series([True] * len(df)).where(df.cycles < load_cycle_limit, False)
+    ret['fracture'] = df.cycles < load_cycle_limit
     return ret

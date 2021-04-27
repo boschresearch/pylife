@@ -56,6 +56,15 @@ Mesh utilities
    mesh/hotspot
    mesh/gradient
 
+VMAP Interface
+--------------
+.. toctree::
+   :maxdepth: 2
+
+   vmap/vmap.rst
+   vmap/vmap_import.rst
+   vmap/vmap_export.rst
+
 Utils
 -----
 .. toctree::
