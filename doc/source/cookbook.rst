@@ -9,19 +9,25 @@ pyLife Cookbook
 
 .. toctree::
    :maxdepth: 1
+   :caption: Material Laws
+
+   demos/ramberg_osgood.nblink
+
+.. toctree::
+   :maxdepth: 1
    :caption: Material Data
 
-   demos/woehler_analyzer.nblink 
-   
+   demos/woehler_analyzer.nblink
+
 .. toctree::
    :maxdepth: 1
    :caption: FEM based methods
 
-   demos/hotspot_plate.nblink   
+   demos/hotspot_plate.nblink
    demos/stress_gradient.nblink
-   
+
 .. toctree::
    :maxdepth: 1
    :caption: Tools
 
-   demos/psd_optimizer.nblink    
+   demos/psd_optimizer.nblink

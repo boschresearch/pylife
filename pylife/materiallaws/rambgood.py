@@ -36,9 +36,10 @@ class RambergOsgood:
     Notes
     -----
     The equation implemented is the one that `Wikipedia
-    <https://en.wikipedia.org/wiki/Ramberg%E2%80%93Osgood_relationship#Alternative_Formulations>`_refers
-    to as "Alternative Formulation". The parameters `n` and `k` in this are
-    formulation are the Hollomon parameters.
+    <https://en.wikipedia.org/wiki/Ramberg%E2%80%93Osgood_relationship#Alternative_Formulations>`__
+    refers to as "Alternative Formulation". The parameters `n` and `k` in this
+    are formulation are the Hollomon parameters.
+
     '''
 
     def __init__(self, E, K, n):
@@ -106,7 +107,7 @@ class RambergOsgood:
         Notes
         -----
         A Masing like behavior is assumed for the material as described in
-        `Kerbgrundkonzept<https://de.wikipedia.org/wiki/Kerbgrundkonzept#Masing-Verhalten_und_Werkstoffged%C3%A4chtnis>`
+        `Kerbgrundkonzept <https://de.wikipedia.org/wiki/Kerbgrundkonzept#Masing-Verhalten_und_Werkstoffged%C3%A4chtnis>`__.
         '''
         self._fail_if_negative(delta_stress)
         return delta_stress/self._E + 2.*np.power(delta_stress/(2.*self._K), 1./self._n)

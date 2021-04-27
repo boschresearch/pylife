@@ -26,11 +26,11 @@ def true_strain(tech_strain):
 
     Parameters
     ----------
-    tech_strain: array like of float
+    tech_strain: array-like float
 
     Returns
     -------
-    true_strain: array of float
+    true_strain: array-like float
 
    """
     return np.log(1. + tech_strain)
@@ -42,18 +42,17 @@ def true_stress(tech_stress, tech_strain):
 
     Parameters
     ----------
-    tech_stress : array like of float
+    tech_stress : array-like float
         stress data from tensile experiments
     tech_strain : list of float
         strain data from tensile experiments
 
     Returns
     -------
-    true stress : list of float
+    true_stress : array-like float
 
     """
     return tech_stress * (1. + tech_strain)
-
 
 
 def true_fracture_strain(reduction_area_fracture):
@@ -88,7 +87,7 @@ def true_fracture_stress(fracture_force, initial_cross_section, reduction_area_f
 
     Returns
     -------
-    true fracture stress: float
+    true_fracture_stress: float
         calculated true fracture stress of the sample.
 
     """

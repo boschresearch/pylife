@@ -32,6 +32,14 @@ Strength
    strength/sn_curve
    strength/helpers
 
+Materiallaws
+------------
+.. toctree::
+   :maxdepth: 2
+
+   materiallaws/rambgood
+   materiallaws/true_stress_strain
+
 Materialdata
 ------------
 .. toctree::
