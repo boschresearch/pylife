@@ -301,6 +301,7 @@ def test_max_likelihood_full_method_with_all_fixed_params():
             .analyze(fixed_parameters=fp)
         )
 
+
 @mock.patch('pylife.materialdata.woehler.analyzers.bayesian.pm')
 def test_bayesian_slope_trace(pm):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
@@ -334,13 +335,13 @@ def test_bayesian_TN_trace(pm):
     expected_sigma = 0.2621494419382026
 
     assert pm.Normal.call_args_list[0][0] == ('mu',)
-    np.testing.assert_almost_equal(pm.Normal.call_args_list[0][1]['mu'], expected_mu)
-    np.testing.assert_almost_equal(pm.Normal.call_args_list[0][1]['sigma'], expected_sigma)
+    np.testing.assert_almost_equal(pm.Normal.call_args_list[0][1]['mu'], expected_mu, decimal=9)
+    np.testing.assert_almost_equal(pm.Normal.call_args_list[0][1]['sigma'], expected_sigma, decimal=9)
 
     assert pm.Normal.call_args_list[1][0] == ('y',)
     observed = pm.Normal.call_args_list[1][1]['observed'] # Consider switch to kwargs property when py3.7 is dropped
-    np.testing.assert_almost_equal(observed.mean(), expected_mu)
-    np.testing.assert_almost_equal(observed.std(), expected_sigma)
+    np.testing.assert_almost_equal(observed.mean(), expected_mu, decimal=9)
+    np.testing.assert_almost_equal(observed.std(), expected_sigma, decimal=9)
 
     pm.sample.assert_called_with(1000, target_accept=0.99, random_seed=None, chains=3, tune=1000)
 
@@ -358,7 +359,7 @@ def test_bayesian_SD_TS_trace_mock(pm, tt):
     inf_load_mean = fd.infinite_zone.load.mean()
     inf_load_std = fd.infinite_zone.load.std()
 
-    with mock.patch.object(woehler.Bayesian._LogLike, '__call__', autospec=True) as  loglike_call:
+    with mock.patch.object(woehler.Bayesian._LogLike, '__call__', autospec=True) as loglike_call:
         loglike_call.side_effect = check_likelihood
 
         bayes = woehler.Bayesian(fd)
