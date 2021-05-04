@@ -22,7 +22,7 @@ import pylife
 from .likelihood import Likelihood
 from .pearl_chain import PearlChainProbability
 import pylife.utils.functions as functions
-from ..accessors import FatigueDataAccessor
+from ..accessors import FatigueDataAccessor, determine_fractures
 
 
 class Elementary:
@@ -35,7 +35,10 @@ class Elementary:
 
     def _get_fatigue_data(self, fatigue_data):
         if isinstance(fatigue_data, pd.DataFrame):
-            params = fatigue_data.fatigue_data
+            if hasattr(fatigue_data, "fatigue_data"):
+                params = fatigue_data.fatigue_data
+            else:
+                params = determine_fractures(fatigue_data).fatigue_data
         elif isinstance(fatigue_data, FatigueDataAccessor):
             params = fatigue_data
         else:

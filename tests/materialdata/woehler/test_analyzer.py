@@ -228,7 +228,7 @@ def test_woehler_elementary():
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
 
-def test_woehler_elementary_initialize_with_pandas_dataframe():
+def test_woehler_elementary_initialize_with_determined_fractures():
     expected = pd.Series({
         'SD_50': 362.5,
         'k_1': 7.0,
@@ -239,6 +239,20 @@ def test_woehler_elementary_initialize_with_pandas_dataframe():
 
     fd = woehler.determine_fractures(data, 1e7)
     wc = woehler.Elementary(fd).analyze().sort_index()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+
+
+def test_woehler_elementary_initialize_with_pandas_dataframe():
+    expected = pd.Series({
+        'SD_50': 362.5,
+        'k_1': 7.0,
+        'ND_50': 3e5,
+        '1/TN': 5.3,
+        '1/TS': 1.27
+    }).sort_index()
+
+    wc = woehler.Elementary(data).analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
