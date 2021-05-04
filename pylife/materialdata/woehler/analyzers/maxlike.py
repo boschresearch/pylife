@@ -16,6 +16,7 @@
 from .elementary import Elementary
 
 import pandas as pd
+import numpy as np
 from scipy import optimize
 import mystic as my
 
@@ -95,7 +96,15 @@ class MaxLikeFull(Elementary):
         res.update(fixed_prms)
         res.update(zip([*p_opt], var_opt[0]))
 
-        return res
+        return self.__make_parameters(res)
+
+    def __make_parameters(self, params):
+        params['SD_50'] = np.abs(params['SD_50'])
+        params['1/TS'] = np.abs(params['1/TS'])
+        params['k_1'] = np.abs(params['k_1'])
+        params['ND_50'] = np.abs(params['ND_50'])
+        params['1/TN'] = np.abs(params['1/TN'])
+        return params
 
     def __likelihood_wrapper(self, var_args, var_keys, fix_args):
         ''' 1) Finds the start values to be optimized. The rest of the paramters are fixed by the user.
@@ -105,5 +114,6 @@ class MaxLikeFull(Elementary):
         args = {}
         args.update(fix_args)
         args.update(zip(var_keys, var_args))
+        args = self.__make_parameters(args)
 
         return -self._lh.likelihood_total(args['SD_50'], args['1/TS'], args['k_1'], args['ND_50'], args['1/TN'])

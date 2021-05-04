@@ -132,7 +132,7 @@ data_01_no_pure_runout_horizon = data_01[data_01.load > 480]
 
 
 def read_data(s, thres=1e6):
-    d = pd.read_csv(StringIO(s), sep="\t", comment = "#",names=['cycles','load'])
+    d = pd.read_csv(StringIO(s), sep="\t", comment="#", names=['cycles', 'load'])
     d.N_threshold = thres
     return d
 
@@ -170,7 +170,7 @@ data_02 = read_data("""
 7634000	175
 10000000	175
 10000000	175
-10000000	175""",10000000)
+10000000	175""", 10000000)
 
 data_03 = read_data("""
 232620	350
@@ -202,7 +202,7 @@ data_03 = read_data("""
 54017	400
 76850	400
 133270	400
-108600	400""",10000000)
+108600	400""", 10000000)
 
 data_04 = read_data("""
 859300	350
@@ -224,7 +224,7 @@ data_04 = read_data("""
 1163000	325
 1213200	325
 1034700	325
-2268300	325""",10000000)
+2268300	325""", 10000000)
 
 data_05 = read_data("""
 5300000	135
@@ -381,7 +381,7 @@ data_05 = read_data("""
 4600	350
 3700	350
 3700	350
-3800	350""",5300000)
+3800	350""", 5300000)
 
 data_06 = read_data("""
 4000000	57
@@ -465,7 +465,7 @@ data_06 = read_data("""
 57686	120
 58469	120
 62843	120
-67450	120""",4000000)
+67450	120""", 4000000)
 
 data_07 = read_data("""
 4000000	77
@@ -547,7 +547,7 @@ data_07 = read_data("""
 79539	160
 86238	160
 90600	160
-102270	160""",4000000)
+102270	160""", 4000000)
 
 data_08 = read_data("""
 4000000	77
@@ -631,7 +631,7 @@ data_08 = read_data("""
 351000	180
 501000	180
 583000	180
-1129000	180""",2000000)
+1129000	180""", 2000000)
 
 data_09 = read_data("""
 4000000	77
@@ -715,7 +715,7 @@ data_09 = read_data("""
 351000	180
 501000	180
 583000	180
-1129000	180""",1e6)
+1129000	180""", 1e6)
 
 data_10 = read_data("""
 104000	103
@@ -796,7 +796,7 @@ data_10 = read_data("""
 363000	112
 371000	112
 401000	112
-495000	112""",5000000)
+495000	112""", 5000000)
 
 data_11 = read_data("""
 60000	377.556025
@@ -1600,25 +1600,32 @@ def test_max_likelihood_full_method_with_all_fixed_params():
         )
 
 
-@pytest.mark.parametrize("data,no", [(d,i) for i,d in enumerate(all_data)])
-def test_max_likelihood_parameter_sign(data,no):
-        def _modify_initial_parameters_mock(fd):
-            return fd
+@pytest.mark.parametrize("data,no", [(d, i) for i, d in enumerate(all_data)])
+def test_max_likelihood_parameter_sign(data, no):
+    def _modify_initial_parameters_mock(fd):
+        return fd
 
-        load_cycle_limit = 1e6
-        if hasattr(data, "N_threshold"):
-            load_cycle_limit = data.N_threshold;
-        fatdat = woehler.determine_fractures(data,load_cycle_limit=load_cycle_limit)
-        ml = woehler.MaxLikeFull(fatigue_data=fatdat.fatigue_data)
-        wl = ml.analyze()
+    load_cycle_limit = 1e6
+    if hasattr(data, "N_threshold"):
+        load_cycle_limit = data.N_threshold
+    fatdat = woehler.determine_fractures(data, load_cycle_limit=load_cycle_limit)
+    ml = woehler.MaxLikeFull(fatigue_data=fatdat.fatigue_data)
+    wl = ml.analyze()
 
-        print("Data set number {}".format(no))
+    print("Data set number {}".format(no))
+    print("Woehler parameters: {}".format(wl))
 
-        assert wl['SD_50']  >= 0.0
-        assert wl['1/TS']   >= 0.0
-        assert wl['k_1']    >= 0.0
-        assert wl['ND_50']  >= 0.0
-        assert wl['1/TN']   >= 0.0
+    def assert_positive_or_nan_but_not_zero(x):
+        if np.isfinite(x):
+            assert x >= 0
+            assert not np.isclose(x, 0.0)
+
+    assert_positive_or_nan_but_not_zero(wl['SD_50'])
+    assert_positive_or_nan_but_not_zero(wl['1/TS'])
+    assert_positive_or_nan_but_not_zero(wl['k_1'])
+    assert_positive_or_nan_but_not_zero(wl['ND_50'])
+    assert_positive_or_nan_but_not_zero(wl['1/TN'])
+
 
 @mock.patch('pylife.materialdata.woehler.analyzers.bayesian.pm')
 def test_bayesian_slope_trace(pm):
@@ -1657,7 +1664,7 @@ def test_bayesian_TN_trace(pm):
     np.testing.assert_almost_equal(pm.Normal.call_args_list[0][1]['sigma'], expected_sigma, decimal=9)
 
     assert pm.Normal.call_args_list[1][0] == ('y',)
-    observed = pm.Normal.call_args_list[1][1]['observed'] # Consider switch to kwargs property when py3.7 is dropped
+    observed = pm.Normal.call_args_list[1][1]['observed']  # Consider switch to kwargs property when py3.7 is dropped
     np.testing.assert_almost_equal(observed.mean(), expected_mu, decimal=9)
     np.testing.assert_almost_equal(observed.std(), expected_sigma, decimal=9)
 
@@ -1684,7 +1691,7 @@ def test_bayesian_SD_TS_trace_mock(pm, tt):
         bayes._nsamples = 1000
         bayes._SD_TS_trace()
 
-    pm.Normal.assert_called_once_with('SD_50', mu=inf_load_mean, sigma=inf_load_std*5)
+    pm.Normal.assert_called_once_with('SD_50', mu=inf_load_mean, sigma=inf_load_std * 5)
     pm.Lognormal.assert_called_once_with('TS_50', mu=np.log10(1.1), sigma=np.log10(0.5))
 
     tt.as_tensor_variable.assert_called_once_with([pm.Normal.return_value, pm.Lognormal.return_value])
