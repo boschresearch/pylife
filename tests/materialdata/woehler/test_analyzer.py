@@ -345,6 +345,35 @@ def test_woehler_elementary():
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
 
+def test_woehler_elementary_initialize_with_determined_fractures():
+    expected = pd.Series({
+        'SD_50': 362.5,
+        'k_1': 7.0,
+        'ND_50': 3e5,
+        '1/TN': 5.3,
+        '1/TS': 1.27
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data, 1e7)
+    wc = woehler.Elementary(fd).analyze().sort_index()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+
+
+def test_woehler_elementary_initialize_with_pandas_dataframe():
+    expected = pd.Series({
+        'SD_50': 362.5,
+        'k_1': 7.0,
+        'ND_50': 3e5,
+        '1/TN': 5.3,
+        '1/TS': 1.27
+    }).sort_index()
+
+    wc = woehler.Elementary(data).analyze().sort_index()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+
+
 def test_woehler_elementary_no_runouts():
     expected = pd.Series({
         'SD_50': 0.0,
@@ -480,7 +509,7 @@ def test_bayesian_TN_trace(pm):
     np.testing.assert_almost_equal(pm.Normal.call_args_list[0][1]['sigma'], expected_sigma, decimal=9)
 
     assert pm.Normal.call_args_list[1][0] == ('y',)
-    observed = pm.Normal.call_args_list[1][1]['observed'] # Consider switch to kwargs property when py3.7 is dropped
+    observed = pm.Normal.call_args_list[1][1]['observed']  # Consider switch to kwargs property when py3.7 is dropped
     np.testing.assert_almost_equal(observed.mean(), expected_mu, decimal=9)
     np.testing.assert_almost_equal(observed.std(), expected_sigma, decimal=9)
 
@@ -507,7 +536,7 @@ def test_bayesian_SD_TS_trace_mock(pm, tt):
         bayes._nsamples = 1000
         bayes._SD_TS_trace()
 
-    pm.Normal.assert_called_once_with('SD_50', mu=inf_load_mean, sigma=inf_load_std*5)
+    pm.Normal.assert_called_once_with('SD_50', mu=inf_load_mean, sigma=inf_load_std * 5)
     pm.Lognormal.assert_called_once_with('TS_50', mu=np.log10(1.1), sigma=np.log10(0.5))
 
     tt.as_tensor_variable.assert_called_once_with([pm.Normal.return_value, pm.Lognormal.return_value])
