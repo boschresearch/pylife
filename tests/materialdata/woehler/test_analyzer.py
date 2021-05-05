@@ -20,6 +20,7 @@ import pytest
 import unittest.mock as mock
 
 import pymc3
+from io import StringIO
 
 from pylife.materialdata import woehler
 
@@ -234,6 +235,86 @@ data_infinite_sorted = pd.DataFrame(np.array([
         [3.00e+02, 1.00e+07]
 ]), columns=['load', 'cycles']).sort_values(by='load').reset_index(drop=True)
 
+
+data_01 = pd.DataFrame({"load": np.array([620, 620, 620, 550, 550, 500, 500, 500, 500, 500, 480, 480]), "cycles": np.array(
+    [65783, 89552, 115800, 141826, 190443, 293418, 383341, 525438, 967091, 99505992, 99524024, 199563776])})
+data_01_no_pure_runout_horizon = data_01[data_01.load > 480]
+
+
+def read_data(s, thres=1e6):
+    d = pd.read_csv(StringIO(s), sep="\t", comment="#", names=['cycles', 'load'])
+    d.N_threshold = thres
+    return d
+
+
+data_neg_res_1 = read_data("""
+127700	450
+108000	450
+124000	450
+127000	450
+101000	450
+199000	400
+213600	400
+166000	400
+146000	400
+140600	400
+295000	350
+264000	350
+330000	350
+352000	350
+438000	350
+645600	300
+412000	300
+772000	300
+501200	300
+593600	300
+1856000	250
+1989900	250
+2114500	250
+1121400	250
+1233600	250
+10000000	200
+5131700	200
+3857300	200
+9620900	175
+7634000	175
+10000000	175
+10000000	175
+10000000	175""", 10000000)
+
+data_neg_res_2 = read_data("""
+109000	377.556025
+51000	377.556025
+75000	377.556025
+111000	377.556025
+140000	377.556025
+128000	362.84605
+75000	362.84605
+109000	362.84605
+83000	362.84605
+68000	362.84605
+132000	362.84605
+253000	333.4261
+987000	333.4261
+246000	333.4261
+224000	333.4261
+159000	333.4261
+10000000	304.00615
+4576000	304.00615
+2139000	304.00615
+10000000	304.00615
+4576000	304.00615
+1191000	289.296175
+10000000	289.296175
+6337000	289.296175
+10000000	289.296175
+10000000	289.296175""", 10000000)
+
+all_data = [
+    data,
+    data_neg_res_1,
+    data_neg_res_2
+]
 
 def test_woehler_accessor_missing_keys():
     wc = pd.Series({'k_1': 7, '1/TN': 12.0, 'ND_50': 1e6, 'SD_50': 350., '1/TS': 1.23})
@@ -470,6 +551,33 @@ def test_max_likelihood_full_method_with_all_fixed_params():
             woehler.MaxLikeFull(fd)
             .analyze(fixed_parameters=fp)
         )
+
+
+@pytest.mark.parametrize("data,no", [(d, i) for i, d in enumerate(all_data)])
+def test_max_likelihood_parameter_sign(data, no):
+    def _modify_initial_parameters_mock(fd):
+        return fd
+
+    load_cycle_limit = 1e6
+    if hasattr(data, "N_threshold"):
+        load_cycle_limit = data.N_threshold
+    fatdat = woehler.determine_fractures(data, load_cycle_limit=load_cycle_limit)
+    ml = woehler.MaxLikeFull(fatigue_data=fatdat.fatigue_data)
+    wl = ml.analyze()
+
+    print("Data set number {}".format(no))
+    print("Woehler parameters: {}".format(wl))
+
+    def assert_positive_or_nan_but_not_zero(x):
+        if np.isfinite(x):
+            assert x >= 0
+            assert not np.isclose(x, 0.0)
+
+    assert_positive_or_nan_but_not_zero(wl['SD_50'])
+    assert_positive_or_nan_but_not_zero(wl['1/TS'])
+    assert_positive_or_nan_but_not_zero(wl['k_1'])
+    assert_positive_or_nan_but_not_zero(wl['ND_50'])
+    assert_positive_or_nan_but_not_zero(wl['1/TN'])
 
 
 @mock.patch('pylife.materialdata.woehler.analyzers.bayesian.pm')
