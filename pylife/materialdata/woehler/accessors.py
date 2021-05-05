@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import pandas as pd
+import numpy as np
 from pylife import signal
 from pylife import DataValidator
 
@@ -108,18 +109,57 @@ class FatigueDataAccessor(signal.PylifeSignal):
             self._calc_finite_zone()
         return self._infinite_zone
 
-    def _calc_finite_zone(self):
+    def __calc_fatigue_limit(self, predefined_limit = None):
+        if predefined_limit is not None:
+            return predefined_limit;
+        max_runout_load = self.runouts.load.max()
+        return (self._finite_zone.load.min() + max_runout_load) / 2;
+
+    def _calc_finite_zone(self, fatigue_limit = None):
         if len(self.runouts) == 0:
             self._fatigue_limit = 0
             self._finite_zone = self._obj[:0]
             self._infinite_zone = self._obj
             return
-
+            
         max_runout_load = self.runouts.load.max()
         self._finite_zone = self.fractures[self.fractures.load > max_runout_load]
-        self._fatigue_limit = (self._finite_zone.load.min() + max_runout_load) / 2
+        self._fatigue_limit = self.__calc_fatigue_limit(predefined_limit = fatigue_limit);
         self._infinite_zone = self._obj[self._obj.load <= self._fatigue_limit]
-
+        
+    def conservative_fatigue_limit(self):
+        """
+        Sets a lower fatigue limit that what is expected from the algorithm given by Mustafa Kassem.
+        For calculating the fatigue limit, all amplitudes where runouts and fractures are present are collected.
+        To this group, the maximum amplitude with only runouts present is added.
+        Then, the fatigue limit is the mean of all these amplitudes.
+        
+        Returns
+        -------
+        self
+        
+        See also
+        --------
+        Kassem, Mustafa - "Open Source Software Development for Reliability and Lifetime Calculation" pp. 34
+        """
+        fracture_loads = np.unique(self.fractures.load.values)
+        runout_loads = np.unique(self.runouts.load.values)
+        loads_with_no_fractures = np.setdiff1d( runout_loads, fracture_loads )
+        loads_with_fractures_and_runouts = np.intersect1d( runout_loads, fracture_loads )
+        
+        amps_to_consider = loads_with_fractures_and_runouts
+        
+        if len(loads_with_no_fractures)>0:
+            amps_to_consider = np.concatenate( (
+                                                amps_to_consider,
+                                                [loads_with_no_fractures.max()]
+                                                                        )           );
+        fatigue_limit = None
+        if len(amps_to_consider) > 0:
+            fatigue_limit = amps_to_consider.mean()
+        self._calc_finite_zone(fatigue_limit = fatigue_limit)
+        
+        return self
 
 def determine_fractures(df, load_cycle_limit=None):
     '''Adds a fracture column according to defined load cycle limit
