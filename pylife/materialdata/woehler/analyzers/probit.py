@@ -31,7 +31,7 @@ class Probit(Elementary):
         frac_num = inf_groups.fracture.sum().astype(int).to_numpy()
         tot_num = inf_groups.fracture.count().to_numpy()
 
-        fprobs = np.empty_like(frac_num, dtype=np.float)
+        fprobs = np.empty_like(frac_num, dtype=np.float64)
         c1 = frac_num == 0
         w = np.where(c1)
         fprobs[w] = 1. - 0.5**(1./tot_num[w])

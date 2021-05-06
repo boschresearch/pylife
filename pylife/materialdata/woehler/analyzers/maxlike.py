@@ -92,7 +92,7 @@ class MaxLikeFull(Elementary):
             self.__likelihood_wrapper, [*p_opt.values()],
             args=([*p_opt], fixed_prms),
             full_output=True,
-            disp=True,
+            disp=False,
             maxiter=1e4,
             maxfun=1e4,
         )

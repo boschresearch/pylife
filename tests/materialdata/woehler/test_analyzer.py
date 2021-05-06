@@ -19,7 +19,13 @@ import pandas as pd
 import pytest
 import unittest.mock as mock
 
-import pymc3
+import warnings
+warnings.filterwarnings(
+    action='ignore',
+    category=DeprecationWarning,
+    module=r'.*(pymc3|klepto|inspect|theano).*'
+)
+
 from io import StringIO
 
 from pylife.materialdata import woehler

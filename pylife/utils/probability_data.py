@@ -34,7 +34,7 @@ class ProbabilityFit:
         if len(probs) != len(occurrences):
             raise ValueError("probs and occurence arrays must have the same 1D shape.")
         ppf = stats.norm.ppf(probs)
-        self._occurrences = np.array(occurrences, dtype=np.float)
+        self._occurrences = np.array(occurrences, dtype=np.float64)
         self._slope, self._intercept, _, _, _ = stats.linregress(np.log10(self._occurrences), ppf)
         self._ppf = ppf
 

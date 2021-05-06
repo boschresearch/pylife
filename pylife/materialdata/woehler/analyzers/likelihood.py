@@ -63,6 +63,8 @@ class Likelihood:
         return self.likelihood_finite(SD, k, N_E, TN) + self.likelihood_infinite(SD, TS)
 
     def likelihood_finite(self, SD, k, N_E, TN):
+        if not (SD > 0.0).all():
+            return -np.inf
         fractures = self._fd.fractures
         x = np.log10(fractures.cycles * ((fractures.load/SD)**(k)))
         mu = np.log10(N_E)
