@@ -79,6 +79,10 @@ class MaxLikeFull(Elementary):
         """
 
         p_opt = initial_wcurve.to_dict()
+        if self._fd.num_runouts == 0:
+            fixed_prms = fixed_prms.copy()
+            fixed_prms.update({'SD_50': 0.0, '1/TS': 1.0})
+
         for k in fixed_prms:
             p_opt.pop(k)
 

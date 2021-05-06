@@ -745,6 +745,21 @@ def test_woehler_max_likelihood_inf_limit():
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
 
+def test_woehler_max_likelihood_inf_limit_no_runouts():
+    expected = pd.Series({
+        'SD_50': 0.,
+        '1/TS': 1.19,
+        'k_1': 6.94,
+        'ND_50': 4.4e30,
+        '1/TN': 5.26
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
+    wc = woehler.MaxLikeInf(fd).analyze().sort_index()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+
+
 def test_woehler_max_likelihood_full_without_fixed_params():
     expected = pd.Series({
         'SD_50': 335,
@@ -757,6 +772,25 @@ def test_woehler_max_likelihood_full_without_fixed_params():
     bic = 45.35256860035525
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    we = woehler.MaxLikeFull(fd)
+    wc = we.analyze().sort_index()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    np.testing.assert_almost_equal(we.bayesian_information_criterion(), bic, decimal=2)
+
+
+def test_woehler_max_likelihood_full_without_fixed_params_no_runouts():
+    expected = pd.Series({
+        'SD_50': 0,
+        '1/TS': 1.,
+        'k_1': 6.94,
+        'ND_50': 4.4e30,
+        '1/TN': 5.7
+    }).sort_index()
+
+    bic = np.inf
+
+    fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
     we = woehler.MaxLikeFull(fd)
     wc = we.analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
