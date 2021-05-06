@@ -47,6 +47,9 @@ class Probit(Elementary):
         return fprobs, inf_groups.load.mean()
 
     def __probit_analysis(self):
+        if self._fd.num_runouts == 0:
+            return 1., 0., self._transition_cycles(0.0)
+
         fprobs, load = self.__probit_rossow_estimation()
 
         self._probability_fit = ProbabilityFit(fprobs, load)
@@ -56,6 +59,7 @@ class Probit(Elementary):
         ND_50 = self._transition_cycles(SD_50)
 
         return TS_inv, SD_50, ND_50
+
 
     def fitter(self):
         return self._probability_fit

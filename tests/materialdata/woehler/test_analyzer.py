@@ -694,8 +694,7 @@ def test_woehler_elementary_no_runouts():
         '1/TS': 1.27
     }).sort_index()
 
-    df = data[data.cycles < 1e7]
-    fd = woehler.determine_fractures(df, 1e7).fatigue_data
+    fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
     wc = woehler.Elementary(fd).analyze().sort_index().drop('ND_50')
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
@@ -711,6 +710,21 @@ def test_woehler_probit():
     }).sort_index()
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    wc = woehler.Probit(fd).analyze().sort_index()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+
+
+def test_woehler_probit_no_runouts():
+    expected = pd.Series({
+        'SD_50': 0.,
+        '1/TS': 1.,
+        'k_1': 6.94,
+        'ND_50': 4.4e30,
+        '1/TN': 5.26
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
     wc = woehler.Probit(fd).analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
