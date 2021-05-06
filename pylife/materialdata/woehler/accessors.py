@@ -109,19 +109,18 @@ class FatigueDataAccessor(signal.PylifeSignal):
             self._calc_finite_zone()
         return self._infinite_zone
 
-    def __calc_fatigue_limit(self, predefined_limit = None):
+    def __calc_fatigue_limit(self, predefined_limit=None):
         if predefined_limit is not None:
-            return predefined_limit;
+            return predefined_limit
         max_runout_load = self.runouts.load.max()
-        return (self._finite_zone.load.min() + max_runout_load) / 2;
+        return (self._finite_zone.load.min() + max_runout_load) / 2
 
-    def _calc_finite_zone(self, fatigue_limit = None):
+    def _calc_finite_zone(self, fatigue_limit=None):
         if len(self.runouts) == 0:
             self._fatigue_limit = 0
-            self._finite_zone = self._obj[:0]
-            self._infinite_zone = self._obj
+            self._infinite_zone = self._obj[:0]
+            self._finite_zone = self._obj
             return
-            
         max_runout_load = self.runouts.load.max()
         self._finite_zone = self.fractures[self.fractures.load > max_runout_load]
         self._fatigue_limit = self.__calc_fatigue_limit(predefined_limit = fatigue_limit);
