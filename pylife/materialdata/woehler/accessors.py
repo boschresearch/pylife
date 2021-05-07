@@ -45,6 +45,8 @@ class FatigueDataAccessor(signal.PylifeSignal):
 
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['load', 'cycles', 'fracture'])
+        if len(obj.load.unique()) <= 1:
+            raise ValueError('Fatigue Data needs at least two load levels.')
         self._fatigue_limit = None
 
     @property
@@ -123,20 +125,21 @@ class FatigueDataAccessor(signal.PylifeSignal):
             return
         max_runout_load = self.runouts.load.max()
         self._finite_zone = self.fractures[self.fractures.load > max_runout_load]
-        self._fatigue_limit = self.__calc_fatigue_limit(predefined_limit = fatigue_limit);
+        self._fatigue_limit = self.__calc_fatigue_limit(predefined_limit=fatigue_limit)
+        self._finite_zone = self._obj[self._obj.load > self._fatigue_limit]
         self._infinite_zone = self._obj[self._obj.load <= self._fatigue_limit]
-        
+
     def conservative_fatigue_limit(self):
         """
         Sets a lower fatigue limit that what is expected from the algorithm given by Mustafa Kassem.
         For calculating the fatigue limit, all amplitudes where runouts and fractures are present are collected.
         To this group, the maximum amplitude with only runouts present is added.
         Then, the fatigue limit is the mean of all these amplitudes.
-        
+
         Returns
         -------
         self
-        
+
         See also
         --------
         Kassem, Mustafa - "Open Source Software Development for Reliability and Lifetime Calculation" pp. 34
