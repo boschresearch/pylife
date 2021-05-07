@@ -99,8 +99,10 @@ class Likelihood:
         """
         infinite_zone = self._fd.infinite_zone
         std_log = np.log10(TS)/2.5631031311
-        t = np.logical_not(self._fd.infinite_zone.fracture).astype(int)
-        likelihood = stats.norm.cdf(np.log10(infinite_zone.load/SD), loc=np.log10(1), scale=abs(std_log))
-        log_likelihood = np.log(t+(1-2*t)*likelihood)
+        t = np.logical_not(self._fd.infinite_zone.fracture).astype(np.float64)
+        likelihood = stats.norm.cdf(np.log10(infinite_zone.load/SD),  scale=abs(std_log))
+        non_log_likelihood = t+(1.-2.*t)*likelihood
+        if non_log_likelihood.eq(0.0).any():
+            return -np.inf
 
-        return log_likelihood.sum()
+        return np.log(non_log_likelihood).sum()
