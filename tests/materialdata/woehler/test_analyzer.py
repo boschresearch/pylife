@@ -332,6 +332,38 @@ data_no_runouts = pd.DataFrame(np.array([
 no_runouts_infinite_expected = data_no_runouts[:0]
 no_runouts_finite_expected = data_no_runouts
 
+data_only_runout_levels = pd.DataFrame(np.array([
+        [3.50e+02, 1.70e+05],
+        [3.50e+02, 1.87e+05],
+        [3.50e+02, 2.20e+05],
+        [3.50e+02, 2.89e+05],
+        [3.50e+02, 1.00e+07],
+        [3.50e+02, 1.00e+07],
+        [3.25e+02, 6.75e+05],
+        [3.25e+02, 7.51e+05],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.00e+02, 8.95e+05],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07]
+]), columns=['load', 'cycles']).sample(frac=1)
+
+only_runout_levels_infinite_expected = data_only_runout_levels
+only_runout_levels_finite_expected = data_only_runout_levels[:0]
+
 load_sorted = pd.Series(np.array([
         4.50e+02, 4.50e+02, 4.50e+02, 4.50e+02, 4.00e+02, 4.00e+02, 4.00e+02, 4.00e+02, 3.75e+02, 3.75e+02,
         3.75e+02, 3.75e+02, 3.75e+02, 3.75e+02, 3.50e+02, 3.50e+02, 3.50e+02, 3.50e+02, 3.50e+02, 3.50e+02,
@@ -555,7 +587,10 @@ def test_fatigue_data_simple_properties():
      pure_runout_horizon_and_mixed_horizons_infinite_expected),
     (data_no_runouts,
      no_runouts_finite_expected,
-     no_runouts_infinite_expected)
+     no_runouts_infinite_expected),
+    (data_only_runout_levels,
+     only_runout_levels_finite_expected,
+     only_runout_levels_infinite_expected)
 ])
 def test_fatigue_data_finite_infinite_zone(data, finite_zone_expected, infinite_zone_expected):
     fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data
@@ -641,15 +676,24 @@ def test_woehler_fracture_determination_infered():
     pd.testing.assert_frame_equal(test, expected)
 
 
-def test_woehler_endur_zones():
+@pytest.mark.parametrize("data, fatigue_limit_expected", [
+    (data, 362.5),
+    (data_no_mixed_horizons, 362.5),
+    (data_pure_runout_horizon_and_mixed_horizons, 362.5),
+    (data_no_runouts, 0.0),
+    (data_only_runout_levels, 362.5)
+])
+def test_woehler_endur_zones(data, fatigue_limit_expected):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    assert fd.fatigue_limit == 362.5
+    assert fd.fatigue_limit == fatigue_limit_expected
+
 
 @pytest.mark.parametrize("data, fatigue_limit_expected", [
     (data, 325.0),
     (data_no_mixed_horizons, 350.0),
-    (data_pure_runout_horizon_and_mixed_horizons,325.0),
-    (data_no_runouts,0.0)
+    (data_pure_runout_horizon_and_mixed_horizons, 325.0),
+    (data_no_runouts, 0.0),
+    (data_only_runout_levels, 325.0)
 ])
 def test_woehler_endur_zones_conservative(data, fatigue_limit_expected):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
