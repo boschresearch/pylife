@@ -21,7 +21,7 @@ import scipy.stats as stats
 
 class ProbabilityFit:
     def __init__(self, probs, occurrences):
-        ''' Fit samples and their estimated occurences to a lognorm distribution
+        ''' Fit samples and their estimated occurrences to a lognorm distribution
 
         Parameters:
         -----------
@@ -32,7 +32,9 @@ class ProbabilityFit:
             the values of the samples
         '''
         if len(probs) != len(occurrences):
-            raise ValueError("probs and occurence arrays must have the same 1D shape.")
+            raise ValueError("probs and occurrence arrays must have the same 1D shape.")
+        if len(probs) < 2:
+            raise ValueError("Need at least two datapoints for probabilities and occurrences.")
         ppf = stats.norm.ppf(probs)
         self._occurrences = np.array(occurrences, dtype=np.float64)
         self._slope, self._intercept, _, _, _ = stats.linregress(np.log10(self._occurrences), ppf)
