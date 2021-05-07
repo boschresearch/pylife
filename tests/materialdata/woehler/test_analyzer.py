@@ -364,6 +364,31 @@ data_only_runout_levels = pd.DataFrame(np.array([
 only_runout_levels_infinite_expected = data_only_runout_levels
 only_runout_levels_finite_expected = data_only_runout_levels[:0]
 
+
+data_one_runout_load_level = pd.DataFrame(np.array([
+    [3.5000e+02, 8.5930e+05],
+    [3.5000e+02, 6.5720e+05],
+    [3.5000e+02, 5.8650e+05],
+    [3.5000e+02, 1.3085e+06],
+    [3.5000e+02, 1.4485e+06],
+    [3.0000e+02, 1.0000e+07],
+    [3.0000e+02, 1.0000e+07],
+    [3.0000e+02, 1.0000e+07],
+    [3.0000e+02, 1.0000e+07],
+    [3.0000e+02, 1.0000e+07],
+    [4.5000e+02, 3.2600e+05],
+    [4.5000e+02, 2.6280e+05],
+    [4.5000e+02, 1.3200e+05],
+    [4.5000e+02, 1.9310e+05],
+    [4.5000e+02, 2.5670e+05],
+    [3.2500e+02, 2.2402e+06],
+    [3.2500e+02, 1.1630e+06],
+    [3.2500e+02, 1.2132e+06],
+    [3.2500e+02, 1.0347e+06],
+    [3.2500e+02, 2.2683e+06]
+]), columns=['load', 'cycles']).sample(frac=1)
+
+
 load_sorted = pd.Series(np.array([
         4.50e+02, 4.50e+02, 4.50e+02, 4.50e+02, 4.00e+02, 4.00e+02, 4.00e+02, 4.00e+02, 3.75e+02, 3.75e+02,
         3.75e+02, 3.75e+02, 3.75e+02, 3.75e+02, 3.50e+02, 3.50e+02, 3.50e+02, 3.50e+02, 3.50e+02, 3.50e+02,
@@ -575,6 +600,7 @@ def test_fatigue_data_simple_properties():
     assert fd.num_runouts == 18
     assert fd.num_fractures == 22
 
+
 @pytest.mark.parametrize("data, finite_zone_expected, infinite_zone_expected", [
     (data,
      finite_expected,
@@ -703,7 +729,6 @@ def test_woehler_endur_zones_conservative(data, fatigue_limit_expected):
     assert fd.fatigue_limit == fatigue_limit_expected
 
 
-
 def test_woehler_endure_zones_no_runouts():
     df = data[data.cycles < 1e7]
     fd = woehler.determine_fractures(df, 1e7).fatigue_data
@@ -783,17 +808,45 @@ def test_woehler_probit():
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
 
+def test_woehler_probit_one_runout_load_level():
+    fd = woehler.determine_fractures(data_one_runout_load_level, 1e7).fatigue_data
+    expected = woehler.Elementary(fd).analyze()
+    with pytest.warns(UserWarning, match=r"Probit needs at least two runout load levels. Falling back to Elementary."):
+        wc = woehler.Probit(fd).analyze()
+    pd.testing.assert_series_equal(wc, expected)
+
+
+@pytest.mark.filterwarnings("error:invalid")
+def test_woehler_probit_data01():
+    expected = pd.Series({
+        'SD_50': 490,
+        '1/TS': 1.1,
+        'k_1': 8.0,
+        'ND_50': 530e3,
+        '1/TN': 3.0
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data_01, 1e7).fatigue_data
+    pb = woehler.Probit(fd)
+    wc = pb.analyze().sort_index()
+    bic = pb.bayesian_information_criterion()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+
+
 def test_woehler_probit_no_runouts():
     expected = pd.Series({
         'SD_50': 0.,
-        '1/TS': 1.,
+        '1/TS': 1.27,
         'k_1': 6.94,
         'ND_50': 4.4e30,
         '1/TN': 5.26
     }).sort_index()
 
     fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
-    wc = woehler.Probit(fd).analyze().sort_index()
+    pb = woehler.Probit(fd)
+    with pytest.warns(UserWarning):
+        wc = pb.analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
