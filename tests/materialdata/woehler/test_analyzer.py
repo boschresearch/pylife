@@ -586,12 +586,6 @@ def test_woehler_accessor_missing_keys():
             _wc.woehler
 
 
-def test_fatigue_data_accessor_only_one_load_level():
-    data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 1e6]]), columns=['load', 'cycles'])
-    with pytest.raises(ValueError, match=r'Fatigue Data needs at least two load levels.'):
-        woehler.determine_fractures(data, 1e7).fatigue_data
-
-
 def test_fatigue_data_simple_properties():
     fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data
     pd.testing.assert_series_equal(fd.load.sort_values(), load_sorted)
@@ -791,6 +785,13 @@ def test_woehler_elementary_no_runouts():
     wc = woehler.Elementary(fd).analyze().sort_index().drop('ND_50')
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+
+
+def test_woehler_elementary_only_one_load_level():
+    data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 1e6]]), columns=['load', 'cycles'])
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    with pytest.raises(ValueError, match=r"Need at least two load levels to do a Wöhler analysis."):
+        woehler.Elementary(fd).analyze().sort_index()
 
 
 def test_woehler_probit():

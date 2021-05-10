@@ -45,8 +45,6 @@ class FatigueDataAccessor(signal.PylifeSignal):
 
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['load', 'cycles', 'fracture'])
-        if len(obj.load.unique()) <= 1:
-            raise ValueError('Fatigue Data needs at least two load levels.')
         self._fatigue_limit = None
 
     @property
