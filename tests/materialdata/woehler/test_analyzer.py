@@ -266,15 +266,15 @@ pure_runout_horizon_and_mixed_horizons_finite_expected_conservative = pd.DataFra
         [3.75e+02, 5.00e+05],
         [3.75e+02, 6.00e+05],
         [3.75e+02, 7.09e+05],
+    ]), columns=['load', 'cycles'])
+
+pure_runout_horizon_and_mixed_horizons_infinite_expected_conservative = pd.DataFrame(np.array([
         [3.50e+02, 1.70e+05],
         [3.50e+02, 1.87e+05],
         [3.50e+02, 2.20e+05],
         [3.50e+02, 2.89e+05],
         [3.50e+02, 3.09e+05],
         [3.50e+02, 1.00e+07],
-    ]), columns=['load', 'cycles'])
-
-pure_runout_horizon_and_mixed_horizons_infinite_expected_conservative = pd.DataFrame(np.array([
         [3.25e+02, 6.75e+05],
         [3.25e+02, 7.51e+05],
         [3.25e+02, 1.00e+07],
@@ -462,15 +462,15 @@ finite_expected_conservative = pd.DataFrame(np.array([
         [3.75e+02, 5.00e+05],
         [3.75e+02, 6.00e+05],
         [3.75e+02, 7.09e+05],
+]), columns=['load', 'cycles']).sort_values(by='load').reset_index(drop=True)
+
+infinite_expected_conservative = pd.DataFrame(np.array([
         [3.50e+02, 1.70e+05],
         [3.50e+02, 1.87e+05],
         [3.50e+02, 2.20e+05],
         [3.50e+02, 2.89e+05],
         [3.50e+02, 3.09e+05],
         [3.50e+02, 1.00e+07],
-]), columns=['load', 'cycles']).sort_values(by='load').reset_index(drop=True)
-
-infinite_expected_conservative = pd.DataFrame(np.array([
         [3.25e+02, 6.75e+05],
         [3.25e+02, 7.51e+05],
         [3.25e+02, 1.00e+07],

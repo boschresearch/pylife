@@ -131,8 +131,7 @@ class FatigueDataAccessor(signal.PylifeSignal):
         max_runout_load = self.runouts.load.max()
         self._finite_zone = self.fractures[self.fractures.load > max_runout_load]
         self._fatigue_limit = self.__calc_fatigue_limit(predefined_limit=fatigue_limit)
-        self._finite_zone = self._obj[self._obj.load > self._fatigue_limit]
-        self._infinite_zone = self._obj[self._obj.load <= self._fatigue_limit]
+        self._infinite_zone = self._obj[self._obj.load <= max_runout_load]
 
     def conservative_fatigue_limit(self):
         """
