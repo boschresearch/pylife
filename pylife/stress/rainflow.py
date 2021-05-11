@@ -47,28 +47,20 @@ def get_turns(samples):
 
     '''
     diffs = np.diff(samples)
-    if np.any(diffs == 0.0):
-        # Remove the duplicates
-        duplicates = np.concatenate([diffs == 0, [False]])
-        samples = samples[~duplicates]
-        diffs = diffs[diffs != 0]
-    else:
-        duplicates = None
-    (positions,) = np.where(diffs[:-1] * diffs[1:] < 0.0)
+    positions = np.where(diffs[:-1] * diffs[1:] < 0.0)[0]
+
+    duplicates = np.array(diffs == 0, dtype=np.int)
+    if duplicates.any():
+        left_dups = np.where(np.diff(duplicates) > 0)[0]
+        right_dups = np.where(np.diff(duplicates) < 0)[0]
+        if right_dups[0] == 0:
+            right_dups = right_dups[1:]
+        plateau_turns = left_dups[np.where(diffs[left_dups] * diffs[right_dups+1] < 0)]
+        positions = np.sort(np.concatenate([positions, plateau_turns]))
+
     positions += 1
-    turns = samples[(positions,)]
 
-    if duplicates is None:
-        original_positions = positions
-    else:
-        # Transform the positions back to those in the original samples with duplicates
-        index_shift = np.cumsum(duplicates)
-        for rvs_ind in range(len(index_shift) - 1):
-            if duplicates[-rvs_ind - 1] and duplicates[-rvs_ind - 2]:
-                index_shift[-rvs_ind - 2] = index_shift[-rvs_ind - 1]
-        original_positions = np.array([position + index_shift[position] for position in positions])
-
-    return original_positions, turns
+    return positions, samples[positions]
 
 
 class AbstractRainflowCounter:

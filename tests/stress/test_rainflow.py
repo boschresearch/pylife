@@ -371,6 +371,27 @@ def test_rainflow_partial_get_turns_consecutive_duplicates():
     np.testing.assert_array_equal(turns, np.array([0.5, 1., -1.]))
 
 
+def test_rainflow_duplicates_no_peak_up():
+    samples = np.array([1., 2., 2., 3.])
+    index, values = RF.get_turns(samples)
+    assert len(index) == 0
+    assert len(values) == 0
+
+
+def test_rainflow_duplicates_no_peak_down():
+    samples = np.array([3., 2., 2., 1.])
+    index, values = RF.get_turns(samples)
+    assert len(index) == 0
+    assert len(values) == 0
+
+
+def test_rainflow_get_turns_shifted_index():
+    samples = np.array([32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.])
+    index, values = RF.get_turns(samples)
+    print(index)
+    np.testing.assert_almost_equal(values, samples[index])
+
+
 def test_rainflow_partial_signals_general_FKM():
     tsgen = TimeSignalGenerator(10, {'number': 50,
                                      'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
