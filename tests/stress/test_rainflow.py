@@ -388,6 +388,15 @@ def test_rainflow_get_turns_shifted_index():
     np.testing.assert_array_equal(values, expected_values)
 
 
+def test_rainflow_get_turns_shifted_index_four_initial_dups():
+    samples = np.array([32., 32., 32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.])
+    expected_index = [6, 12, 16]
+    expected_values = [33., 32., 40.]
+    index, values = RF.get_turns(samples)
+    np.testing.assert_array_equal(index, expected_index)
+    np.testing.assert_array_equal(values, expected_values)
+
+
 def test_rainflow_partial_signals_general_FKM():
     tsgen = TimeSignalGenerator(10, {'number': 50,
                                      'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
