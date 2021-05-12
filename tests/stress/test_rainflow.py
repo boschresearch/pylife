@@ -317,15 +317,14 @@ def test_rainflow_partial_get_turns_general():
                                 None, None)
 
     signal_tot = tsgen.query(10000)
-    #np.savetxt('splitturn_get_turns_general.txt', signal_tot)
-    #signal_tot = np.loadtxt('splitturn_get_turns_FKM_fail.txt')
-    turns_tot =  RF.RainflowCounterFKM()._get_new_turns(signal_tot)
+    turns_tot = RF.RainflowCounterFKM()._get_new_turns(signal_tot)
     rfc_partial = RF.RainflowCounterFKM()
     turns_partial = np.concatenate((
         rfc_partial._get_new_turns(signal_tot[:3424]),
         rfc_partial._get_new_turns(signal_tot[3424:])))
 
     np.testing.assert_array_equal(turns_tot, turns_partial)
+
 
 def test_rainflow_partial_signals_get_turns_splitturn():
     tsgen = TimeSignalGenerator(10, {'number': 50,
@@ -335,8 +334,6 @@ def test_rainflow_partial_signals_get_turns_splitturn():
                                 None, None)
 
     signal_tot = tsgen.query(10000)
-    # np.savetxt('splitturn_get_turns_fail.txt', signal_tot)
-    # signal_tot = np.loadtxt('splitturn_get_turns_fail.txt')
     turns_tot = RF.AbstractRainflowCounter()._get_new_turns(signal_tot)
     turn_points, _ = RF.get_turns(signal_tot)
     turn_points = np.insert(turn_points, 0, 0)
@@ -347,9 +344,6 @@ def test_rainflow_partial_signals_get_turns_splitturn():
     for i in range(len(split_points)-1):
         lower = turn_points[split_points[i]]
         upper = 10000 if split_points[i+1] == turn_points.shape[0] else turn_points[split_points[i+1]]
-        print("signal_head", signal_tot[lower:lower+5])
-        print("signal_tail", signal_tot[upper-5:upper])
-        print(upper)
         turns_partial = np.concatenate((turns_partial, rfc_partial._get_new_turns(signal_tot[lower:upper])))
 
     print(turns_tot[-5:])
@@ -359,16 +353,16 @@ def test_rainflow_partial_signals_get_turns_splitturn():
 
 def test_rainflow_partial_get_turns_no_turns():
     samples = np.array([0., 1.])
-    rfc = RF.AbstractRainflowCounter()
-    turns = rfc._get_new_turns(samples)
-    np.testing.assert_array_equal(turns, np.empty(0))
+    index, values = RF.get_turns(samples)
+    assert len(index) == 0
+    assert len(values) == 0
 
 
 def test_rainflow_partial_get_turns_consecutive_duplicates():
     samples = np.array([1., 1., 0.5, 0.5, 1., 1., 1., -1., -1., 0.5, 1.])
-    rfc = RF.AbstractRainflowCounter()
-    turns = rfc._get_new_turns(samples)
-    np.testing.assert_array_equal(turns, np.array([0.5, 1., -1.]))
+    index, values = RF.get_turns(samples)
+    np.testing.assert_array_equal(values, np.array([0.5, 1., -1.]))
+    np.testing.assert_array_equal(index, np.array([2, 4, 7]))
 
 
 def test_rainflow_duplicates_no_peak_up():
@@ -388,7 +382,6 @@ def test_rainflow_duplicates_no_peak_down():
 def test_rainflow_get_turns_shifted_index():
     samples = np.array([32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.])
     index, values = RF.get_turns(samples)
-    print(index)
     np.testing.assert_almost_equal(values, samples[index])
 
 
