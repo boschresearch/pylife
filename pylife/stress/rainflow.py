@@ -47,7 +47,8 @@ def get_turns(samples):
 
     '''
     diffs = np.diff(samples)
-    positions = np.where(diffs[:-1] * diffs[1:] < 0.0)[0]
+    natural_turns = diffs[:-1] * diffs[1:] < 0.0
+    plateau_turns = np.zeros_like(diffs, dtype=np.bool_)[1:]
 
     duplicates = np.array(diffs == 0, dtype=np.int8)
     if duplicates.any():
@@ -56,9 +57,9 @@ def get_turns(samples):
         right_dups = np.where(edges < 0)[0]
         if right_dups[0] == 0:
             right_dups = right_dups[1:]
-        plateau_turns = left_dups[np.where(diffs[left_dups] * diffs[right_dups+1] < 0)]
-        positions = np.sort(np.concatenate([positions, plateau_turns]))
+        plateau_turns[left_dups[np.where(diffs[left_dups] * diffs[right_dups+1] < 0)]] = True
 
+    positions = np.where(np.logical_or(natural_turns, plateau_turns))[0]
     positions += 1
 
     return positions, samples[positions]
