@@ -46,21 +46,24 @@ def get_turns(samples):
         the values of the turning points
 
     '''
+    def plateau_turns(diffs):
+        plateau_turns = np.zeros_like(diffs, dtype=np.bool_)[1:]
+        duplicates = np.array(diffs == 0, dtype=np.int8)
+
+        if duplicates.any():
+            edges = np.diff(duplicates)
+            dups_starts = np.where(edges > 0)[0]
+            dups_ends = np.where(edges < 0)[0]
+            if dups_ends[0] == 0:
+                dups_ends = dups_ends[1:]
+            plateau_turns[dups_starts[np.where(diffs[dups_starts] * diffs[dups_ends+1] < 0)]] = True
+
+        return plateau_turns
+
     diffs = np.diff(samples)
-    natural_turns = diffs[:-1] * diffs[1:] < 0.0
-    plateau_turns = np.zeros_like(diffs, dtype=np.bool_)[1:]
+    peak_turns = diffs[:-1] * diffs[1:] < 0.0
 
-    duplicates = np.array(diffs == 0, dtype=np.int8)
-    if duplicates.any():
-        edges = np.diff(duplicates)
-        left_dups = np.where(edges > 0)[0]
-        right_dups = np.where(edges < 0)[0]
-        if right_dups[0] == 0:
-            right_dups = right_dups[1:]
-        plateau_turns[left_dups[np.where(diffs[left_dups] * diffs[right_dups+1] < 0)]] = True
-
-    positions = np.where(np.logical_or(natural_turns, plateau_turns))[0]
-    positions += 1
+    positions = np.where(np.logical_or(peak_turns, plateau_turns(diffs)))[0] + 1
 
     return positions, samples[positions]
 
