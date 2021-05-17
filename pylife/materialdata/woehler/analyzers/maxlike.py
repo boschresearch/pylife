@@ -65,11 +65,11 @@ class MaxLikeFull(Elementary):
             fixed_prms.update({'SD_50': 0.0, '1/TS': 1.0})
         
         # * At least three cracks are needed on at least two load levels for the assessment
-        assert len(self._fd.fractures) >= 3, "MaxLikeHood: need at least three fractures."
-        assert len(np.unique(self._fd.fractures.load.values)) >= 2, "MaxLikeHood: need at least three fractures on two load levels."
+        assert self._fd.num_fractures >= 3, "MaxLikeHood: need at least three fractures."
+        assert len(self._fd.fractured_loads) >= 2, "MaxLikeHood: need at least three fractures on two load levels."
         
         # *  If only one mixed level or only crack and run-out levels are available, the scatter must be predetermined (using a standard scatter, e. g. the scatter of the standardized Woehler curve) to allow an evaluation of the MLE
-        if len(self._fd.mixed_loads) < 2:
+        if len(self._fd.mixed_loads) < 2 and self._fd.num_runouts > 0 and self._fd.num_fractures > 0:
             warnings.warn(UserWarning("MaxLikeHood: only one mixed level or only crack and run-out levels are available in fatigue data. Proceed by setting a predetermined scatter from the standard Wöhler curve."))
             fixed_prms = fixed_prms.copy()
             TN_inv, TS_inv = self._pearl_chain_method()

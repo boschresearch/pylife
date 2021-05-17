@@ -980,6 +980,21 @@ def test_max_likelihood_parameter_sign(data, no):
     assert_positive_or_nan_but_not_zero(wl['ND_50'])
     assert_positive_or_nan_but_not_zero(wl['1/TN'])
 
+def test_max_likelihood_one_mixed_horizon():
+    expected = pd.Series({
+        'SD_50': 489.3,
+        '1/TS': 1.147,
+        'k_1': 7.99,
+        'ND_50': 541e3,
+        '1/TN': 2.51
+    }).sort_index()
+    
+    fd = woehler.determine_fractures(data_01, 1e7).fatigue_data
+    ml = woehler.MaxLikeFull(fatigue_data=fd)
+    wc = ml.analyze().sort_index()
+    bic = ml.bayesian_information_criterion()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
 @mock.patch('pylife.materialdata.woehler.analyzers.bayesian.pm')
 def test_bayesian_slope_trace(pm):
