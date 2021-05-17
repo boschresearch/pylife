@@ -65,9 +65,7 @@ class MaxLikeFull(Elementary):
             fixed_prms.update({'SD_50': 0.0, '1/TS': 1.0})
         
         # * At least three cracks are needed on at least two load levels for the assessment
-        if self._fd.num_fractures >= 3:
-            raise ValueError("MaxLikeHood: need at least three fractures.")
-        if len(self._fd.fractured_loads) >= 2:
+        if self._fd.num_fractures < 3 or len(self._fd.fractured_loads) < 2:
             raise ValueError("MaxLikeHood: need at least three fractures on two load levels.")
         
         # *  If only one mixed level or only crack and run-out levels are available, the scatter must be predetermined (using a standard scatter, e. g. the scatter of the standardized Woehler curve) to allow an evaluation of the MLE

@@ -498,7 +498,7 @@ data_01 = pd.DataFrame({"load": np.array([620, 620, 620, 550, 550, 500, 500, 500
     [65783, 89552, 115800, 141826, 190443, 293418, 383341, 525438, 967091, 99505992, 99524024, 199563776])})
 data_01_no_pure_runout_horizon = data_01[data_01.load > 480]
 data_01_two_fractures = pd.DataFrame({"load": np.array([620, 550,480]), "cycles": np.array([65783, 141826,199563776])})
-data_01_two_fracture_levels = data_01[data_01.load >= 550]
+data_01_one_fracture_level = data_01[data_01.load > 550]
 
 
 def read_data(s, thres=1e6):
@@ -983,11 +983,11 @@ def test_max_likelihood_parameter_sign(data, no):
     assert_positive_or_nan_but_not_zero(wl['1/TN'])
 
 
-@pytest.mark.parametrize("data", [data_01_two_fracture_levels,data_01_two_fractures])
-def test_max_likelihood_min_three_fractures_on_two_load_levels(data):
-    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+@pytest.mark.parametrize("invalid_data", [data_01_one_fracture_level,data_01_two_fractures])
+def test_max_likelihood_min_three_fractures_on_two_load_levels(invalid_data):
+    fd = woehler.determine_fractures(invalid_data, 1e7).fatigue_data
     ml = woehler.MaxLikeFull(fatigue_data=fd)
-    with pytest.raises(ValueError, match=r"^.*MaxLikeHood: need at least.*" ):
+    with pytest.raises(ValueError, match=r"^.*[N|n]eed at least.*" ):
         wc = ml.analyze().sort_index()
     
 def test_max_likelihood_one_mixed_horizon():
