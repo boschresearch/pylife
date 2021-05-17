@@ -19,7 +19,7 @@ import pandas as pd
 import numpy as np
 from scipy import optimize
 import mystic as my
-
+import warnings
 
 class MaxLikeInf(Elementary):
     def _specific_analysis(self, wc):
@@ -53,6 +53,33 @@ class MaxLikeFull(Elementary):
     def _specific_analysis(self, wc, fixed_parameters={}):
         return pd.Series(self.__max_likelihood_full(wc, fixed_parameters))
 
+    def __apply_optimization_boundary_conditions(self, fixed_prms):
+        """
+        Boundary conditions according to ``703-6480_Statistical evaluation of hppts@ITN-F2F.pdf``
+        """
+        # * no runouts present
+        #   actually not a valid setting according to the source
+        if self._fd.num_runouts == 0:
+            warnings.warn(UserWarning("MaxLikeHood: no runouts are present in fatigue data. Proceed with SD_50 = 0 and 1/TS = 1 as fixed parameters. This is NOT a standard evaluation!"))
+            fixed_prms = fixed_prms.copy()
+            fixed_prms.update({'SD_50': 0.0, '1/TS': 1.0})
+        
+        # * At least three cracks are needed on at least two load levels for the assessment
+        assert len(self._fd.fractures) >= 3, "MaxLikeHood: need at least three fractures."
+        assert len(np.unique(self._fd.fractures.load.values)) >= 2, "MaxLikeHood: need at least three fractures on two load levels."
+        
+        # *  If only one mixed level or only crack and run-out levels are available, the scatter must be predetermined (using a standard scatter, e. g. the scatter of the standardized Woehler curve) to allow an evaluation of the MLE
+        if len(self._fd.mixed_loads) < 2:
+            warnings.warn(UserWarning("MaxLikeHood: only one mixed level or only crack and run-out levels are available in fatigue data. Proceed by setting a predetermined scatter from the standard Wöhler curve."))
+            fixed_prms = fixed_prms.copy()
+            TN_inv, TS_inv = self._pearl_chain_method()
+            fixed_prms.update({'1/TS': TS_inv})
+        
+        # * Censored test data in terms of test aborts cannot be considered within the evaluation
+        #   -> Currently not possible
+        
+        return fixed_prms
+
     def __max_likelihood_full(self, initial_wcurve, fixed_prms):
         """
         Maximum likelihood is a method of estimating the parameters of a distribution model by maximizing
@@ -79,10 +106,8 @@ class MaxLikeFull(Elementary):
         """
 
         p_opt = initial_wcurve.to_dict()
-        if self._fd.num_runouts == 0:
-            fixed_prms = fixed_prms.copy()
-            fixed_prms.update({'SD_50': 0.0, '1/TS': 1.0})
-
+        fixed_prms = self.__apply_optimization_boundary_conditions(fixed_prms)
+        
         for k in fixed_prms:
             p_opt.pop(k)
 

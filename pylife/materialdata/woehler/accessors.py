@@ -109,6 +109,22 @@ class FatigueDataAccessor(signal.PylifeSignal):
             self._calc_fatigue_limit()
         return self._infinite_zone
 
+    @property
+    def fractured_loads(self):
+        return np.unique(self.fractures.load.values)
+
+    @property
+    def runout_loads(self):
+        return np.unique(self.runouts.load.values)
+
+    @property
+    def non_fractured_loads(self):
+        return np.setdiff1d(self.runout_loads, self.fractured_loads)
+    
+    @property
+    def mixed_loads(self):
+        return np.intersect1d(self.runout_loads, self.fractured_loads)
+    
     def conservative_fatigue_limit(self):
         """
         Sets a lower fatigue limit that what is expected from the algorithm given by Mustafa Kassem.
@@ -124,15 +140,19 @@ class FatigueDataAccessor(signal.PylifeSignal):
         --------
         Kassem, Mustafa - "Open Source Software Development for Reliability and Lifetime Calculation" pp. 34
         """
-        fracture_loads = np.unique(self.fractures.load.values)
-        runout_loads = np.unique(self.runouts.load.values)
-        loads_with_no_fractures = np.setdiff1d(runout_loads, fracture_loads)
-        loads_with_fractures_and_runouts = np.intersect1d(runout_loads, fracture_loads)
+        #fracture_loads = np.unique(self.fractures.load.values)
+        #runout_loads = np.unique(self.runouts.load.values)
+       # loads_with_no_fractures = self.non_fractured_loads #np.setdiff1d(runout_loads, fracture_loads)
+       # loads_with_fractures_and_runouts = self.mixed_loads #np.intersect1d(runout_loads, fracture_loads)
 
-        amps_to_consider = loads_with_fractures_and_runouts
+        amps_to_consider = self.mixed_loads #loads_with_fractures_and_runouts
 
-        if len(loads_with_no_fractures) > 0:
-            amps_to_consider = np.concatenate((amps_to_consider, [loads_with_no_fractures.max()]))
+        #if len(loads_with_no_fractures) > 0:
+        #    amps_to_consider = np.concatenate((amps_to_consider, [loads_with_no_fractures.max()]))
+        #print(self.non_fractured_loads)
+        #print(len(self.non_fractured_loads))
+        if len(self.non_fractured_loads ) > 0:
+            amps_to_consider = np.concatenate((amps_to_consider, [self.non_fractured_loads.max()]))
 
         if len(amps_to_consider) > 0:
             self._fatigue_limit = amps_to_consider.mean()
