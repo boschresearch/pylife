@@ -46,29 +46,26 @@ def get_turns(samples):
         the values of the turning points
 
     '''
+    def plateau_turns(diffs):
+        plateau_turns = np.zeros_like(diffs, dtype=np.bool_)[1:]
+        duplicates = np.array(diffs == 0, dtype=np.int8)
+
+        if duplicates.any():
+            edges = np.diff(duplicates)
+            dups_starts = np.where(edges > 0)[0]
+            dups_ends = np.where(edges < 0)[0]
+            if dups_ends[0] < dups_starts[0]:
+                dups_ends = dups_ends[1:]
+            plateau_turns[dups_starts[np.where(diffs[dups_starts] * diffs[dups_ends+1] < 0)]] = True
+
+        return plateau_turns
+
     diffs = np.diff(samples)
-    if np.any(diffs == 0.0):
-        # Remove the duplicates
-        duplicates = np.concatenate([diffs == 0, [False]])
-        samples = samples[~duplicates]
-        diffs = diffs[diffs != 0]
-    else:
-        duplicates = None
-    (positions,) = np.where(diffs[:-1] * diffs[1:] < 0.0)
-    positions += 1
-    turns = samples[(positions,)]
+    peak_turns = diffs[:-1] * diffs[1:] < 0.0
 
-    if duplicates is None:
-        original_positions = positions
-    else:
-        # Transform the positions back to those in the original samples with duplicates
-        index_shift = np.cumsum(duplicates)
-        for rvs_ind in range(len(index_shift) - 1):
-            if duplicates[-rvs_ind - 1] and duplicates[-rvs_ind - 2]:
-                index_shift[-rvs_ind - 2] = index_shift[-rvs_ind - 1]
-        original_positions = np.array([position + index_shift[position] for position in positions])
+    positions = np.where(np.logical_or(peak_turns, plateau_turns(diffs)))[0] + 1
 
-    return original_positions, turns
+    return positions, samples[positions]
 
 
 class AbstractRainflowCounter:
