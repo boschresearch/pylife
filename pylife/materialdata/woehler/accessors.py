@@ -140,17 +140,8 @@ class FatigueDataAccessor(signal.PylifeSignal):
         --------
         Kassem, Mustafa - "Open Source Software Development for Reliability and Lifetime Calculation" pp. 34
         """
-        #fracture_loads = np.unique(self.fractures.load.values)
-        #runout_loads = np.unique(self.runouts.load.values)
-       # loads_with_no_fractures = self.non_fractured_loads #np.setdiff1d(runout_loads, fracture_loads)
-       # loads_with_fractures_and_runouts = self.mixed_loads #np.intersect1d(runout_loads, fracture_loads)
-
         amps_to_consider = self.mixed_loads #loads_with_fractures_and_runouts
-
-        #if len(loads_with_no_fractures) > 0:
-        #    amps_to_consider = np.concatenate((amps_to_consider, [loads_with_no_fractures.max()]))
-        #print(self.non_fractured_loads)
-        #print(len(self.non_fractured_loads))
+        
         if len(self.non_fractured_loads ) > 0:
             amps_to_consider = np.concatenate((amps_to_consider, [self.non_fractured_loads.max()]))
 

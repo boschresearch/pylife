@@ -57,7 +57,7 @@ class MaxLikeFull(Elementary):
         """
         Boundary conditions according to ``703-6480_Statistical evaluation of hppts@ITN-F2F.pdf``
         """
-        # * no runouts present
+        # * No runouts present
         #   actually not a valid setting according to the source
         if self._fd.num_runouts == 0:
             warnings.warn(UserWarning("MaxLikeHood: no runouts are present in fatigue data. Proceed with SD_50 = 0 and 1/TS = 1 as fixed parameters. This is NOT a standard evaluation!"))
