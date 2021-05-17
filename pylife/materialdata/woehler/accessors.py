@@ -140,7 +140,7 @@ class FatigueDataAccessor(signal.PylifeSignal):
         --------
         Kassem, Mustafa - "Open Source Software Development for Reliability and Lifetime Calculation" pp. 34
         """
-        amps_to_consider = self.mixed_loads #loads_with_fractures_and_runouts
+        amps_to_consider = self.mixed_loads
         
         if len(self.non_fractured_loads ) > 0:
             amps_to_consider = np.concatenate((amps_to_consider, [self.non_fractured_loads.max()]))
