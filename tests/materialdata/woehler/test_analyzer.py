@@ -983,13 +983,21 @@ def test_max_likelihood_parameter_sign(data, no):
     assert_positive_or_nan_but_not_zero(wl['1/TN'])
 
 
-@pytest.mark.parametrize("invalid_data", [data_01_one_fracture_level,data_01_two_fractures])
+@pytest.mark.parametrize("invalid_data", [data_01_one_fracture_level, data_01_two_fractures])
 def test_max_likelihood_min_three_fractures_on_two_load_levels(invalid_data):
     fd = woehler.determine_fractures(invalid_data, 1e7).fatigue_data
     ml = woehler.MaxLikeFull(fatigue_data=fd)
     with pytest.raises(ValueError, match=r"^.*[N|n]eed at least.*" ):
-        wc = ml.analyze().sort_index()
-    
+        ml.analyze()
+
+
+def test_max_likelihood_no_runouts_warning():
+    fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
+    ml = woehler.MaxLikeFull(fatigue_data=fd)
+    with pytest.warns(UserWarning, match=r"^.*no runouts are present.*" ):
+        ml.analyze()
+
+
 def test_max_likelihood_one_mixed_horizon():
     expected = pd.Series({
         'SD_50': 489.3,
@@ -998,10 +1006,11 @@ def test_max_likelihood_one_mixed_horizon():
         'ND_50': 541e3,
         '1/TN': 2.51
     }).sort_index()
-    
+
     fd = woehler.determine_fractures(data_01, 1e7).fatigue_data
     ml = woehler.MaxLikeFull(fatigue_data=fd)
-    wc = ml.analyze().sort_index()
+    with pytest.warns(UserWarning, match=r"^.*only one mixed level.*"):
+        wc = ml.analyze().sort_index()
     bic = ml.bayesian_information_criterion()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
