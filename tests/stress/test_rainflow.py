@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 
 import pylife.stress.rainflow as RF
+import pylife.stress.rainflow_recorder as RFR
 from pylife.stress.timesignal import TimeSignalGenerator
 
 
@@ -504,3 +505,10 @@ def test_rainflow_FKM_memory1_2_3():
     np.testing.assert_array_equal(rfc.loops_from, np.array([ 1., -2., 2., -2.,  1., -2., -2., 2., -2.]))
     np.testing.assert_array_equal(rfc.loops_to,   np.array([-1., -1., 0.,  2., -1.,  1., -1., 0.,  2.]))
     np.testing.assert_array_equal(rfc.residuals(), np.array([1., -2.]))
+
+
+def test_three_point_detector_new_no_residuals():
+    grr = RFR.GenericRainflowRecorder()
+    dtor = RF.ThreePointDetector(recorder=grr)
+    assert len(dtor.residuals) == 0
+    assert dtor.recorder is grr

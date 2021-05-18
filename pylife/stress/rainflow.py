@@ -29,6 +29,7 @@ import pandas as pd
 
 import cython
 
+from .rainflow_recorder import GenericRainflowRecorder
 
 def get_turns(samples):
     ''' Finds the turning points in a sample chunk
@@ -153,7 +154,7 @@ class AbstractRainflowCounter:
         return self._residuals
 
 
-class RainflowCounterThreePoint(AbstractRainflowCounter):
+class RainflowCounterThreePoint():
     ''' Implements 3 point rainflow counting algorithm
 
     See the `here <subsection_TP_>`_ in the demo for an example.
@@ -202,8 +203,52 @@ class RainflowCounterThreePoint(AbstractRainflowCounter):
     .. _subsection_TP: ../demos/rainflow.ipynb#Classic-Three-Point-Counting
     '''
     def __init__(self):
-        super(RainflowCounterThreePoint, self).__init__()
+        self._recorder = GenericRainflowRecorder()
+        self._detector = ThreePointDetector(recorder=self._recorder)
+
+    def process(self, samples):
+        self._detector.process(samples)
+        return self
+
+    @property
+    def loops_from(self):
+        return self._recorder.loops_from
+
+    @property
+    def loops_to(self):
+        return self._recorder.loops_to
+
+    def residuals(self):
+        return self._detector.residuals
+
+    def get_rainflow_matrix_frame(self, bins):
+        return self._recorder.matrix_frame(bins)
+
+
+class ThreePointDetector:
+
+    def __init__(self, recorder):
         self._residuals = None
+        self._recorder = recorder
+        self._sample_tail = None
+
+    @property
+    def residuals(self):
+        return self._residuals if self._residuals is not None else []
+
+    @property
+    def recorder(self):
+        return self._recorder
+
+    def _get_new_turns(self, samples):
+        if self._sample_tail is not None:
+            samples = np.concatenate((self._sample_tail, samples))
+        turn_positions, turns = get_turns(samples)
+        if turn_positions.size > 0:
+            self._sample_tail = samples[turn_positions[-1]:]
+        else:
+            self._sample_tail = samples
+        return turns
 
     @cython.locals(
         start=cython.int, front=cython.int, back=cython.int,
@@ -256,8 +301,7 @@ class RainflowCounterThreePoint(AbstractRainflowCounter):
                 if (start >= max(lowest_front, highest_front) and
                     np.abs(back_val - front_val) >= np.abs(front_val - start_val) and
                     front != highest_front and front != lowest_front):
-                    self.loops_from.append(start_val)
-                    self.loops_to.append(front_val)
+                    self._recorder.record(0, 0, start_val, front_val)
                     residual_indeces.pop()
                     residual_indeces.pop()
                     continue
