@@ -272,6 +272,12 @@ def test_woehler_max_likelihood_inf_limit():
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
+def test_bic_without_analysis():
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    we = woehler.MaxLikeFull(fd)
+    with pytest.raises(ValueError, match="^.*BIC.*"):
+        we.bayesian_information_criterion()
+
 
 def test_woehler_max_likelihood_full_without_fixed_params():
     expected = pd.Series({

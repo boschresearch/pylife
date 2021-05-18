@@ -49,6 +49,8 @@ class Elementary:
         return wc
 
     def bayesian_information_criterion(self):
+        if not hasattr(self,"_bic"):
+            raise ValueError("BIC value undefined. Analysis has not been conducted.")
         return self._bic
 
     def pearl_chain_estimator(self):
