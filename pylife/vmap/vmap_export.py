@@ -439,11 +439,11 @@ class VMAPExport:
         element_ids = []
         node_ids_list = []
         element_types_list = []
-        coordinate_system = np.empty(len(element_connectivities), dtype=np.int)
+        coordinate_system = np.empty(len(element_connectivities), dtype=np.int32)
         coordinate_system.fill(1)
-        material_type = np.empty(len(element_connectivities), dtype=np.int)
+        material_type = np.empty(len(element_connectivities), dtype=np.int32)
         material_type.fill(0)
-        section_type = np.empty(len(element_connectivities), dtype=np.int)
+        section_type = np.empty(len(element_connectivities), dtype=np.int32)
         section_type.fill(self._sections['DEFAULT'][0])
 
         for element_connectivity in element_connectivities:

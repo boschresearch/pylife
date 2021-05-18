@@ -19,13 +19,6 @@ import pandas as pd
 import pytest
 import unittest.mock as mock
 
-import warnings
-warnings.filterwarnings(
-    action='ignore',
-    category=DeprecationWarning,
-    module=r'.*(pymc3|klepto|inspect|theano).*'
-)
-
 from io import StringIO
 
 from pylife.materialdata import woehler
@@ -922,7 +915,8 @@ def test_woehler_max_likelihood_full_without_fixed_params_no_runouts():
 
     fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
     we = woehler.MaxLikeFull(fd)
-    wc = we.analyze().sort_index()
+    with pytest.warns(UserWarning, match=r"^.*no runouts are present.*" ):
+        wc = we.analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
     np.testing.assert_almost_equal(we.bayesian_information_criterion(), bic, decimal=2)
@@ -994,13 +988,6 @@ def test_max_likelihood_min_three_fractures_on_two_load_levels(invalid_data):
     fd = woehler.determine_fractures(invalid_data, 1e7).fatigue_data
     ml = woehler.MaxLikeFull(fatigue_data=fd)
     with pytest.raises(ValueError, match=r"^.*[N|n]eed at least.*" ):
-        ml.analyze()
-
-
-def test_max_likelihood_no_runouts_warning():
-    fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
-    ml = woehler.MaxLikeFull(fatigue_data=fd)
-    with pytest.warns(UserWarning, match=r"^.*no runouts are present.*" ):
         ml.analyze()
 
 

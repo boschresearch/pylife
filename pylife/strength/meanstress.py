@@ -97,11 +97,11 @@ class MeanstressHist:
         binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
         bincount = int(np.ceil(Dsig_max / binsize))
         new_idx = pd.IntervalIndex.from_breaks(np.linspace(0, Dsig_max, bincount), name="range")
-        result = pd.DataFrame(data=np.zeros(bincount-1), index=new_idx, columns=['frequency'], dtype=np.int)
+        result = pd.DataFrame(data=np.zeros(bincount-1), index=new_idx, columns=['frequency'], dtype=np.int32)
         for i, intv in enumerate(new_idx):
             cond = np.logical_and(Dsig >= intv.left, Dsig < intv.right)
-            result.loc[intv, 'frequency'] = np.int(np.sum(self._df.values[cond]))
-        result['frequency'].iloc[-1] += np.int(np.sum(self._df.values[Dsig == Dsig_max]))
+            result.loc[intv, 'frequency'] = np.int32(np.sum(self._df.values[cond]))
+        result['frequency'].iloc[-1] += np.int32(np.sum(self._df.values[Dsig == Dsig_max]))
         return result
 
 @pd.api.extensions.register_dataframe_accessor("FKM_Goodman")

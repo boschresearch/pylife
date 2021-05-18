@@ -23,14 +23,14 @@ import pylife.mesh.meshmapping
 
 
 def points_2d(flen, tlen):
-    fx = np.arange(flen, dtype=np.float)
-    fy = np.arange(flen, dtype=np.float)
+    fx = np.arange(flen, dtype=np.float64)
+    fy = np.arange(flen, dtype=np.float64)
 
     fxx, fyy = np.meshgrid(fx, fy, indexing='ij')
     from_vals = (fyy*2.).flatten()
 
-    tx = np.arange(tlen, dtype=np.float)
-    ty = np.arange(tlen, dtype=np.float) + 0.5
+    tx = np.arange(tlen, dtype=np.float64)
+    ty = np.arange(tlen, dtype=np.float64) + 0.5
     txx, tyy = np.meshgrid(tx, ty, indexing='ij')
 
     fpoints = np.vstack((fxx.flatten(), fyy.flatten())).T
@@ -45,16 +45,16 @@ def points_2d(flen, tlen):
 
 
 def points_3d(flen, tlen):
-    fx = np.arange(flen, dtype=np.float)
-    fy = np.arange(flen, dtype=np.float)
-    fz = np.arange(flen, dtype=np.float)
+    fx = np.arange(flen, dtype=np.float64)
+    fy = np.arange(flen, dtype=np.float64)
+    fz = np.arange(flen, dtype=np.float64)
 
     fxx, fyy, fzz = np.meshgrid(fx, fy, fz, indexing='ij')
     from_vals = (fyy*2.).flatten()
 
-    tx = np.arange(tlen, dtype=np.float)
-    ty = np.arange(tlen, dtype=np.float) + 0.5
-    tz = np.arange(tlen, dtype=np.float)
+    tx = np.arange(tlen, dtype=np.float64)
+    ty = np.arange(tlen, dtype=np.float64) + 0.5
+    tz = np.arange(tlen, dtype=np.float64)
     txx, tyy, tzz = np.meshgrid(tx, ty, tz, indexing='ij')
 
     fpoints = np.vstack((fxx.flatten(), fyy.flatten(), fzz.flatten())).T
