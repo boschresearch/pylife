@@ -46,6 +46,8 @@ class Elementary:
         return params
 
     def analyze(self, **kw):
+        if len(self._fd.load.unique()) < 2:
+            raise ValueError("Need at least two load levels to do a Wöhler analysis.")
         wc = self._common_analysis()
         wc = self._specific_analysis(wc, **kw)
         self.__calc_bic(wc)

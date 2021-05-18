@@ -92,74 +92,92 @@ class FatigueDataAccessor(signal.PylifeSignal):
         value.
         '''
         if self._fatigue_limit is None:
-            self._calc_finite_zone()
+            self._calc_fatigue_limit()
         return self._fatigue_limit
 
     @property
     def finite_zone(self):
         '''All the tests with load levels above ``fatigue_limit``, i.e. the finite zone'''
         if self._fatigue_limit is None:
-            self._calc_finite_zone()
+            self._calc_fatigue_limit()
         return self._finite_zone
 
     @property
     def infinite_zone(self):
         '''All the tests with load levels below ``fatigue_limit``, i.e. the infinite zone'''
         if self._fatigue_limit is None:
-            self._calc_finite_zone()
+            self._calc_fatigue_limit()
         return self._infinite_zone
 
-    def __calc_fatigue_limit(self, predefined_limit = None):
-        if predefined_limit is not None:
-            return predefined_limit;
-        max_runout_load = self.runouts.load.max()
-        return (self._finite_zone.load.min() + max_runout_load) / 2;
+    @property
+    def fractured_loads(self):
+        return np.unique(self.fractures.load.values)
 
-    def _calc_finite_zone(self, fatigue_limit = None):
-        if len(self.runouts) == 0:
-            self._fatigue_limit = 0
-            self._finite_zone = self._obj[:0]
-            self._infinite_zone = self._obj
-            return
-            
-        max_runout_load = self.runouts.load.max()
-        self._finite_zone = self.fractures[self.fractures.load > max_runout_load]
-        self._fatigue_limit = self.__calc_fatigue_limit(predefined_limit = fatigue_limit);
-        self._infinite_zone = self._obj[self._obj.load <= self._fatigue_limit]
-        
+    @property
+    def runout_loads(self):
+        return np.unique(self.runouts.load.values)
+
+    @property
+    def non_fractured_loads(self):
+        return np.setdiff1d(self.runout_loads, self.fractured_loads)
+    
+    @property
+    def mixed_loads(self):
+        return np.intersect1d(self.runout_loads, self.fractured_loads)
+    
     def conservative_fatigue_limit(self):
         """
         Sets a lower fatigue limit that what is expected from the algorithm given by Mustafa Kassem.
         For calculating the fatigue limit, all amplitudes where runouts and fractures are present are collected.
         To this group, the maximum amplitude with only runouts present is added.
         Then, the fatigue limit is the mean of all these amplitudes.
-        
+
         Returns
         -------
         self
-        
+
         See also
         --------
         Kassem, Mustafa - "Open Source Software Development for Reliability and Lifetime Calculation" pp. 34
         """
-        fracture_loads = np.unique(self.fractures.load.values)
-        runout_loads = np.unique(self.runouts.load.values)
-        loads_with_no_fractures = np.setdiff1d( runout_loads, fracture_loads )
-        loads_with_fractures_and_runouts = np.intersect1d( runout_loads, fracture_loads )
+        amps_to_consider = self.mixed_loads
         
-        amps_to_consider = loads_with_fractures_and_runouts
-        
-        if len(loads_with_no_fractures)>0:
-            amps_to_consider = np.concatenate( (
-                                                amps_to_consider,
-                                                [loads_with_no_fractures.max()]
-                                                                        )           );
-        fatigue_limit = None
+        if len(self.non_fractured_loads ) > 0:
+            amps_to_consider = np.concatenate((amps_to_consider, [self.non_fractured_loads.max()]))
+
         if len(amps_to_consider) > 0:
-            fatigue_limit = amps_to_consider.mean()
-        self._calc_finite_zone(fatigue_limit = fatigue_limit)
-        
+            self._fatigue_limit = amps_to_consider.mean()
+            self._calc_finite_zone()
+
         return self
+
+    @property
+    def max_runout_load(self):
+        return self.runouts.load.max()
+
+    def _calc_fatigue_limit(self):
+        self._calc_finite_zone()
+        self._fatigue_limit = 0.0 if len(self.runouts) == 0 else self._half_level_above_highest_runout()
+
+    def _half_level_above_highest_runout(self):
+        if len(self._finite_zone) > 0:
+            return (self._finite_zone.load.min() + self.max_runout_load) / 2.
+
+        return self._guess_from_second_highest_runout()
+
+    def _guess_from_second_highest_runout(self):
+        max_loads = np.sort(self._obj.load.unique())[-2:]
+        return max_loads[1] + (max_loads[1]-max_loads[0]) / 2.
+
+    def _calc_finite_zone(self):
+        if len(self.runouts) == 0:
+            self._infinite_zone = self._obj[:0]
+            self._finite_zone = self._obj
+            return
+
+        self._finite_zone = self.fractures[self.fractures.load > self.max_runout_load]
+        self._infinite_zone = self._obj[self._obj.load <= self.max_runout_load]
+
 
 def determine_fractures(df, load_cycle_limit=None):
     '''Adds a fracture column according to defined load cycle limit

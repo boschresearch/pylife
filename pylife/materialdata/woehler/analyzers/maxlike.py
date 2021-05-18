@@ -19,7 +19,7 @@ import pandas as pd
 import numpy as np
 from scipy import optimize
 import mystic as my
-
+import warnings
 
 class MaxLikeInf(Elementary):
     def _specific_analysis(self, wc):
@@ -77,6 +77,31 @@ class MaxLikeFull(Elementary):
         self.Mali_5p_result: The estimated parameters computed using the optimizer.
 
         """
+        def warn_and_fix_if_no_runouts():
+            nonlocal fixed_prms
+            if self._fd.num_runouts == 0:
+                warnings.warn(UserWarning("MaxLikeHood: no runouts are present in fatigue data. "
+                                          "Proceeding with SD_50 = 0 and 1/TS = 1 as fixed parameters. "
+                                          "This is NOT a standard evaluation!"))
+                fixed_prms = fixed_prms.copy()
+                fixed_prms.update({'SD_50': 0.0, '1/TS': 1.0})
+
+        def fail_if_less_than_three_fractures():
+            if self._fd.num_fractures < 3 or len(self._fd.fractured_loads) < 2:
+                raise ValueError("MaxLikeHood: need at least three fractures on two load levels.")
+
+        def warn_and_fix_if_less_than_two_mixed_levels():
+            nonlocal fixed_prms
+            if len(self._fd.mixed_loads) < 2 and self._fd.num_runouts > 0 and self._fd.num_fractures > 0:
+                warnings.warn(UserWarning("MaxLikeHood: less than two mixed load levels in fatigue data."
+                                          "Proceeding by setting a predetermined scatter from the standard Wöhler curve."))
+                fixed_prms = fixed_prms.copy()
+                TN_inv, TS_inv = self._pearl_chain_method()
+                fixed_prms.update({'1/TS': TS_inv})
+
+        fail_if_less_than_three_fractures()
+        warn_and_fix_if_no_runouts()
+        warn_and_fix_if_less_than_two_mixed_levels()
 
         p_opt = initial_wcurve.to_dict()
         for k in fixed_prms:
@@ -88,7 +113,7 @@ class MaxLikeFull(Elementary):
             self.__likelihood_wrapper, [*p_opt.values()],
             args=([*p_opt], fixed_prms),
             full_output=True,
-            disp=True,
+            disp=False,
             maxiter=1e4,
             maxfun=1e4,
         )

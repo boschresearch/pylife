@@ -19,7 +19,13 @@ import pandas as pd
 import pytest
 import unittest.mock as mock
 
-import pymc3
+import warnings
+warnings.filterwarnings(
+    action='ignore',
+    category=DeprecationWarning,
+    module=r'.*(pymc3|klepto|inspect|theano).*'
+)
+
 from io import StringIO
 
 from pylife.materialdata import woehler
@@ -102,6 +108,44 @@ data_no_mixed_horizons = pd.DataFrame(np.array([
         [3.00e+02, 1.00e+07]
 ]), columns=['load', 'cycles']).sample(frac=1)
 
+no_mixed_horizons_finite_expected = pd.DataFrame(np.array([
+        [4.50e+02, 3.40e+04],
+        [4.50e+02, 5.40e+04],
+        [4.50e+02, 6.00e+04],
+        [4.50e+02, 7.60e+04],
+        [4.00e+02, 5.30e+04],
+        [4.00e+02, 9.40e+04],
+        [4.00e+02, 2.07e+05],
+        [4.00e+02, 2.27e+05],
+        [3.75e+02, 6.80e+04],
+        [3.75e+02, 2.34e+05],
+        [3.75e+02, 3.96e+05],
+        [3.75e+02, 5.00e+05],
+        [3.75e+02, 6.00e+05],
+        [3.75e+02, 7.09e+05],
+]), columns=['load', 'cycles'])
+
+no_mixed_horizons_infinite_expected = pd.DataFrame(np.array([
+        [3.50e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07]
+]), columns=['load', 'cycles'])
+
 data_pure_runout_horizon_and_mixed_horizons = pd.DataFrame(np.array([
         [4.50e+02, 3.40e+04],
         [4.50e+02, 5.40e+04],
@@ -153,6 +197,114 @@ data_pure_runout_horizon_and_mixed_horizons = pd.DataFrame(np.array([
         [2.90e+02, 1.00e+07]
 ]), columns=['load', 'cycles']).sample(frac=1)
 
+pure_runout_horizon_and_mixed_horizons_finite_expected = pd.DataFrame(np.array([
+        [4.50e+02, 3.40e+04],
+        [4.50e+02, 5.40e+04],
+        [4.50e+02, 6.00e+04],
+        [4.50e+02, 7.60e+04],
+        [4.00e+02, 5.30e+04],
+        [4.00e+02, 9.40e+04],
+        [4.00e+02, 2.07e+05],
+        [4.00e+02, 2.27e+05],
+        [3.75e+02, 6.80e+04],
+        [3.75e+02, 2.34e+05],
+        [3.75e+02, 3.96e+05],
+        [3.75e+02, 5.00e+05],
+        [3.75e+02, 6.00e+05],
+        [3.75e+02, 7.09e+05]
+    ]), columns=['load', 'cycles'])
+
+pure_runout_horizon_and_mixed_horizons_infinite_expected = pd.DataFrame(np.array([
+        [3.50e+02, 1.70e+05],
+        [3.50e+02, 1.87e+05],
+        [3.50e+02, 2.20e+05],
+        [3.50e+02, 2.89e+05],
+        [3.50e+02, 3.09e+05],
+        [3.50e+02, 1.00e+07],
+        [3.25e+02, 6.75e+05],
+        [3.25e+02, 7.51e+05],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07]
+]), columns=['load', 'cycles'])
+
+pure_runout_horizon_and_mixed_horizons_finite_expected_conservative = pd.DataFrame(np.array([
+        [4.50e+02, 3.40e+04],
+        [4.50e+02, 5.40e+04],
+        [4.50e+02, 6.00e+04],
+        [4.50e+02, 7.60e+04],
+        [4.00e+02, 5.30e+04],
+        [4.00e+02, 9.40e+04],
+        [4.00e+02, 2.07e+05],
+        [4.00e+02, 2.27e+05],
+        [3.75e+02, 6.80e+04],
+        [3.75e+02, 2.34e+05],
+        [3.75e+02, 3.96e+05],
+        [3.75e+02, 5.00e+05],
+        [3.75e+02, 6.00e+05],
+        [3.75e+02, 7.09e+05],
+    ]), columns=['load', 'cycles'])
+
+pure_runout_horizon_and_mixed_horizons_infinite_expected_conservative = pd.DataFrame(np.array([
+        [3.50e+02, 1.70e+05],
+        [3.50e+02, 1.87e+05],
+        [3.50e+02, 2.20e+05],
+        [3.50e+02, 2.89e+05],
+        [3.50e+02, 3.09e+05],
+        [3.50e+02, 1.00e+07],
+        [3.25e+02, 6.75e+05],
+        [3.25e+02, 7.51e+05],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07],
+        [2.90e+02, 1.00e+07]
+]), columns=['load', 'cycles'])
+
 data_no_runouts = pd.DataFrame(np.array([
         [4.50e+02, 3.40e+04],
         [4.50e+02, 5.40e+04],
@@ -177,6 +329,66 @@ data_no_runouts = pd.DataFrame(np.array([
         [3.25e+02, 7.51e+05],
 ]), columns=['load', 'cycles']).sample(frac=1)
 
+no_runouts_infinite_expected = data_no_runouts[:0]
+no_runouts_finite_expected = data_no_runouts
+
+data_only_runout_levels = pd.DataFrame(np.array([
+        [3.50e+02, 1.70e+05],
+        [3.50e+02, 1.87e+05],
+        [3.50e+02, 2.20e+05],
+        [3.50e+02, 2.89e+05],
+        [3.50e+02, 1.00e+07],
+        [3.50e+02, 1.00e+07],
+        [3.25e+02, 6.75e+05],
+        [3.25e+02, 7.51e+05],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.00e+02, 8.95e+05],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07]
+]), columns=['load', 'cycles']).sample(frac=1)
+
+only_runout_levels_infinite_expected = data_only_runout_levels
+only_runout_levels_finite_expected = data_only_runout_levels[:0]
+
+
+data_one_runout_load_level = pd.DataFrame(np.array([
+    [3.5000e+02, 8.5930e+05],
+    [3.5000e+02, 6.5720e+05],
+    [3.5000e+02, 5.8650e+05],
+    [3.5000e+02, 1.3085e+06],
+    [3.5000e+02, 1.4485e+06],
+    [3.0000e+02, 1.0000e+07],
+    [3.0000e+02, 1.0000e+07],
+    [3.0000e+02, 1.0000e+07],
+    [3.0000e+02, 1.0000e+07],
+    [3.0000e+02, 1.0000e+07],
+    [4.5000e+02, 3.2600e+05],
+    [4.5000e+02, 2.6280e+05],
+    [4.5000e+02, 1.3200e+05],
+    [4.5000e+02, 1.9310e+05],
+    [4.5000e+02, 2.5670e+05],
+    [3.2500e+02, 2.2402e+06],
+    [3.2500e+02, 1.1630e+06],
+    [3.2500e+02, 1.2132e+06],
+    [3.2500e+02, 1.0347e+06],
+    [3.2500e+02, 2.2683e+06]
+]), columns=['load', 'cycles']).sample(frac=1)
+
+
 load_sorted = pd.Series(np.array([
         4.50e+02, 4.50e+02, 4.50e+02, 4.50e+02, 4.00e+02, 4.00e+02, 4.00e+02, 4.00e+02, 3.75e+02, 3.75e+02,
         3.75e+02, 3.75e+02, 3.75e+02, 3.75e+02, 3.50e+02, 3.50e+02, 3.50e+02, 3.50e+02, 3.50e+02, 3.50e+02,
@@ -189,7 +401,7 @@ cycles_sorted = pd.Series(np.array([
         6.75e+05, 7.51e+05, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07,
         8.95e+05, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07, 1.00e+07]), name='cycles').sort_values()
 
-data_finite_sorted = pd.DataFrame(np.array([
+finite_expected = pd.DataFrame(np.array([
         [4.50e+02, 3.40e+04],
         [4.50e+02, 5.40e+04],
         [4.50e+02, 6.00e+04],
@@ -206,7 +418,53 @@ data_finite_sorted = pd.DataFrame(np.array([
         [3.75e+02, 7.09e+05],
 ]), columns=['load', 'cycles']).sort_values(by='load').reset_index(drop=True)
 
-data_infinite_sorted = pd.DataFrame(np.array([
+infinite_expected = pd.DataFrame(np.array([
+        [3.50e+02, 1.70e+05],
+        [3.50e+02, 1.87e+05],
+        [3.50e+02, 2.20e+05],
+        [3.50e+02, 2.89e+05],
+        [3.50e+02, 3.09e+05],
+        [3.50e+02, 1.00e+07],
+        [3.25e+02, 6.75e+05],
+        [3.25e+02, 7.51e+05],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.25e+02, 1.00e+07],
+        [3.00e+02, 8.95e+05],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07],
+        [3.00e+02, 1.00e+07]
+]), columns=['load', 'cycles']).sort_values(by='load').reset_index(drop=True)
+
+finite_expected_conservative = pd.DataFrame(np.array([
+        [4.50e+02, 3.40e+04],
+        [4.50e+02, 5.40e+04],
+        [4.50e+02, 6.00e+04],
+        [4.50e+02, 7.60e+04],
+        [4.00e+02, 5.30e+04],
+        [4.00e+02, 9.40e+04],
+        [4.00e+02, 2.07e+05],
+        [4.00e+02, 2.27e+05],
+        [3.75e+02, 6.80e+04],
+        [3.75e+02, 2.34e+05],
+        [3.75e+02, 3.96e+05],
+        [3.75e+02, 5.00e+05],
+        [3.75e+02, 6.00e+05],
+        [3.75e+02, 7.09e+05],
+]), columns=['load', 'cycles']).sort_values(by='load').reset_index(drop=True)
+
+infinite_expected_conservative = pd.DataFrame(np.array([
         [3.50e+02, 1.70e+05],
         [3.50e+02, 1.87e+05],
         [3.50e+02, 2.20e+05],
@@ -239,6 +497,8 @@ data_infinite_sorted = pd.DataFrame(np.array([
 data_01 = pd.DataFrame({"load": np.array([620, 620, 620, 550, 550, 500, 500, 500, 500, 500, 480, 480]), "cycles": np.array(
     [65783, 89552, 115800, 141826, 190443, 293418, 383341, 525438, 967091, 99505992, 99524024, 199563776])})
 data_01_no_pure_runout_horizon = data_01[data_01.load > 480]
+data_01_two_fractures = pd.DataFrame({"load": np.array([620, 550,480]), "cycles": np.array([65783, 141826,199563776])})
+data_01_one_fracture_level = data_01[data_01.load > 550]
 
 
 def read_data(s, thres=1e6):
@@ -316,6 +576,9 @@ all_data = [
     data_neg_res_2
 ]
 
+def sort_fatigue_data(fd):
+    return fd.sort_values(by=['load', 'cycles']).reset_index(drop=True)
+
 def test_woehler_accessor_missing_keys():
     wc = pd.Series({'k_1': 7, '1/TN': 12.0, 'ND_50': 1e6, 'SD_50': 350., '1/TS': 1.23})
     for k in wc.keys():
@@ -325,24 +588,66 @@ def test_woehler_accessor_missing_keys():
             _wc.woehler
 
 
-def test_fatigue_data_property_methods():
+def test_fatigue_data_simple_properties():
     fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data
     pd.testing.assert_series_equal(fd.load.sort_values(), load_sorted)
     pd.testing.assert_series_equal(fd.cycles.sort_values(), cycles_sorted)
 
     assert fd.num_runouts == 18
     assert fd.num_fractures == 22
-    print(fd.finite_zone)
-    print(data_finite_sorted)
-    pd.testing.assert_frame_equal(fd.finite_zone
-                                  .sort_values(by='load')
-                                  .reset_index(drop=True)[['load', 'cycles']],
-                                  data_finite_sorted)
+
+
+@pytest.mark.parametrize("data, finite_zone_expected, infinite_zone_expected", [
+    (data,
+     finite_expected,
+     infinite_expected),
+    (data_no_mixed_horizons,
+     no_mixed_horizons_finite_expected,
+     no_mixed_horizons_infinite_expected),
+    (data_pure_runout_horizon_and_mixed_horizons,
+     pure_runout_horizon_and_mixed_horizons_finite_expected,
+     pure_runout_horizon_and_mixed_horizons_infinite_expected),
+    (data_no_runouts,
+     no_runouts_finite_expected,
+     no_runouts_infinite_expected),
+    (data_only_runout_levels,
+     only_runout_levels_finite_expected,
+     only_runout_levels_infinite_expected)
+])
+def test_fatigue_data_finite_infinite_zone(data, finite_zone_expected, infinite_zone_expected):
     fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data
-    pd.testing.assert_frame_equal(fd.infinite_zone
-                                  .sort_values(by='load')
-                                  .reset_index(drop=True)[['load', 'cycles']],
-                                  data_infinite_sorted)
+    pd.testing.assert_frame_equal(sort_fatigue_data(fd.finite_zone)[['load', 'cycles']],
+                                  sort_fatigue_data(finite_zone_expected))
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data
+    pd.testing.assert_frame_equal(sort_fatigue_data(fd.infinite_zone)[['load', 'cycles']],
+                                  sort_fatigue_data(infinite_zone_expected))
+
+@pytest.mark.parametrize("data, finite_zone_expected, infinite_zone_expected", [
+    (data,
+     finite_expected_conservative,
+     infinite_expected_conservative),
+    (data_no_mixed_horizons,
+     no_mixed_horizons_finite_expected,
+     no_mixed_horizons_infinite_expected),
+    (data_pure_runout_horizon_and_mixed_horizons,
+     pure_runout_horizon_and_mixed_horizons_finite_expected_conservative,
+     pure_runout_horizon_and_mixed_horizons_infinite_expected_conservative),
+    (data_no_runouts,
+     no_runouts_finite_expected,
+     no_runouts_infinite_expected)
+])
+def test_fatigue_data_finite_infinite_zone_conservative(data, finite_zone_expected, infinite_zone_expected):
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.conservative_fatigue_limit()
+    print(sort_fatigue_data(fd.finite_zone))
+    print(sort_fatigue_data(finite_zone_expected))
+    print(fd.fatigue_limit)
+    print(sort_fatigue_data(fd.infinite_zone))
+    print(sort_fatigue_data(infinite_zone_expected))
+    pd.testing.assert_frame_equal(sort_fatigue_data(fd.finite_zone)[['load', 'cycles']],
+                                  sort_fatigue_data(finite_zone_expected))
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.conservative_fatigue_limit()
+    pd.testing.assert_frame_equal(sort_fatigue_data(fd.infinite_zone)[['load', 'cycles']],
+                                  sort_fatigue_data(infinite_zone_expected))
 
 
 def test_woehler_fracture_determination_given():
@@ -393,16 +698,31 @@ def test_woehler_fracture_determination_infered():
     pd.testing.assert_frame_equal(test, expected)
 
 
-def test_woehler_endur_zones():
+@pytest.mark.parametrize("data, fatigue_limit_expected", [
+    (data, 362.5),
+    (data_no_mixed_horizons, 362.5),
+    (data_pure_runout_horizon_and_mixed_horizons, 362.5),
+    (data_no_runouts, 0.0),
+    (data_only_runout_levels, 362.5)
+])
+def test_woehler_endur_zones(data, fatigue_limit_expected):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    assert fd.fatigue_limit == 362.5
-    
-@pytest.mark.parametrize("data,fatigue_limit_expected", [(data, 325.0), (data_no_mixed_horizons, 350.0), (data_pure_runout_horizon_and_mixed_horizons,325.0),(data_no_runouts,0.0)])
-def test_woehler_endur_zones_conservative(data,fatigue_limit_expected):
-    fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    fd = fd.conservative_fatigue_limit()
     assert fd.fatigue_limit == fatigue_limit_expected
-   
+
+
+@pytest.mark.parametrize("data, fatigue_limit_expected", [
+    (data, 325.0),
+    (data_no_mixed_horizons, 350.0),
+    (data_pure_runout_horizon_and_mixed_horizons, 325.0),
+    (data_no_runouts, 0.0),
+    (data_only_runout_levels, 325.0)
+])
+def test_woehler_endur_zones_conservative(data, fatigue_limit_expected):
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    print(fd.fatigue_limit)
+    fd = fd.conservative_fatigue_limit()
+    print(fd.fatigue_limit)
+    assert fd.fatigue_limit == fatigue_limit_expected
 
 
 def test_woehler_endure_zones_no_runouts():
@@ -463,11 +783,17 @@ def test_woehler_elementary_no_runouts():
         '1/TS': 1.27
     }).sort_index()
 
-    df = data[data.cycles < 1e7]
-    fd = woehler.determine_fractures(df, 1e7).fatigue_data
+    fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
     wc = woehler.Elementary(fd).analyze().sort_index().drop('ND_50')
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+
+
+def test_woehler_elementary_only_one_load_level():
+    data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 1e6]]), columns=['load', 'cycles'])
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    with pytest.raises(ValueError, match=r"Need at least two load levels to do a Wöhler analysis."):
+        woehler.Elementary(fd).analyze().sort_index()
 
 
 def test_woehler_probit():
@@ -481,6 +807,49 @@ def test_woehler_probit():
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     wc = woehler.Probit(fd).analyze().sort_index()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+
+
+def test_woehler_probit_one_runout_load_level():
+    fd = woehler.determine_fractures(data_one_runout_load_level, 1e7).fatigue_data
+    expected = woehler.Elementary(fd).analyze()
+    with pytest.warns(UserWarning, match=r"Probit needs at least two runout load levels. Falling back to Elementary."):
+        wc = woehler.Probit(fd).analyze()
+    pd.testing.assert_series_equal(wc, expected)
+
+
+@pytest.mark.filterwarnings("error:invalid")
+def test_woehler_probit_data01():
+    expected = pd.Series({
+        'SD_50': 490,
+        '1/TS': 1.1,
+        'k_1': 8.0,
+        'ND_50': 530e3,
+        '1/TN': 3.0
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data_01, 1e7).fatigue_data
+    pb = woehler.Probit(fd)
+    wc = pb.analyze().sort_index()
+    bic = pb.bayesian_information_criterion()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+
+
+def test_woehler_probit_no_runouts():
+    expected = pd.Series({
+        'SD_50': 0.,
+        '1/TS': 1.27,
+        'k_1': 6.94,
+        'ND_50': 4.4e30,
+        '1/TN': 5.26
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
+    pb = woehler.Probit(fd)
+    with pytest.warns(UserWarning):
+        wc = pb.analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
@@ -500,6 +869,21 @@ def test_woehler_max_likelihood_inf_limit():
     np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
 
+def test_woehler_max_likelihood_inf_limit_no_runouts():
+    expected = pd.Series({
+        'SD_50': 0.,
+        '1/TS': 1.19,
+        'k_1': 6.94,
+        'ND_50': 4.4e30,
+        '1/TN': 5.26
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
+    wc = woehler.MaxLikeInf(fd).analyze().sort_index()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+
+
 def test_woehler_max_likelihood_full_without_fixed_params():
     expected = pd.Series({
         'SD_50': 335,
@@ -512,6 +896,25 @@ def test_woehler_max_likelihood_full_without_fixed_params():
     bic = 45.35256860035525
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    we = woehler.MaxLikeFull(fd)
+    wc = we.analyze().sort_index()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    np.testing.assert_almost_equal(we.bayesian_information_criterion(), bic, decimal=2)
+
+
+def test_woehler_max_likelihood_full_without_fixed_params_no_runouts():
+    expected = pd.Series({
+        'SD_50': 0,
+        '1/TS': 1.,
+        'k_1': 6.94,
+        'ND_50': 4.4e30,
+        '1/TN': 5.7
+    }).sort_index()
+
+    bic = np.inf
+
+    fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
     we = woehler.MaxLikeFull(fd)
     wc = we.analyze().sort_index()
     pd.testing.assert_index_equal(wc.index, expected.index)
@@ -579,6 +982,38 @@ def test_max_likelihood_parameter_sign(data, no):
     assert_positive_or_nan_but_not_zero(wl['ND_50'])
     assert_positive_or_nan_but_not_zero(wl['1/TN'])
 
+
+@pytest.mark.parametrize("invalid_data", [data_01_one_fracture_level, data_01_two_fractures])
+def test_max_likelihood_min_three_fractures_on_two_load_levels(invalid_data):
+    fd = woehler.determine_fractures(invalid_data, 1e7).fatigue_data
+    ml = woehler.MaxLikeFull(fatigue_data=fd)
+    with pytest.raises(ValueError, match=r"^.*[N|n]eed at least.*" ):
+        ml.analyze()
+
+
+def test_max_likelihood_no_runouts_warning():
+    fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
+    ml = woehler.MaxLikeFull(fatigue_data=fd)
+    with pytest.warns(UserWarning, match=r"^.*no runouts are present.*" ):
+        ml.analyze()
+
+
+def test_max_likelihood_one_mixed_horizon():
+    expected = pd.Series({
+        'SD_50': 489.3,
+        '1/TS': 1.147,
+        'k_1': 7.99,
+        'ND_50': 541e3,
+        '1/TN': 2.51
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data_01, 1e7).fatigue_data
+    ml = woehler.MaxLikeFull(fatigue_data=fd)
+    with pytest.warns(UserWarning, match=r"^.*less than two mixed load levels.*"):
+        wc = ml.analyze().sort_index()
+    bic = ml.bayesian_information_criterion()
+    pd.testing.assert_index_equal(wc.index, expected.index)
+    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
 
 @mock.patch('pylife.materialdata.woehler.analyzers.bayesian.pm')
 def test_bayesian_slope_trace(pm):
