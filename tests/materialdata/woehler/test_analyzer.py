@@ -1009,7 +1009,7 @@ def test_max_likelihood_one_mixed_horizon():
 
     fd = woehler.determine_fractures(data_01, 1e7).fatigue_data
     ml = woehler.MaxLikeFull(fatigue_data=fd)
-    with pytest.warns(UserWarning, match=r"^.*only one mixed level.*"):
+    with pytest.warns(UserWarning, match=r"^.*less than two mixed load levels.*"):
         wc = ml.analyze().sort_index()
     bic = ml.bayesian_information_criterion()
     pd.testing.assert_index_equal(wc.index, expected.index)
