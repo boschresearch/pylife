@@ -12,11 +12,11 @@ class AbstractRainflowCounter:
 
     @property
     def loops_from(self):
-        return self._recorder.loops_from
+        return self._recorder.values_from
 
     @property
     def loops_to(self):
-        return self._recorder.loops_to
+        return self._recorder.values_to
 
     def residuals(self):
         return self._detector.residuals

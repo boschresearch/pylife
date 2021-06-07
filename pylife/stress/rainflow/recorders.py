@@ -6,18 +6,18 @@ import pandas as pd
 class GenericRainflowRecorder:
 
     def __init__(self):
-        self._loops_from = []
-        self._loops_to = []
+        self._values_from = []
+        self._values_to = []
         self._index_from = []
         self._index_to = []
 
     @property
-    def loops_from(self):
-        return self._loops_from
+    def values_from(self):
+        return self._values_from
 
     @property
-    def loops_to(self):
-        return self._loops_to
+    def values_to(self):
+        return self._values_to
 
     @property
     def index_from(self):
@@ -28,13 +28,13 @@ class GenericRainflowRecorder:
         return self._index_to
 
     def record(self, index_from, index_to, loop_from, loop_to):
-        self._loops_from.append(loop_from)
-        self._loops_to.append(loop_to)
+        self._values_from.append(loop_from)
+        self._values_to.append(loop_to)
         self._index_from.append(index_from)
         self._index_to.append(index_to)
 
     def matrix(self, bins=10):
-        """Calculate a histogram of the recorded loops.
+        """Calculate a histogram of the recorded values.
 
         Parameters
         ----------
@@ -50,10 +50,10 @@ class GenericRainflowRecorder:
         yedges : ndarray, shape(ny+1,)
             The bin edges along the second dimension.
         """
-        return np.histogram2d(self._loops_from, self._loops_to, bins)
+        return np.histogram2d(self._values_from, self._values_to, bins)
 
     def matrix_frame(self, bins=10):
-        """Calculate a histogram of the recorded loops into a pandas.DataFrame.
+        """Calculate a histogram of the recorded values into a pandas.DataFrame.
 
         An interval index is used to index the bins.
 
