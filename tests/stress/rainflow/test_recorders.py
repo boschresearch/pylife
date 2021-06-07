@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-import pylife.stress.rainflow_recorder as RFR
+import pylife.stress.rainflow.recorders as RFR
 
 
 def test_generic_rainflow_recorder_new_all_empty():
