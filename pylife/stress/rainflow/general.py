@@ -61,8 +61,6 @@ class AbstractRainflowDetector:
       that the memory consumption remains O(1) rather than O(n).
       '''
     def __init__(self, recorder):
-        self.loops_from = []
-        self.loops_to = []
         self._sample_tail = None
         self._recorder = recorder
         self._residuals = []
@@ -89,45 +87,3 @@ class AbstractRainflowDetector:
         else:
             self._sample_tail = samples
         return turns
-
-    def get_rainflow_matrix(self, bins):
-        ''' Calculates a histogram of the recorded loops
-
-        Parameters
-        ----------
-        bins : int or array_like or [int, int] or [array, array], optional
-            The bin specification (see numpy.histogram2d)
-
-        Returns
-        -------
-        H : ndarray, shape(nx, ny)
-            The bi-dimensional histogram of samples (see numpy.histogram2d)
-        xedges : ndarray, shape(nx+1,)
-            The bin edges along the first dimension.
-        yedges : ndarray, shape(ny+1,)
-            The bin edges along the second dimension.
-        '''
-        return np.histogram2d(self.loops_from, self.loops_to, bins)
-
-    def get_rainflow_matrix_frame(self, bins):
-        '''Calculates a histogram of the recorded loops into a pandas.DataFrame.
-
-        An interval index is used to index the bins.
-
-        Parameters
-        ----------
-        bins : int or array_like or [int, int] or [array, array], optional
-            The bin specification: see numpy.histogram2d
-
-        Returns
-        -------
-        pandas.DataFrame
-            A pandas.DataFrame using a multi interval index in order to
-            index data point for a given from/to value pair.
-        '''
-        hist, fr, to = self.get_rainflow_matrix(bins)
-        index_fr = pd.IntervalIndex.from_breaks(fr)
-        index_to = pd.IntervalIndex.from_breaks(to)
-
-        mult_idx = pd.MultiIndex.from_product([index_fr, index_to], names=['from', 'to'])
-        return pd.DataFrame(data=hist.flatten(), index=mult_idx)
