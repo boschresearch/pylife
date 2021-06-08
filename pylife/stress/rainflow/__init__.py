@@ -25,5 +25,5 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 
-from .general import get_turns
+from .general import find_turns
 from .compat import *

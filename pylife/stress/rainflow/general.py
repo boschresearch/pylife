@@ -1,8 +1,27 @@
+# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# see the NOTICE file and/or the repository
+# https://github.com/boschresearch/pylife
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
+
 import numpy as np
 import pandas as pd
 
 
-def get_turns(samples):
+def find_turns(samples):
     ''' Finds the turning points in a sample chunk
 
     Parameters
@@ -40,7 +59,7 @@ def get_turns(samples):
     return positions, samples[positions]
 
 
-class AbstractRainflowDetector:
+class AbstractDetector:
     '''The common base class for rainflow counters
 
     Subclasses implementing a specific rainflow counting algorithm are
@@ -61,10 +80,11 @@ class AbstractRainflowDetector:
       that the memory consumption remains O(1) rather than O(n).
       '''
     def __init__(self, recorder):
-        self._sample_tail = None
+        self._sample_tail = np.array([])
         self._recorder = recorder
-        self._residuals = []
+        self._head_index = 0
 
+        self._residuals = []
 
     @property
     def residuals(self):
@@ -78,12 +98,17 @@ class AbstractRainflowDetector:
     def recorder(self):
         return self._recorder
 
-    def _get_new_turns(self, samples):
-        if self._sample_tail is not None:
-            samples = np.concatenate((self._sample_tail, samples))
-        turn_positions, turns = get_turns(samples)
+    def _new_turns(self, samples):
+        sample_len = len(samples)
+        samples = np.concatenate((self._sample_tail, samples))
+        turn_positions, turns = find_turns(samples)
         if turn_positions.size > 0:
+            old_sample_tail_length = len(self._sample_tail)
             self._sample_tail = samples[turn_positions[-1]:]
+            turn_positions += self._head_index - old_sample_tail_length
         else:
             self._sample_tail = samples
-        return turns
+
+        self._head_index += sample_len
+
+        return turn_positions, turns

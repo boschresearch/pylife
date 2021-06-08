@@ -1,11 +1,50 @@
+# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# see the NOTICE file and/or the repository
+# https://github.com/boschresearch/pylife
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
+
 
 import numpy as np
 import pandas as pd
 
 
-class GenericRainflowRecorder:
+class AbstractRecorder:
 
     def __init__(self):
+        self._chunks = np.array([], dtype=np.int64)
+
+    @property
+    def chunks(self):
+        return self._chunks
+
+    def report_chunk(self, chunksize):
+        self._chunks = np.append(self._chunks, chunksize)
+
+    def chunk_local_index(self, global_index):
+        chunk_index = np.insert(np.cumsum(self._chunks), 0, 0)
+        chunk_num = np.searchsorted(chunk_index, global_index, side='right') - 1
+
+        return chunk_num, global_index - chunk_index[chunk_num]
+
+
+class GenericRainflowRecorder(AbstractRecorder):
+
+    def __init__(self):
+        super().__init__()
         self._values_from = []
         self._values_to = []
         self._index_from = []
@@ -27,9 +66,11 @@ class GenericRainflowRecorder:
     def index_to(self):
         return self._index_to
 
-    def record(self, index_from, index_to, loop_from, loop_to):
-        self._values_from.append(loop_from)
-        self._values_to.append(loop_to)
+    def record_values(self, value_from, value_to):
+        self._values_from.append(value_from)
+        self._values_to.append(value_to)
+
+    def record_index(self, index_from, index_to):
         self._index_from.append(index_from)
         self._index_to.append(index_to)
 

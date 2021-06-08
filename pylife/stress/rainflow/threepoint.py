@@ -1,11 +1,29 @@
+# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# see the NOTICE file and/or the repository
+# https://github.com/boschresearch/pylife
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
 
 import cython
 import numpy as np
 
-from .general import AbstractRainflowDetector
+from .general import AbstractDetector
 
 
-class ThreePointDetector(AbstractRainflowDetector):
+class ThreePointDetector(AbstractDetector):
     '''Implements 3 point rainflow counting algorithm
 
     See the `here <subsection_TP_>`_ in the demo for an example.
@@ -55,6 +73,7 @@ class ThreePointDetector(AbstractRainflowDetector):
     '''
     def __init__(self, recorder):
         super().__init__(recorder)
+        self._residual_index = np.array([0])
 
     @cython.locals(
         start=cython.int, front=cython.int, back=cython.int,
@@ -81,22 +100,26 @@ class ThreePointDetector(AbstractRainflowDetector):
         '''
         if len(self._residuals) == 0:
             residuals = samples[:1]
-            residual_indeces = [0, 1]
+            residual_index = [0, 1]
         else:
             residuals = self._residuals[:-1]
-            residual_indeces = [*range(len(residuals))]
+            residual_index = [*range(len(residuals))]
 
-        turns_np = np.concatenate((residuals, self._get_new_turns(samples), samples[-1:]))
+        turns_index, turns_values = self._new_turns(samples)
+
+        turns_np = np.concatenate((residuals, turns_values, samples[-1:]))
+        turns_index = np.concatenate((self._residual_index, turns_index))
+
         turns = turns_np
 
         highest_front = np.argmax(residuals)
         lowest_front = np.argmin(residuals)
 
-        back = residual_indeces[-1] + 1
+        back = residual_index[-1] + 1
         while back < turns.shape[0]:
-            if len(residual_indeces) >= 2:
-                start = residual_indeces[-2]
-                front = residual_indeces[-1]
+            if len(residual_index) >= 2:
+                start = residual_index[-2]
+                front = residual_index[-1]
                 start_val, front_val, back_val = turns[start], turns[front], turns[back]
 
                 if front_val > turns[highest_front]:
@@ -104,17 +127,21 @@ class ThreePointDetector(AbstractRainflowDetector):
                 if front_val < turns[lowest_front]:
                     lowest_front = front
 
-                if (start >= max(lowest_front, highest_front) and
-                    np.abs(back_val - front_val) >= np.abs(front_val - start_val) and
-                    front != highest_front and front != lowest_front):
-                    self._recorder.record(0, 0, start_val, front_val)
-                    residual_indeces.pop()
-                    residual_indeces.pop()
+                if all([start >= max(lowest_front, highest_front),
+                        np.abs(back_val - front_val) >= np.abs(front_val - start_val),
+                        front != highest_front,
+                        front != lowest_front]):
+                    self._recorder.record_values(start_val, front_val)
+                    self._recorder.record_index(turns_index[start], turns_index[front])
+                    residual_index.pop()
+                    residual_index.pop()
                     continue
 
-            residual_indeces.append(back)
+            residual_index.append(back)
             back += 1
 
-        self._residuals = turns_np[residual_indeces]
+        self._residuals = turns_np[residual_index]
+        self._residual_index = turns_index[residual_index[:-1]]
+        self._recorder.report_chunk(len(samples))
 
         return self

@@ -1,10 +1,10 @@
 import cython
 import numpy as np
 
-from .general import AbstractRainflowDetector
+from .general import AbstractDetector
 
 
-class FKMRainflowDetector(AbstractRainflowDetector):
+class FKMRainflowDetector(AbstractDetector):
     '''Implements a rainflow counter as described in FKM non linear
 
     See the `here <subsection_FKM_>`_ in the demo for an example.
@@ -44,9 +44,10 @@ class FKMRainflowDetector(AbstractRainflowDetector):
         >>> rfc = RainflowCounterFKM().process(samples)
         >>> rfc.get_rainflow_matrix_frame(128)
         '''
+
         ir = self._ir
         max_turn = self._max_turn
-        turns = self._get_new_turns(samples)
+        turns_index, turns = self._new_turns(samples)
 
         for current in turns:
             loop_assumed = True
@@ -57,7 +58,7 @@ class FKMRainflowDetector(AbstractRainflowDetector):
                     last0 = self._residuals[-1]
                     last1 = self._residuals[-2]
                     if np.abs(current-last0) >= np.abs(last0-last1):
-                        self._recorder.record(0, 0, last1, last0)
+                        self._recorder.record_values(last1, last0)
                         self._residuals.pop()
                         self._residuals.pop()
                         if np.abs(last0) < max_turn and np.abs(last1) < max_turn:

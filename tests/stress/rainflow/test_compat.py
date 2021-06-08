@@ -350,7 +350,7 @@ def test_rainflow_partial_signals_splitturn_FKM():
 
     signal_tot = tsgen.query(10000)
     rfc_tot = RF.RainflowCounterFKM().process(signal_tot)
-    turn_points, _ = RF.get_turns(signal_tot)
+    turn_points, _ = RF.find_turns(signal_tot)
     turn_points = np.insert(turn_points, 0, 0)
     turn_num = turn_points.shape[0]
     split_points = [int(np.ceil(turn_num*x)) for x in [ 0.0, 0.137, 0.23, 0.42, 1.0 ]]
@@ -374,7 +374,7 @@ def test_rainflow_partial_signals_splitturn():
     signal_tot = tsgen.query(10000)
 
     rfc_tot = RF.RainflowCounterThreePoint().process(signal_tot)
-    turn_points, _ = RF.get_turns(signal_tot)
+    turn_points, _ = RF.find_turns(signal_tot)
     turn_points = np.insert(turn_points, 0, 0)
     turn_num = turn_points.shape[0]
     split_points = [int(np.ceil(turn_num*x)) for x in [0.0, 0.137, 0.23, 0.42, 1.0]]
@@ -382,7 +382,7 @@ def test_rainflow_partial_signals_splitturn():
     for i in range(len(split_points)-1):
         lower = turn_points[split_points[i]]
         upper = 10000 if split_points[i+1] == turn_points.shape[0] else turn_points[split_points[i+1]]
-        _, tot_turns = RF.get_turns(signal_tot[:upper])
+        _, tot_turns = RF.find_turns(signal_tot[:upper])
         rfc_partial.process(signal_tot[lower:upper])
 
     np.testing.assert_array_almost_equal(rfc_tot.loops_from, rfc_partial.loops_from)

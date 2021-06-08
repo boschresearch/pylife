@@ -4,6 +4,37 @@ import pandas as pd
 import pylife.stress.rainflow.recorders as RFR
 
 
+def test_abstract_recorder_new_no_chunks():
+    arr = RFR.AbstractRecorder()
+    assert len(arr.chunks) == 0
+
+
+def test_abstract_recorder_one_chunk():
+    arr = RFR.AbstractRecorder()
+    arr.report_chunk(23)
+
+    np.testing.assert_array_equal(arr.chunks, [23])
+
+
+def test_abstract_recorder_two_chunks():
+    arr = RFR.AbstractRecorder()
+    arr.report_chunk(42)
+    arr.report_chunk(23)
+
+    np.testing.assert_array_equal(arr.chunks, [42, 23])
+
+
+def test_abstract_recorder_calc_chunk_local_index():
+    arr = RFR.AbstractRecorder()
+    arr.report_chunk(42)
+    arr.report_chunk(23)
+
+    assert arr.chunk_local_index(0) == (0, 0)
+    assert arr.chunk_local_index(17) == (0, 17)
+    assert arr.chunk_local_index(42) == (1, 0)
+    assert arr.chunk_local_index(47) == (1, 5)
+
+
 def test_generic_rainflow_recorder_new_all_empty():
     grr = RFR.GenericRainflowRecorder()
     assert len(grr.values_from) == 0
@@ -12,15 +43,16 @@ def test_generic_rainflow_recorder_new_all_empty():
     assert len(grr.index_to) == 0
 
 
-@pytest.mark.parametrize('loop_from, loop_to, index_from, index_to', [
+@pytest.mark.parametrize('value_from, value_to, index_from, index_to', [
     (23., 42., 11, 17),
     (46., 84., 22, 34)
 ])
-def test_generic_rainflow_recorder_record_loop(loop_from, loop_to, index_from, index_to):
+def test_generic_rainflow_recorder_record_value(value_from, value_to, index_from, index_to):
     grr = RFR.GenericRainflowRecorder()
-    grr.record(index_from, index_to, loop_from, loop_to)
-    np.testing.assert_array_equal(grr.values_from, [loop_from])
-    np.testing.assert_array_equal(grr.values_to, [loop_to])
+    grr.record_values(value_from, value_to)
+    grr.record_index(index_from, index_to)
+    np.testing.assert_array_equal(grr.values_from, [value_from])
+    np.testing.assert_array_equal(grr.values_to, [value_to])
     np.testing.assert_array_equal(grr.index_from, [index_from])
     np.testing.assert_array_equal(grr.index_to, [index_to])
 
@@ -28,8 +60,12 @@ def test_generic_rainflow_recorder_record_loop(loop_from, loop_to, index_from, i
 def test_generic_rainflow_recorder_record_two_values():
     vf1, vt1, if1, it1, vf2, vt2, if2, it2 = 23., 42., 11, 17, 46., 84., 22, 34
     grr = RFR.GenericRainflowRecorder()
-    grr.record(if1, it1, vf1, vt1)
-    grr.record(if2, it2, vf2, vt2)
+
+    grr.record_values(vf1, vt1)
+    grr.record_index(if1, it1)
+
+    grr.record_values(vf2, vt2)
+    grr.record_index(if2, it2)
 
     np.testing.assert_array_equal(grr.values_from, [vf1, vf2])
     np.testing.assert_array_equal(grr.values_to, [vt1, vt2])
@@ -49,16 +85,17 @@ def test_generic_rainflow_recorder_empty_matrix_5_bins():
     np.testing.assert_array_equal(matrix, np.zeros((5, 5)))
 
 
-@pytest.mark.parametrize('loop_from, loop_to, index_from, index_to', [
+@pytest.mark.parametrize('value_from, value_to, index_from, index_to', [
     (23., 42., 11, 17),
     (46., 84., 22, 34)
 ])
-def test_generic_rainflow_recorder_one_non_zero(loop_from, loop_to, index_from, index_to):
+def test_generic_rainflow_recorder_one_non_zero(value_from, value_to, index_from, index_to):
     grr = RFR.GenericRainflowRecorder()
-    grr.record(index_from, index_to, loop_from, loop_to)
+    grr.record_values(value_from, value_to)
+    grr.record_index(index_from, index_to)
 
-    expected_from = np.linspace(loop_from - 0.5, loop_from + 0.5, 11)
-    expected_to = np.linspace(loop_to - 0.5, loop_to + 0.5, 11)
+    expected_from = np.linspace(value_from - 0.5, value_from + 0.5, 11)
+    expected_to = np.linspace(value_to - 0.5, value_to + 0.5, 11)
     expected_matrix = np.zeros((10, 10))
     expected_matrix[5, 5] = 1.
 
@@ -71,9 +108,12 @@ def test_generic_rainflow_recorder_one_non_zero(loop_from, loop_to, index_from, 
 def test_generic_rainflow_recorder_two_non_zero():
     vf1, vt1, if1, it1, vf2, vt2, if2, it2 = 23., 42., 11, 17, 46., 84., 22, 34
     grr = RFR.GenericRainflowRecorder()
-    grr.record(if1, it1, vf1, vt1)
-    grr.record(if2, it2, vf2, vt2)
-    grr.record(if2, it2, vf2, vt2)
+    grr.record_values(vf1, vt1)
+    grr.record_index(if1, it1)
+    grr.record_values(vf2, vt2)
+    grr.record_index(if2, it2)
+    grr.record_values(vf2, vt2)
+    grr.record_index(if2, it2)
 
     expected_from = np.linspace(vf1, vf2, 11)
     expected_to = np.linspace(vt1, vt2, 11)
@@ -101,16 +141,17 @@ def test_generic_rainflow_recorder_empty_matrix_frame_5_bins():
     np.testing.assert_array_equal(matrix, np.zeros((25, 1)))
 
 
-@pytest.mark.parametrize('loop_from, loop_to, index_from, index_to', [
+@pytest.mark.parametrize('value_from, value_to, index_from, index_to', [
     (23., 42., 11, 17),
     (46., 84., 22, 34)
 ])
-def test_generic_rainflow_recorder_matrix_frame_one_non_zero(loop_from, loop_to, index_from, index_to):
+def test_generic_rainflow_recorder_matrix_frame_one_non_zero(value_from, value_to, index_from, index_to):
     grr = RFR.GenericRainflowRecorder()
-    grr.record(index_from, index_to, loop_from, loop_to)
+    grr.record_values(value_from, value_to)
+    grr.record_index(index_from, index_to)
 
-    expected_from = pd.IntervalIndex.from_breaks(np.linspace(loop_from - 0.5, loop_from + 0.5, 11))
-    expected_to = pd.IntervalIndex.from_breaks(np.linspace(loop_to - 0.5, loop_to + 0.5, 11))
+    expected_from = pd.IntervalIndex.from_breaks(np.linspace(value_from - 0.5, value_from + 0.5, 11))
+    expected_to = pd.IntervalIndex.from_breaks(np.linspace(value_to - 0.5, value_to + 0.5, 11))
     expected_index = pd.MultiIndex.from_product([expected_from, expected_to], names=['from', 'to'])
 
     expected_matrix = np.zeros((10, 10))
