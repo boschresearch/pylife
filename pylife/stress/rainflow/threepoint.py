@@ -73,7 +73,6 @@ class ThreePointDetector(AbstractDetector):
     '''
     def __init__(self, recorder):
         super().__init__(recorder)
-        self._residual_index = np.array([0])
 
     @cython.locals(
         start=cython.int, front=cython.int, back=cython.int,

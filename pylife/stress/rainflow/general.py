@@ -83,8 +83,8 @@ class AbstractDetector:
         self._sample_tail = np.array([])
         self._recorder = recorder
         self._head_index = 0
-
-        self._residuals = []
+        self._residual_index = np.array([0], dtype=np.int64)
+        self._residuals = np.array([])
 
     @property
     def residuals(self):
@@ -93,6 +93,10 @@ class AbstractDetector:
         The residuals are the loops not (yet) closed.
         '''
         return self._residuals
+
+    @property
+    def residual_index(self):
+        return np.append(self._residual_index, self._head_index - 1)
 
     @property
     def recorder(self):

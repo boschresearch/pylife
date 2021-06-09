@@ -144,6 +144,9 @@ class TestThreePointHits(unittest.TestCase):
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([3., 6., 1., 5., 3., 4.]))
 
+    def test_residual_index(self):
+        np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 1, 10, 13, 14, 15]))
+
 
 class TestThreePointHaibach(unittest.TestCase):
     r'''
@@ -179,6 +182,19 @@ class TestThreePointHaibach(unittest.TestCase):
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([2., 6., 1., 5., 2.]))
 
+    def test_residual_index(self):
+        np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 3, 12, 15, 18]))
+
+
+@pytest.mark.skip(reason="Not yet implemented")
+class TestThreePointHaibachLastSampleDuplicate(unittest.TestCase):
+    def setUp(self):
+        signal = np.array([2., 5., 3., 6., 2., 3., 1., 6., 1., 4., 2., 3., 1., 4., 2., 5., 3., 4., 2., 2., 2., 2.])
+        self._grr, self._dtor = process_signal(signal)
+
+    def test_residual_index(self):
+        np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 3, 12, 15, 18]))
+
 
 class TestThreePointLecture(unittest.TestCase):
     r'''
@@ -213,6 +229,8 @@ class TestThreePointLecture(unittest.TestCase):
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([1., 7., 1., 2.]))
 
+    def test_residual_index(self):
+        np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 1, 9, 10]))
 
 class TestThreePointLowerAfterMain(unittest.TestCase):
     r'''
@@ -246,6 +264,9 @@ class TestThreePointLowerAfterMain(unittest.TestCase):
 
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([4., 3., 6., 2., 5., 3.]))
+
+    def test_residual_index(self):
+        np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 1, 2, 5, 6, 7]))
 
 
 class TestThreePointLowerAfterMainClose(unittest.TestCase):
@@ -281,6 +302,9 @@ class TestThreePointLowerAfterMainClose(unittest.TestCase):
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([4., 3., 6., 1., 2.]))
 
+    def test_residual_index(self):
+        np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 1, 2, 8, 9]))
+
 
 class TestThreePointDampening(unittest.TestCase):
     r'''
@@ -300,7 +324,6 @@ class TestThreePointDampening(unittest.TestCase):
     -------------------------------------------------------------------------------------------------------
       0        1        2     3   4 5
     '''
-
     def setUp(self):
         signal = np.array([1., 6., 2., 5., 3., 4.])
         self._grr, self._dtor = process_signal(signal)
@@ -315,6 +338,9 @@ class TestThreePointDampening(unittest.TestCase):
 
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([1., 6., 2., 5., 3., 4.]))
+
+    def test_residual_index(self):
+        np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 1, 2, 3, 4, 5]))
 
 
 class TestThreePointDampeningClosed(unittest.TestCase):
@@ -335,7 +361,6 @@ class TestThreePointDampeningClosed(unittest.TestCase):
     -------------------------------------------------------------------------------------------------------
       0        1        2     3   4 5     6
     '''
-
     def setUp(self):
         signal = np.array([1., 6., 2., 5., 3., 4., 1.])
         self._grr, self._dtor = process_signal(signal)
@@ -350,6 +375,9 @@ class TestThreePointDampeningClosed(unittest.TestCase):
 
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([1., 6., 1.]))
+
+    def test_residual_index(self):
+        np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 1, 6]))
 
 
 @pytest.mark.parametrize('signal', [
@@ -373,6 +401,7 @@ def test_split_any_signal_anywhere_once(signal):
         np.testing.assert_array_equal(grr.index_from, reference_recorder.index_from)
         np.testing.assert_array_equal(grr.index_to, reference_recorder.index_to)
         np.testing.assert_array_equal(dtor.residuals, reference_detector.residuals)
+        np.testing.assert_array_equal(dtor.residual_index, reference_detector.residual_index)
 
 
 @pytest.mark.parametrize('signal', [
@@ -400,3 +429,4 @@ def test_split_any_signal_anywhere_twice(signal):
             np.testing.assert_array_equal(grr.index_from, reference_recorder.index_from)
             np.testing.assert_array_equal(grr.index_to, reference_recorder.index_to)
             np.testing.assert_array_equal(dtor.residuals, reference_detector.residuals)
+            np.testing.assert_array_equal(dtor.residual_index, reference_detector.residual_index)
