@@ -92,3 +92,13 @@ def test_rainflow_get_turns_shifted_index_four_initial_dups():
     index, values = RF.find_turns(samples)
     np.testing.assert_array_equal(index, expected_index)
     np.testing.assert_array_equal(values, expected_values)
+
+
+def test_find_turns_trailing_dups():
+    samples = np.array([1., 2., 1., 1., 1.])
+    expected_index = [1]
+    expected_values = [2.]
+
+    index, values = RF.find_turns(samples)
+    np.testing.assert_array_equal(index, expected_index)
+    np.testing.assert_array_equal(values, expected_values)
