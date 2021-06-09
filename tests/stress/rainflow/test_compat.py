@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
+
 import numpy as np
 import pandas as pd
 
