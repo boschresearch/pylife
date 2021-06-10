@@ -39,6 +39,13 @@ class FKMDetector(AbstractDetector):
     """
 
     def __init__(self, recorder):
+        """Instantiate a FKMDetector.
+
+        Parameters
+        ----------
+        recorder : subclass of :class:`.AbstractRecorder`
+            The recorder that the detector will report to.
+        """
         super(FKMDetector, self).__init__(recorder)
         self._ir = 1
         self._residuals = []

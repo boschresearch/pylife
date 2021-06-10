@@ -67,13 +67,6 @@ def find_turns(samples):
 class AbstractDetector:
     """The common base class for rainflow detectors.
 
-    Parameters
-    ----------
-    recorder : sublcass of ``AbstractRecorder``
-        The recorder the detector will report to.
-
-    Notes
-    -----
     Subclasses implementing a specific rainflow counting algorithm are supposed
     to implement a method ``process()`` that takes the signal samples as a
     parameter, and reports all the hysteresis loop limits to ``self._recorder``
@@ -95,6 +88,13 @@ class AbstractDetector:
     """
 
     def __init__(self, recorder):
+        """Instantiate an AbstractDetector.
+
+        Parameters
+        ----------
+        recorder : subclass of :class:`.AbstractRecorder`
+            The recorder that the detector will report to.
+        """
         self._sample_tail = np.array([])
         self._recorder = recorder
         self._head_index = 0
@@ -170,6 +170,7 @@ class AbstractRecorder:
     """
 
     def __init__(self):
+        """Instantiate an AbstractRecorder."""
         self._chunks = np.array([], dtype=np.int64)
 
     @property

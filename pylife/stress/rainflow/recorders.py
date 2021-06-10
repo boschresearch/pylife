@@ -28,6 +28,7 @@ class LoopValueRecorder(AbstractRecorder):
     """Rainflow recorder that collects the loop values."""
 
     def __init__(self):
+        """Instantiate a LoopRecorder."""
         super().__init__()
         self._values_from = []
         self._values_to = []
@@ -98,6 +99,7 @@ class FullRecorder(LoopValueRecorder):
     """
 
     def __init__(self):
+        """Instantiate a FullRecorder."""
         super().__init__()
         self._index_from = []
         self._index_to = []

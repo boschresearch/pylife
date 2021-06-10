@@ -73,6 +73,13 @@ class ThreePointDetector(AbstractDetector):
     """
 
     def __init__(self, recorder):
+        """Instantiate a ThreePointDetector.
+
+        Parameters
+        ----------
+        recorder : subclass of :class:`.AbstractRecorder`
+            The recorder that the detector will report to.
+        """
         super().__init__(recorder)
 
     @cython.locals(
