@@ -26,7 +26,7 @@ import pylife.stress.rainflow.recorders as RFR
 
 def process_signal(signal):
     grr = RFR.GenericRainflowRecorder()
-    dtor = RF.FKMRainflowDetector(recorder=grr).process(signal)
+    dtor = RF.FKMDetector(recorder=grr).process(signal)
 
     return grr, dtor
 

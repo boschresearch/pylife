@@ -23,18 +23,23 @@ import numpy as np
 from .general import AbstractDetector
 
 
-class FKMRainflowDetector(AbstractDetector):
-    '''Implements a rainflow counter as described in FKM non linear
-
-    See the `here <subsection_FKM_>`_ in the demo for an example.
+class FKMDetector(AbstractDetector):
+    """Rainflow detector as described in FKM non linear.
 
     The algorithm has been published by Clormann & Seeger 1985 and has
     been cited havily since.
 
+    See the `here <subsection_FKM_>`_ in the demo for an example.
+
+    Note
+    ----
+    This detector **does not** report the loop index.
+
     .. _subsection_FKM: ../demos/rainflow.ipynb#Algorithm-recommended-by-FKM-non-linear
-    '''
+    """
+
     def __init__(self, recorder):
-        super(FKMRainflowDetector, self).__init__(recorder)
+        super(FKMDetector, self).__init__(recorder)
         self._ir = 1
         self._residuals = []
         self._max_turn = 0.0
@@ -46,7 +51,7 @@ class FKMRainflowDetector(AbstractDetector):
         loop_assumed=cython.int,
         max_turn=cython.double)
     def process(self, samples):
-        ''' Processes a sample chunk
+        """Process a sample chunk.
 
         Parameters
         ----------
@@ -55,15 +60,9 @@ class FKMRainflowDetector(AbstractDetector):
 
         Returns
         -------
-        self : RainflowCounterFKM
+        self : FKMDetector
             The ``self`` object so that processing can be chained
-
-        Example
-        -------
-        >>> rfc = RainflowCounterFKM().process(samples)
-        >>> rfc.get_rainflow_matrix_frame(128)
-        '''
-
+        """
         ir = self._ir
         max_turn = self._max_turn
         turns_index, turns = self._new_turns(samples)

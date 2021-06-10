@@ -24,7 +24,7 @@ from .general import AbstractDetector
 
 
 class ThreePointDetector(AbstractDetector):
-    '''Implements 3 point rainflow counting algorithm
+    r"""Classic three point rainflow counting algorithm.
 
     See the `here <subsection_TP_>`_ in the demo for an example.
 
@@ -70,7 +70,8 @@ class ThreePointDetector(AbstractDetector):
         |              Time
 
     .. _subsection_TP: ../demos/rainflow.ipynb#Classic-Three-Point-Counting
-    '''
+    """
+
     def __init__(self, recorder):
         super().__init__(recorder)
 
@@ -80,7 +81,7 @@ class ThreePointDetector(AbstractDetector):
         start_val=cython.double, front_val=cython.double, back_val=cython.double,
         turns=cython.double[:])
     def process(self, samples):
-        ''' Processes a sample chunk
+        """Process a sample chunk.
 
         Parameters
         ----------
@@ -89,14 +90,9 @@ class ThreePointDetector(AbstractDetector):
 
         Returns
         -------
-        self : RainflowCounterThreePoint
+        self : ThreePointDetector
             The ``self`` object so that processing can be chained
-
-        Example
-        -------
-        >>> rfc = RainflowCounterThreePoint().process(samples)
-        >>> rfc.get_rainflow_matrix_frame(128)
-        '''
+        """
         if len(self._residuals) == 0:
             residuals = samples[:1]
             residual_index = [0, 1]

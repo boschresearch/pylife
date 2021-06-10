@@ -54,6 +54,16 @@ def test_abstract_recorder_calc_chunk_local_index():
     assert arr.chunk_local_index(47) == (1, 5)
 
 
+def test_abstract_recorder_calc_chunk_local_index_array():
+    arr = RFR.AbstractRecorder()
+    arr.report_chunk(42)
+    arr.report_chunk(23)
+
+    chunks, index = arr.chunk_local_index([0, 17, 42, 47])
+    np.testing.assert_array_equal(chunks, [0, 0, 1, 1])
+    np.testing.assert_array_equal(index, [0, 17, 0, 5])
+
+
 def test_generic_rainflow_recorder_new_all_empty():
     grr = RFR.GenericRainflowRecorder()
     assert len(grr.values_from) == 0

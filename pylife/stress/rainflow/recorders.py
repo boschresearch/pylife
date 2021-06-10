@@ -21,24 +21,7 @@ __maintainer__ = __author__
 import numpy as np
 import pandas as pd
 
-
-class AbstractRecorder:
-
-    def __init__(self):
-        self._chunks = np.array([], dtype=np.int64)
-
-    @property
-    def chunks(self):
-        return self._chunks
-
-    def report_chunk(self, chunksize):
-        self._chunks = np.append(self._chunks, chunksize)
-
-    def chunk_local_index(self, global_index):
-        chunk_index = np.insert(np.cumsum(self._chunks), 0, 0)
-        chunk_num = np.searchsorted(chunk_index, global_index, side='right') - 1
-
-        return chunk_num, global_index - chunk_index[chunk_num]
+from .general import AbstractRecorder
 
 
 class GenericRainflowRecorder(AbstractRecorder):
