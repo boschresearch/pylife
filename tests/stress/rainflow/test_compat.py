@@ -40,10 +40,6 @@ def test_rainflow_simple_sine():
     expected = make_empty_rainflow_matrix(-1.5, 1.5, -0.25, 1.25, 4)
     expected.loc[(-1, 1)] = 1
 
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(rfc.loops_from)
-    print(rfc.loops_to)
-
     pd.testing.assert_frame_equal(res, expected)
 
 
@@ -55,12 +51,6 @@ def test_rainflow_two_amplitudes():
     expected = make_empty_rainflow_matrix(-1.25, 1.25, -0.25, 1.25, 4)
     expected.loc[(-1, 1)] = 1
     expected.loc[(1, 0)] = 2
-
-    print(expected)
-    print(res)
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(rfc.loops_from)
-    print(rfc.loops_to)
 
     pd.testing.assert_frame_equal(res, expected)
 
@@ -90,10 +80,6 @@ def test_rainflow_hits():
     expected.loc[(1, 5)] = 1
     expected.loc[(4, 3)] = 3
     expected.loc[(1, 4)] = 1
-
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
 
     pd.testing.assert_frame_equal(res, expected)
 
@@ -131,10 +117,6 @@ def test_rainflow_haibach_example():
 
     expected_residuals = np.array([2, 6, 1, 5, 2])
 
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
-
     pd.testing.assert_frame_equal(res, expected)
     np.testing.assert_array_equal(np.ceil(rfc.residuals()).astype(int), expected_residuals)
 
@@ -166,10 +148,6 @@ def test_rainflow_lecture_example():
     expected.loc[(5, 3)] = 1
     expected_residuals = np.array([1, 7, 1, 2])
 
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
-
     pd.testing.assert_frame_equal(res, expected)
     np.testing.assert_array_equal(np.ceil(rfc.residuals()).astype(int), expected_residuals)
 
@@ -200,10 +178,6 @@ def test_rainflow_lower_after_main():
     expected.loc[(4, 5)] = 1
 
     expected_residuals = np.array([4, 3, 6, 2, 5, 3])
-
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
 
     pd.testing.assert_frame_equal(res, expected)
     np.testing.assert_array_equal(np.ceil(rfc.residuals()).astype(int), expected_residuals)
@@ -237,10 +211,6 @@ def test_rainflow_lower_after_main_one_more_close():
 
     expected_residuals = np.array([4, 3, 6, 1, 2])
 
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
-
     pd.testing.assert_frame_equal(res, expected)
     np.testing.assert_array_equal(np.ceil(rfc.residuals()).astype(int), expected_residuals)
 
@@ -268,10 +238,6 @@ def test_rainflow_dampening():
 
     expected = make_empty_rainflow_matrix(0, 6, 0, 6, 6)
     expected_residuals = np.array([1, 6, 2, 5, 3, 4])
-
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
 
     pd.testing.assert_frame_equal(res, expected)
     np.testing.assert_array_equal(np.ceil(rfc.residuals()).astype(int), expected_residuals)
@@ -303,10 +269,6 @@ def test_rainflow_dampening_closed():
     expected.loc[(2, 5)] = 1
 
     expected_residuals = np.array([1, 6, 1])
-
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
 
     pd.testing.assert_frame_equal(res, expected)
     np.testing.assert_array_equal(np.ceil(rfc.residuals()).astype(int), expected_residuals)
@@ -356,7 +318,7 @@ def test_rainflow_partial_signals_splitturn_FKM():
     turn_points, _ = RF.find_turns(signal_tot)
     turn_points = np.insert(turn_points, 0, 0)
     turn_num = turn_points.shape[0]
-    split_points = [int(np.ceil(turn_num*x)) for x in [ 0.0, 0.137, 0.23, 0.42, 1.0 ]]
+    split_points = [int(np.ceil(turn_num*x)) for x in [0.0, 0.137, 0.23, 0.42, 1.0 ]]
     rfc_partial = RF.RainflowCounterFKM()
     for i in range(len(split_points)-1):
         lower = turn_points[split_points[i]]
@@ -396,10 +358,6 @@ def test_rainflow_FKM_memory1_inner():
     signal = np.array([0., 100., 0., 80., 20., 60., 40., 100., 0., 80., 20., 60., 40., 45.])
     rfc = RF.RainflowCounterFKM().process(signal)
 
-    print(rfc.loops_from)
-    print(rfc.loops_to)
-    print(rfc.residuals())
-
     np.testing.assert_array_equal(rfc.loops_from, np.array([60., 80., 100.]))
     np.testing.assert_array_equal(rfc.loops_to, np.array([40., 20., 0.]))
     np.testing.assert_array_equal(rfc.residuals(), np.array([100., 0., 80., 20., 60., 40.]))
@@ -412,10 +370,6 @@ def test_rainflow_FKM_memory1_2_3():
                        -1.8])
     rfc = RF.RainflowCounterFKM().process(signal)
 
-    print(rfc.loops_from)
-    print(rfc.loops_to)
-    print(rfc.residuals())
-
-    np.testing.assert_array_equal(rfc.loops_from, np.array([ 1., -2., 2., -2.,  1., -2., -2., 2., -2.]))
+    np.testing.assert_array_equal(rfc.loops_from, np.array([1., -2., 2., -2.,  1., -2., -2., 2., -2.]))
     np.testing.assert_array_equal(rfc.loops_to,   np.array([-1., -1., 0.,  2., -1.,  1., -1., 0.,  2.]))
     np.testing.assert_array_equal(rfc.residuals(), np.array([1., -2.]))

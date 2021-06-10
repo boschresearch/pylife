@@ -26,12 +26,12 @@ __maintainer__ = __author__
 
 from .threepoint import ThreePointDetector
 from .fkm import FKMDetector
-from .recorders import GenericRainflowRecorder
+from .recorders import FullRecorder
 
 
 class AbstractRainflowCounter:
     def __init__(self):
-        self._recorder = GenericRainflowRecorder()
+        self._recorder = FullRecorder()
 
     @property
     def loops_from(self):

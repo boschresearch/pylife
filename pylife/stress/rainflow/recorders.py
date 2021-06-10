@@ -24,38 +24,28 @@ import pandas as pd
 from .general import AbstractRecorder
 
 
-class GenericRainflowRecorder(AbstractRecorder):
+class LoopValueRecorder(AbstractRecorder):
+    """Rainflow recorder that collects the loop values."""
 
     def __init__(self):
         super().__init__()
         self._values_from = []
         self._values_to = []
-        self._index_from = []
-        self._index_to = []
 
     @property
     def values_from(self):
+        """1-D float array containing the values from which the loops start."""
         return self._values_from
 
     @property
     def values_to(self):
+        """1-D float array containing the values the loops go to before turning back."""
         return self._values_to
 
-    @property
-    def index_from(self):
-        return self._index_from
-
-    @property
-    def index_to(self):
-        return self._index_to
-
     def record_values(self, value_from, value_to):
+        """Record the loop values."""
         self._values_from.append(value_from)
         self._values_to.append(value_to)
-
-    def record_index(self, index_from, index_to):
-        self._index_from.append(index_from)
-        self._index_to.append(index_to)
 
     def matrix(self, bins=10):
         """Calculate a histogram of the recorded values.
@@ -84,7 +74,7 @@ class GenericRainflowRecorder(AbstractRecorder):
         Parameters
         ----------
         bins : int or array_like or [int, int] or [array, array], optional
-            The bin specification: see numpy.histogram2d
+            The bin specification (see numpy.histogram2d)
 
         Returns
         -------
@@ -98,3 +88,31 @@ class GenericRainflowRecorder(AbstractRecorder):
 
         mult_idx = pd.MultiIndex.from_product([index_fr, index_to], names=['from', 'to'])
         return pd.DataFrame(data=hist.flatten(), index=mult_idx)
+
+
+class FullRecorder(LoopValueRecorder):
+    """Rainflow recorder that collects the loop values and the loop index.
+
+    Same functionality like :class:`.LoopValueRecorder` but additionally
+    collects the loop index.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._index_from = []
+        self._index_to = []
+
+    @property
+    def index_from(self):
+        """1-D int array containing the index to the samples from which the loops start."""
+        return self._index_from
+
+    @property
+    def index_to(self):
+        """1-D int array containing the index to the samples the loops go to before turning back."""
+        return self._index_to
+
+    def record_index(self, index_from, index_to):
+        """Record the index."""
+        self._index_from.append(index_from)
+        self._index_to.append(index_to)

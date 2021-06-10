@@ -65,6 +65,8 @@ __maintainer__ = __author__
 from .general import find_turns, AbstractDetector, AbstractRecorder
 from .threepoint import ThreePointDetector
 from .fkm import FKMDetector
+from .recorders import LoopValueRecorder, FullRecorder
+
 from .compat import RainflowCounterThreePoint, RainflowCounterFKM
 
 __all__ = [
@@ -73,6 +75,8 @@ __all__ = [
     'AbstractRecorder',
     'ThreePointDetector',
     'FKMDetector',
+    'LoopValueRecorder',
+    'FullRecorder',
     'RainflowCounterThreePoint',
     'RainflowCounterFKM'
 ]

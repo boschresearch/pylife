@@ -25,21 +25,21 @@ import pylife.stress.rainflow.recorders as RFR
 
 
 def process_signal(signal):
-    grr = RFR.GenericRainflowRecorder()
-    dtor = RF.FKMDetector(recorder=grr).process(signal)
+    fr = RFR.FullRecorder()
+    dtor = RF.FKMDetector(recorder=fr).process(signal)
 
-    return grr, dtor
+    return fr, dtor
 
 
 class TestFKMMemory1Inner(unittest.TestCase):
 
     def setUp(self):
         signal = np.array([0., 100., 0., 80., 20., 60., 40., 100., 0., 80., 20., 60., 40., 45.])
-        self._grr, self._dtor = process_signal(signal)
+        self._fr, self._dtor = process_signal(signal)
 
     def test_values(self):
-        np.testing.assert_array_equal(self._grr.values_from, np.array([60., 80., 100.]))
-        np.testing.assert_array_equal(self._grr.values_to, np.array([40., 20., 0.]))
+        np.testing.assert_array_equal(self._fr.values_from, np.array([60., 80., 100.]))
+        np.testing.assert_array_equal(self._fr.values_to, np.array([40., 20., 0.]))
 
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([100., 0., 80., 20., 60., 40.]))
@@ -52,11 +52,11 @@ class TestFKMMemory1_2_3(unittest.TestCase):
                            1., -1., 1., -2., -1., -2., 2., 0., 2., -2.,
                            1., -1., 1., -2., -1., -2., 2., 0., 2., -2.,
                            -1.8])
-        self._grr, self._dtor = process_signal(signal)
+        self._fr, self._dtor = process_signal(signal)
 
     def test_values(self):
-        np.testing.assert_array_equal(self._grr.values_from, np.array([1., -2., 2., -2.,  1., -2., -2., 2., -2.]))
-        np.testing.assert_array_equal(self._grr.values_to, np.array([-1., -1., 0.,  2., -1.,  1., -1., 0.,  2.]))
+        np.testing.assert_array_equal(self._fr.values_from, np.array([1., -2., 2., -2.,  1., -2., -2., 2., -2.]))
+        np.testing.assert_array_equal(self._fr.values_to, np.array([-1., -1., 0.,  2., -1.,  1., -1., 0.,  2.]))
 
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([1., -2.]))

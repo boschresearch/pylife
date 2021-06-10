@@ -28,7 +28,17 @@ Detectors
 Recorders
 .........
 
-TBW
+.. autoclass:: pylife.stress.rainflow.LoopValueRecorder
+               :members:
+               :undoc-members:
+
+.. autoclass:: pylife.stress.rainflow.FullRecorder
+               :members:
+               :undoc-members:
+
+.. autoclass:: pylife.stress.rainflow.AbstractRecorder
+               :members:
+               :undoc-members:
 
 
 Utility functions

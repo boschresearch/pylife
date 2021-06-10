@@ -35,7 +35,6 @@ def find_turns(samples):
     turns : 1D numpy.ndarray
         the values of the turning points
 
-
     Notes
     -----
     In case of plateaus i.e. multiple directly neighbored samples with exactly
@@ -219,8 +218,8 @@ class AbstractRecorder:
 
         return chunk_num, global_index - chunk_index[chunk_num]
 
-    def report_values(value_from, value_to):
-        """Report hysteresis loop values to the recorder.
+    def record_values(self, value_from, value_to):
+        """Record hysteresis loop values to the recorder.
 
         Parameters
         ----------
@@ -237,8 +236,8 @@ class AbstractRecorder:
         """
         pass
 
-    def report_index(index_from, index_to):
-        """Report hysteresis loop index to the recorder.
+    def record_index(self, index_from, index_to):
+        """Record hysteresis loop index to the recorder.
 
         Parameters
         ----------
