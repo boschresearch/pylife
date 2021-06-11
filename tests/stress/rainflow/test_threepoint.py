@@ -380,13 +380,15 @@ class TestThreePointDampeningClosed(unittest.TestCase):
         np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 1, 6]))
 
 
-@pytest.mark.parametrize('signal', [
+test_signals = [
     np.array([0., 1., 0., 1., -1., 1., 0., 1., -1., 1., 0]),
     np.array([2., 5., 3., 6., 2., 3., 1., 6., 1., 4., 2., 3., 1., 4., 2., 5., 3., 4., 2.]),
     np.array([1., 7., 4., 3., 4., 2., 5., 3., 6., 1., 2.]),
     np.array([4., 3., 6., 4., 5., 2., 5., 3., 1., 2.]),
     np.array([1., 6., 2., 5., 3., 4., 1.])
-])
+]
+
+@pytest.mark.parametrize('signal', test_signals)
 def test_split_any_signal_anywhere_once(signal):
     reference_recorder, reference_detector = process_signal(signal)
 
@@ -404,13 +406,7 @@ def test_split_any_signal_anywhere_once(signal):
         np.testing.assert_array_equal(dtor.residual_index, reference_detector.residual_index)
 
 
-@pytest.mark.parametrize('signal', [
-    np.array([0., 1., 0., 1., -1., 1., 0., 1., -1., 1., 0]),
-    np.array([2., 5., 3., 6., 2., 3., 1., 6., 1., 4., 2., 3., 1., 4., 2., 5., 3., 4., 2.]),
-    np.array([1., 7., 4., 3., 4., 2., 5., 3., 6., 1., 2.]),
-    np.array([4., 3., 6., 4., 5., 2., 5., 3., 1., 2.]),
-    np.array([1., 6., 2., 5., 3., 4., 1.])
-])
+@pytest.mark.parametrize('signal', test_signals)
 def test_split_any_signal_anywhere_twice(signal):
     reference_recorder, reference_detector = process_signal(signal)
 
@@ -430,3 +426,16 @@ def test_split_any_signal_anywhere_twice(signal):
             np.testing.assert_array_equal(fr.index_to, reference_recorder.index_to)
             np.testing.assert_array_equal(dtor.residuals, reference_detector.residuals)
             np.testing.assert_array_equal(dtor.residual_index, reference_detector.residual_index)
+
+
+@pytest.mark.parametrize('signal', test_signals)
+def test_flipped_signals(signal):
+    reference_recorder, reference_detector = process_signal(signal)
+    flipped_recorder, flipped_detector = process_signal(-signal)
+
+    np.testing.assert_array_equal(flipped_recorder.values_from, -np.asarray(reference_recorder.values_from))
+    np.testing.assert_array_equal(flipped_recorder.values_to, -np.asarray(reference_recorder.values_to))
+    np.testing.assert_array_equal(flipped_recorder.index_from, np.asarray(reference_recorder.index_from))
+    np.testing.assert_array_equal(flipped_recorder.index_to, np.asarray(reference_recorder.index_to))
+    np.testing.assert_array_equal(flipped_detector.residuals, -np.asarray(reference_detector.residuals))
+    np.testing.assert_array_equal(flipped_detector.residual_index, np.asarray(reference_detector.residual_index))
