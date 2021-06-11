@@ -126,13 +126,10 @@ class ThreePointDetector(AbstractDetector):
 
                 if front_val > turns[highest_front]:
                     highest_front = front
-                if front_val < turns[lowest_front]:
+                elif front_val < turns[lowest_front]:
                     lowest_front = front
-
-                if all([start >= max(lowest_front, highest_front),
-                        np.abs(back_val - front_val) >= np.abs(front_val - start_val),
-                        front != highest_front,
-                        front != lowest_front]):
+                elif (start >= max(lowest_front, highest_front) and
+                      np.abs(back_val - front_val) >= np.abs(front_val - start_val)):
                     self._recorder.record_values(start_val, front_val)
                     self._recorder.record_index(turns_index[start], turns_index[front])
                     residual_index.pop()
