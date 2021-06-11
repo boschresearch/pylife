@@ -50,9 +50,10 @@ def find_turns(samples):
             edges = np.diff(duplicates)
             dups_starts = np.where(edges > 0)[0]
             dups_ends = np.where(edges < 0)[0]
-            if len(dups_ends) and dups_ends[0] < dups_starts[0]:
-                dups_ends = dups_ends[1:]
-            plateau_turns[dups_starts[np.where(diffs[dups_starts] * diffs[dups_ends+1] < 0)]] = True
+            if len(dups_starts) and len(dups_ends):
+                if dups_ends[0] < dups_starts[0]:
+                    dups_ends = dups_ends[1:]
+                plateau_turns[dups_starts[np.where(diffs[dups_starts] * diffs[dups_ends+1] < 0)]] = True
 
         return plateau_turns
 
