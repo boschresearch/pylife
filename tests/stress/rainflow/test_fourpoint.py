@@ -79,11 +79,7 @@ class TestFourPointRandombyDuplicatingResidualsFromAbove(unittest.TestCase):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([2,-1,3,-5,4,-4,2]))
         
 
-
 '''Below are the same test cases from Three Point Counter Test Suite'''
-
-
-
 
 class TestFourPointsSimpleSine(unittest.TestCase):
     def setUp(self):
@@ -194,42 +190,42 @@ class TestFourPointHits(unittest.TestCase):
         np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 1, 10, 13, 14, 15]))
 
 
-# class TestFourPointHaibach(unittest.TestCase):
-#     r'''
-#     Example from fig 3.3-30 of E. Haibach "Betriebsfestigkeit"
+class TestFourPointHaibach(unittest.TestCase):
+    r'''
+    Example from fig 3.3-30 of E. Haibach "Betriebsfestigkeit"
 
-#                                                                                                1   2   3   4   5   6
-#     ------------------------------------------------------------------------------------------------------------------
-#     6                R                   3                                                   | 1 |   |   |   |   |   |
-#     ----------------/-\-----------------/-\---------------------------------------------------------------------------
-#     5      1-------/   \                | |                                    R             |   |   |   |   |   |   |
-#     ------/-\-----/-----\--------------/---\----------------------------------/-\-------------------------------------
-#     4    /   \   /       \             |   |         5               6-------/   \---7       | 1 |   | 1 |   |   |   |
-#     ----/-----\-/---------\-----------/-----\-------/-\-------------/-\-----/-----\-/-\-------------------------------
-#     3  /       1           \   2      |     |      /   \---4       /   \   /       7   \     |   | 2 |   |   | 1 |   |
-#     --/---------------------\-/-\----/-------\----/-----\-/-\-----/-----\-/-------------\-----------------------------
-#     2 R                      2---\   |       |   /       4   \   /       6               R   |   |   |   | 1 |   |   |
-#     ------------------------------\-/---------\-/-------------\-/-----------------------------------------------------
-#     1                              3-----------5---------------R                             |   |   |   |   |   |   |
-#     --0----1---2-----3-------4-5---6-----7-----8-----9--10-11-12----13--14----15--16-17-18----------------------------
-#     '''
-#     def setUp(self):
-#         signal = np.array([2., 5., 3., 6., 2., 3., 1., 6., 1., 4., 2., 3., 1., 4., 2., 5., 3., 4., 2.])
-#         self._fr, self._dtor = process_signal(signal)
+                                                                                                1   2   3   4   5   6
+    ------------------------------------------------------------------------------------------------------------------
+    6                R                   3                                                   | 1 |   |   |   |   |   |
+    ----------------/-\-----------------/-\---------------------------------------------------------------------------
+    5      1-------/   \                | |                                    R             |   |   |   |   |   |   |
+    ------/-\-----/-----\--------------/---\----------------------------------/-\-------------------------------------
+    4    /   \   /       \             |   |         5               6-------/   \---7       | 1 |   | 1 |   |   |   |
+    ----/-----\-/---------\-----------/-----\-------/-\-------------/-\-----/-----\-/-\-------------------------------
+    3  /       1           \   2      |     |      /   \---4       /   \   /       7   \     |   | 2 |   |   | 1 |   |
+    --/---------------------\-/-\----/-------\----/-----\-/-\-----/-----\-/-------------\-----------------------------
+    2 R                      2---\   |       |   /       4   \   /       6               R   |   |   |   | 1 |   |   |
+    ------------------------------\-/---------\-/-------------\-/-----------------------------------------------------
+    1                              3-----------5---------------R                             |   |   |   |   |   |   |
+    --0----1---2-----3-------4-5---6-----7-----8-----9--10-11-12----13--14----15--16-17-18----------------------------
+    '''
+    def setUp(self):
+        signal = np.array([2., 5., 3., 6., 2., 3., 1., 6., 1., 4., 2., 3., 1., 4., 2., 5., 3., 4., 2.])
+        self._fr, self._dtor = process_signal(signal)
 
-#     def test_values(self):
-#         np.testing.assert_array_equal(self._fr.values_from, np.array([5., 2., 1., 2., 1., 4., 3.]))
-#         np.testing.assert_array_equal(self._fr.values_to, np.array([3., 3., 6., 3., 4., 2., 4.]))
+    def test_values(self):
+        np.testing.assert_array_equal(self._fr.values_from, np.array([5., 2., 1., 2., 1., 4., 3.]))
+        np.testing.assert_array_equal(self._fr.values_to, np.array([3., 3., 6., 3., 4., 2., 4.]))
 
-#     def test_indeces(self):
-#         np.testing.assert_array_equal(self._fr.index_from, np.array([1, 4, 6, 10, 8, 13, 16]))
-#         np.testing.assert_array_equal(self._fr.index_to, np.array([2, 5, 7, 11, 9, 14, 17]))
+    def test_indeces(self):
+        np.testing.assert_array_equal(self._fr.index_from, np.array([1, 4, 6, 10, 8, 13, 16]))
+        np.testing.assert_array_equal(self._fr.index_to, np.array([2, 5, 7, 11, 9, 14, 17]))
 
-#     def test_residuals(self):
-#         np.testing.assert_array_equal(self._dtor.residuals, np.array([2., 6., 1., 5., 2.]))
+    def test_residuals(self):
+        np.testing.assert_array_equal(self._dtor.residuals, np.array([2., 6., 1., 5., 2.]))
 
-#     def test_residual_index(self):
-#         np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 3, 12, 15, 18]))
+    def test_residual_index(self):
+        np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 3, 12, 15, 18]))
 
 
 # @pytest.mark.skip(reason="Not yet implemented")
