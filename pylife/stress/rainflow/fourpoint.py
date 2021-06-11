@@ -63,7 +63,7 @@ class FourPointDetector(AbstractDetector):
 
         Returns
         -------
-        self : RainflowCounterThreePoint
+        self : RainflowCounterFourPoint
             The ``self`` object so that processing can be chained
 
         Example
@@ -86,11 +86,19 @@ class FourPointDetector(AbstractDetector):
         
         turns = turns_np
         i = 0
+        ####
+        print(turns)
+        print(turns_index)
+        print(self._residual_index)
+        ####
         while i+3 < len(turns):
             ds = np.abs(np.diff(turns)[i:i+3])
             if ds.min() == ds[1]:
                 self._recorder.record_values(turns[i+1],turns[i+2])
                 self._recorder.record_index(turns_index[i+1], turns_index[i+2])
+                #####
+                print(i,"=i",turns_index[i+1],"=Turns_index[i+1]",turns_index[i+2],"Turns_index[i+2]")
+                ####
                 turns = np.delete(turns, i+1, 0)
                 turns = np.delete(turns, i+1, 0)
                 turns_index = np.delete(turns_index, i+1, 0)
@@ -99,7 +107,9 @@ class FourPointDetector(AbstractDetector):
             else:
                 i += 1
         self._residuals = turns
-        self._residual_index = turns_index[residual_index[:-1]]
+        #####
+        print("Residuals_index before : ==",turns_index)
+        self._residual_index = turns_index
         self._recorder.report_chunk(len(samples))
 
         return self
