@@ -131,3 +131,33 @@ def test_find_turns_trailing_dups():
     index, values = RF.find_turns(samples)
     np.testing.assert_array_equal(index, expected_index)
     np.testing.assert_array_equal(values, expected_values)
+
+
+def test_find_turns_leading_and_trailing_dups():
+    samples = np.array([0., 0., 1., 2., 2., 1., 0., 0., 1., 2., 2.])
+    expected_index = [3, 6]
+    expected_values = [2., 0.]
+
+    index, values = RF.find_turns(samples)
+    np.testing.assert_array_equal(index, expected_index)
+    np.testing.assert_array_equal(values, expected_values)
+
+
+def test_find_turns_leading_and_trailing_dups_no_turns():
+    samples = np.array([0.0, 0.0, 0.5, 1.0, 1.0])
+    expected_index = []
+    expected_values = []
+
+    index, values = RF.find_turns(samples)
+    np.testing.assert_array_equal(index, expected_index)
+    np.testing.assert_array_equal(values, expected_values)
+
+
+def test_find_turns_flat_signal():
+    samples = np.array([0.0, 0.0, 0.0, 0.0])
+    expected_index = []
+    expected_values = []
+
+    index, values = RF.find_turns(samples)
+    np.testing.assert_array_equal(index, expected_index)
+    np.testing.assert_array_equal(values, expected_values)
