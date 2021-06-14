@@ -60,9 +60,11 @@ class TestFourPointRandomNonPeriodicLoad(unittest.TestCase):
         
 class TestFourPointRandombyDuplicatingResidualsFromAbove(unittest.TestCase):
     
-    '''Four Point Rainflow Counter method can only recognize the closed cycles and
-    excludes any contribution from unpaired reversals.
-    '''
+    '''This test case is taken from the Metal Fatigue Analysis Handbook, by Yung-Li 
+    Lee, Mark E. Barkey & Hong-Tae Kang. There it is stated, to obtain the Three Point
+    Rainflow Counter equivalent result from a Four PointCounter just add the residual 
+    array obtained from the first iteration, to itself and repeat the process.'''
+
     def setUp(self):
         signal = np.array([2.,-1,3,-5,4,-4,2,2,-1,3,-5,4,-4,2])
         self._fr, self._dtor = process_signal(signal)
