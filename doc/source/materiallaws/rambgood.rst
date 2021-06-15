@@ -1,7 +1,7 @@
 The ``RambergOsgood`` class
 ===========================
 
-.. autoclass:: pylife.materiallawsx.RambergOsgood
+.. autoclass:: pylife.materiallaws.RambergOsgood
 	:undoc-members:
 	:members:
 	:inherited-members:

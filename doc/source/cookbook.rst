@@ -28,6 +28,12 @@ pyLife Cookbook
 
 .. toctree::
    :maxdepth: 1
+   :caption: VMAP IO
+
+   demos/VMAP_io.nblink
+
+.. toctree::
+   :maxdepth: 1
    :caption: Tools
 
    demos/psd_optimizer.nblink

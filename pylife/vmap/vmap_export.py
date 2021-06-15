@@ -266,8 +266,8 @@ class VMAPExport:
         return self
 
     def add_variable(self, state_name, geometry_name, variable_name, mesh, column_names=None, location=None):
-        """
-        Exports variable into given state and geometry
+        """Exports variable into given state and geometry
+
         Parameters
         ----------
         state_name: string
@@ -282,9 +282,10 @@ class VMAPExport:
             The columns that the parameter consists of
         location: Enum, optional
             The location of the parameter
-                2 - node
-                3 - element - not supported yet
-                6 - element nodal
+            * 2 - node
+            * 3 - element - not supported yet
+            * 6 - element nodal
+
         Returns
         -------
         self

@@ -131,7 +131,6 @@ def irregularity_factor(rainflow_matrix, residuals=np.empty(0), decision_bin=Non
     Two sided irregularity factor:
 
         ..math::
-
         I = N_{mean crossings} / N_{turning points}
 
     Parameters
