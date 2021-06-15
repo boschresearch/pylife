@@ -13,3 +13,4 @@ m2r2
 nbsphinx
 nbsphinx-link
 ipykernel
+pyvista
