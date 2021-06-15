@@ -14,3 +14,7 @@ nbsphinx
 nbsphinx-link
 ipykernel
 pyvista
+itkwidgets
+panel
+ipyvtklink
+ipygany
