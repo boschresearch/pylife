@@ -163,3 +163,7 @@ class MeshAccessor(PlainMeshAccessor):
     def connectivity(self):
         return self._obj.reset_index().groupby('element_id')['node_id'].apply(np.hstack)
 
+
+    @property
+    def connectivity_iloc(self):
+        return self.connectivity.apply(lambda node_ids: self._obj.index.get_locs([slice(None), node_ids]))
