@@ -73,6 +73,7 @@ element_id node_id
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
+import numpy as np
 import pandas as pd
 from pylife import signal
 
@@ -156,3 +157,9 @@ class MeshAccessor(PlainMeshAccessor):
         super(MeshAccessor, self)._validate(obj, validator)
         if set(obj.index.names) != set(['element_id', 'node_id']):
             raise AttributeError("A mesh needs a pd.MultiIndex with the names `element_id` and `node_id`")
+
+
+    @property
+    def connectivity(self):
+        return self._obj.reset_index().groupby('element_id')['node_id'].apply(np.hstack)
+

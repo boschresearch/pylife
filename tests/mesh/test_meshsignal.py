@@ -15,6 +15,7 @@
 # limitations under the License.
 import pytest
 
+import numpy as np
 import pandas as pd
 
 import pylife.mesh.meshsignal
@@ -63,3 +64,12 @@ def test_mesh_fail_index():
     df = pd.DataFrame({'x': [1.0], 'y': [2.0], 'z': [3.0], 'a': [9.9]})
     with pytest.raises(AttributeError, match=r'.*element_id.*'):
         df.mesh.coordinates
+
+
+def test_connectivity():
+    mi = pd.MultiIndex.from_tuples([(1, 1), (1, 2), (1, 3),
+                                    (2, 4), (2, 5), (2, 6)], names=['element_id', 'node_id'])
+    df = pd.DataFrame({'x': np.arange(1, 7), 'y': np.arange(2, 8)}, index=mi)
+
+    expected = pd.Series([[1, 2, 3], [4, 5, 6]], name='node_id', index=pd.Index([1, 2], name='element_id'))
+    pd.testing.assert_series_equal(df.mesh.connectivity, expected)
