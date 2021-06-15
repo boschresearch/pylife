@@ -18,3 +18,4 @@ itkwidgets
 panel
 ipyvtklink
 ipygany
+xvfbwrapper

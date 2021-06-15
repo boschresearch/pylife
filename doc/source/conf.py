@@ -16,6 +16,10 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../../pylife'))
 
+if 'DISPLAY' not in os.environ and not sys.platform.startswith('win'):
+    from xvfbwrapper import Xvfb
+    vdisplay = Xvfb()
+    vdisplay.start()
 
 # Don't try to use C-code for the theano stuff when building the docs.
 # Otherwise the demo notebooks fail on readthedocs
