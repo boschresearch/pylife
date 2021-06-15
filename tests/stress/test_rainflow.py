@@ -417,6 +417,36 @@ def test_rainflow_get_turns_trailing_dups():
     np.testing.assert_array_equal(values, expected_values)
 
 
+def test_get_turns_leading_and_trailing_dups():
+    samples = np.array([0., 0., 1., 2., 2., 1., 0., 0., 1., 2., 2.])
+    expected_index = [3, 6]
+    expected_values = [2., 0.]
+
+    index, values = RF.get_turns(samples)
+    np.testing.assert_array_equal(index, expected_index)
+    np.testing.assert_array_equal(values, expected_values)
+
+
+def test_get_turns_leading_and_trailing_dups_no_turns():
+    samples = np.array([0.0, 0.0, 0.5, 1.0, 1.0])
+    expected_index = []
+    expected_values = []
+
+    index, values = RF.get_turns(samples)
+    np.testing.assert_array_equal(index, expected_index)
+    np.testing.assert_array_equal(values, expected_values)
+
+
+def test_get_turns_flat_signal():
+    samples = np.array([0.0, 0.0, 0.0, 0.0])
+    expected_index = []
+    expected_values = []
+
+    index, values = RF.get_turns(samples)
+    np.testing.assert_array_equal(index, expected_index)
+    np.testing.assert_array_equal(values, expected_values)
+
+
 def test_rainflow_partial_signals_general_FKM():
     tsgen = TimeSignalGenerator(10, {'number': 50,
                                      'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
