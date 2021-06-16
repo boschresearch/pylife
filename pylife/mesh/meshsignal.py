@@ -163,7 +163,26 @@ class MeshAccessor(PlainMeshAccessor):
     def connectivity(self):
         return self._obj.reset_index().groupby('element_id')['node_id'].apply(np.hstack)
 
-
     @property
     def connectivity_iloc(self):
-        return self.connectivity.apply(lambda node_ids: self._obj.index.get_locs([slice(None), node_ids]))
+        def locs(nodes):
+            return self._obj.index.get_locs([nodes.element_id, nodes.node_id])
+        res = self.connectivity.reset_index().apply(locs, axis=1)
+        res.index = self.connectivity.index
+        res.name = 'node_id'
+        return res
+
+    @property
+    def connectivity_node_count(self):
+        return self._obj.reset_index().groupby('element_id')['node_id'].count().rename('node_count')
+
+    def vtk_data(self):
+        groups = self._obj.index.to_frame(index=False).groupby('element_id', as_index=True)['node_id']
+        points = self._obj.groupby('node_id').first()[self._coord_keys].to_numpy()
+        cells = self.connectivity_iloc.apply(lambda x: np.insert(x, 0, x.shape[0]))
+
+        cells_flattened = [nd for cell in cells.values for nd in cell]
+
+        offsets = (groups.aggregate(lambda nds: nds.shape[0]+1).cumsum()-groups.count()-1).to_numpy()
+
+        return offsets, cells_flattened, points, groups.count()

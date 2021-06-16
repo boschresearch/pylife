@@ -82,3 +82,84 @@ def test_connectivity_iloc():
 
     expected = pd.Series([[0, 1, 2, 3], [4, 5, 6]], name='node_id', index=pd.Index([1, 2], name='element_id'))
     pd.testing.assert_series_equal(df.mesh.connectivity_iloc, expected)
+
+
+def test_connectivity_iloc_duplicate_nodes():
+    mi = pd.MultiIndex.from_tuples([(1, 1), (1, 2), (1, 3), (1, 17),
+                                    (2, 1), (2, 1), (2, 6)], names=['element_id', 'node_id'])
+    df = pd.DataFrame({'x': np.arange(1, 8), 'y': np.arange(2, 9)}, index=mi)
+
+    expected = pd.Series([[0, 1, 2, 3], [4, 5, 6]], name='node_id', index=pd.Index([1, 2], name='element_id'))
+    pd.testing.assert_series_equal(df.mesh.connectivity_iloc, expected)
+
+
+
+def test_connectivity_node_count():
+    mi = pd.MultiIndex.from_tuples([(1, 1), (1, 2), (1, 3), (1, 17),
+                                    (2, 4), (2, 5), (2, 6)], names=['element_id', 'node_id'])
+    df = pd.DataFrame({'x': np.arange(1, 8), 'y': np.arange(2, 9)}, index=mi)
+
+    expected = pd.Series([4, 3], name='node_count', index=pd.Index([1, 2], name='element_id'))
+    pd.testing.assert_series_equal(df.mesh.connectivity_node_count, expected)
+
+
+def test_pyvista_grid():
+
+    mi = pd.MultiIndex.from_tuples([(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8),
+                                    (2, 9), (2, 10), (2, 11), (2, 12), (2, 13), (2, 14),
+                                    (3, 15), (3, 16), (3, 17), (3, 18)],
+                                   names=['element_id', 'node_id'])
+    df = pd.DataFrame([
+        [0., 0., 0., 17.5],
+        [2., 0., 0., 17.5],
+        [2., 2., 0., 17.5],
+        [0., 2., 0., 17.5],
+        [0., 0., 2., 17.5],
+        [2., 0., 2., 17.5],
+        [2., 2., 2., 17.5],
+        [0., 2., 2., 17.5],
+        [2., 0., 0., 27.5],
+        [2., 0., 2., 27.5],
+        [2., 2., 2., 27.5],
+        [2., 2., 0., 27.5],
+        [4., 2., 0., 27.5],
+        [4., 0., 0., 27.5],
+        [4., 0., 2., 37.5],
+        [2., 0., 2., 37.5],
+        [2., 2., 2., 37.5],
+        [2., 2., 4., 37.5],
+        ], columns=['x', 'y', 'z', 'val'], index=mi)
+
+    expected_offset = np.array([0, 9, 16])
+    expected_cells = [
+        8, 0, 1, 2, 3, 4, 5, 6, 7,
+        6, 8, 9, 10, 11, 12, 13,
+        4, 14, 15, 16, 17
+    ]
+    expected_points = np.array([[0., 0., 0.],
+                                [2., 0., 0.],
+                                [2., 2., 0.],
+                                [0., 2., 0.],
+                                [0., 0., 2.],
+                                [2., 0., 2.],
+                                [2., 2., 2.],
+                                [0., 2., 2.],
+                                [2., 0., 0.],
+                                [2., 0., 2.],
+                                [2., 2., 2.],
+                                [2., 2., 0.],
+                                [4., 2., 0.],
+                                [4., 0., 0.],
+                                [4., 0., 2.],
+                                [2., 0., 2.],
+                                [2., 2., 2.],
+                                [2., 2., 4.]
+                                ])
+    expected_cell_types = [8, 6, 4]
+
+    offset, cells, points, cell_types = df.mesh.vtk_data()
+
+    np.testing.assert_allclose(expected_offset, offset)
+    np.testing.assert_allclose(expected_cells, cells)
+    np.testing.assert_allclose(expected_points, points)
+    np.testing.assert_allclose(expected_cell_types, cell_types)
