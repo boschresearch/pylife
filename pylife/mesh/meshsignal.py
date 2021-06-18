@@ -181,11 +181,42 @@ class MeshAccessor(PlainMeshAccessor):
 
     @property
     def connectivity(self):
-        "The connectivity of the mesh."
+        """The connectivity of the mesh."""
         return self._element_groups['node_id'].apply(np.hstack)
 
     def vtk_data(self):
+        """Make VTK data structure easily plot the mesh with pyVista.
 
+        Returns
+        -------
+        offsets : ndarray
+            An empty numpy array as ``pyVista.UnstructuredGrid()`` still
+            demands the argument for the offsets, even though VTK>9 does not
+            accept it.
+        cells : ndarray
+            The location of the cells describing the points in a way
+            ``pyVista.UnstructuredGrid()`` needs it
+        cell_types : ndarray
+            The VTK code for the cell types (see https://github.com/Kitware/VTK/blob/master/Common/DataModel/vtkCellType.h)
+        points : ndarray
+            The coordinates of the cell points
+
+        Notes
+        -----
+        This is a convenience function to easily plot a 3D mesh with
+        pyVista. It prepares a data structure which can be passed to
+        ``pyVista.UnstructuredGrid()``
+
+        Example
+        -------
+        >>> import pyvista as pv
+        >>> grid = pv.UnstructuredGrid(*our_mesh.mesh.vtk_data())
+        >>> plotter = pv.Plotter(window_size=[1920, 1080])
+        >>> plotter.add_mesh(grid, scalars=our_mesh.groupby('element_id')['val'].mean().to_numpy())
+        >>> plotter.show()
+
+        Note the `*` that needs to be added when calling ``pv.UnstructuredGrid()``.
+        """
         def choose_slice_dict():
             return self._slice_dict_3d if self.dimensions == 3 else self._slice_dict_2d
 
