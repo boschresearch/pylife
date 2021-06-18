@@ -167,13 +167,14 @@ class MeshAccessor(PlainMeshAccessor):
     '''
     def _validate(self, obj, validator):
         super(MeshAccessor, self)._validate(obj, validator)
+        self._cached_element_groups = None
         if set(obj.index.names) != set(['element_id', 'node_id']):
             raise AttributeError("A mesh needs a pd.MultiIndex with the names `element_id` and `node_id`")
 
 
     @property
     def connectivity(self):
-        return self._obj.reset_index().groupby('element_id')['node_id'].apply(np.hstack)
+        return self._element_groups['node_id'].apply(np.hstack)
 
     @property
     def connectivity_iloc(self):
@@ -188,49 +189,64 @@ class MeshAccessor(PlainMeshAccessor):
 
     @property
     def connectivity_node_count(self):
-        return self._obj.reset_index().groupby('element_id')['node_id'].count().rename('node_count')
+        return self._element_groups['node_id'].count().rename('node_count')
 
     def vtk_data(self):
 
-        slice_dict_2d = {
-            3: (3, 5),  # tri lin
-            6: (3, 5),  # tri quad
-            4: (4, 9),  # squ lin
-            8: (4, 9),  # squ quad
-        }
+        def choose_slice_dict():
+            return self._slice_dict_3d if self.dimensions == 3 else self._slice_dict_2d
 
-        slice_dict_3d = {
-            4: (4, 10),   # tet lin
-            6: (6, 13),   # wedge lin
-            8: (8, 12),   # hex lin
-            10: (4, 10),  # tet quad
-            15: (6, 13),  # tet quad
-            20: (8, 12),  # hex quad
-        }
+        def cells_with_lengths(index, connectivity):
+            def locs(nodes):
+                return np.array(list(map(index.get_loc, nodes)))
 
-        slice_dict = slice_dict_3d if self.dimensions == 3 else slice_dict_2d
+            cells = connectivity.apply(locs)
+            return np.array([nd for cell in cells.values for nd in np.insert(cell, 0, cell.shape[0])])
 
-        groups = self._obj.index.to_frame(index=False).groupby('element_id', as_index=True)['node_id']
-        conn = self.connectivity
-        count = self.connectivity_node_count
+        def calc_cells():
+            slice_dict = choose_slice_dict()
 
-        points = self._obj.groupby('node_id', sort=False).first()[self._coord_keys]
+            groups = self._element_groups['node_id']
+            connectivity = groups.apply(np.hstack)
+            count = groups.count()
 
-        for num, (new_num, _) in slice_dict.items():
-            conn[count == num] = conn[count == num].apply(lambda nds: nds[:new_num])
+            for num, (new_num, _) in slice_dict.items():
+                connectivity[count == num] = connectivity[count == num].apply(lambda nds: nds[:new_num])
 
-        nodes = pd.Series([nd for element in conn.values for nd in element], name='node_id').unique()
+            return connectivity, count.apply(lambda c: slice_dict[c][1]).to_numpy()
 
-        selection = points.index.isin(nodes)
-        points = points[selection]
+        def first_order_points():
+            points = self._obj.groupby('node_id', sort=False).first()[self._coord_keys]
+            nodes = pd.Series([nd for element in connectivity.values for nd in element], name='node_id').unique()
+            selection = points.index.isin(nodes)
+            return points[selection]
 
-        def locs(nodes):
-            return np.array(list(map(points.index.get_loc, nodes)))
+        connectivity, cell_types = calc_cells()
+        points = first_order_points()
+        cells = cells_with_lengths(points.index, connectivity)
 
-        cells = conn.apply(locs).apply(lambda x: np.insert(x, 0, x.shape[0]))
+        offsets = np.array([])  # (groups.aggregate(lambda nds: nds.shape[0]+1).cumsum()-groups.count()-1).to_numpy()
 
-        cells_flattened = [nd for cell in cells.values for nd in cell]
+        return offsets, cells, cell_types, points.to_numpy()
 
-        offsets = np.array([])#(groups.aggregate(lambda nds: nds.shape[0]+1).cumsum()-groups.count()-1).to_numpy()
+    _slice_dict_2d = {
+        3: (3, 5),  # tri lin
+        6: (3, 5),  # tri quad
+        4: (4, 9),  # squ lin
+        8: (4, 9),  # squ quad
+    }
+    _slice_dict_3d = {
+        4: (4, 10),   # tet lin
+        6: (6, 13),   # wedge lin
+        8: (8, 12),   # hex lin
+        10: (4, 10),  # tet quad
+        15: (6, 13),  # tet quad
+        20: (8, 12),  # hex quad
+    }
 
-        return offsets, np.array(cells_flattened), groups.count().apply(lambda c: slice_dict[c][1]).to_numpy(), points.to_numpy(),
+    @property
+    def _element_groups(self):
+        if self._cached_element_groups is not None:
+            return self._cached_element_groups
+        self._cached_element_groups = self._obj.reset_index().groupby('element_id')
+        return self._cached_element_groups
