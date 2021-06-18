@@ -184,10 +184,6 @@ class MeshAccessor(PlainMeshAccessor):
         "The connectivity of the mesh."
         return self._element_groups['node_id'].apply(np.hstack)
 
-    @property
-    def connectivity_node_count(self):
-        return self._element_groups['node_id'].count().rename('node_count')
-
     def vtk_data(self):
 
         def choose_slice_dict():

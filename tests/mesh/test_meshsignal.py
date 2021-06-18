@@ -93,15 +93,6 @@ def test_connectivity():
     pd.testing.assert_series_equal(df.mesh.connectivity, expected)
 
 
-def test_connectivity_node_count():
-    mi = pd.MultiIndex.from_tuples([(1, 1), (1, 2), (1, 3), (1, 17),
-                                    (2, 4), (2, 5), (2, 6)], names=['element_id', 'node_id'])
-    df = pd.DataFrame({'x': np.arange(1, 8), 'y': np.arange(2, 9)}, index=mi)
-
-    expected = pd.Series([4, 3], name='node_count', index=pd.Index([1, 2], name='element_id'))
-    pd.testing.assert_series_equal(df.mesh.connectivity_node_count, expected)
-
-
 def test_vtk_grid_return_types():
     mi = pd.MultiIndex.from_tuples([(1, 17), (1, 23), (1, 3)], names=['element_id', 'node_id'])
     df = pd.DataFrame([[0., 0.], [0., 2.], [2., 0.], ], columns=['x', 'y'], index=mi)
