@@ -106,6 +106,18 @@ class PlainMeshAccessor(signal.PylifeSignal):
             self._coord_keys.append('z')
 
     @property
+    def dimensions(self):
+        """The dimensions of the mesh (2 for 2D and 3 for 3D)
+
+        Note
+        ----
+        If all the coordinates in z-direction are equal the mesh is considered 2D.
+        """
+        if len(self._coord_keys) == 2 or (self._obj.z == self._obj.z.iloc[0]).all():
+            return 2
+        return 3
+
+    @property
     def coordinates(self):
         '''Returns the coordinate colums of the accessed DataFrame
 

@@ -33,6 +33,21 @@ def test_plain_mesh_2d():
                                   pd.DataFrame({'x': [1.0], 'y': [2.0]}))
 
 
+def test_plain_mesh_3d_dims():
+    df = pd.DataFrame({'x': [1.0, 2.0], 'y': [2.0, 3.0], 'z': [3.0, 4.0], 'b': [3.0, 3.0]})
+    assert df.plain_mesh.dimensions == 3
+
+
+def test_plain_mesh_2d_dims():
+    df = pd.DataFrame({'x': [1.0, 2.0], 'y': [2.0, 3.0], 'b': [3.0, 3.0]})
+    assert df.plain_mesh.dimensions == 2
+
+
+def test_plain_mesh_pseudeo_2d_dims():
+    df = pd.DataFrame({'x': [1.0, 2.0], 'y': [2.0, 3.0], 'z': [3.0, 3.0], 'b': [3.0, 3.0]})
+    assert df.plain_mesh.dimensions == 2
+
+
 def test_plain_mesh_fail():
     df = pd.DataFrame({'x': [1.0], 't': [2.0], 'b': [3.0], 'a': [9.9]})
     with pytest.raises(AttributeError, match=r'PlainMeshAccessor.*Missing y'):
