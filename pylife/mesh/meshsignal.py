@@ -191,14 +191,24 @@ class MeshAccessor(PlainMeshAccessor):
         return self._obj.reset_index().groupby('element_id')['node_id'].count().rename('node_count')
 
     def vtk_data(self):
-        slice_dict = {
-            4: 4,  # tet lin
-            6: 6,  # wedge lin
-            8: 8,  # hex lin
-            10: 4, # tet quad
-            15: 6, # tet quad
-            20: 8  # hex quad
+
+        slice_dict_2d = {
+            3: (3, 5),  # tri lin
+            6: (3, 5),  # tri quad
+            4: (4, 9),  # squ lin
+            8: (4, 9),  # squ quad
         }
+
+        slice_dict_3d = {
+            4: (4, 10),   # tet lin
+            6: (6, 13),   # wedge lin
+            8: (8, 12),   # hex lin
+            10: (4, 10),  # tet quad
+            15: (6, 13),  # tet quad
+            20: (8, 12),  # hex quad
+        }
+
+        slice_dict = slice_dict_3d if self.dimensions == 3 else slice_dict_2d
 
         groups = self._obj.index.to_frame(index=False).groupby('element_id', as_index=True)['node_id']
         conn = self.connectivity
@@ -206,7 +216,7 @@ class MeshAccessor(PlainMeshAccessor):
 
         points = self._obj.groupby('node_id', sort=False).first()[self._coord_keys]
 
-        for num, new_num in slice_dict.items():
+        for num, (new_num, _) in slice_dict.items():
             conn[count == num] = conn[count == num].apply(lambda nds: nds[:new_num])
 
         nodes = pd.Series([nd for element in conn.values for nd in element], name='node_id').unique()
@@ -215,14 +225,12 @@ class MeshAccessor(PlainMeshAccessor):
         points = points[selection]
 
         def locs(nodes):
-            print("nodes:", nodes)
-            print("locs:", list(map(points.index.get_loc, nodes)))
             return np.array(list(map(points.index.get_loc, nodes)))
 
         cells = conn.apply(locs).apply(lambda x: np.insert(x, 0, x.shape[0]))
 
         cells_flattened = [nd for cell in cells.values for nd in cell]
 
-        offsets = (groups.aggregate(lambda nds: nds.shape[0]+1).cumsum()-groups.count()-1).to_numpy()
+        offsets = np.array([])#(groups.aggregate(lambda nds: nds.shape[0]+1).cumsum()-groups.count()-1).to_numpy()
 
-        return offsets, cells_flattened, points.to_numpy(), groups.count().apply(lambda c: slice_dict[c])
+        return offsets, np.array(cells_flattened), groups.count().apply(lambda c: slice_dict[c][1]).to_numpy(), points.to_numpy(),
