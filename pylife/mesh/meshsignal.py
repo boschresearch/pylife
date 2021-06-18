@@ -104,6 +104,7 @@ class PlainMeshAccessor(signal.PylifeSignal):
         validator.fail_if_key_missing(obj, self._coord_keys)
         if 'z' in obj.columns:
             self._coord_keys.append('z')
+        self._cached_dimensions = None
 
     @property
     def dimensions(self):
@@ -113,9 +114,15 @@ class PlainMeshAccessor(signal.PylifeSignal):
         ----
         If all the coordinates in z-direction are equal the mesh is considered 2D.
         """
+        if self._cached_dimensions is not None:
+            return self._cached_dimensions
+
         if len(self._coord_keys) == 2 or (self._obj.z == self._obj.z.iloc[0]).all():
-            return 2
-        return 3
+            self._cached_dimensions = 2
+        else:
+            self._cached_dimensions = 3
+
+        return self._cached_dimensions
 
     @property
     def coordinates(self):
@@ -174,6 +181,7 @@ class MeshAccessor(PlainMeshAccessor):
 
     @property
     def connectivity(self):
+        "The connectivity of the mesh."
         return self._element_groups['node_id'].apply(np.hstack)
 
     @property
