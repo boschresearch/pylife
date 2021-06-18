@@ -93,24 +93,6 @@ def test_connectivity():
     pd.testing.assert_series_equal(df.mesh.connectivity, expected)
 
 
-def test_connectivity_iloc():
-    mi = pd.MultiIndex.from_tuples([(1, 2), (1, 1), (1, 3), (1, 17),
-                                    (2, 5), (2, 4), (2, 6)], names=['element_id', 'node_id'])
-    df = pd.DataFrame({'x': np.arange(1, 8), 'y': np.arange(2, 9)}, index=mi)
-
-    expected = pd.Series([[0, 1, 2, 3], [4, 5, 6]], name='node_id', index=pd.Index([1, 2], name='element_id'))
-    pd.testing.assert_series_equal(df.mesh.connectivity_iloc, expected)
-
-
-def test_connectivity_iloc_duplicate_nodes():
-    mi = pd.MultiIndex.from_tuples([(1, 2), (1, 1), (1, 3), (1, 17),
-                                    (2, 6), (2, 1), (2, 2)], names=['element_id', 'node_id'])
-    df = pd.DataFrame({'x': np.arange(1, 8), 'y': np.arange(2, 9)}, index=mi)
-
-    expected = pd.Series([[0, 1, 2, 3], [4, 1, 0]], name='node_id', index=pd.Index([1, 2], name='element_id'))
-    pd.testing.assert_series_equal(df.mesh.connectivity_iloc, expected)
-
-
 def test_connectivity_node_count():
     mi = pd.MultiIndex.from_tuples([(1, 1), (1, 2), (1, 3), (1, 17),
                                     (2, 4), (2, 5), (2, 6)], names=['element_id', 'node_id'])

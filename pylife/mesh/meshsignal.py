@@ -185,17 +185,6 @@ class MeshAccessor(PlainMeshAccessor):
         return self._element_groups['node_id'].apply(np.hstack)
 
     @property
-    def connectivity_iloc(self):
-        node_index = self._obj.reset_index().groupby('node_id', sort=False).first().index
-        def locs(nodes):
-            return np.array(list(map(node_index.get_loc, nodes)))
-
-        res = self.connectivity.apply(locs)
-        res.index = self.connectivity.index
-        res.name = 'node_id'
-        return res
-
-    @property
     def connectivity_node_count(self):
         return self._element_groups['node_id'].count().rename('node_count')
 
