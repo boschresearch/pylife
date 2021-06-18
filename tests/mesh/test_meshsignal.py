@@ -117,6 +117,18 @@ def test_connectivity_node_count():
     pd.testing.assert_series_equal(df.mesh.connectivity_node_count, expected)
 
 
+def test_vtk_grid_return_types():
+    mi = pd.MultiIndex.from_tuples([(1, 17), (1, 23), (1, 3),], names=['element_id', 'node_id'])
+    df = pd.DataFrame([[0., 0.], [0., 2.], [2., 0.], ], columns=['x', 'y'], index=mi)
+
+    offset, cells, cell_types, points = df.mesh.vtk_data()
+
+    assert isinstance(offset, np.ndarray)
+    assert isinstance(cells, np.ndarray)
+    assert isinstance(cell_types, np.ndarray)
+    assert isinstance(points, np.ndarray)
+
+
 def test_vtk_grid_2d_tri_lin():
     mi = pd.MultiIndex.from_tuples([
         (1, 17), (1, 23), (1, 3),
