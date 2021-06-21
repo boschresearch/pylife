@@ -1,0 +1,98 @@
+# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# see the NOTICE file and/or the repository
+# https://github.com/boschresearch/pylife
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
+
+import pytest
+import numpy as np
+import pandas as pd
+
+import pylife.materialdata.woehler.accessors
+
+
+wc_elem = pd.Series({
+    'k_1': 7.,
+    '1/TN': 1.75,
+    'ND_50': 1e6,
+    'SD_50': 300.0
+})
+
+wc_full = pd.Series({
+    'k_1': 7.,
+    '1/TN': 1.75,
+    'ND_50': 1e6,
+    'SD_50': 300.0,
+    '1/TS': 1.25
+})
+
+
+def test_woehler_elementary_accessor():
+
+    wc_elem.woehler_elementary
+
+    for key in wc_elem.index:
+        wc_miss = wc_elem.drop(key)
+        with pytest.raises(AttributeError):
+            wc_miss.woehler_elementary
+
+
+def test_woehler_accessor():
+    wc_full.woehler
+
+    for key in wc_full.index:
+        wc_miss = wc_full.drop(key)
+        with pytest.raises(AttributeError):
+            wc_miss.woehler
+
+
+def test_woehler_basquin_cycles_50():
+    load = [200., 300., 400., 500.]
+
+    cycles = wc_elem.woehler_elementary.basquin_cycles(load)
+    expected_cycles = [np.inf, 1e6,  133484,    27994]
+
+    np.testing.assert_allclose(cycles, expected_cycles, rtol=1e-4)
+
+
+def test_woehler_basquin_cycles_10_90():
+    load = [200., 300., 400., 500.]
+
+    cycles_10 = wc_elem.woehler_elementary.basquin_cycles(load, 0.1)[1:]
+    cycles_90 = wc_elem.woehler_elementary.basquin_cycles(load, 0.9)[1:]
+
+    expected = [np.inf, 1.75, 1.75]
+    np.testing.assert_allclose(cycles_90/cycles_10, expected)
+
+
+def test_woehler_basquin_load():
+    cycles = [np.inf, 1e6,  133484,    27994]
+
+    load = wc_elem.woehler_elementary.basquin_load(cycles)
+    expected_load = [300., 300., 400., 500.]
+
+    np.testing.assert_allclose(load, expected_load, rtol=1e-4)
+
+
+def test_woehler_basquin_cycles():
+    cycles = [1e2, 1e7]
+
+    load_10 = wc_elem.woehler_elementary.basquin_load(cycles, 0.1)
+    load_90 = wc_elem.woehler_elementary.basquin_load(cycles, 0.9)
+
+    expected = np.full_like(cycles, 1.75 ** (1./7.))
+
+    np.testing.assert_allclose(load_90/load_10, expected, rtol=1e-4)

@@ -16,6 +16,11 @@
 
 import pandas as pd
 import numpy as np
+import scipy.stats as stats
+
+from pylife.utils.functions import scatteringRange2std
+
+
 from pylife import signal
 from pylife import DataValidator
 
@@ -24,6 +29,55 @@ from pylife import DataValidator
 class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['k_1', '1/TN', 'ND_50', 'SD_50'])
+
+    def basquin_cycles(self, load, failure_probability=0.5):
+        """Calculate the cycles numbers from loads according to the Basquin equation.
+
+        Parameters
+        ----------
+        load : array_like
+            The load levels for which the corresponding cycle numbers are to be calculated.
+        failure_probability : float, optional
+            The failure probability with which the component should fail when
+            charged with `load` for the calculated cycle numbers. Default 0.5
+
+        Returns
+        -------
+        cycles : numpy.ndarray
+            The cycle numbers at which the component fails for the given `load` values
+        """
+        load = np.asarray(load)
+        cycles = np.full_like(load, np.inf)
+        pf_ppf = stats.norm.ppf(failure_probability)
+        SD = self._obj.SD_50 / 10**(-pf_ppf*scatteringRange2std(self._obj['1/TN']**(1. / self._obj.k_1)))
+        ND = self._obj.ND_50 / 10**(-pf_ppf*scatteringRange2std(self._obj['1/TN']))
+        above_limit = load >= SD
+        cycles[above_limit] = ND * np.power(load[above_limit]/self._obj.SD_50, -self._obj.k_1)
+        return cycles
+
+    def basquin_load(self, cycles, failure_probability=0.5):
+        """Calculate the load values from loads according to the Basquin equation.
+
+        Parameters
+        ----------
+        cycles : array_like
+            The cycle numbers for which the corresponding load levels are to be calculated.
+        failure_probability : float, optional
+            The failure probability with which the component should fail when
+            charged with `load` for the calculated cycle numbers. Default 0.5
+
+        Returns
+        -------
+        cycles : numpy.ndarray
+            The cycle numbers at which the component fails for the given `load` values
+        """
+        cycles = np.asarray(cycles)
+        pf_ppf = stats.norm.ppf(failure_probability)
+        SD = self._obj.SD_50 / 10**(-pf_ppf*scatteringRange2std(self._obj['1/TN']**(1. / self._obj.k_1)))
+        ND = self._obj.ND_50 / 10**(-pf_ppf*scatteringRange2std(self._obj['1/TN']))
+        load = self._obj.SD_50 * np.power(cycles/ND, -1./self._obj.k_1)
+        load[load < SD] = SD
+        return load
 
 
 @pd.api.extensions.register_series_accessor('woehler')
