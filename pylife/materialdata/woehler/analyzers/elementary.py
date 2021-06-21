@@ -18,7 +18,6 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 
-import pylife
 from .likelihood import Likelihood
 from .pearl_chain import PearlChainProbability
 import pylife.utils.functions as functions
@@ -26,7 +25,26 @@ from ..accessors import FatigueDataAccessor, determine_fractures
 
 
 class Elementary:
+    """Base class to analyze SN-data.
+
+    The common base class for all SN-data analyzers calculates the first
+    estimation of a Wöhler curve in the finite zone of the SN-data. It
+    calculates the slope `k`, the fatigue limit `SD_50`, the transition cycle
+    number `ND_50` and the scatter in load direction `1/TN`.
+
+    The result is just meant to be a first guess. Derived classes are supposed
+    to use those first guesses as starting points for their specific
+    analysis. For that they should implement the method `_specific_analysis()`.
+    """
+
     def __init__(self, fatigue_data):
+        """The constructor.
+
+        Parameters
+        ----------
+        fatigue_data : pd.DataFrame or FatigueDataAccessor
+           The SN-data to be analyzed.
+        """
         self._fd = self._get_fatigue_data(fatigue_data)
         self._lh = self._get_likelihood()
 
@@ -45,11 +63,17 @@ class Elementary:
             raise ValueError("fatigue_data of type {} not understood: {}".format(type(fatigue_data), fatigue_data))
         return params
 
-    def analyze(self, **kw):
+    def analyze(self, **kwargs):
+        """Analyze the SN-data.
+
+        Parameters
+        **kwargs : kwargs arguments
+            Arguments to be passed to the derived class
+        """
         if len(self._fd.load.unique()) < 2:
             raise ValueError("Need at least two load levels to do a Wöhler analysis.")
         wc = self._common_analysis()
-        wc = self._specific_analysis(wc, **kw)
+        wc = self._specific_analysis(wc, **kwargs)
         self.__calc_bic(wc)
         return wc
 
@@ -66,6 +90,14 @@ class Elementary:
         return wc
 
     def bayesian_information_criterion(self):
+        """The Bayesian Information Criterion
+
+        Bayesian Information Criterion is a criterion for model selection among
+        a finite set of models; the model with the lowest BIC is preferred.
+        https://www.statisticshowto.datasciencecentral.com/bayesian-information-criterion/
+
+        Basically the lower the better the fit.
+        """
         if not hasattr(self,"_bic"):
             raise ValueError("BIC value undefined. Analysis has not been conducted.")
         return self._bic
@@ -74,17 +106,12 @@ class Elementary:
         return self._pearl_chain_estimator
 
     def __calc_bic(self, wc):
-        ''' Bayesian Information Criterion: is a criterion for model selection among a finite set of models;
-        the model with the lowest BIC is preferred.
-        https://www.statisticshowto.datasciencecentral.com/bayesian-information-criterion/
-        '''
+        '''         '''
         param_num = 5  # SD_50, 1/TS, k_1, ND_50, 1/TN
         log_likelihood = self._lh.likelihood_total(wc['SD_50'], wc['1/TS'], wc['k_1'], wc['ND_50'], wc['1/TN'])
         self._bic = (-2 * log_likelihood) + (param_num * np.log(self._fd.num_tests))
 
     def _fit_slope(self):
-        '''Computes the slope of the finite zone with the help of a linear regression function
-        '''
         slope, lg_intercept, _, _, _ = stats.linregress(np.log10(self._fd.fractures.load),
                                                         np.log10(self._fd.fractures.cycles))
 

@@ -21,7 +21,7 @@ import scipy.stats as stats
 
 class ProbabilityFit:
     def __init__(self, probs, occurrences):
-        ''' Fit samples and their estimated occurrences to a lognorm distribution
+        """Fit samples and their estimated occurrences to a lognorm distribution.
 
         Parameters:
         -----------
@@ -30,7 +30,7 @@ class ProbabilityFit:
             (i.e. estimated by func:`pylife.utils.functions.rossow_cumfreqs`)
         occurences : array_like
             the values of the samples
-        '''
+        """
         if len(probs) != len(occurrences):
             raise ValueError("probs and occurrence arrays must have the same 1D shape.")
         if len(probs) < 2:

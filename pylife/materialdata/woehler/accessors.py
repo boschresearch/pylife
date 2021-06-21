@@ -120,11 +120,11 @@ class FatigueDataAccessor(signal.PylifeSignal):
     @property
     def non_fractured_loads(self):
         return np.setdiff1d(self.runout_loads, self.fractured_loads)
-    
+
     @property
     def mixed_loads(self):
         return np.intersect1d(self.runout_loads, self.fractured_loads)
-    
+
     def conservative_fatigue_limit(self):
         """
         Sets a lower fatigue limit that what is expected from the algorithm given by Mustafa Kassem.
@@ -141,7 +141,7 @@ class FatigueDataAccessor(signal.PylifeSignal):
         Kassem, Mustafa - "Open Source Software Development for Reliability and Lifetime Calculation" pp. 34
         """
         amps_to_consider = self.mixed_loads
-        
+
         if len(self.non_fractured_loads ) > 0:
             amps_to_consider = np.concatenate((amps_to_consider, [self.non_fractured_loads.max()]))
 
