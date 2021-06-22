@@ -78,7 +78,7 @@ def test_woehler_basquin_cycles_10_90():
     np.testing.assert_allclose(cycles_90/cycles_10, expected)
 
 
-def test_woehler_basquin_load():
+def test_woehler_basquin_load_50():
     cycles = [np.inf, 1e6,  133484,    27994]
 
     load = wc_elem.woehler_elementary.basquin_load(cycles)
@@ -87,7 +87,7 @@ def test_woehler_basquin_load():
     np.testing.assert_allclose(load, expected_load, rtol=1e-4)
 
 
-def test_woehler_basquin_cycles():
+def test_woehler_basquin_load_10_90():
     cycles = [1e2, 1e7]
 
     load_10 = wc_elem.woehler_elementary.basquin_load(cycles, 0.1)
