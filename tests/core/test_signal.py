@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
+
 import pytest
 import pandas as pd
 
@@ -22,6 +25,19 @@ from pylife.core.data_validator import DataValidator
 
 foo_bar_baz = pd.DataFrame({'foo': [1.0], 'bar': [1.0], 'baz': [1.0]})
 val = DataValidator()
+
+
+def test_keys_dataframe():
+    pd.testing.assert_index_equal(val.keys(foo_bar_baz), pd.Index(['foo', 'bar', 'baz']))
+
+
+def test_keys_series():
+    pd.testing.assert_index_equal(val.keys(foo_bar_baz.iloc[0]), pd.Index(['foo', 'bar', 'baz']))
+
+
+def test_keys_invalid_type():
+    with pytest.raises(AttributeError, match="An accessor object needs to be either a pandas.Series or a pandas.DataFrame"):
+        val.keys('lllll')
 
 
 def test_missing_keys_none():

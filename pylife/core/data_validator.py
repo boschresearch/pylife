@@ -22,8 +22,39 @@ import pandas as pd
 
 
 class DataValidator:
+
+    def keys(self, signal):
+        """Get a list of missing keys that are needed for a signal object.
+
+        Parameters
+        ----------
+        signal : pandas.DataFrame or pandas.Series
+            The object to be checked
+
+        Returns
+        -------
+        keys : pd.Index
+            a pandas index of keys
+
+        Raises
+        ------
+        AttributeError
+            If `signal` is neither a `pandas.DataFrame` nor a `pandas.Series`
+
+        Notes
+        -----
+        If `signal` is a `pandas.DataFrame`, the `signal.columns` are returned.
+
+        If `signal` is a `pandas.Series`, the `signal.index` are returned.
+        """
+        if isinstance(signal, pd.Series):
+            return signal.index
+        elif isinstance(signal, pd.DataFrame):
+            return signal.columns
+        raise AttributeError("An accessor object needs to be either a pandas.Series or a pandas.DataFrame")
+
     def get_missing_keys(self, signal, keys_to_check):
-        '''Gets a list of missing keys that are needed for a signal object
+        """Get a list of missing keys that are needed for a signal object.
 
         Parameters
         ----------
@@ -52,23 +83,15 @@ class DataValidator:
         If `signal` is a `pandas.Series`, all keys of
         `keys_to_check` not found in the `signal.index` are
         returned.
-        '''
-        if isinstance(signal, pd.Series):
-            keys_avail = signal.index
-        elif isinstance(signal, pd.DataFrame):
-            keys_avail = signal.columns
-        else:
-            raise AttributeError("An accessor object needs to be either a pandas.Series or a pandas.DataFrame")
-
+        """
         missing_keys = []
         for k in keys_to_check:
-            if k not in keys_avail:
+            if k not in self.keys(signal):
                 missing_keys.append(k)
         return missing_keys
 
-
     def fail_if_key_missing(self, signal, keys_to_check, msg=None):
-        '''Raises an exception if any key is missing in a signal object
+        """Raise an exception if any key is missing in a signal object.
 
         Parameters
         ----------
@@ -97,7 +120,7 @@ class DataValidator:
         --------
         :func:`signal.get_missing_keys`
         :class:`stresssignal.StressTensorVoigtAccessor`
-        '''
+        """
         missing_keys = self.get_missing_keys(signal, keys_to_check)
         if not missing_keys:
             return
