@@ -34,6 +34,16 @@ class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
         else:
             self._k_2 = np.inf
 
+        if 'TS' in validator.keys(obj):
+            self._TS = obj.TS
+        else:
+            self._TS = np.power(obj.TN, 1./obj.k_1)
+
+    @property
+    def TS(self):
+        """The load direction scatter value TS."""
+        return self._TS
+
     @property
     def k_2(self):
         """The second Wöhler slope."""

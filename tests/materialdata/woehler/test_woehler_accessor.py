@@ -120,6 +120,18 @@ def test_woehler_basquin_load_10_90():
     np.testing.assert_allclose(load_90/load_10, expected, rtol=1e-4)
 
 
+def test_woehler_TS_inv_guessed():
+    wc = wc_elem.copy()
+    wc['k_1'] = 0.5
+    wc['TN'] = 1. / 1.5
+
+    assert wc.woehler_elementary.TS == 1. / (1.5 * 1.5)
+
+
+def test_woehler_TS_inv_given():
+    assert wc_full.woehler_elementary.TS == 1. / 1.25
+
+
 def test_woehler_miner_original():
     assert wc_elem.woehler_elementary.k_2 == np.inf
 
