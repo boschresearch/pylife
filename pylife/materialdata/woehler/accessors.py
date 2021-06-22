@@ -29,6 +29,10 @@ from pylife import DataValidator
 class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['k_1', '1/TN', 'ND_50', 'SD_50'])
+        if 'k_2' in validator.keys(obj):
+            self._k_2 = obj.k_2
+        else:
+            self._k_2 = np.inf
 
     def basquin_cycles(self, load, failure_probability=0.5):
         """Calculate the cycles numbers from loads according to the Basquin equation.
@@ -47,12 +51,17 @@ class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
             The cycle numbers at which the component fails for the given `load` values
         """
         load = np.asarray(load)
-        cycles = np.full_like(load, np.inf)
+
         pf_ppf = stats.norm.ppf(failure_probability)
         SD = self._obj.SD_50 / 10**(-pf_ppf*scatteringRange2std(self._obj['1/TN']**(1. / self._obj.k_1)))
         ND = self._obj.ND_50 / 10**(-pf_ppf*scatteringRange2std(self._obj['1/TN']))
-        above_limit = load >= SD
-        cycles[above_limit] = ND * np.power(load[above_limit]/self._obj.SD_50, -self._obj.k_1)
+
+        k = self._make_k(load, SD)
+
+        cycles = np.full_like(load, np.inf)
+        in_limit = np.isfinite(k)
+        cycles[in_limit] = ND * np.power(load[in_limit]/self._obj.SD_50, -k[in_limit])
+
         return cycles
 
     def basquin_load(self, cycles, failure_probability=0.5):
@@ -75,9 +84,19 @@ class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
         pf_ppf = stats.norm.ppf(failure_probability)
         SD = self._obj.SD_50 / 10**(-pf_ppf*scatteringRange2std(self._obj['1/TN']**(1. / self._obj.k_1)))
         ND = self._obj.ND_50 / 10**(-pf_ppf*scatteringRange2std(self._obj['1/TN']))
-        load = self._obj.SD_50 * np.power(cycles/ND, -1./self._obj.k_1)
-        load[load < SD] = SD
+
+        k = self._make_k(-cycles, -ND)
+
+        load = np.full_like(cycles, SD)
+        in_limit = np.isfinite(k)
+        load[in_limit] = self._obj.SD_50 * np.power(cycles[in_limit]/ND, -1./k[in_limit])
+
         return load
+
+    def _make_k(self, src, ref):
+        k = np.full_like(src, self._obj.k_1)
+        k[src < ref] = self._k_2
+        return k
 
 
 @pd.api.extensions.register_series_accessor('woehler')

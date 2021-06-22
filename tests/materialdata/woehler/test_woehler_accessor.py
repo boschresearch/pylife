@@ -68,6 +68,17 @@ def test_woehler_basquin_cycles_50():
     np.testing.assert_allclose(cycles, expected_cycles, rtol=1e-4)
 
 
+def test_woehler_basquin_cycles_50_same_k():
+    load = [200., 300., 400., 500.]
+
+    wc = wc_elem.copy()
+    wc['k_2'] = wc['k_1']
+    cycles = wc.woehler_elementary.basquin_cycles(load)
+
+    calculated_k = - (np.log(cycles[-1]) - np.log(cycles[0])) / (np.log(load[-1]) - np.log(load[0]))
+    np.testing.assert_approx_equal(calculated_k, wc.k_1)
+
+
 def test_woehler_basquin_cycles_10_90():
     load = [200., 300., 400., 500.]
 
@@ -85,6 +96,17 @@ def test_woehler_basquin_load_50():
     expected_load = [300., 300., 400., 500.]
 
     np.testing.assert_allclose(load, expected_load, rtol=1e-4)
+
+
+def test_woehler_basquin_load_50_same_k():
+    cycles = [1e7, 1e6, 1e5, 1e4]
+
+    wc = wc_elem.copy()
+    wc['k_2'] = wc['k_1']
+
+    load = wc.woehler_elementary.basquin_load(cycles)
+    calculated_k = - (np.log(cycles[-1]) - np.log(cycles[0])) / (np.log(load[-1]) - np.log(load[0]))
+    np.testing.assert_approx_equal(calculated_k, wc.k_1)
 
 
 def test_woehler_basquin_load_10_90():
