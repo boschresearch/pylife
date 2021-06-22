@@ -29,15 +29,8 @@ from pylife import DataValidator
 class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['k_1', 'TN', 'ND_50', 'SD_50'])
-        if 'k_2' in validator.keys(obj):
-            self._k_2 = obj.k_2
-        else:
-            self._k_2 = np.inf
-
-        if 'TS' in validator.keys(obj):
-            self._TS = obj.TS
-        else:
-            self._TS = np.power(obj.TN, 1./obj.k_1)
+        self._k_2 = obj.get('k_2', np.inf)
+        self._TS = obj.get('TS', np.power(obj.TN, 1./obj.k_1))
 
     @property
     def TS(self):
