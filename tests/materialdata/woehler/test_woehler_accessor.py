@@ -26,17 +26,17 @@ import pylife.materialdata.woehler.accessors
 
 wc_elem = pd.Series({
     'k_1': 7.,
-    '1/TN': 1.75,
+    'TN': 1. / 1.75,
     'ND_50': 1e6,
     'SD_50': 300.0
 })
 
 wc_full = pd.Series({
     'k_1': 7.,
-    '1/TN': 1.75,
+    'TN': 1. / 1.75,
     'ND_50': 1e6,
     'SD_50': 300.0,
-    '1/TS': 1.25
+    'TS': 1. / 1.25
 })
 
 

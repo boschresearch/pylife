@@ -28,7 +28,7 @@ from pylife import DataValidator
 @pd.api.extensions.register_series_accessor('woehler_elementary')
 class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
     def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['k_1', '1/TN', 'ND_50', 'SD_50'])
+        validator.fail_if_key_missing(obj, ['k_1', 'TN', 'ND_50', 'SD_50'])
         if 'k_2' in validator.keys(obj):
             self._k_2 = obj.k_2
         else:
@@ -78,8 +78,8 @@ class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
         load = np.asarray(load)
 
         pf_ppf = stats.norm.ppf(failure_probability)
-        SD = self._obj.SD_50 / 10**(-pf_ppf*scatteringRange2std(self._obj['1/TN']**(1. / self._obj.k_1)))
-        ND = self._obj.ND_50 / 10**(-pf_ppf*scatteringRange2std(self._obj['1/TN']))
+        SD = self._obj.SD_50 / 10**(pf_ppf*scatteringRange2std(self._obj.TN**(1. / self._obj.k_1)))
+        ND = self._obj.ND_50 / 10**(pf_ppf*scatteringRange2std(self._obj.TN))
 
         k = self._make_k(load, SD)
 
@@ -107,8 +107,8 @@ class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
         """
         cycles = np.asarray(cycles)
         pf_ppf = stats.norm.ppf(failure_probability)
-        SD = self._obj.SD_50 / 10**(-pf_ppf*scatteringRange2std(self._obj['1/TN']**(1. / self._obj.k_1)))
-        ND = self._obj.ND_50 / 10**(-pf_ppf*scatteringRange2std(self._obj['1/TN']))
+        SD = self._obj.SD_50 / 10**(pf_ppf*scatteringRange2std(self._obj.TN**(1. / self._obj.k_1)))
+        ND = self._obj.ND_50 / 10**(pf_ppf*scatteringRange2std(self._obj.TN))
 
         k = self._make_k(-cycles, -ND)
 
@@ -128,7 +128,7 @@ class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
 class WoehlerCurveAccessor(WoehlerCurveElementaryAccessor):
     def _validate(self, obj, validator):
         super(WoehlerCurveAccessor, self)._validate(obj, validator)
-        validator.fail_if_key_missing(obj, ['1/TS'])
+        validator.fail_if_key_missing(obj, ['TS'])
 
 
 @pd.api.extensions.register_dataframe_accessor('fatigue_data')
