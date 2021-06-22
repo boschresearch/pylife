@@ -118,3 +118,15 @@ def test_woehler_basquin_load_10_90():
     expected = np.full_like(cycles, 1.75 ** (1./7.))
 
     np.testing.assert_allclose(load_90/load_10, expected, rtol=1e-4)
+
+
+def test_woehler_miner_original():
+    assert wc_elem.woehler_elementary.k_2 == np.inf
+
+
+def test_woehler_miner_elementary():
+    assert wc_elem.woehler_elementary.miner_elementary().k_2 == wc_elem.k_1
+
+
+def test_woehler_miner_haibach():
+    assert wc_elem.woehler_elementary.miner_haibach().k_2 == 13.0

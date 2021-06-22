@@ -34,6 +34,31 @@ class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
         else:
             self._k_2 = np.inf
 
+    @property
+    def k_2(self):
+        """The second Wöhler slope."""
+        return self._k_2
+
+    def miner_elementary(self):
+        """Set k_2 to k_1 according Miner Elementary method (k_2 = k_1).
+
+        Returns
+        -------
+        self
+        """
+        self._k_2 = self._obj.k_1
+        return self
+
+    def miner_haibach(self):
+        """Set k_2 to value according Miner Haibach method (k_2 = 2 * k_1 - 1).
+
+        Returns
+        -------
+        self
+        """
+        self._k_2 = 2. * self._obj.k_1 - 1.
+        return self
+
     def basquin_cycles(self, load, failure_probability=0.5):
         """Calculate the cycles numbers from loads according to the Basquin equation.
 
