@@ -86,10 +86,10 @@ class Bayesian(Elementary):
 
         res = {
             'SD_50': SD_50,
-            '1/TS': SD_TS_trace.get_values('TS_50')[nburn:].mean(),
+            'TS': 1./SD_TS_trace.get_values('TS_50')[nburn:].mean(),
             'ND_50': ND_50,
             'k_1': -slope,
-            '1/TN': TN_trace.get_values('mu')[nburn:].mean(),
+            'TN': 1./TN_trace.get_values('mu')[nburn:].mean(),
         }
 
         return pd.Series(res)
@@ -133,7 +133,7 @@ class Bayesian(Elementary):
         with pm.Model():
             inf_load = self._fd.infinite_zone.load
             SD = pm.Normal('SD_50', mu=inf_load.mean(), sigma=inf_load.std()*5)
-            TS = pm.Lognormal('TS_50', mu=np.log10(1.1), sigma=np.log10(0.5))
+            TS = pm.Lognormal('TS_50', mu=np.log10(1. / 1.1), sigma=np.log10(0.5))
 
             # convert m and c to a tensor vector
             var = tt.as_tensor_variable([SD, TS])

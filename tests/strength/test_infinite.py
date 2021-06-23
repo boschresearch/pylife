@@ -23,20 +23,20 @@ import pylife.strength.infinite as INF
 
 woehler_data = {
             'strength_inf': 500.,
-            'strength_scatter': 2.
+            'strength_scatter': 1. / 2.
             }
 allowed_failure_probability = 0.5
 
 woehler_data02 = {
             'strength_inf': 500.,
-            'strength_scatter': 1.0000001
+            'strength_scatter': 1. / 1.0000001
             }
 allowed_failure_probability02 = 0.1
 
 
 woehler_data03 = {
             'strength_inf': 500.,
-            'strength_scatter': 1.25
+            'strength_scatter': 1. / 1.25
             }
 allowed_failure_probability03 = 1e-6
 

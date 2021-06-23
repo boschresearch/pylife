@@ -44,7 +44,7 @@ class WoehlerCurveGraph:
 
     def __shift_woehlercurve_points(self, pa_goal):
         """ Shift the Basquin-curve according to the failure probability value (obtain the 10-90 % curves)"""
-        TN_inv = self._woehler_curve['1/TN']
+        TN_inv = 1. / self._woehler_curve['TN']
         self._points[:, 1] /= 10**(-stats.norm.ppf(pa_goal)*scatteringRange2std(TN_inv))
 
     @property

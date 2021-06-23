@@ -36,10 +36,10 @@ class WoehlerCurveDiagrams:
         self.y_max = self._fd.load.max()*1.2 if y_max is None else y_max
         self.x_min = self._fd.cycles.min()*0.4 if x_min is None else x_min
         self.x_max = self._fd.cycles.max()*2 if x_max is None else x_max
-        
+
         self.xlim_WL = (self.x_min,round(self.x_max, -1))
         self.ylim_WL = (self.y_min,round(self.y_max, -1))
-        
+
         self.reset(ax)
 
     def reset(self, ax=None):
@@ -98,8 +98,8 @@ class WoehlerCurveDiagrams:
         self.plot_woehler_curve(failure_probablility=0.9, color='r', linestyle='--')
 
         text = '$k$ = '+str(np.round(self.woehler_curve['k_1'], decimals=2)) + '\n'
-        text += '$1/T_N$ = ' + str(np.round(self.woehler_curve['1/TN'], decimals=2)) + '\n'
-        text += '$1/T_S^*$ = ' + str(np.round(self.woehler_curve['1/TS'], decimals=2))
+        text += '$1/T_N$ = ' + str(np.round(1./self.woehler_curve['TN'], decimals=2)) + '\n'
+        text += '$1/T_S^*$ = ' + str(np.round(1./self.woehler_curve['TS'], decimals=2))
 
         self._ax.text(0.01, 0.03, text, verticalalignment='bottom',
                     horizontalalignment='left', transform=self._ax.transAxes,
@@ -120,11 +120,11 @@ class WoehlerCurveDiagrams:
         self._ax.legend(loc='upper right', fontsize=11)
 
         text = '$k_1$ = '+str(np.round(self.woehler_curve['k_1'],decimals=2)) + '\n'
-        text += '$1/T_N$ = ' + str(np.round(self.woehler_curve['1/TN'],decimals=2)) + '\n'
-        text += '$1/T_S^*$ = ' + str(np.round(self.woehler_curve['1/TN']**(1./self.woehler_curve['k_1']), decimals=2)) + '\n'
+        text += '$1/T_N$ = ' + str(np.round(1./self.woehler_curve['TN'],decimals=2)) + '\n'
+        text += '$1/T_S^*$ = ' + str(np.round(1./self.woehler_curve['TN']**(1./self.woehler_curve['k_1']), decimals=2)) + '\n'
         text += '$S_{D,50}$ = ' + str(np.round(self.woehler_curve['SD_50'],decimals=1)) + '\n'
         text += '$N_{D,50}$ = ' + '{:1.2e}'.format(self.woehler_curve['ND_50']) + '\n'
-        text += '$1/T_S$ = ' + str(np.round(self.woehler_curve['1/TS'],decimals=2))
+        text += '$1/T_S$ = ' + str(np.round(1./self.woehler_curve['TS'],decimals=2))
 
         self._ax.text(0.01, 0.03, text,
                  verticalalignment='bottom',horizontalalignment='left',

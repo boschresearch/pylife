@@ -32,8 +32,8 @@ class WholeWoehlerCurveGraph:
         self.y_max = y_max
 
         SD_50 = woehler_curve['SD_50']
-        SD_10 = SD_50 / (10**(-stats.norm.ppf(0.1)*np.log10(woehler_curve['1/TS'])/2.56))
-        SD_90 = SD_50 / (10**(-stats.norm.ppf(0.9)*np.log10(woehler_curve['1/TS'])/2.56))
+        SD_10 = SD_50 / (10**(stats.norm.ppf(0.1)*np.log10(woehler_curve['TS'])/2.56))
+        SD_90 = SD_50 / (10**(stats.norm.ppf(0.9)*np.log10(woehler_curve['TS'])/2.56))
 
         self.graph_50 = self.__create_whole_woehler_curve_graph(SD_50, 0.5)
         self.graph_10 = self.__create_whole_woehler_curve_graph(SD_10, 0.1)
@@ -45,7 +45,7 @@ class WholeWoehlerCurveGraph:
         graph_1 = WoehlerCurveGraph(woehler_curve, y_lim, self.y_max, pa_goal)
 
         woehler_curve_2 = pd.Series({
-            'SD_50': y_lim, '1/TS': woehler_curve['1/TS'], 'ND_50': graph_1.points[-1, -1],
-            'k_1': self.k_2, '1/TN': woehler_curve['1/TN']})
+            'SD_50': y_lim, 'TS': woehler_curve['TS'], 'ND_50': graph_1.points[-1, -1],
+            'k_1': self.k_2, 'TN': woehler_curve['TN']})
         graph_2 = WoehlerCurveGraph(woehler_curve_2, self.y_min, y_lim)
         return np.append(graph_1.points, graph_2.points, axis=0)

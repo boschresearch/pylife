@@ -23,10 +23,10 @@ import warnings
 
 class MaxLikeInf(Elementary):
     def _specific_analysis(self, wc):
-        SD_50, TS_inv = self.__max_likelihood_inf_limit()
+        SD_50, TS = self.__max_likelihood_inf_limit()
 
         wc['SD_50'] = SD_50
-        wc['1/TS'] = TS_inv
+        wc['TS'] = TS
         wc['ND_50'] = self._transition_cycles(SD_50)
 
         return wc
@@ -38,15 +38,15 @@ class MaxLikeInf(Elementary):
         line of slope k_1
         '''
         SD_start = self._fd.fatigue_limit
-        TS_start = 1.2
+        TS_start = 1. / 1.2
 
         var_opt = optimize.fmin(lambda p: -self._lh.likelihood_infinite(p[0], p[1]),
                                 [SD_start, TS_start], disp=False, full_output=True)
 
         SD_50 = var_opt[0][0]
-        TS_inv = var_opt[0][1]
+        TS = var_opt[0][1]
 
-        return SD_50, TS_inv
+        return SD_50, TS
 
 
 class MaxLikeFull(Elementary):
@@ -81,10 +81,10 @@ class MaxLikeFull(Elementary):
             nonlocal fixed_prms
             if self._fd.num_runouts == 0:
                 warnings.warn(UserWarning("MaxLikeHood: no runouts are present in fatigue data. "
-                                          "Proceeding with SD_50 = 0 and 1/TS = 1 as fixed parameters. "
+                                          "Proceeding with SD_50 = 0 and TS = 1 as fixed parameters. "
                                           "This is NOT a standard evaluation!"))
                 fixed_prms = fixed_prms.copy()
-                fixed_prms.update({'SD_50': 0.0, '1/TS': 1.0})
+                fixed_prms.update({'SD_50': 0.0, 'TS': 1.0})
 
         def fail_if_less_than_three_fractures():
             if self._fd.num_fractures < 3 or len(self._fd.fractured_loads) < 2:
@@ -96,8 +96,8 @@ class MaxLikeFull(Elementary):
                 warnings.warn(UserWarning("MaxLikeHood: less than two mixed load levels in fatigue data."
                                           "Proceeding by setting a predetermined scatter from the standard Wöhler curve."))
                 fixed_prms = fixed_prms.copy()
-                TN_inv, TS_inv = self._pearl_chain_method()
-                fixed_prms.update({'1/TS': TS_inv})
+                TN, TS = self._pearl_chain_method()
+                fixed_prms.update({'TS': TS})
 
         fail_if_less_than_three_fractures()
         warn_and_fix_if_no_runouts()
@@ -125,10 +125,10 @@ class MaxLikeFull(Elementary):
 
     def __make_parameters(self, params):
         params['SD_50'] = np.abs(params['SD_50'])
-        params['1/TS'] = np.abs(params['1/TS'])
+        params['TS'] = np.abs(params['TS'])
         params['k_1'] = np.abs(params['k_1'])
         params['ND_50'] = np.abs(params['ND_50'])
-        params['1/TN'] = np.abs(params['1/TN'])
+        params['TN'] = np.abs(params['TN'])
         return params
 
     def __likelihood_wrapper(self, var_args, var_keys, fix_args):
@@ -141,4 +141,4 @@ class MaxLikeFull(Elementary):
         args.update(zip(var_keys, var_args))
         args = self.__make_parameters(args)
 
-        return -self._lh.likelihood_total(args['SD_50'], args['1/TS'], args['k_1'], args['ND_50'], args['1/TN'])
+        return -self._lh.likelihood_total(args['SD_50'], args['TS'], args['k_1'], args['ND_50'], args['TN'])

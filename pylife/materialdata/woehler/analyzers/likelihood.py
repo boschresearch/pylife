@@ -21,6 +21,9 @@ import numpy as np
 from scipy import stats
 
 
+from pylife.utils.functions import scatteringRange2std, std2scatteringRange
+
+
 class Likelihood:
     def __init__(self, fatigue_data):
         self._fd = fatigue_data
@@ -68,7 +71,7 @@ class Likelihood:
         fractures = self._fd.fractures
         x = np.log10(fractures.cycles * ((fractures.load/SD)**(k)))
         mu = np.log10(N_E)
-        sigma = np.log10(TN)/2.5631031311
+        sigma = scatteringRange2std(TN)
         log_likelihood = np.log(stats.norm.pdf(x, mu, abs(sigma)))
 
         return log_likelihood.sum()
@@ -98,7 +101,7 @@ class Likelihood:
 
         """
         infinite_zone = self._fd.infinite_zone
-        std_log = np.log10(TS)/2.5631031311
+        std_log = scatteringRange2std(TS)
         t = np.logical_not(self._fd.infinite_zone.fracture).astype(np.float64)
         likelihood = stats.norm.cdf(np.log10(infinite_zone.load/SD),  scale=abs(std_log))
         non_log_likelihood = t+(1.-2.*t)*likelihood

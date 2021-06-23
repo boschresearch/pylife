@@ -28,8 +28,8 @@ __maintainer__ = __author__
 import numpy as np
 
 
-def scatteringRange2std(T_inv):
-    ''' Converts a inverted scattering range (1/T) into standard deviation
+def scatteringRange2std(T):
+    ''' Converts a inverted scattering range (TS or TN) into standard deviation
 
     Parameters
     ----------
@@ -39,19 +39,19 @@ def scatteringRange2std(T_inv):
     Returns
     -------
     std : float
-        standard deviation corresponding to 1/T assuming a normal distribution
+        standard deviation corresponding to TS or TN assuming a normal distribution
 
     Notes
     -----
-    Actually `1/(2*norm.ppf(0.9))*np.log10(T_inv)`
+    Actually `1/(2*norm.ppf(0.9))*np.log10(1/T)`
 
     Inverse of `std2scatteringRange()`
     '''
-    return 0.39015207303618954*np.log10(T_inv)
+    return -0.39015207303618954*np.log10(T)
 
 
 def std2scatteringRange(std):
-    ''' Converts a standard deviation into inverted scattering range (1/T)
+    ''' Converts a standard deviation into inverted scattering range (TS or TN)
 
     Parameters
     ----------
@@ -60,16 +60,16 @@ def std2scatteringRange(std):
 
     Returns
     -------
-    T_inv : float
+    T : float
         inverted scattering range corresponding to `std` assuming a normal distribution
 
     Notes
     -----
-    Actually `10**(2*norm.ppf(0.9)*std`
+    Actually `10**(-2*norm.ppf(0.9)*std`
 
     Inverse of `scatteringRange2std()`
     '''
-    return 10**(2.5631031310892007*(std))
+    return 10**(-2.5631031310892007*(std))
 
 
 def rossow_cumfreqs(N):

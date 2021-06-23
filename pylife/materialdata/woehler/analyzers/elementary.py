@@ -79,11 +79,11 @@ class Elementary:
 
     def _common_analysis(self):
         self._slope, self._lg_intercept = self._fit_slope()
-        TN_inv, TS_inv = self._pearl_chain_method()
+        TN, TS = self._pearl_chain_method()
         return pd.Series({
             'k_1': -self._slope,
             'ND_50': self._transition_cycles(self._fd.fatigue_limit),
-            'SD_50': self._fd.fatigue_limit, '1/TN': TN_inv, '1/TS': TS_inv
+            'SD_50': self._fd.fatigue_limit, 'TN': TN, 'TS': TS
         })
 
     def _specific_analysis(self, wc):
@@ -107,8 +107,8 @@ class Elementary:
 
     def __calc_bic(self, wc):
         '''         '''
-        param_num = 5  # SD_50, 1/TS, k_1, ND_50, 1/TN
-        log_likelihood = self._lh.likelihood_total(wc['SD_50'], wc['1/TS'], wc['k_1'], wc['ND_50'], wc['1/TN'])
+        param_num = 5  # SD_50, TS, k_1, ND_50, TN
+        log_likelihood = self._lh.likelihood_total(wc['SD_50'], wc['TS'], wc['k_1'], wc['ND_50'], wc['TN'])
         self._bic = (-2 * log_likelihood) + (param_num * np.log(self._fd.num_tests))
 
     def _fit_slope(self):
@@ -131,7 +131,7 @@ class Elementary:
         '''
         self._pearl_chain_estimator = PearlChainProbability(self._fd.fractures, self._slope)
 
-        TN_inv = functions.std2scatteringRange(1. / self._pearl_chain_estimator.slope)
-        TS_inv = TN_inv**(1. / -self._slope)
+        TN = functions.std2scatteringRange(1./self._pearl_chain_estimator.slope)
+        TS = TN**(1./-self._slope)
 
-        return TN_inv, TS_inv
+        return TN, TS
