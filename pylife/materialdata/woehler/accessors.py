@@ -25,8 +25,8 @@ from pylife import signal
 from pylife import DataValidator
 
 
-@pd.api.extensions.register_series_accessor('woehler_elementary')
-class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
+@pd.api.extensions.register_series_accessor('woehler')
+class WoehlerCurveAccessor(signal.PylifeSignal):
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['k_1', 'TN', 'ND_50', 'SD_50'])
         self._k_2 = obj.get('k_2', np.inf)
@@ -125,13 +125,6 @@ class WoehlerCurveElementaryAccessor(signal.PylifeSignal):
         k = np.full_like(src, self._obj.k_1)
         k[src < ref] = self._k_2
         return k
-
-
-@pd.api.extensions.register_series_accessor('woehler')
-class WoehlerCurveAccessor(WoehlerCurveElementaryAccessor):
-    def _validate(self, obj, validator):
-        super(WoehlerCurveAccessor, self)._validate(obj, validator)
-        validator.fail_if_key_missing(obj, ['TS'])
 
 
 @pd.api.extensions.register_dataframe_accessor('fatigue_data')

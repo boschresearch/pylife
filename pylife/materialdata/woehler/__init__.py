@@ -16,7 +16,6 @@
 
 from .accessors import \
     FatigueDataAccessor, \
-    WoehlerCurveElementaryAccessor, \
     WoehlerCurveAccessor, \
     determine_fractures
 
