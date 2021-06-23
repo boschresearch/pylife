@@ -730,8 +730,7 @@ def test_woehler_elementary():
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     wc = woehler.Elementary(fd).analyze().sort_index()
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
 def test_woehler_elementary_initialize_with_determined_fractures():
@@ -745,8 +744,7 @@ def test_woehler_elementary_initialize_with_determined_fractures():
 
     fd = woehler.determine_fractures(data, 1e7)
     wc = woehler.Elementary(fd).analyze().sort_index()
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
 def test_woehler_elementary_initialize_with_pandas_dataframe():
@@ -759,8 +757,7 @@ def test_woehler_elementary_initialize_with_pandas_dataframe():
     }).sort_index()
 
     wc = woehler.Elementary(data).analyze().sort_index()
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
 def test_woehler_elementary_no_runouts():
@@ -773,8 +770,7 @@ def test_woehler_elementary_no_runouts():
 
     fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
     wc = woehler.Elementary(fd).analyze().sort_index().drop('ND_50')
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
 def test_woehler_elementary_only_one_load_level():
@@ -795,8 +791,7 @@ def test_woehler_probit():
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     wc = woehler.Probit(fd).analyze().sort_index()
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
 def test_woehler_probit_one_runout_load_level():
@@ -820,9 +815,7 @@ def test_woehler_probit_data01():
     fd = woehler.determine_fractures(data_01, 1e7).fatigue_data
     pb = woehler.Probit(fd)
     wc = pb.analyze().sort_index()
-    bic = pb.bayesian_information_criterion()
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
 def test_woehler_probit_no_runouts():
@@ -838,8 +831,7 @@ def test_woehler_probit_no_runouts():
     pb = woehler.Probit(fd)
     with pytest.warns(UserWarning):
         wc = pb.analyze().sort_index()
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
 def test_woehler_max_likelihood_inf_limit():
@@ -853,8 +845,8 @@ def test_woehler_max_likelihood_inf_limit():
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     wc = woehler.MaxLikeInf(fd).analyze().sort_index()
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
 
 def test_bic_without_analysis():
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
@@ -874,8 +866,7 @@ def test_woehler_max_likelihood_inf_limit_no_runouts():
 
     fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
     wc = woehler.MaxLikeInf(fd).analyze().sort_index()
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
 def test_woehler_max_likelihood_full_without_fixed_params():
@@ -892,8 +883,7 @@ def test_woehler_max_likelihood_full_without_fixed_params():
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     we = woehler.MaxLikeFull(fd)
     wc = we.analyze().sort_index()
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
     np.testing.assert_almost_equal(we.bayesian_information_criterion(), bic, decimal=2)
 
 
@@ -912,8 +902,7 @@ def test_woehler_max_likelihood_full_without_fixed_params_no_runouts():
     we = woehler.MaxLikeFull(fd)
     with pytest.warns(UserWarning, match=r"^.*no runouts are present.*" ):
         wc = we.analyze().sort_index()
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
     np.testing.assert_almost_equal(we.bayesian_information_criterion(), bic, decimal=2)
 
 
@@ -932,8 +921,7 @@ def test_max_likelihood_full_with_fixed_params():
         .analyze(fixed_parameters={'TN': 1. / 6.0, 'k_1': 8.0})
         .sort_index()
     )
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
     assert wc['TN'] == 1. / 6.0
     assert wc['k_1'] == 8.0
 
@@ -1000,8 +988,7 @@ def test_max_likelihood_one_mixed_horizon():
     with pytest.warns(UserWarning, match=r"^.*less than two mixed load levels.*"):
         wc = ml.analyze().sort_index()
     bic = ml.bayesian_information_criterion()
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 @mock.patch('pylife.materialdata.woehler.analyzers.bayesian.pm')
 def test_bayesian_slope_trace(pm):
@@ -1113,7 +1100,6 @@ def test_bayesian_mock(_slope_trace, _TN_trace, _SD_TS_trace):
     wc = woehler.Bayesian(fd).analyze(nsamples=10).sort_index()
 
     pd.testing.assert_series_equal(wc, expected)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy())
 
 
 @pytest.mark.slow_acceptance
@@ -1128,5 +1114,4 @@ def test_bayesian_full():
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     wc = woehler.Bayesian(fd).analyze(random_seed=4223, progressbar=False).sort_index()
-    pd.testing.assert_index_equal(wc.index, expected.index)
-    np.testing.assert_allclose(wc.to_numpy(), expected.to_numpy(), rtol=1e-1)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
