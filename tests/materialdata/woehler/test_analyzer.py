@@ -575,14 +575,6 @@ all_data = [
 def sort_fatigue_data(fd):
     return fd.sort_values(by=['load', 'cycles']).reset_index(drop=True)
 
-def test_woehler_accessor_missing_keys():
-    wc = pd.Series({'k_1': 7, '1/TN': 12.0, 'ND_50': 1e6, 'SD_50': 350., '1/TS': 1.23})
-    for k in wc.keys():
-        _wc = wc.copy()
-        del _wc[k]
-        with pytest.raises(AttributeError, match=r"^.*Missing %s\." % k):
-            _wc.woehler
-
 
 def test_fatigue_data_simple_properties():
     fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data
