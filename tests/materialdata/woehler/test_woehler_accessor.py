@@ -33,10 +33,10 @@ wc_data = pd.Series({
 
 
 def test_woehler_accessor():
-    wc_data.woehler
+    wc = wc_data.drop('TN')
 
-    for key in wc_data.index:
-        wc_miss = wc_data.drop(key)
+    for key in wc.index:
+        wc_miss = wc.drop(key)
         with pytest.raises(AttributeError):
             wc_miss.woehler
 
@@ -102,12 +102,30 @@ def test_woehler_basquin_load_10_90():
     np.testing.assert_allclose(load_90/load_10, expected, rtol=1e-4)
 
 
+def test_woehler_TS_and_TN_guessed():
+    wc = pd.Series({
+        'k_1': 0.5,
+        'SD_50': 300,
+        'ND_50': 1e6
+    })
+    assert wc.woehler.TN == 1.0
+    assert wc.woehler.TS == 1.0
+
+
 def test_woehler_TS_guessed():
     wc = wc_data.copy()
     wc['k_1'] = 0.5
     wc['TN'] = 1. / 1.5
 
     assert wc.woehler.TS == 1. / (1.5 * 1.5)
+
+
+def test_woehler_TN_guessed():
+    wc = wc_data.copy()
+    wc['k_1'] = 0.5
+    wc['TS'] = 1. / (1.5 * 1.5)
+
+    assert wc.woehler.TN == 1. / 1.5
 
 
 def test_woehler_TS_given():

@@ -28,9 +28,24 @@ from pylife import DataValidator
 @pd.api.extensions.register_series_accessor('woehler')
 class WoehlerCurveAccessor(signal.PylifeSignal):
     def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['k_1', 'TN', 'ND_50', 'SD_50'])
+        validator.fail_if_key_missing(obj, ['k_1', 'ND_50', 'SD_50'])
         self._k_2 = obj.get('k_2', np.inf)
-        self._TS = obj.get('TS', np.power(obj.TN, 1./obj.k_1))
+
+        self._TN = obj.get('TN', None)
+        self._TS = obj.get('TS', None)
+
+        if self._TN is None and self._TS is None:
+            self._TN = 1.0
+            self._TS = 1.0
+        elif self._TS is None:
+            self._TS = np.power(self._TN, 1./obj.k_1)
+        else:
+            self._TN = np.power(self._TS, obj.k_1)
+
+    @property
+    def TN(self):
+        """The load direction scatter value TN."""
+        return self._TN
 
     @property
     def TS(self):
@@ -81,8 +96,8 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         load = np.asarray(load)
 
         pf_ppf = stats.norm.ppf(failure_probability)
-        SD = self._obj.SD_50 / 10**(pf_ppf*scatteringRange2std(self._obj.TN**(1. / self._obj.k_1)))
-        ND = self._obj.ND_50 / 10**(pf_ppf*scatteringRange2std(self._obj.TN))
+        SD = self._obj.SD_50 / 10**(pf_ppf*scatteringRange2std(self.TN**(1. / self._obj.k_1)))
+        ND = self._obj.ND_50 / 10**(pf_ppf*scatteringRange2std(self.TN))
 
         k = self._make_k(load, SD)
 
@@ -110,8 +125,8 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         """
         cycles = np.asarray(cycles)
         pf_ppf = stats.norm.ppf(failure_probability)
-        SD = self._obj.SD_50 / 10**(pf_ppf*scatteringRange2std(self._obj.TN**(1. / self._obj.k_1)))
-        ND = self._obj.ND_50 / 10**(pf_ppf*scatteringRange2std(self._obj.TN))
+        SD = self._obj.SD_50 / 10**(pf_ppf*scatteringRange2std(self.TN**(1. / self._obj.k_1)))
+        ND = self._obj.ND_50 / 10**(pf_ppf*scatteringRange2std(self.TN))
 
         k = self._make_k(-cycles, -ND)
 
