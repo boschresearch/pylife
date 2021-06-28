@@ -102,6 +102,14 @@ def test_woehler_basquin_load_10_90():
     np.testing.assert_allclose(load_90/load_10, expected, rtol=1e-4)
 
 
+def test_woehler_basquin_load_integer_cycles():
+    wc_data.woehler.basquin_load(1000)
+
+
+def test_woehler_basquin_cycles_integer_load():
+    wc_data.woehler.basquin_cycles(200)
+
+
 def test_woehler_TS_and_TN_guessed():
     wc = pd.Series({
         'k_1': 0.5,

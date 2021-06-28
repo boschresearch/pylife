@@ -119,7 +119,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         cycles : numpy.ndarray
             The cycle numbers at which the component fails for the given `load` values
         """
-        load = np.asarray(load)
+        load = np.asfarray(load)
 
         SD, ND = self._limit_point_at_pf(failure_probability)
         k = self._make_k(load, SD)
@@ -146,7 +146,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         cycles : numpy.ndarray
             The cycle numbers at which the component fails for the given `load` values
         """
-        cycles = np.asarray(cycles)
+        cycles = np.asfarray(cycles)
 
         SD, ND = self._limit_point_at_pf(failure_probability)
         k = self._make_k(-cycles, -ND)
