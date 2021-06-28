@@ -122,11 +122,3 @@ def test_security_cycles(TN, allowed_pf, cycles, expected):
     load_signal = pd.DataFrame({'sigma_m': [0.0], 'sigma_a': [500.0]})
     security_factor = wc.fatigue.security_cycles(cycles, load_signal, allowed_pf)
     np.testing.assert_allclose(security_factor, expected, rtol=1e-3)
-
-# def test_calc_fatigue_index_name():
-#     foo_loads = loads.copy()
-#     foo_loads.index.name = 'foo'
-#     fatigue = sn_curve.FiniteLifeCurve(**material['elementar']).calc_fatigue(foo_loads,
-#                                                                            method='elementar',
-#                                                                            index_name='foo')
-#     assert fatigue.index.name == 'foo'

@@ -25,8 +25,8 @@ import pylife.materialdata.woehler as WL
 @pd.api.extensions.register_series_accessor('fatigue')
 class FatigueAccessor(WL.WoehlerCurveAccessor):
 
-    def damage(self, load_hist, index_name='range'):
-        load_values = load_hist.index.get_level_values(index_name).mid.values
+    def damage(self, load_hist):
+        load_values = load_hist.index.get_level_values('range').mid.values
         cycles = self.basquin_cycles(load_values)
 
         return load_hist.divide(cycles, axis=0)

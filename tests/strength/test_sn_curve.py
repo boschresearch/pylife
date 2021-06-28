@@ -72,7 +72,8 @@ loads = pd.DataFrame([[1.227E5, 1.114E5, 1.829E5], [2.433E4, 3.117E4, 16],
 
 @pytest.mark.parametrize('method, expected', zip(material, nCode_reference_results()))
 def test_calc_damage(method, expected):
-    damage_calc = sn_curve.FiniteLifeCurve(**material[method])
+    with pytest.warns(DeprecationWarning):
+        damage_calc = sn_curve.FiniteLifeCurve(**material[method])
     damage = damage_calc.calc_damage(loads, method=method)
     pd.testing.assert_frame_equal(damage, expected, rtol=0.001, atol=0)
 
@@ -80,7 +81,8 @@ def test_calc_damage(method, expected):
 def test_calc_damage_index_name():
     foo_loads = loads.copy()
     foo_loads.index.name = 'foo'
-    damage = sn_curve.FiniteLifeCurve(**material['elementar']).calc_damage(foo_loads,
-                                                                           method='elementar',
-                                                                           index_name='foo')
+    with pytest.warns(DeprecationWarning):
+        damage = sn_curve.FiniteLifeCurve(**material['elementar']).calc_damage(foo_loads,
+                                                                               method='elementar',
+                                                                               index_name='foo')
     assert damage.index.name == 'foo'

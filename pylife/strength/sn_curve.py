@@ -17,48 +17,28 @@
 __author__ = "Cedric Philip Wagner"
 __maintainer__ = "Johannes Mueller"
 
+import warnings
+
 import numpy as np
-import logging
 import pandas as pd
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s\n')
-ch.setFormatter(formatter)
-ch.setLevel(logging.DEBUG)
-logger.addHandler(ch)
-
+import pylife.strength.fatigue
 
 class FiniteLifeBase:
     """Base class for SN curve calculations - either in logarithmic or regular scale"""
 
     def __init__(self, k_1, SD_50, ND_50):
-        self._k = k_1
-        self.SD_50 = SD_50
-        self.ND_50 = ND_50
-        self._check_inputs_valid(k_1=self.k_1,
-                                 SD_50=self.SD_50,
-                                 ND_50=self.ND_50)
+        warnings.warn(DeprecationWarning("FiniteLifeBase and derived classes are deperecated. "
+                                         "Use WoehlerCurveAccessor and FatigueAccessor accessors instead."))
+        self._wc = pd.Series({
+            'k_1': k_1,
+            'SD_50': SD_50,
+            'ND_50': ND_50
+        })
 
     @property
     def k_1(self):
-        return self._k
-
-    @k_1.setter
-    def k_1(self, k_1):
-        self._k = k_1
-
-    def _check_inputs_valid(self, **kwargs):
-        try:
-            for param, value in kwargs.items():
-                if not float(value) > 0:
-                    logger.error("Parameter '{}' is not a number greater than zero: {}".format(
-                            param,
-                            value,
-                            ))
-        except Exception as e:
-            raise ValueError("Not all inputs are valid numbers: {}".format(e))
+        return self._wc.k_1
 
 
 class FiniteLifeLine(FiniteLifeBase):
@@ -83,74 +63,6 @@ class FiniteLifeLine(FiniteLifeBase):
 
     def __init__(self, k, SD_50, ND_50):
         super(FiniteLifeLine, self).__init__(k, SD_50, ND_50)
-        self.SD_50_log = np.log10(self.SD_50)
-        self.ND_50_log = np.log10(self.ND_50)
-        if self.k_1 < 0:
-            logger.warning("Parameter k should be positive. Given k ('{}') has been "
-                           "assigned as absolute value.".format(self.k_1))
-            self.k_1 = abs(self.k_1)
-
-    def calc_S_log(self, N_log, ignore_limits=False):
-        """Calculate stress logarithmic S_log for a given number of cycles N_log
-
-        Parameters
-        ----------
-        N_log : float
-            logarithmic number of cycles
-        ignore_limits : boolean
-            ignores the upper limit of the number of cycles
-            generally it should be smaller than ND_50 (=the limit of the finite life region)
-            but some special evaluation methods (e.g. according to marquardt2004) require
-            extrapolation to estimate an equivalent stress
-
-        Returns
-        -------
-        S_log : float
-            logarithmic stress corresponding to the given number of cycles (point on the SN-curve)
-        """
-        if N_log > self.ND_50_log:
-            if ignore_limits:
-                logger.warning("The limits to the interpolation of the finite life region "
-                               "have explicitly been ignored.")
-            else:
-                raise ValueError("The given N_log ('{}') must be smaller than "
-                                 "the lifetime ('{}').".format(
-                                     N_log,
-                                     self.ND_50_log,
-                                     ))
-        elif N_log < 1:
-            raise ValueError("Invalid input for parameter N_log: {}".format(N_log))
-        return self.SD_50_log + (self.ND_50_log - N_log) / self.k_1
-
-    def calc_N_log(self, S_log, ignore_limits=False):
-        """Calculate number of cycles N_log for a given stress S_log
-
-        Parameters
-        ----------
-        S_log : float
-            logarithmic stress (point on the SN-curve)
-        ignore_limits : boolean
-            ignores the upper limit of the number of cycles
-            generally it should be smaller than ND_50_log (=the limit of the finite life region)
-            but some special evaluation methods (e.g. according to marquardt2004) require
-            extrapolation to estimate an equivalent stress
-
-        Returns
-        -------
-        N_log : float
-            logarithmic number of cycles corresponding to the given stress value (point on the SN-curve)
-        """
-        if S_log < self.SD_50_log:
-            if ignore_limits:
-                logger.warning("The limits to the interpolation of the finite life region "
-                               "have explicitly been ignored.")
-            else:
-                raise ValueError("The given stress S_log ('{}') must be larger than "
-                                 "SD_50_log ('{}').".format(
-                                     S_log,
-                                     self.SD_50_log,
-                                     ))
-        return self.ND_50_log + (self.SD_50_log - S_log) * self.k_1
 
 
 class FiniteLifeCurve(FiniteLifeBase):
@@ -194,19 +106,7 @@ class FiniteLifeCurve(FiniteLifeBase):
         S : float
             stress corresponding to the given number of cycles (point on the SN-curve)
         """
-        if N > self.ND_50:
-            if ignore_limits:
-                logger.warning("The limits to the interpolation of the finite life region "
-                               "have explicitly been ignored.")
-            else:
-                raise ValueError("The given N ('{}') must be smaller than "
-                                 "the lifetime ('{}').".format(
-                                     N,
-                                     self.ND_50,
-                                     ))
-        elif N < 1:
-            raise ValueError("Invalid input for parameter N: {}".format(N))
-        return self.SD_50 * (N / self.ND_50)**(- 1/self.k_1)
+        return self._wc.woehler.basquin_load(N)
 
     def calc_N(self, S, ignore_limits=False):
         """Calculate number of cycles N for a given stress S
@@ -226,22 +126,13 @@ class FiniteLifeCurve(FiniteLifeBase):
         N : array like
             number of cycles corresponding to the given stress value (point on the SN-curve)
         """
-        if np.any(S < self.SD_50):
-            if ignore_limits:
-                logger.warning("Using all cycles")
-            else:
-                raise ValueError("The given stress S ('{}') must be larger than "
-                                 "SD_50 ('{}').".format(
-                                     S,
-                                     self.SD_50,
-                                     ))
-        return self.ND_50 * (S / self.SD_50)**(-self.k_1)
+        return self._wc.woehler.basquin_cycles(S)
 
     def calc_damage(self, loads, method="elementar", index_name="range"):
         """Calculate the damage based on the methods
          * Miner elementar (k_2 = k)
          * Miner Haibach (k_2 = 2k-1)
-         * Miner original (k_2 = -\inf)
+         * Miner original (k_2 = -inf)
 
         **Consider:** load collective and life curve have to be consistent:
 
@@ -255,24 +146,28 @@ class FiniteLifeCurve(FiniteLifeBase):
         method : str
          * 'elementar': Miner elementar (k_2 = k)
          * 'MinerHaibach': Miner Haibach (k_2 = 2k-1)
-         * 'original': Miner original (k_2 = -\inf)
+         * 'original': Miner original (k_2 = -inf)
 
         Returns
         -------
         damage : pd.DataFrame
             damage for every load horizont based on the load collective and the method
         """
-        damage = pd.DataFrame(index=loads.index,columns=loads.columns, data=0)
-        load_values = loads.index.get_level_values(index_name).mid.values
-        # Miner elementar
-        cycles_SN = self.calc_N(load_values, ignore_limits=True)
-        if method == 'original':
-            damage = loads.divide(cycles_SN,axis = 0)
-            damage[load_values <= self.SD_50] = 0
-        elif method == 'elementar':
-            damage = loads.divide(cycles_SN,axis = 0)
+        estimator = self._wc.fatigue
+
+        if method == 'elementar':
+            estimator = estimator.miner_elementary()
         elif method == 'MinerHaibach':
-            # k2
-            cycles_SN[load_values <= self.SD_50] = self.ND_50 * (load_values[load_values <= self.SD_50] / self.SD_50)**(-(2*self.k_1-1))
-            damage = loads.divide(cycles_SN, axis=0)
+            estimator = estimator.miner_haibach()
+
+        if index_name != "range":
+            loads = loads.copy()
+            names = ["range" if name == index_name else name for name in loads.index.names]
+            loads.index.set_names(names, inplace=True)
+
+        damage = estimator.damage(loads)
+        if index_name != "range":
+            names = [index_name if name == "range" else name for name in loads.index.names]
+            damage.index.set_names(names, inplace=True)
+
         return damage

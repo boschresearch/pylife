@@ -69,6 +69,24 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
             self._TN = np.power(self._TS, obj.k_1)
 
     @property
+    def SD_50(self):
+        return self._obj.SD_50
+
+    @property
+    def ND_50(self):
+        return self._obj.ND_50
+
+    @property
+    def k_1(self):
+        """The second Wöhler slope."""
+        return self._obj.k_1
+
+    @property
+    def k_2(self):
+        """The second Wöhler slope."""
+        return self._k_2
+
+    @property
     def TN(self):
         """The load direction scatter value TN."""
         return self._TN
@@ -77,11 +95,6 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
     def TS(self):
         """The load direction scatter value TS."""
         return self._TS
-
-    @property
-    def k_2(self):
-        """The second Wöhler slope."""
-        return self._k_2
 
     def miner_elementary(self):
         """Set k_2 to k_1 according Miner Elementary method (k_2 = k_1).

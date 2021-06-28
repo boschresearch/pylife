@@ -110,6 +110,18 @@ def test_woehler_basquin_cycles_integer_load():
     wc_data.woehler.basquin_cycles(200)
 
 
+def test_woehler_ND_50():
+    assert wc_data.woehler.ND_50 == 1e6
+
+
+def test_woehler_SD_50():
+    assert wc_data.woehler.SD_50 == 300
+
+
+def test_woehler_k_1():
+    assert wc_data.woehler.k_1 == 7.
+
+
 def test_woehler_TS_and_TN_guessed():
     wc = pd.Series({
         'k_1': 0.5,
