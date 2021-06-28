@@ -96,16 +96,6 @@ def test_get_accumulated_from_relative_collective():
 class TestMinerBase:
     coll = collective
 
-    def test_init(self, miner_base):
-        """Dummy test case for demonstration"""
-        np.testing.assert_almost_equal(miner_base.ND_50, 10**6)
-
-        with pytest.raises(TypeError):
-            miner.MinerBase(ND_50="str", k_1="str", SD_50="str")
-
-        with pytest.raises(ValueError):
-            miner.MinerBase(ND_50=15, k_1=10, SD_50=200)
-
     def test__parse_collective_splitting_of_array(self, miner_base):
         miner_base._parse_collective(self.coll)
 
@@ -184,7 +174,7 @@ class TestMinerElementar:
         load_level = 400
         A = miner_elementar.calc_A(self.coll)
         N_woehler_load_level = (
-            miner_elementar.ND_50 * (load_level / miner_elementar.SD_50)**(-miner_elementar.k_1)
+            miner_elementar._woehler_curve.ND_50 * (load_level / miner_elementar._woehler_curve.SD_50)**(-miner_elementar._woehler_curve.k_1)
         )
         N_predict = N_woehler_load_level * A
         np.testing.assert_almost_equal(miner_elementar.N_predict(load_level, A), N_predict)
@@ -214,7 +204,7 @@ class TestMinerHaibach:
             m.calc_A(load_level=240)
 
     def test_calc_A_load_level_smaller_ND_50(self, miner_haibach):
-        A = miner_haibach.calc_A(load_level=(miner_haibach.SD_50/ 2.))
+        A = miner_haibach.calc_A(load_level=(miner_haibach._woehler_curve.SD_50 / 2.))
         assert A == np.inf
 
     def test_calc_A_split_damage_regions(self, miner_haibach):
@@ -237,7 +227,7 @@ class TestMinerHaibach:
     def test_N_predict(self, miner_haibach):
         load_level = 400
         N_woehler_load_level = (
-            miner_haibach.ND_50 * (load_level / miner_haibach.SD_50)**(-miner_haibach.k_1)
+            miner_haibach._woehler_curve.ND_50 * (load_level / miner_haibach._woehler_curve.SD_50)**(-miner_haibach._woehler_curve.k_1)
         )
         A = miner_haibach.calc_A(load_level)
         N_predict = N_woehler_load_level * A

@@ -38,25 +38,12 @@ __author__ = "Cedric Philip Wagner"
 __maintainer__ = "Johannes Mueller"
 
 
-import logging
 import numpy as np
 import pandas as pd
 
 from pylife.strength.helpers import solidity_haibach
-from pylife.strength.sn_curve import FiniteLifeCurve
+import pylife.materialdata.woehler
 
-DEBUG = False
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s\n')
-ch.setFormatter(formatter)
-if DEBUG:
-    ch.setLevel(logging.DEBUG)
-else:
-    ch.setLevel(logging.INFO)
-logger.addHandler(ch)
 
 
 def get_accumulated_from_relative_collective(collective):
@@ -100,22 +87,11 @@ class MinerBase:
     collective = None
 
     def __init__(self, ND_50, k_1, SD_50):
-        self.ND_50 = abs(ND_50)
-        if self.ND_50 < 10**3:
-            raise ValueError(
-                "ND_50 is unexpectedly small ('{}'). "
-                "Please check valid input of this parameter! "
-                "Input is not in logarithmic scale.".format(
-                    self.ND_50,
-                )
-            )
-        self.k_1 = abs(k_1)
-        self.SD_50 = abs(SD_50)
-        self.sn_curve = FiniteLifeCurve(
-            k_1=self.k_1,
-            SD_50=self.SD_50,
-            ND_50=self.ND_50
-        )
+        self._woehler_curve = pd.Series({
+            'k_1': k_1,
+            'SD_50': SD_50,
+            'ND_50': ND_50
+        }).woehler
 
     def setup(self, collective):
         """Calculations independent from the instantation
@@ -148,7 +124,6 @@ class MinerBase:
         if isinstance(collective, pd.DataFrame) \
                 and isinstance(collective.index, pd.IntervalIndex):
             collective = self._transform_pylife_collective(collective)
-            logger.debug("Recognized pylife-like transformed collective.")
 
         N_collective_accumulated = collective[:, 1]
 
@@ -206,7 +181,7 @@ class MinerBase:
     def calc_zeitfestigkeitsfaktor(self, N, total_lifetime=True):
         """Calculate "Zeitfestigkeitsfaktor" according to Waechter2017 (p. 96)"""
 
-        z = (self.ND_50 / N)**(1. / self.k_1)
+        z = (self._woehler_curve.ND_50 / N)**(1. / self._woehler_curve.k_1)
 
         if total_lifetime:
             self.zeitfestigkeitsfaktor = z
@@ -268,10 +243,7 @@ class MinerBase:
             of the maximum amplitude of the collective:
             N_predicted = N(S = S_max) * A
         """
-        # ignore limits
-        #   e.g. for miner-elementary damage can be accumulated even with S_a,max below S_D
-        #   methods like miner-haibach who do not allow that have internal sanity checks
-        n_woehler_load_level = self.sn_curve.calc_N(load_level, ignore_limits=True)
+        n_woehler_load_level = self._woehler_curve.basquin_cycles(load_level)
         if A is None:
             A = self.calc_A(None)
         return n_woehler_load_level * A
@@ -316,9 +288,9 @@ class MinerElementar(MinerBase):
             number of cycles of the highest stress class
         """
         super(MinerElementar, self).calc_A(collective)
-        V = solidity_haibach(self.collective, self.k_1)
+        V = solidity_haibach(self.collective, self._woehler_curve.k_1)
         self.V_haibach = V
-        self.V_FKM = V**(1/self.k_1)
+        self.V_FKM = V**(1/self._woehler_curve.k_1)
         A = 1. / V
         self.A = A
 
@@ -385,28 +357,15 @@ class MinerHaibach(MinerBase):
         self.evaluated_load_levels[round(load_level)] = {}
         # this parameter makes each evaluation of A unique
         self._last_load_level_evaluated = load_level
-        if load_level < self.SD_50:
-            logger.warning(
-                "The given load level ('{}') is below SD_50 ('{}'). It is assumed "
-                "that with this load level no damage occurs. "
-                "Hence, an infinite value is returned.".format(
-                    load_level,
-                    self.SD_50
-                )
-            )
-            if ignore_inf_rule:
-                logger.warning("The rule to set the lifetime to infinity when "
-                               "the given load level is lower than the fatigue "
-                               "limit of the sn-curve has explicitly been ignored.")
-            else:
-                return np.inf
+        if load_level < self._woehler_curve.SD_50:
+            return np.inf
         assert self.S_collective.max() == 1
         s_a = self.S_collective * load_level
-        i_full_damage = (s_a >= self.SD_50)
-        i_reduced_damage = (s_a < self.SD_50)
+        i_full_damage = (s_a >= self._woehler_curve.SD_50)
+        i_reduced_damage = (s_a < self._woehler_curve.SD_50)
         self.evaluated_load_levels[round(load_level)]["i_full_damage"] = i_full_damage
         self.evaluated_load_levels[round(load_level)]["i_reduced_damage"] = i_reduced_damage
-        x_D = self.SD_50 / s_a.max()
+        x_D = self._woehler_curve.SD_50 / s_a.max()
         self.evaluated_load_levels[round(load_level)]["x_D"] = x_D
 
         s_full_damage = s_a[i_full_damage]
@@ -417,12 +376,12 @@ class MinerHaibach(MinerBase):
         # first expression of the summation term in the denominator
         sum_1 = np.dot(
             n_full_damage,
-            ((s_full_damage / s_a.max())**self.k_1),
+            ((s_full_damage / s_a.max())**self._woehler_curve.k_1),
         )
         self.evaluated_load_levels[round(load_level)]["sum_1_denominator"] = sum_1
-        sum_2 = (x_D**(1 - self.k_1)) * np.dot(
+        sum_2 = (x_D**(1 - self._woehler_curve.k_1)) * np.dot(
             n_reduced_damage,
-            ((s_reduced_damage / s_a.max())**(2 * self.k_1 - 1))
+            ((s_reduced_damage / s_a.max())**(2 * self._woehler_curve.k_1 - 1))
         )
         self.evaluated_load_levels[round(load_level)]["sum_2_denominator"] = sum_2
 
