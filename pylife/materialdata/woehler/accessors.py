@@ -95,10 +95,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         """
         load = np.asarray(load)
 
-        pf_ppf = stats.norm.ppf(failure_probability)
-        SD = self._obj.SD_50 / 10**(pf_ppf*scatteringRange2std(self.TN**(1. / self._obj.k_1)))
-        ND = self._obj.ND_50 / 10**(pf_ppf*scatteringRange2std(self.TN))
-
+        SD, ND = self._limit_point_at_pf(failure_probability)
         k = self._make_k(load, SD)
 
         cycles = np.full_like(load, np.inf)
@@ -124,10 +121,8 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
             The cycle numbers at which the component fails for the given `load` values
         """
         cycles = np.asarray(cycles)
-        pf_ppf = stats.norm.ppf(failure_probability)
-        SD = self._obj.SD_50 / 10**(pf_ppf*scatteringRange2std(self.TN**(1. / self._obj.k_1)))
-        ND = self._obj.ND_50 / 10**(pf_ppf*scatteringRange2std(self.TN))
 
+        SD, ND = self._limit_point_at_pf(failure_probability)
         k = self._make_k(-cycles, -ND)
 
         load = np.full_like(cycles, SD)
@@ -135,6 +130,13 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         load[in_limit] = self._obj.SD_50 * np.power(cycles[in_limit]/ND, -1./k[in_limit])
 
         return load
+
+    def _limit_point_at_pf(self, failure_probability):
+        pf_ppf = stats.norm.ppf(failure_probability)
+        SD = self._obj.SD_50 / 10**(pf_ppf*scatteringRange2std(self.TS))
+        ND = self._obj.ND_50 / 10**(pf_ppf*scatteringRange2std(self.TN))
+
+        return SD, ND
 
     def _make_k(self, src, ref):
         k = np.full_like(src, self._obj.k_1)
