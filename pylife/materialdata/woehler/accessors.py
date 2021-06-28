@@ -27,6 +27,32 @@ from pylife import DataValidator
 
 @pd.api.extensions.register_series_accessor('woehler')
 class WoehlerCurveAccessor(signal.PylifeSignal):
+    """A PylifeSignal accessor for Wöhler Curve data.
+
+    Wöhler Curve (aka SN-curve) determines after how many load cycles at a
+    certain load amplitude the component is expected to fail.
+
+    The signal has the following mandatory keys:
+
+    * ``k_1`` : The slope of the Wöhler Curve
+    * ``ND_50`` : The cycle number of the endurance limit
+    * ``SD_50`` : The load level of the endurance limit
+
+    The ``_50`` suffixes imply that the values are valid for a 50% probability
+    of failure.
+
+    There are the following optional keys:
+
+    * ``k_2`` : The slope of the Wöhler Curve below the endurance limit
+                If the key is missing it is assumed to be infinity, i.e. perfect endurance
+    * ``TN`` : The scatter in cycle direction, (N_10/N_90)
+               If the key is missing it is assumed to be 1.0 or calculated from ``TS``
+               if given.
+    * ``TS`` : The scatter in cycle direction, (S_10/S_90)
+               If the key is missing it is assumed to be 1.0 or calculated from ``TN``
+               if given.
+    """
+
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['k_1', 'ND_50', 'SD_50'])
         self._k_2 = obj.get('k_2', np.inf)
