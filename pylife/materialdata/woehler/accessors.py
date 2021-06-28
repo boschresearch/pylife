@@ -159,8 +159,8 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
 
     def _limit_point_at_pf(self, failure_probability):
         pf_ppf = stats.norm.ppf(failure_probability)
-        SD = self._obj.SD_50 / 10**(pf_ppf*scatteringRange2std(self.TS))
-        ND = self._obj.ND_50 / 10**(pf_ppf*scatteringRange2std(self.TN))
+        SD = self._obj.SD_50 / 10**(-pf_ppf*scatteringRange2std(self.TS))
+        ND = self._obj.ND_50 / 10**(-pf_ppf*scatteringRange2std(self.TN))
 
         return SD, ND
 
