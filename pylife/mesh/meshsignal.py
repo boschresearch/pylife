@@ -217,8 +217,8 @@ class MeshAccessor(PlainMeshAccessor):
 
         Note the `*` that needs to be added when calling ``pv.UnstructuredGrid()``.
         """
-        def choose_slice_dict():
-            return self._slice_dict_3d if self.dimensions == 3 else self._slice_dict_2d
+        def choose_element_types_dict():
+            return self._element_types_3d if self.dimensions == 3 else self._element_types_2d
 
         def cells_with_lengths(index, connectivity):
             def locs(nodes):
@@ -228,38 +228,41 @@ class MeshAccessor(PlainMeshAccessor):
             return np.array([nd for cell in cells.values for nd in np.insert(cell, 0, cell.shape[0])])
 
         def calc_cells():
-            slice_dict = choose_slice_dict()
+            element_types_dict = choose_element_types_dict()
 
             groups = self._element_groups['node_id']
             connectivity = groups.apply(np.hstack)
             count = groups.count()
 
-            for num, (new_num, _) in slice_dict.items():
-                connectivity[count == num] = connectivity[count == num].apply(lambda nds: nds[:new_num])
+            for total_num, (first_order_num, _) in element_types_dict.items():
+                choice = count == total_num
+                connectivity[choice] = connectivity[choice].apply(lambda nds: nds[:first_order_num])
 
-            return connectivity, count.apply(lambda c: slice_dict[c][1]).to_numpy()
+            return connectivity, count.apply(lambda c: element_types_dict[c][1]).to_numpy()
 
-        def first_order_points():
+        def first_order_points(connectivity):
             points = self._obj.groupby('node_id', sort=False).first()[self._coord_keys]
             nodes = pd.Series([nd for element in connectivity.values for nd in element], name='node_id').unique()
             selection = points.index.isin(nodes)
             return points[selection]
 
         connectivity, cell_types = calc_cells()
-        points = first_order_points()
+        points = first_order_points(connectivity)
         cells = cells_with_lengths(points.index, connectivity)
 
         offsets = np.array([])  # (groups.aggregate(lambda nds: nds.shape[0]+1).cumsum()-groups.count()-1).to_numpy()
 
         return offsets, cells, cell_types, points.to_numpy()
 
-    _slice_dict_2d = {
+    _element_types_2d = {
+        # Resolve number of nodes of element to number of first order nodes and vtk element type
         3: (3, 5),  # tri lin
         6: (3, 5),  # tri quad
         4: (4, 9),  # squ lin
         8: (4, 9),  # squ quad
     }
-    _slice_dict_3d = {
+    _element_types_3d = {
+        # Resolve number of nodes of element to number of first order nodes and vtk element type
         4: (4, 10),   # tet lin
         6: (6, 13),   # wedge lin
         8: (8, 12),   # hex lin
@@ -270,7 +273,6 @@ class MeshAccessor(PlainMeshAccessor):
 
     @property
     def _element_groups(self):
-        if self._cached_element_groups is not None:
-            return self._cached_element_groups
-        self._cached_element_groups = self._obj.reset_index().groupby('element_id')
+        if self._cached_element_groups is None:
+            self._cached_element_groups = self._obj.reset_index().groupby('element_id')
         return self._cached_element_groups
