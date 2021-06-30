@@ -23,6 +23,7 @@ import pandas as pd
 import pylife.materialdata.woehler as WL
 
 @pd.api.extensions.register_series_accessor('fatigue')
+@pd.api.extensions.register_dataframe_accessor('fatigue')
 class FatigueAccessor(WL.WoehlerCurveAccessor):
 
     def damage(self, load_hist):

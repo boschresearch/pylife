@@ -41,11 +41,41 @@ def test_woehler_accessor():
             wc_miss.woehler
 
 
-def test_woehler_basquin_cycles_50():
+def test_woehler_basquin_cycles_50_multiple_load_single_wc():
     load = [200., 300., 400., 500.]
 
     cycles = wc_data.woehler.basquin_cycles(load)
     expected_cycles = [np.inf, 1e6,  133484,    27994]
+
+    np.testing.assert_allclose(cycles, expected_cycles, rtol=1e-4)
+
+
+def test_woehler_basquin_cycles_50_single_load_multiple_wc():
+    load = 400.
+
+    wc_data = pd.DataFrame({
+        'k_1': [1., 2., 2.],
+        'SD_50': [300., 400., 500.],
+        'ND_50': [1e6, 1e6, 1e6]
+    })
+
+    cycles = wc_data.woehler.basquin_cycles(load)
+    expected_cycles = [7.5e5, 1e6, np.inf]
+
+    np.testing.assert_allclose(cycles, expected_cycles, rtol=1e-4)
+
+
+def test_woehler_basquin_cycles_50_multiple_load_multiple_wc():
+    load = [3000., 400., 500.]
+
+    wc_data = pd.DataFrame({
+        'k_1': [1., 2., 2.],
+        'SD_50': [300., 400., 500.],
+        'ND_50': [1e6, 1e6, 1e6]
+    })
+
+    cycles = wc_data.woehler.basquin_cycles(load)
+    expected_cycles = [1e5, 1e6, 1e6]
 
     np.testing.assert_allclose(cycles, expected_cycles, rtol=1e-4)
 
@@ -71,13 +101,39 @@ def test_woehler_basquin_cycles_10_90():
     np.testing.assert_allclose(cycles_90/cycles_10, expected)
 
 
-def test_woehler_basquin_load_50():
+def test_woehler_basquin_load_50_multiple_cycles_single_wc():
     cycles = [np.inf, 1e6,  133484,    27994]
 
     load = wc_data.woehler.basquin_load(cycles)
     expected_load = [300., 300., 400., 500.]
 
     np.testing.assert_allclose(load, expected_load, rtol=1e-4)
+
+
+def test_woehler_basquin_load_single_cycles_multiple_wc():
+    cycles = 1e6
+    wc_data = pd.DataFrame({
+        'k_1': [1., 2., 2.],
+        'SD_50': [300., 400., 500.],
+        'ND_50': [1e5, 1e6, 1e6]
+    })
+
+    load = wc_data.woehler.basquin_load(cycles)
+    expected_load = [300., 400., 500.]
+    np.testing.assert_allclose(load, expected_load)
+
+
+def test_woehler_basquin_load_multiple_cycles_multiple_wc():
+    cycles = [1e5, 1e6, 1e7]
+    wc_data = pd.DataFrame({
+        'k_1': [1., 2., 2.],
+        'SD_50': [300., 400., 500.],
+        'ND_50': [1e6, 1e6, 1e6]
+    })
+
+    load = wc_data.woehler.basquin_load(cycles)
+    expected_load = [3000., 400., 500.]
+    np.testing.assert_allclose(load, expected_load)
 
 
 def test_woehler_basquin_load_50_same_k():

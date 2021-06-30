@@ -26,6 +26,7 @@ from pylife import DataValidator
 
 
 @pd.api.extensions.register_series_accessor('woehler')
+@pd.api.extensions.register_dataframe_accessor('woehler')
 class WoehlerCurveAccessor(signal.PylifeSignal):
     """A PylifeSignal accessor for Wöhler Curve data.
 
@@ -132,14 +133,17 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         cycles : numpy.ndarray
             The cycle numbers at which the component fails for the given `load` values
         """
-        load = np.asfarray(load)
 
         SD, ND = self._limit_point_at_pf(failure_probability)
-        k = self._make_k(load, SD)
 
+        load, SD, ND = self._do_broadcast(load, SD, ND)
+
+        SD_50 = np.broadcast_to(self._obj.SD_50, load.shape)
         cycles = np.full_like(load, np.inf)
+
+        k = self._make_k(load, SD)
         in_limit = np.isfinite(k)
-        cycles[in_limit] = ND * np.power(load[in_limit]/self._obj.SD_50, -k[in_limit])
+        cycles[in_limit] = ND[in_limit] * np.power(load[in_limit]/SD_50[in_limit], -k[in_limit])
 
         return cycles
 
@@ -159,15 +163,14 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         cycles : numpy.ndarray
             The cycle numbers at which the component fails for the given `load` values
         """
-        cycles = np.asfarray(cycles)
-
         SD, ND = self._limit_point_at_pf(failure_probability)
+
+        cycles, SD, ND = self._do_broadcast(cycles, SD, ND)
+        load = SD.copy()
+
         k = self._make_k(-cycles, -ND)
-
-        load = np.full_like(cycles, SD)
         in_limit = np.isfinite(k)
-        load[in_limit] = self._obj.SD_50 * np.power(cycles[in_limit]/ND, -1./k[in_limit])
-
+        load[in_limit] = self._obj.SD_50 * np.power(cycles[in_limit]/ND[in_limit], -1./k[in_limit])
         return load
 
     def _limit_point_at_pf(self, failure_probability):
@@ -177,8 +180,19 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
 
         return SD, ND
 
+    def _do_broadcast(self, param, SD, ND):
+        param = np.asfarray(param)
+        if SD.shape == ():
+            SD = np.broadcast_to(SD, param.shape)
+            ND = np.broadcast_to(ND, param.shape)
+        else:
+            param = np.broadcast_to(param, SD.shape)
+        return param, SD, ND
+
     def _make_k(self, src, ref):
-        k = np.full_like(src, self._obj.k_1)
+        k = np.asfarray(self._obj.k_1)
+        if k.shape == ():
+            k = np.full_like(src, k)
         k[src < ref] = self._k_2
         return k
 
