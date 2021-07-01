@@ -164,13 +164,14 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
             The cycle numbers at which the component fails for the given `load` values
         """
         SD, ND = self._limit_point_at_pf(failure_probability)
+        ND = ND * np.power(SD/self._obj.SD_50, -self._obj.k_1)
 
         cycles, SD, ND = self._do_broadcast(cycles, SD, ND)
         load = SD.copy()
 
         k = self._make_k(-cycles, -ND)
         in_limit = np.isfinite(k)
-        load[in_limit] = self._obj.SD_50 * np.power(cycles[in_limit]/ND[in_limit], -1./k[in_limit])
+        load[in_limit] = SD[in_limit] * np.power(cycles[in_limit]/ND[in_limit], -1./k[in_limit])
         return load
 
     def _limit_point_at_pf(self, failure_probability):

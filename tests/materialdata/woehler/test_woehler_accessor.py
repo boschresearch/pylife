@@ -220,3 +220,18 @@ def test_woehler_miner():
 
 def test_woehler_miner_haibach():
     assert wc_data.woehler.miner_haibach().k_2 == 13.0
+
+
+@pytest.mark.parametrize('pf', [0.1, 0.5, 0.9])
+def test_woehler_miner_original_homogenious_load(pf):
+    cycles = np.logspace(3., 7., 50)
+    load = wc_data.woehler.basquin_load(cycles, failure_probability=pf)
+    assert (np.diff(load) < 0.).all()
+    assert (np.diff(np.diff(load)) >= 0.).all()
+
+
+@pytest.mark.parametrize('pf', [0.1, 0.5, 0.9])
+def test_woehler_miner_original_homogenious_cycles(pf):
+    load = np.logspace(3., 2., 50)
+    cycles = wc_data.woehler.basquin_cycles(load, failure_probability=pf)
+    assert (np.diff(cycles[np.isfinite(cycles)]) > 0.).all()
