@@ -1,18 +1,12 @@
 name: pylife
 dependencies:
 - python >2
-- numpy
 - pytest
 - pytest-cov
 - flake8
 - pep8-naming
-- scipy
-- pandas
-- spyder
-- cython
 - matplotlib
 - jupyter
 - pip = 20.2
-- h5py
 - pip:
-  - mystic
+  - .
