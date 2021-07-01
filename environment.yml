@@ -9,4 +9,4 @@ dependencies:
 - jupyter
 - pip = 20.2
 - pip:
-  - .
+  - -e .
