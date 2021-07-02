@@ -17,10 +17,45 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
+
+import numpy as np
+import pandas as pd
+
 from pylife.core.data_validator import DataValidator
 
 
-class PylifeSignal:
+class Broadcaster:
+    def __init__(self, pandas_obj):
+        self._obj = pandas_obj
+
+    def broadcast(self, parameter):
+        if isinstance(self._obj, pd.Series):
+            return self._broadcast_series(parameter)
+        return self._broadcast_frame(parameter)
+
+    def _broadcast_series(self, parameter):
+        prm = np.asarray(parameter)
+        if prm.shape == ():
+            return prm, self._obj
+
+        data = np.empty((len(parameter), len(self._obj)))
+        df = pd.DataFrame(data, columns=self._obj.index)
+        if isinstance(parameter, pd.Series):
+            df.set_index(parameter.index, inplace=True)
+
+        return prm, df.assign(**self._obj)
+
+    def _broadcast_frame(self, parameter):
+        try:
+            parameter = np.broadcast_to(parameter, len(self._obj))
+        except ValueError:
+            raise ValueError("Dimension mismatch. "
+                             "Cannot map %d value array-like to a %d element DataFrame signal."
+                             %(len(parameter), len(self._obj)))
+        return parameter, self._obj
+
+
+class PylifeSignal(Broadcaster):
     '''Base class for signal accessor classes
 
     Parameters
@@ -69,6 +104,7 @@ class PylifeSignal:
             return super(PylifeSignal, self).__getattribute__(itemname)
 
         return self._MethodCaller(method, self._obj)
+
 
     @classmethod
     def _register_method(cls, method_name):
