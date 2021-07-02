@@ -54,11 +54,6 @@ def test_missing_keys_two():
 
 @pd.api.extensions.register_dataframe_accessor('test_accessor_none')
 class AccessorNone(signal.PylifeSignal):
-    def __init__(self, pandas_obj):
-        self._validator = DataValidator()
-        self._validate(pandas_obj, self._validator)
-        self._obj = pandas_obj
-
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['foo', 'bar'])
 
@@ -75,23 +70,13 @@ class AccessorNone(signal.PylifeSignal):
 
 
 @pd.api.extensions.register_dataframe_accessor('test_accessor_one')
-class AccessorOne:
-    def __init__(self, pandas_obj):
-        self._validator = DataValidator()
-        self._validate(pandas_obj, self._validator)
-        self._obj = pandas_obj
-
+class AccessorOne(signal.PylifeSignal):
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['foo', 'foobar'])
 
 
 @pd.api.extensions.register_dataframe_accessor('test_accessor_two')
-class AccessorTwo:
-    def __init__(self, pandas_obj):
-        self._validator = DataValidator()
-        self._validate(pandas_obj, self._validator)
-        self._obj = pandas_obj
-
+class AccessorTwo(signal.PylifeSignal):
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['foo', 'foobar', 'barfoo'])
 
