@@ -187,7 +187,12 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
             SD = np.broadcast_to(SD, param.shape)
             ND = np.broadcast_to(ND, param.shape)
         else:
-            param = np.broadcast_to(param, SD.shape)
+            try:
+                param = np.broadcast_to(param, SD.shape)
+            except ValueError:
+                raise ValueError("Dimension mismatch. "
+                                 "WoehlerCurveAccessor for %d elements received %d load/cycles to calculate cycles/load."
+                                 % (SD.shape[0], param.shape[0]))
         return param, SD, ND
 
     def _make_k(self, src, ref):
@@ -195,6 +200,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         if k.shape == ():
             k = np.full_like(src, k)
         k[src < ref] = self._k_2
+
         return k
 
 

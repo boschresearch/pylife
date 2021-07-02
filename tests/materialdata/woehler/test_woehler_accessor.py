@@ -80,6 +80,20 @@ def test_woehler_basquin_cycles_50_multiple_load_multiple_wc():
     np.testing.assert_allclose(cycles, expected_cycles, rtol=1e-4)
 
 
+def test_woehler_basquin_cycles_50_multiple_load_multiple_wc_unmatching():
+    load = [3000., 400.]
+
+    wc_data = pd.DataFrame({
+        'k_1': [1., 2., 2.],
+        'SD_50': [300., 400., 500.],
+        'ND_50': [1e6, 1e6, 1e6]
+    })
+
+    with pytest.raises(ValueError, match="Dimension mismatch. "
+                       "WoehlerCurveAccessor for 3 elements received 2 load/cycles to calculate cycles/load."):
+        wc_data.woehler.basquin_cycles(load)
+
+
 def test_woehler_basquin_cycles_50_same_k():
     load = [200., 300., 400., 500.]
 
