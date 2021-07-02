@@ -33,31 +33,31 @@ from pylife.stress.timesignal import TimeSignalGenerator
 
 # parameters for the example given in Haibach2006
 sn_curve_parameters_haibach = {
-    "ND_50": 1E6,
+    "ND": 1E6,
     "k_1": 4,
-    "SD_50": 100
+    "SD": 100
 }
 # parameters for the example given in Haibach2006
 sn_curve_parameters_elementar = {
-    "ND_50": 2E6,
+    "ND": 2E6,
     "k_1": 7,
-    "SD_50": 125
+    "SD": 125
 }
 
 
 @pytest.fixture(scope="module")
 def miner_base():
-    return miner.MinerBase(ND_50=10**6, k_1=5, SD_50=200)
+    return miner.MinerBase(ND=10**6, k_1=5, SD=200)
 
 
 @pytest.fixture(scope="module")
 def miner_elementar():
-    return miner.MinerElementar(ND_50=10**6, k_1=6, SD_50=200)
+    return miner.MinerElementar(ND=10**6, k_1=6, SD=200)
 
 
 @pytest.fixture(scope="function")
 def miner_haibach():
-    m = miner.MinerHaibach(ND_50=10**6, k_1=6, SD_50=200)
+    m = miner.MinerHaibach(ND=10**6, k_1=6, SD=200)
     m.setup(collective)
     return m
 
@@ -144,9 +144,9 @@ class TestMinerElementar:
         np.testing.assert_almost_equal(H0, 190733.0)
         np.testing.assert_almost_equal(H0, miner_elementar.H0)
         # calculation of Zeitfestigkeitsfaktor
-        # ND_50 = 10**6
+        # ND = 10**6
         # k = 6
-        z = 1.3180413239445 # = (ND_50 / H0)**(1. / k)
+        z = 1.3180413239445 # = (ND / H0)**(1. / k)
         np.testing.assert_almost_equal(miner_elementar.zeitfestigkeitsfaktor_collective, z)
 
     def test_A(self, miner_elementar):
@@ -174,7 +174,7 @@ class TestMinerElementar:
         load_level = 400
         A = miner_elementar.calc_A(self.coll)
         N_woehler_load_level = (
-            miner_elementar._woehler_curve.ND_50 * (load_level / miner_elementar._woehler_curve.SD_50)**(-miner_elementar._woehler_curve.k_1)
+            miner_elementar._woehler_curve.ND * (load_level / miner_elementar._woehler_curve.SD)**(-miner_elementar._woehler_curve.k_1)
         )
         N_predict = N_woehler_load_level * A
         np.testing.assert_almost_equal(miner_elementar.N_predict(load_level, A), N_predict)
@@ -199,12 +199,12 @@ class TestMinerElementar:
 
 class TestMinerHaibach:
     def test_calc_A_no_collective_specified(self):
-        m = miner.MinerHaibach(ND_50=10**6, k_1=5, SD_50=200)
+        m = miner.MinerHaibach(ND=10**6, k_1=5, SD=200)
         with pytest.raises(RuntimeError):
             m.calc_A(load_level=240)
 
-    def test_calc_A_load_level_smaller_ND_50(self, miner_haibach):
-        A = miner_haibach.calc_A(load_level=(miner_haibach._woehler_curve.SD_50 / 2.))
+    def test_calc_A_load_level_smaller_ND(self, miner_haibach):
+        A = miner_haibach.calc_A(load_level=(miner_haibach._woehler_curve.SD / 2.))
         assert A == np.inf
 
     def test_calc_A_split_damage_regions(self, miner_haibach):
@@ -227,7 +227,7 @@ class TestMinerHaibach:
     def test_N_predict(self, miner_haibach):
         load_level = 400
         N_woehler_load_level = (
-            miner_haibach._woehler_curve.ND_50 * (load_level / miner_haibach._woehler_curve.SD_50)**(-miner_haibach._woehler_curve.k_1)
+            miner_haibach._woehler_curve.ND * (load_level / miner_haibach._woehler_curve.SD)**(-miner_haibach._woehler_curve.k_1)
         )
         A = miner_haibach.calc_A(load_level)
         N_predict = N_woehler_load_level * A

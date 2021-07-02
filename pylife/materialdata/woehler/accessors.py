@@ -36,8 +36,8 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
     The signal has the following mandatory keys:
 
     * ``k_1`` : The slope of the Wöhler Curve
-    * ``ND_50`` : The cycle number of the endurance limit
-    * ``SD_50`` : The load level of the endurance limit
+    * ``ND`` : The cycle number of the endurance limit
+    * ``SD`` : The load level of the endurance limit
 
     The ``_50`` suffixes imply that the values are valid for a 50% probability
     of failure.
@@ -55,7 +55,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
     """
 
     def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['k_1', 'ND_50', 'SD_50'])
+        validator.fail_if_key_missing(obj, ['k_1', 'ND', 'SD'])
         self._k_2 = obj.get('k_2', np.inf)
 
         self._TN = obj.get('TN', None)
@@ -70,12 +70,12 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
             self._TN = np.power(self._TS, obj.k_1)
 
     @property
-    def SD_50(self):
-        return self._obj.SD_50
+    def SD(self):
+        return self._obj.SD
 
     @property
-    def ND_50(self):
-        return self._obj.ND_50
+    def ND(self):
+        return self._obj.ND
 
     @property
     def k_1(self):
@@ -138,12 +138,12 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
 
         load, SD, ND = self._do_broadcast(load, SD, ND)
 
-        SD_50 = np.broadcast_to(self._obj.SD_50, load.shape)
+        SD_native = np.broadcast_to(self._obj.SD, load.shape)
         cycles = np.full_like(load, np.inf)
 
         k = self._make_k(load, SD)
         in_limit = np.isfinite(k)
-        cycles[in_limit] = ND[in_limit] * np.power(load[in_limit]/SD_50[in_limit], -k[in_limit])
+        cycles[in_limit] = ND[in_limit] * np.power(load[in_limit]/SD_native[in_limit], -k[in_limit])
 
         return cycles
 
@@ -164,7 +164,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
             The cycle numbers at which the component fails for the given `load` values
         """
         SD, ND = self._limit_point_at_pf(failure_probability)
-        ND = ND * np.power(SD/self._obj.SD_50, -self._obj.k_1)
+        ND = ND * np.power(SD/self._obj.SD, -self._obj.k_1)
 
         cycles, SD, ND = self._do_broadcast(cycles, SD, ND)
         load = SD.copy()
@@ -176,8 +176,8 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
 
     def _limit_point_at_pf(self, failure_probability):
         pf_ppf = stats.norm.ppf(failure_probability)
-        SD = self._obj.SD_50 / 10**(-pf_ppf*scatteringRange2std(self.TS))
-        ND = self._obj.ND_50 / 10**(-pf_ppf*scatteringRange2std(self.TN))
+        SD = self._obj.SD / 10**(-pf_ppf*scatteringRange2std(self.TS))
+        ND = self._obj.ND / 10**(-pf_ppf*scatteringRange2std(self.TN))
 
         return SD, ND
 

@@ -340,8 +340,8 @@ def test_full_histogram():
     (1e5, 0.0140)
 ])
 def test_experimental_mean_stress_sensitivity(N_c, M_sigma):
-    sn_curve_R0 = pd.Series({'SD_50': 100, 'ND_50': 1e6, 'k_1': 3})
-    sn_curve_Rn1 = pd.Series({'SD_50': 120, 'ND_50': 2e6, 'k_1': 5})
+    sn_curve_R0 = pd.Series({'SD': 100, 'ND': 1e6, 'k_1': 3})
+    sn_curve_Rn1 = pd.Series({'SD': 120, 'ND': 2e6, 'k_1': 5})
 
     testing.assert_almost_equal(
         actual=MST.experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=N_c),
@@ -350,8 +350,8 @@ def test_experimental_mean_stress_sensitivity(N_c, M_sigma):
 
 
 def test_experimental_mean_stress_sensitivity_no_Nc():
-    sn_curve_R0 = pd.Series({'SD_50': 100, 'ND_50': 1e6, 'k_1': 3})
-    sn_curve_Rn1 = pd.Series({'SD_50': 120, 'ND_50': 2e6, 'k_1': 5})
+    sn_curve_R0 = pd.Series({'SD': 100, 'ND': 1e6, 'k_1': 3})
+    sn_curve_Rn1 = pd.Series({'SD': 120, 'ND': 2e6, 'k_1': 5})
 
     testing.assert_almost_equal(
         actual=MST.experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1),
@@ -360,8 +360,8 @@ def test_experimental_mean_stress_sensitivity_no_Nc():
 
 
 def test_experimental_mean_stress_sensitivity_plausible():
-    sn_curve_R0 = pd.Series({'SD_50': 100, 'ND_50': 1e6, 'k_1': 3})
-    sn_curve_Rn1 = pd.Series({'SD_50': 120, 'ND_50': 2e6, 'k_1': 5})
+    sn_curve_R0 = pd.Series({'SD': 100, 'ND': 1e6, 'k_1': 3})
+    sn_curve_Rn1 = pd.Series({'SD': 120, 'ND': 2e6, 'k_1': 5})
     with testing.assert_raises(ValueError):
         # Should lead to -0.27
         MST.experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=10**4)

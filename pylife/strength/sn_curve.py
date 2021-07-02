@@ -32,8 +32,8 @@ class FiniteLifeBase:
                                          "Use WoehlerCurveAccessor and FatigueAccessor accessors instead."))
         self._wc = pd.Series({
             'k_1': k_1,
-            'SD_50': SD_50,
-            'ND_50': ND_50
+            'SD': SD_50,
+            'ND': ND_50
         })
 
     @property

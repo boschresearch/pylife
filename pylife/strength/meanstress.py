@@ -305,7 +305,7 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
     .. math::
         M_{\sigma} = {S_a}^{R=-1}(N_c) / {S_a}^{R=0}(N_c) - 1
 
-    Alternatively the mean stress sensitivity is calculated based on both SD_50 values
+    Alternatively the mean stress sensitivity is calculated based on both SD values
     (if N_c is not given).
 
     Parameters
@@ -316,8 +316,8 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
         Instance of FiniteLifeCurve for R == -1
     N_c: float, (default=np.inf)
         Amount of cycles where the amplitudes should be compared.
-        If N_c is higher than a fatigue transition point (ND_50) for the SN-Curves, SD_50 is taken.
-        If N_c is None, SD_50 values are taken as stress amplitudes instead.
+        If N_c is higher than a fatigue transition point (ND) for the SN-Curves, SD is taken.
+        If N_c is None, SD values are taken as stress amplitudes instead.
 
     Returns
     -------
@@ -330,8 +330,8 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
         If the resulting M_sigma doesn't lie in the range from 0 to 1 a ValueError is raised, as this value would
         suggest higher strength with additional loads.
     """
-    S_a_R0 = sn_curve_R0.woehler.basquin_load(N_c) if N_c < sn_curve_R0.ND_50 else sn_curve_R0.SD_50
-    S_a_Rn1 = sn_curve_Rn1.woehler.basquin_load(N_c) if N_c < sn_curve_Rn1.ND_50 else sn_curve_Rn1.SD_50
+    S_a_R0 = sn_curve_R0.woehler.basquin_load(N_c) if N_c < sn_curve_R0.ND else sn_curve_R0.SD
+    S_a_Rn1 = sn_curve_Rn1.woehler.basquin_load(N_c) if N_c < sn_curve_Rn1.ND else sn_curve_Rn1.SD
     M_sigma = S_a_Rn1 / S_a_R0 - 1
     if not 0 <= M_sigma <= 1:
         raise ValueError("M_sigma: %.2f exceeds the interval [0, 1] which is not plausible." % M_sigma)

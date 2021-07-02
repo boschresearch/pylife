@@ -62,7 +62,7 @@ expected_original = pd.DataFrame([
 
 
 material = pd.DataFrame(
-    index=['k_1', 'ND_50', 'SD_50'],
+    index=['k_1', 'ND', 'SD'],
     columns=['elementary', 'haibach', 'original'],
     data=[[4., 5., 6.], [4e7, 1e6, 1e8], [200, 180, 150]]
 )
@@ -95,10 +95,10 @@ def test_damage_fatigue_original():
 ])
 def test_security_load_single(TS, allowed_pf, expected):
     wc = pd.Series({
-        'SD_50': 500.,
+        'SD': 500.,
         'k_1': 6.0,
         'TS': TS,
-        'ND_50': 1e6
+        'ND': 1e6
     })
     load_signal = pd.DataFrame({'sigma_m': [0.0], 'sigma_a': [100.0]})
     security_factor = wc.fatigue.security_load(load_signal, 1e7, allowed_pf)
@@ -107,10 +107,10 @@ def test_security_load_single(TS, allowed_pf, expected):
 
 def test_security_load_multiple():
     wc = pd.DataFrame({
-        'SD_50': [500., 500., 300.],
+        'SD': [500., 500., 300.],
         'k_1': [6., 6., 6.],
         'TS': [1./2., 1./1.0000001, 1./1.25],
-        'ND_50': [1e6, 1e6, 1e6]
+        'ND': [1e6, 1e6, 1e6]
     })
     load_signal = pd.DataFrame({
         'sigma_m': [0., 0., 0.],
@@ -133,10 +133,10 @@ def test_security_load_multiple():
 ])
 def test_security_cycles(TN, allowed_pf, cycles, expected):
     wc = pd.Series({
-        'SD_50': 500.,
+        'SD': 500.,
         'k_1': 0.5,
         'TN': TN,
-        'ND_50': 1e6
+        'ND': 1e6
     })
     load_signal = pd.DataFrame({'sigma_m': [0.0], 'sigma_a': [500.0]})
     security_factor = wc.fatigue.security_cycles(cycles, load_signal, allowed_pf)

@@ -27,8 +27,8 @@ import pylife.materialdata.woehler.accessors
 wc_data = pd.Series({
     'k_1': 7.,
     'TN': 1. / 1.75,
-    'ND_50': 1e6,
-    'SD_50': 300.0
+    'ND': 1e6,
+    'SD': 300.0
 })
 
 
@@ -55,8 +55,8 @@ def test_woehler_basquin_cycles_50_single_load_multiple_wc():
 
     wc_data = pd.DataFrame({
         'k_1': [1., 2., 2.],
-        'SD_50': [300., 400., 500.],
-        'ND_50': [1e6, 1e6, 1e6]
+        'SD': [300., 400., 500.],
+        'ND': [1e6, 1e6, 1e6]
     })
 
     cycles = wc_data.woehler.basquin_cycles(load)
@@ -70,8 +70,8 @@ def test_woehler_basquin_cycles_50_multiple_load_multiple_wc():
 
     wc_data = pd.DataFrame({
         'k_1': [1., 2., 2.],
-        'SD_50': [300., 400., 500.],
-        'ND_50': [1e6, 1e6, 1e6]
+        'SD': [300., 400., 500.],
+        'ND': [1e6, 1e6, 1e6]
     })
 
     cycles = wc_data.woehler.basquin_cycles(load)
@@ -85,8 +85,8 @@ def test_woehler_basquin_cycles_50_multiple_load_multiple_wc_unmatching():
 
     wc_data = pd.DataFrame({
         'k_1': [1., 2., 2.],
-        'SD_50': [300., 400., 500.],
-        'ND_50': [1e6, 1e6, 1e6]
+        'SD': [300., 400., 500.],
+        'ND': [1e6, 1e6, 1e6]
     })
 
     with pytest.raises(ValueError, match="Dimension mismatch. "
@@ -128,8 +128,8 @@ def test_woehler_basquin_load_single_cycles_multiple_wc():
     cycles = 1e6
     wc_data = pd.DataFrame({
         'k_1': [1., 2., 2.],
-        'SD_50': [300., 400., 500.],
-        'ND_50': [1e5, 1e6, 1e6]
+        'SD': [300., 400., 500.],
+        'ND': [1e5, 1e6, 1e6]
     })
 
     load = wc_data.woehler.basquin_load(cycles)
@@ -141,8 +141,8 @@ def test_woehler_basquin_load_multiple_cycles_multiple_wc():
     cycles = [1e5, 1e6, 1e7]
     wc_data = pd.DataFrame({
         'k_1': [1., 2., 2.],
-        'SD_50': [300., 400., 500.],
-        'ND_50': [1e6, 1e6, 1e6]
+        'SD': [300., 400., 500.],
+        'ND': [1e6, 1e6, 1e6]
     })
 
     load = wc_data.woehler.basquin_load(cycles)
@@ -180,12 +180,12 @@ def test_woehler_basquin_cycles_integer_load():
     wc_data.woehler.basquin_cycles(200)
 
 
-def test_woehler_ND_50():
-    assert wc_data.woehler.ND_50 == 1e6
+def test_woehler_ND():
+    assert wc_data.woehler.ND == 1e6
 
 
-def test_woehler_SD_50():
-    assert wc_data.woehler.SD_50 == 300
+def test_woehler_SD():
+    assert wc_data.woehler.SD == 300
 
 
 def test_woehler_k_1():
@@ -195,8 +195,8 @@ def test_woehler_k_1():
 def test_woehler_TS_and_TN_guessed():
     wc = pd.Series({
         'k_1': 0.5,
-        'SD_50': 300,
-        'ND_50': 1e6
+        'SD': 300,
+        'ND': 1e6
     })
     assert wc.woehler.TN == 1.0
     assert wc.woehler.TS == 1.0

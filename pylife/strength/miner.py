@@ -76,21 +76,21 @@ class MinerBase:
 
     Parameters
     ----------
-    ND_50 : float
+    ND : float
         number of cycles of the fatigue strength of the S/N curve [number of cycles]
     k_1 : float
         slope of the S/N curve [unitless]
-    SD_50 : float
+    SD : float
         fatigue strength of the S/N curve [MPa]
     """
 
     collective = None
 
-    def __init__(self, ND_50, k_1, SD_50):
+    def __init__(self, ND, k_1, SD):
         self._woehler_curve = pd.Series({
             'k_1': k_1,
-            'SD_50': SD_50,
-            'ND_50': ND_50
+            'SD': SD,
+            'ND': ND
         }).woehler
 
     def setup(self, collective):
@@ -181,7 +181,7 @@ class MinerBase:
     def calc_zeitfestigkeitsfaktor(self, N, total_lifetime=True):
         """Calculate "Zeitfestigkeitsfaktor" according to Waechter2017 (p. 96)"""
 
-        z = (self._woehler_curve.ND_50 / N)**(1. / self._woehler_curve.k_1)
+        z = (self._woehler_curve.ND / N)**(1. / self._woehler_curve.k_1)
 
         if total_lifetime:
             self.zeitfestigkeitsfaktor = z
@@ -258,9 +258,9 @@ class MinerElementar(MinerBase):
     # Solidity (Völligkeit) according to FKM guideline
     V_FKM = None
 
-    def __init__(self, ND_50, k_1, SD_50):
+    def __init__(self, ND, k_1, SD):
         super(MinerElementar, self).__init__(
-            ND_50, k_1, SD_50,
+            ND, k_1, SD,
         )
 
     def setup(self, collective):
@@ -316,9 +316,9 @@ class MinerHaibach(MinerBase):
     """
     evaluated_load_levels = None
 
-    def __init__(self, ND_50, k_1, SD_50):
+    def __init__(self, ND, k_1, SD):
         super(MinerHaibach, self).__init__(
-            ND_50, k_1, SD_50,
+            ND, k_1, SD,
         )
         self.evaluated_load_levels = {}
 
@@ -351,21 +351,21 @@ class MinerHaibach(MinerBase):
         -------
         A : float > 0
             lifetime multiple
-            return value is 'inf' if load_level < SD_50
+            return value is 'inf' if load_level < SD
         """
         super(MinerHaibach, self).calc_A(collective)
         self.evaluated_load_levels[round(load_level)] = {}
         # this parameter makes each evaluation of A unique
         self._last_load_level_evaluated = load_level
-        if load_level < self._woehler_curve.SD_50:
+        if load_level < self._woehler_curve.SD:
             return np.inf
         assert self.S_collective.max() == 1
         s_a = self.S_collective * load_level
-        i_full_damage = (s_a >= self._woehler_curve.SD_50)
-        i_reduced_damage = (s_a < self._woehler_curve.SD_50)
+        i_full_damage = (s_a >= self._woehler_curve.SD)
+        i_reduced_damage = (s_a < self._woehler_curve.SD)
         self.evaluated_load_levels[round(load_level)]["i_full_damage"] = i_full_damage
         self.evaluated_load_levels[round(load_level)]["i_reduced_damage"] = i_reduced_damage
-        x_D = self._woehler_curve.SD_50 / s_a.max()
+        x_D = self._woehler_curve.SD / s_a.max()
         self.evaluated_load_levels[round(load_level)]["x_D"] = x_D
 
         s_full_damage = s_a[i_full_damage]
