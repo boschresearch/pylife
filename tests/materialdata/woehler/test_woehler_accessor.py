@@ -41,6 +41,32 @@ def test_woehler_accessor():
             wc_miss.woehler
 
 
+def test_woehler_transform_probability():
+    wc_10 = pd.Series({
+        'k_1': 7.,
+        'TS': 1. / 2.,
+        'TN': 1. / 4.,
+        'ND': 1e6,
+        'SD': 300,
+        'failure_probability': 0.1
+    }).sort_index()
+
+    wc_90 = pd.Series({
+        'k_1': 7.,
+        'TS': 1. / 2.,
+        'TN': 1. / 4.,
+        'ND': 4e6,
+        'SD': 600,
+        'failure_probability': 0.9
+    }).sort_index()
+
+    transformed = wc_10.woehler.transform_to_failure_probability(0.9).sort_index()
+    pd.testing.assert_series_equal(transformed, wc_90)
+
+    transformed = wc_90.woehler.transform_to_failure_probability(0.1).sort_index()
+    pd.testing.assert_series_equal(transformed, wc_10)
+
+
 def test_woehler_basquin_cycles_50_multiple_load_single_wc():
     load = [200., 300., 400., 500.]
 
@@ -78,20 +104,6 @@ def test_woehler_basquin_cycles_50_multiple_load_multiple_wc():
     expected_cycles = [1e5, 1e6, 1e6]
 
     np.testing.assert_allclose(cycles, expected_cycles, rtol=1e-4)
-
-
-def test_woehler_basquin_cycles_50_multiple_load_multiple_wc_unmatching():
-    load = [3000., 400.]
-
-    wc_data = pd.DataFrame({
-        'k_1': [1., 2., 2.],
-        'SD': [300., 400., 500.],
-        'ND': [1e6, 1e6, 1e6]
-    })
-
-    with pytest.raises(ValueError, match="Dimension mismatch. "
-                       "WoehlerCurveAccessor for 3 elements received 2 load/cycles to calculate cycles/load."):
-        wc_data.woehler.basquin_cycles(load)
 
 
 def test_woehler_basquin_cycles_50_same_k():
@@ -180,6 +192,15 @@ def test_woehler_basquin_cycles_integer_load():
     wc_data.woehler.basquin_cycles(200)
 
 
+def test_woehler_integer_overflow():
+    wc = pd.Series({
+        'k_1': 4.,
+        'SD': 100.,
+        'ND': 1e6
+    })
+    assert wc.woehler.basquin_cycles(50) > 0.0
+
+
 def test_woehler_ND():
     assert wc_data.woehler.ND == 1e6
 
@@ -211,17 +232,37 @@ def test_woehler_TS_guessed():
 
 
 def test_woehler_TN_guessed():
-    wc = wc_data.copy()
-    wc['k_1'] = 0.5
-    wc['TS'] = 1. / (1.5 * 1.5)
+    wc = pd.Series({
+        'k_1': 0.5,
+        'SD': 300,
+        'ND': 1e6,
+        'TS': 1. / 5.,
+        'TN': 1. / 2.
+    })
 
-    assert wc.woehler.TN == 1. / 1.5
+    assert wc.woehler.TN == 1. / 2
 
 
 def test_woehler_TS_given():
     wc_full = wc_data.copy()
     wc_full['TS'] = 1. / 1.25
     assert wc_full.woehler.TS == 1. / 1.25
+
+
+def test_woehler_TN_given():
+    wc_full = wc_data.copy()
+    wc_full['TS'] = 1. / 1.25
+    assert wc_full.woehler.TN == 1. / 1.75
+
+
+def test_woehler_pf_guessed():
+    assert wc_data.woehler.failure_probability == 0.5
+
+
+def test_woehler_pf_given():
+    wc = wc_data.copy()
+    wc['failure_probability'] = 0.1
+    assert wc.woehler.failure_probability == 0.1
 
 
 def test_woehler_miner_original():

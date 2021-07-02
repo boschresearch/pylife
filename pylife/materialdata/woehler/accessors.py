@@ -66,8 +66,10 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
             self._TS = 1.0
         elif self._TS is None:
             self._TS = np.power(self._TN, 1./obj.k_1)
-        else:
+        elif self._TN is None:
             self._TN = np.power(self._TS, obj.k_1)
+
+        self._failure_probability = obj.get('failure_probability', 0.5)
 
     @property
     def SD(self):
@@ -96,6 +98,25 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
     def TS(self):
         """The load direction scatter value TS."""
         return self._TS
+
+    @property
+    def failure_probability(self):
+        return self._failure_probability
+
+
+    def transform_to_failure_probability(self, failure_probability):
+        native_ppf = stats.norm.ppf(self._failure_probability)
+        goal_ppf = stats.norm.ppf(failure_probability)
+
+        SD = self._obj.SD / 10**((native_ppf-goal_ppf)*scatteringRange2std(self.TS))
+        ND = self._obj.ND / 10**((native_ppf-goal_ppf)*scatteringRange2std(self.TN))
+
+        transformed = self._obj.copy()
+        transformed['SD'] = SD
+        transformed['ND'] = ND
+        transformed['failure_probability'] = failure_probability
+
+        return transformed
 
     def miner_elementary(self):
         """Set k_2 to k_1 according Miner Elementary method (k_2 = k_1).
@@ -134,16 +155,16 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
             The cycle numbers at which the component fails for the given `load` values
         """
 
-        SD, ND = self._limit_point_at_pf(failure_probability)
+        transformed = self.transform_to_failure_probability(failure_probability)
 
-        load, SD, ND = self._do_broadcast(load, SD, ND)
+        load, wc = signal.Broadcaster(transformed).broadcast(np.asfarray(load))
 
         SD_native = np.broadcast_to(self._obj.SD, load.shape)
         cycles = np.full_like(load, np.inf)
 
-        k = self._make_k(load, SD)
+        k = self._make_k(load, wc.SD)
         in_limit = np.isfinite(k)
-        cycles[in_limit] = ND[in_limit] * np.power(load[in_limit]/SD_native[in_limit], -k[in_limit])
+        cycles[in_limit] = wc.ND[in_limit] * np.power(load[in_limit]/SD_native[in_limit], -k[in_limit])
 
         return cycles
 
@@ -163,42 +184,22 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         cycles : numpy.ndarray
             The cycle numbers at which the component fails for the given `load` values
         """
-        SD, ND = self._limit_point_at_pf(failure_probability)
-        ND = ND * np.power(SD/self._obj.SD, -self._obj.k_1)
+        transformed = self.transform_to_failure_probability(failure_probability)
+        transformed['ND'] *= np.power(transformed.SD/self._obj.SD, -self._obj.k_1)
 
-        cycles, SD, ND = self._do_broadcast(cycles, SD, ND)
-        load = SD.copy()
+        cycles, wc = signal.Broadcaster(transformed).broadcast(cycles)
+        load = np.asarray(wc.SD.copy())
+        cycles = np.asarray(cycles)
 
-        k = self._make_k(-cycles, -ND)
+        k = self._make_k(-cycles, -wc.ND)
         in_limit = np.isfinite(k)
-        load[in_limit] = SD[in_limit] * np.power(cycles[in_limit]/ND[in_limit], -1./k[in_limit])
+        load[in_limit] = wc.SD[in_limit] * np.power(cycles[in_limit]/wc.ND[in_limit], -1./k[in_limit])
         return load
-
-    def _limit_point_at_pf(self, failure_probability):
-        pf_ppf = stats.norm.ppf(failure_probability)
-        SD = self._obj.SD / 10**(-pf_ppf*scatteringRange2std(self.TS))
-        ND = self._obj.ND / 10**(-pf_ppf*scatteringRange2std(self.TN))
-
-        return SD, ND
-
-    def _do_broadcast(self, param, SD, ND):
-        param = np.asfarray(param)
-        if SD.shape == ():
-            SD = np.broadcast_to(SD, param.shape)
-            ND = np.broadcast_to(ND, param.shape)
-        else:
-            try:
-                param = np.broadcast_to(param, SD.shape)
-            except ValueError:
-                raise ValueError("Dimension mismatch. "
-                                 "WoehlerCurveAccessor for %d elements received %d load/cycles to calculate cycles/load."
-                                 % (SD.shape[0], param.shape[0]))
-        return param, SD, ND
 
     def _make_k(self, src, ref):
         k = np.asfarray(self._obj.k_1)
         if k.shape == ():
-            k = np.full_like(src, k)
+            k = np.full_like(src, k, dtype=np.double)
         k[src < ref] = self._k_2
 
         return k
