@@ -110,6 +110,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
 
         SD = self._obj.SD / 10**((native_ppf-goal_ppf)*scatteringRange2std(self.TS))
         ND = self._obj.ND / 10**((native_ppf-goal_ppf)*scatteringRange2std(self.TN))
+        ND *= np.power(SD/self._obj.SD, -self._obj.k_1)
 
         transformed = self._obj.copy()
         transformed['SD'] = SD
@@ -158,13 +159,11 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         transformed = self.transform_to_failure_probability(failure_probability)
 
         load, wc = signal.Broadcaster(transformed).broadcast(np.asfarray(load))
-
-        SD_native = np.broadcast_to(self._obj.SD, load.shape)
         cycles = np.full_like(load, np.inf)
 
         k = self._make_k(load, wc.SD)
         in_limit = np.isfinite(k)
-        cycles[in_limit] = wc.ND[in_limit] * np.power(load[in_limit]/SD_native[in_limit], -k[in_limit])
+        cycles[in_limit] = wc.ND[in_limit] * np.power(load[in_limit]/wc.SD[in_limit], -k[in_limit])
 
         return cycles
 
@@ -185,7 +184,6 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
             The cycle numbers at which the component fails for the given `load` values
         """
         transformed = self.transform_to_failure_probability(failure_probability)
-        transformed['ND'] *= np.power(transformed.SD/self._obj.SD, -self._obj.k_1)
 
         cycles, wc = signal.Broadcaster(transformed).broadcast(cycles)
         load = np.asarray(wc.SD.copy())

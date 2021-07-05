@@ -42,29 +42,26 @@ def test_woehler_accessor():
 
 
 def test_woehler_transform_probability():
-    wc_10 = pd.Series({
-        'k_1': 7.,
+    wc_50 = pd.Series({
+        'k_1': 2,
         'TS': 1. / 2.,
-        'TN': 1. / 4.,
-        'ND': 1e6,
-        'SD': 300,
-        'failure_probability': 0.1
+        'TN': 1. / 9.,
+        'ND': 3e6,
+        'SD': 300 * np.sqrt(2.),
+        'failure_probability': 0.5
     }).sort_index()
 
-    wc_90 = pd.Series({
-        'k_1': 7.,
-        'TS': 1. / 2.,
-        'TN': 1. / 4.,
-        'ND': 4e6,
-        'SD': 600,
-        'failure_probability': 0.9
-    }).sort_index()
+    transformed_90 = wc_50.woehler.transform_to_failure_probability(0.9)
+    pd.testing.assert_series_equal(transformed_90[['SD', 'ND', 'failure_probability']],
+                                   pd.Series({'SD': 600.0, 'ND': 4.5e6, 'failure_probability': 0.9}))
+    transformed_back = transformed_90.woehler.transform_to_failure_probability(0.5)
+    pd.testing.assert_series_equal(transformed_back, wc_50)
 
-    transformed = wc_10.woehler.transform_to_failure_probability(0.9).sort_index()
-    pd.testing.assert_series_equal(transformed, wc_90)
-
-    transformed = wc_90.woehler.transform_to_failure_probability(0.1).sort_index()
-    pd.testing.assert_series_equal(transformed, wc_10)
+    transformed_10 = wc_50.woehler.transform_to_failure_probability(0.1)
+    pd.testing.assert_series_equal(transformed_10[['SD', 'ND', 'failure_probability']],
+                                   pd.Series({'SD': 300.0, 'ND': 2e6, 'failure_probability': 0.1}))
+    transformed_back = transformed_10.woehler.transform_to_failure_probability(0.5)
+    pd.testing.assert_series_equal(transformed_back, wc_50)
 
 
 def test_woehler_basquin_cycles_50_multiple_load_single_wc():
