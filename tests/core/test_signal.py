@@ -53,6 +53,7 @@ def test_missing_keys_two():
     assert set(val.get_missing_keys(foo_bar_baz, ['foo', 'foobar', 'barfoo'])) == set(['foobar', 'barfoo'])
 
 
+@pd.api.extensions.register_series_accessor('test_accessor_none')
 @pd.api.extensions.register_dataframe_accessor('test_accessor_none')
 class AccessorNone(signal.PylifeSignal):
     def _validate(self, obj, validator):
@@ -81,6 +82,14 @@ class AccessorOne(signal.PylifeSignal):
 class AccessorTwo(signal.PylifeSignal):
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['foo', 'foobar', 'barfoo'])
+
+
+def test_signal_broadcast_inheritance_series():
+    assert isinstance(foo_bar_baz.loc[0].test_accessor_none, signal.Broadcaster)
+
+
+def test_signal_broadcast_inheritance_frame():
+    assert isinstance(foo_bar_baz.test_accessor_none, signal.Broadcaster)
 
 
 def test_fail_if_missing_keys_none():
@@ -143,62 +152,3 @@ def test_register_method_fail_already():
         @signal.register_method(AccessorNone, 'already_here')
         def already_here_method(df):
             return pd.DataFrame({'baz': df['foo'] + df['bar']})
-
-
-@pd.api.extensions.register_series_accessor('test_broadcast_accessor')
-@pd.api.extensions.register_dataframe_accessor('test_broadcast_accessor')
-class BroadcastAccessor(signal.PylifeSignal):
-    def _validate(self, obj, validator):
-        pass
-
-
-def test_signal_broadcast_inheritance_series():
-    assert isinstance(foo_bar_baz.loc[0].test_broadcast_accessor, signal.Broadcaster)
-
-
-def test_signal_broadcast_inheritance_frame():
-    assert isinstance(foo_bar_baz.test_broadcast_accessor, signal.Broadcaster)
-
-
-def test_broadcast_series_to_scalar():
-    param, obj = signal.Broadcaster(foo_bar_baz.loc[0]).broadcast(1.0)
-
-    assert param == 1.0
-    pd.testing.assert_series_equal(foo_bar_baz.loc[0], obj)
-
-
-def test_broadcast_series_to_array():
-    param, obj = signal.Broadcaster(foo_bar_baz.loc[0]).broadcast([1.0, 2.0])
-
-    assert isinstance(param, np.ndarray)
-    np.testing.assert_array_equal(param, [1.0, 2.0])
-    pd.testing.assert_frame_equal(foo_bar_baz, obj)
-
-
-def test_broadcast_series_to_series():
-    series = pd.Series([1.0, 2.0], index=[3, 4])
-    param, obj = signal.Broadcaster(foo_bar_baz.loc[0]).broadcast(series)
-
-    expected = foo_bar_baz.set_index(series.index)
-    pd.testing.assert_frame_equal(expected, obj)
-
-
-def test_broadcast_frame_to_scalar():
-    param, obj = signal.Broadcaster(foo_bar_baz).broadcast(1.0)
-
-    assert param.shape == (2,)
-    np.testing.assert_array_equal(param, [1.0, 1.0])
-    pd.testing.assert_frame_equal(foo_bar_baz, obj)
-
-
-def test_broadcast_frame_to_array_match():
-    param, obj = signal.Broadcaster(foo_bar_baz).broadcast([1.0, 2.0])
-
-    np.testing.assert_array_equal(param, [1.0, 2.0])
-    pd.testing.assert_frame_equal(foo_bar_baz, obj)
-
-
-def test_broadcast_frame_to_array_mismatch():
-    with pytest.raises(ValueError, match=r"Dimension mismatch. "
-                       "Cannot map 3 value array-like to a 2 element DataFrame signal."):
-        signal.Broadcaster(foo_bar_baz).broadcast([1.0, 2.0, 3.0])
