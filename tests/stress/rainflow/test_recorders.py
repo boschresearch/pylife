@@ -172,25 +172,25 @@ def test_full_rainflow_recorder_two_non_zero():
     np.testing.assert_array_equal(expected_matrix, matrix)
 
 
-def test_lopvalue_rainflow_recorder_empty_matrix_frame_default():
+def test_lopvalue_rainflow_recorder_empty_matrix_series_default():
     fr = RFR.LoopValueRecorder()
-    matrix = fr.matrix_frame()
+    matrix = fr.matrix_series()
     assert matrix.index.names[0] == 'from'
     assert matrix.index.names[1] == 'to'
-    np.testing.assert_array_equal(matrix.to_numpy(), np.zeros((100, 1)))
+    np.testing.assert_array_equal(matrix.to_numpy(), np.zeros(100))
 
 
-def test_loopvalue_rainflow_recorder_empty_matrix_frame_5_bins():
+def test_loopvalue_rainflow_recorder_empty_matrix_series_5_bins():
     fr = RFR.LoopValueRecorder()
-    matrix = fr.matrix_frame(bins=5).to_numpy()
-    np.testing.assert_array_equal(matrix, np.zeros((25, 1)))
+    matrix = fr.matrix_series(bins=5).to_numpy()
+    np.testing.assert_array_equal(matrix, np.zeros(25))
 
 
 @pytest.mark.parametrize('value_from, value_to', [
     (23., 42.),
     (46., 84.)
 ])
-def test_loopvalue_rainflow_recorder_matrix_frame_one_non_zero(value_from, value_to):
+def test_loopvalue_rainflow_recorder_matrix_series_one_non_zero(value_from, value_to):
     fr = RFR.LoopValueRecorder()
     fr.record_values(value_from, value_to)
 
@@ -201,5 +201,5 @@ def test_loopvalue_rainflow_recorder_matrix_frame_one_non_zero(value_from, value
     expected_matrix = np.zeros((10, 10))
     expected_matrix[5, 5] = 1.
 
-    matrix = fr.matrix_frame()
-    pd.testing.assert_frame_equal(matrix, pd.DataFrame(expected_matrix.flatten(), index=expected_index))
+    matrix = fr.matrix_series()
+    pd.testing.assert_series_equal(matrix, pd.Series(expected_matrix.flatten(), index=expected_index))

@@ -24,6 +24,8 @@ be deprecated and eventually removed.
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
+import pandas as pd
+
 from .threepoint import ThreePointDetector
 from .fkm import FKMDetector
 from .recorders import FullRecorder
@@ -48,7 +50,7 @@ class AbstractRainflowCounter:
         return self._recorder.matrix(bins)
 
     def get_rainflow_matrix_frame(self, bins):
-        return self._recorder.matrix_frame(bins)
+        return pd.DataFrame(self._recorder.matrix_series(bins))
 
 
 class RainflowCounterThreePoint(AbstractRainflowCounter):

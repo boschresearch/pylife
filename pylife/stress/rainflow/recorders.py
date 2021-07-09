@@ -67,8 +67,8 @@ class LoopValueRecorder(AbstractRecorder):
         """
         return np.histogram2d(self._values_from, self._values_to, bins)
 
-    def matrix_frame(self, bins=10):
-        """Calculate a histogram of the recorded values into a pandas.DataFrame.
+    def matrix_series(self, bins=10):
+        """Calculate a histogram of the recorded values into a pandas.Series.
 
         An interval index is used to index the bins.
 
@@ -79,8 +79,8 @@ class LoopValueRecorder(AbstractRecorder):
 
         Returns
         -------
-        pandas.DataFrame
-            A pandas.DataFrame using a multi interval index in order to
+        pandas.Series
+            A pandas.Series using a multi interval index in order to
             index data point for a given from/to value pair.
         """
         hist, fr, to = self.matrix(bins)
@@ -88,7 +88,7 @@ class LoopValueRecorder(AbstractRecorder):
         index_to = pd.IntervalIndex.from_breaks(to)
 
         mult_idx = pd.MultiIndex.from_product([index_fr, index_to], names=['from', 'to'])
-        return pd.DataFrame(data=hist.flatten(), index=mult_idx)
+        return pd.Series(data=hist.flatten(), index=mult_idx)
 
 
 class FullRecorder(LoopValueRecorder):
