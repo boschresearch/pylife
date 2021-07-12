@@ -145,7 +145,7 @@ class MinerBase:
         """Parse collective and structure frequently used features"""
         # first, only select values of the collective with number of cycles >0
         self.original_collective = collective.copy()
-        if isinstance(collective, pd.DataFrame) \
+        if isinstance(collective, pd.Series) \
                 and isinstance(collective.index, pd.IntervalIndex):
             collective = self._transform_pylife_collective(collective)
             logger.debug("Recognized pylife-like transformed collective.")
@@ -190,13 +190,12 @@ class MinerBase:
 
         Parameters
         ----------
-        coll : pandas.DataFrame
+        coll : pandas.Series
             mean stress transformed pylife collective
-        columns: frequency
         index: pandas.IntervalIndex
         """
         load_classes = np.array(coll.index.mid)
-        self._original_pylife_frequencies = coll["frequency"].to_numpy()
+        self._original_pylife_frequencies = coll.to_numpy()
         accumulated_frequencies = np.flip(
             np.cumsum(np.flip(self._original_pylife_frequencies))
         )

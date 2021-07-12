@@ -59,7 +59,7 @@ class MeanstressMesh(stresssignal.CyclicStressAccessor):
         return pd.DataFrame({'sigma_a': Sa_transformed, 'R': np.ones_like(Sa_transformed) * R_goal},
                             index=self._obj.index)
 
-@pd.api.extensions.register_dataframe_accessor("meanstress_hist")
+@pd.api.extensions.register_series_accessor("meanstress_hist")
 class MeanstressHist:
 
     def __init__(self, df):
@@ -97,11 +97,11 @@ class MeanstressHist:
         binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
         bincount = int(np.ceil(Dsig_max / binsize))
         new_idx = pd.IntervalIndex.from_breaks(np.linspace(0, Dsig_max, bincount), name="range")
-        result = pd.DataFrame(data=np.zeros(bincount-1), index=new_idx, columns=['frequency'], dtype=np.int32)
+        result = pd.Series(data=np.zeros(bincount-1), index=new_idx, name='frequency', dtype=np.int32)
         for i, intv in enumerate(new_idx):
             cond = np.logical_and(Dsig >= intv.left, Dsig < intv.right)
-            result.loc[intv, 'frequency'] = np.int32(np.sum(self._df.values[cond]))
-        result['frequency'].iloc[-1] += np.int32(np.sum(self._df.values[Dsig == Dsig_max]))
+            result.loc[intv] = np.int32(np.sum(self._df.values[cond]))
+        result.iloc[-1] += np.int32(np.sum(self._df.values[Dsig == Dsig_max]))
         return result
 
 @pd.api.extensions.register_dataframe_accessor("FKM_Goodman")
