@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 
 import pylife.strength.fatigue
+import pylife.stress.rainflow
 
 
 def load_index():
@@ -32,60 +33,168 @@ def load_index():
                              end=nCode_XMax+nCode_Xbinsize/2, periods=8, name="range")
 
 
-expected_elementary = pd.DataFrame([
-    [2.057849E-06, 1.868333E-06, 3.067487E-06],
-    [3.039750E-05, 3.894329E-05, 1.999014E-08],
-    [1.507985E-05, 4.829155E-05, 0.000000E+00],
-    [6.434856E-06, 1.543643E-05, 0.000000E+00],
-    [6.296737E-06, 1.357734E-05, 0.000000E+00],
-    [1.751881E-06, 1.379607E-05, 0.000000E+00],
-    [0.000000E+00, 1.023415E-05, 0.000000E+00],
-    [0.000000E+00, 7.548524E-07, 0.000000E+00]], index=load_index())
-expected_haibach = pd.DataFrame([
-    [2.293973E-08, 2.083222E-08, 3.419927E-08],
-    [7.414563E-05, 9.499395E-05, 4.876799E-08],
-    [4.631857E-04, 1.483300E-03, 0.000000E+00],
-    [4.779392E-04, 1.146517E-03, 0.000000E+00],
-    [6.006944E-04, 1.295247E-03, 0.000000E+00],
-    [2.041326E-04, 1.607545E-03, 0.000000E+00],
-    [0.000000E+00, 1.408691E-03, 0.000000E+00],
-    [0.000000E+00, 1.198482E-04, 0.000000E+00]], index=load_index())
-expected_original = pd.DataFrame([
-    [0.00000000E+00, 0.00000000E+00, 0.00000000E+00],
-    [0.00000000E+00, 0.00000000E+00, 0.00000000E+00],
-    [2.08681840E-05, 6.68280320E-05, 0.00000000E+00],
-    [1.73881920E-05, 4.17121220E-05, 0.00000000E+00],
-    [2.80698130E-05, 6.05255350E-05, 0.00000000E+00],
-    [1.16511320E-05, 9.17526660E-05, 0.00000000E+00],
-    [0.00000000E+00, 9.49790820E-05, 0.00000000E+00],
-    [0.00000000E+00, 9.32071420E-06, 0.00000000E+00]], index=load_index())
+expected_elementary_1 = pd.Series([
+    2.057849E-06,
+    3.039750E-05,
+    1.507985E-05,
+    6.434856E-06,
+    6.296737E-06,
+    1.751881E-06,
+    0.000000E+00,
+    0.000000E+00
+], name='damage', index=load_index())
+expected_elementary_2 = pd.Series([
+    1.868333E-06,
+    3.894329E-05,
+    4.829155E-05,
+    1.543643E-05,
+    1.357734E-05,
+    1.379607E-05,
+    1.023415E-05,
+    7.548524E-07
+], name='damage', index=load_index())
+expected_elementary_3 = pd.Series([
+    3.067487E-06,
+    1.999014E-08,
+    0.000000E+00,
+    0.000000E+00,
+    0.000000E+00,
+    0.000000E+00,
+    0.000000E+00,
+    0.000000E+00
+], name='damage', index=load_index())
+
+expected_haibach_1 = pd.Series([
+    2.293973E-08,
+    7.414563E-05,
+    4.631857E-04,
+    4.779392E-04,
+    6.006944E-04,
+    2.041326E-04,
+    0.000000E+00,
+    0.000000E+00
+], name='damage', index=load_index())
+expected_haibach_2 = pd.Series([
+    2.083222E-08,
+    9.499395E-05,
+    1.483300E-03,
+    1.146517E-03,
+    1.295247E-03,
+    1.607545E-03,
+    1.408691E-03,
+    1.198482E-04
+], name='damage', index=load_index())
+expected_haibach_3 = pd.Series([
+    3.419927E-08,
+    4.876799E-08,
+    0.000000E+00,
+    0.000000E+00,
+    0.000000E+00,
+    0.000000E+00,
+    0.000000E+00,
+    0.000000E+00
+], name='damage', index=load_index())
+
+expected_original_1 = pd.Series([
+    0.00000000E+00,
+    0.00000000E+00,
+    2.08681840E-05,
+    1.73881920E-05,
+    2.80698130E-05,
+    1.16511320E-05,
+    0.00000000E+00,
+    0.00000000E+00,
+], name='damage', index=load_index())
+expected_original_2 = pd.Series([
+    0.00000000E+00,
+    0.00000000E+00,
+    6.68280320E-05,
+    4.17121220E-05,
+    6.05255350E-05,
+    9.17526660E-05,
+    9.49790820E-05,
+    9.32071420E-06
+], name='damage', index=load_index())
+expected_original_3 = pd.Series([
+    0.00000000E+00,
+    0.00000000E+00,
+    0.00000000E+00,
+    0.00000000E+00,
+    0.00000000E+00,
+    0.00000000E+00,
+    0.00000000E+00,
+    0.00000000E+00
+], name='damage', index=load_index())
 
 
 material = pd.DataFrame(
     index=['k_1', 'ND', 'SD'],
     columns=['elementary', 'haibach', 'original'],
-    data=[[4., 5., 6.], [4e7, 1e6, 1e8], [200, 180, 150]]
+    data=[[4., 5., 6.], [4e7, 1e6, 1e8], [100., 90., 75.]]
 )
 
-load_hist = pd.DataFrame([[1.227E5, 1.114E5, 1.829E5], [2.433E4, 3.117E4, 16],
-                          [1591, 5095, 0], [178, 427, 0], [64, 138, 0], [8, 63, 0],
-                          [0, 24, 0], [0, 1, 0]],
-                         index=load_index())
+load_hist_1 = pd.Series([
+    1.227E5,
+    2.433E4,
+    1591.0,
+    178.0,
+    64.0,
+    8.0,
+    0.0,
+    0.0,
+], name='frequency', index=load_index())
+
+load_hist_2 = pd.Series([
+    1.114E5,
+    3.117E4,
+    5095.0,
+    427.0,
+    138.0,
+    63.0,
+    24.0,
+    1.0,
+], name='frequency', index=load_index())
+
+load_hist_3 = pd.Series([
+    1.829E5,
+    16.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+], name='frequency', index=load_index())
 
 
-def test_damage_fatigue_elementary():
-    fatigue = material['elementary'].fatigue.miner_elementary().damage(load_hist)
-    pd.testing.assert_frame_equal(fatigue, expected_elementary, rtol=1e-3)
+@pytest.mark.parametrize('load_hist, expected', [
+    (load_hist_1, expected_elementary_1),
+    (load_hist_2, expected_elementary_2),
+    (load_hist_3, expected_elementary_3),
+])
+def test_damage_fatigue_elementary(load_hist, expected):
+    fatigue = material['elementary'].fatigue.miner_elementary().damage(load_hist.rainflow)
+    pd.testing.assert_series_equal(fatigue, expected, rtol=1e-3)
 
 
-def test_damage_fatigue_haibach():
-    fatigue = material['haibach'].fatigue.miner_haibach().damage(load_hist)
-    pd.testing.assert_frame_equal(fatigue, expected_haibach, rtol=1e-3)
+@pytest.mark.parametrize('load_hist, expected', [
+    (load_hist_1, expected_haibach_1),
+    (load_hist_2, expected_haibach_2),
+    (load_hist_3, expected_haibach_3),
+])
+def test_damage_fatigue_haibach(load_hist, expected):
+    fatigue = material['haibach'].fatigue.miner_haibach().damage(load_hist.rainflow)
+    pd.testing.assert_series_equal(fatigue, expected, rtol=1e-3)
 
 
-def test_damage_fatigue_original():
-    fatigue = material['original'].fatigue.damage(load_hist)
-    pd.testing.assert_frame_equal(fatigue, expected_original, rtol=1e-3)
+@pytest.mark.parametrize('load_hist, expected', [
+    (load_hist_1, expected_original_1),
+    (load_hist_2, expected_original_2),
+    (load_hist_3, expected_original_3),
+])
+def test_damage_fatigue_original(load_hist, expected):
+    fatigue = material['original'].fatigue.damage(load_hist.rainflow)
+    pd.testing.assert_series_equal(fatigue, expected, rtol=1e-3)
 
 
 @pytest.mark.parametrize('TS, allowed_pf, expected', [

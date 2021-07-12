@@ -38,7 +38,7 @@ def nCode_reference_results():
                               [1.751881E-06, 1.379607E-05, 0.000000E+00],
                               [0.000000E+00, 1.023415E-05, 0.000000E+00],
                               [0.000000E+00, 7.548524E-07, 0.000000E+00]],
-                             index=load_index())
+                             index=load_index()).stack()
     miner_haibach = pd.DataFrame([[2.293973E-08, 2.083222E-08, 3.419927E-08],
                                   [7.414563E-05, 9.499395E-05, 4.876799E-08],
                                   [4.631857E-04, 1.483300E-03, 0.000000E+00],
@@ -47,7 +47,7 @@ def nCode_reference_results():
                                   [2.041326E-04, 1.607545E-03, 0.000000E+00],
                                   [0.000000E+00, 1.408691E-03, 0.000000E+00],
                                   [0.000000E+00, 1.198482E-04, 0.000000E+00]],
-                                 index=load_index())
+                                 index=load_index()).stack()
     original = pd.DataFrame([[0.00000000E+00, 0.00000000E+00, 0.00000000E+00],
                              [0.00000000E+00, 0.00000000E+00, 0.00000000E+00],
                              [2.08681840E-05, 6.68280320E-05, 0.00000000E+00],
@@ -56,18 +56,21 @@ def nCode_reference_results():
                              [1.16511320E-05, 9.17526660E-05, 0.00000000E+00],
                              [0.00000000E+00, 9.49790820E-05, 0.00000000E+00],
                              [0.00000000E+00, 9.32071420E-06, 0.00000000E+00]],
-                            index=load_index())
+                            index=load_index()).stack()
+    elementar.name = 'damage'
+    miner_haibach.name = 'damage'
+    original.name = 'damage'
     return [elementar, miner_haibach, original]
 
 
 material = pd.DataFrame(index=['k_1', 'ND_50', 'SD_50'],
                         columns=['elementar', 'MinerHaibach', 'original'],
-                        data=[[4, 5, 6], [4e7, 1e6, 1e8], [200, 180, 150]])
+                        data=[[4, 5, 6], [4e7, 1e6, 1e8], [100, 90, 75]])
 
 loads = pd.DataFrame([[1.227E5, 1.114E5, 1.829E5], [2.433E4, 3.117E4, 16],
                       [1591, 5095, 0], [178, 427, 0], [64, 138, 0], [8, 63, 0],
                       [0, 24, 0], [0, 1, 0]],
-                     index=load_index())
+                     index=load_index()).stack()
 
 
 @pytest.mark.parametrize('method, expected', zip(material, nCode_reference_results()))
@@ -75,7 +78,7 @@ def test_calc_damage(method, expected):
     with pytest.warns(DeprecationWarning):
         damage_calc = sn_curve.FiniteLifeCurve(**material[method])
     damage = damage_calc.calc_damage(loads, method=method)
-    pd.testing.assert_frame_equal(damage, expected, rtol=0.001, atol=0)
+    pd.testing.assert_series_equal(damage, expected, rtol=0.001, atol=0)
 
 
 def test_calc_damage_index_name():
@@ -85,4 +88,5 @@ def test_calc_damage_index_name():
         damage = sn_curve.FiniteLifeCurve(**material['elementar']).calc_damage(foo_loads,
                                                                                method='elementar',
                                                                                index_name='foo')
-    assert damage.index.name == 'foo'
+
+    assert damage.index.names[0] == 'foo'

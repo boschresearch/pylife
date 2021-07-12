@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 
 import pylife.strength.fatigue
+import pylife.stress.rainflow
 
 class FiniteLifeBase:
     """Base class for SN curve calculations - either in logarithmic or regular scale"""
@@ -165,7 +166,7 @@ class FiniteLifeCurve(FiniteLifeBase):
             names = ["range" if name == index_name else name for name in loads.index.names]
             loads.index.set_names(names, inplace=True)
 
-        damage = estimator.damage(loads)
+        damage = estimator.damage(loads.rainflow)
         if index_name != "range":
             names = [index_name if name == "range" else name for name in loads.index.names]
             damage.index.set_names(names, inplace=True)
