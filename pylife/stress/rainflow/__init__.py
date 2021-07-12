@@ -64,6 +64,7 @@ __maintainer__ = __author__
 
 from .general import find_turns, AbstractDetector, AbstractRecorder
 from .threepoint import ThreePointDetector
+from .fourpoint import FourPointDetector
 from .fkm import FKMDetector
 from .recorders import LoopValueRecorder, FullRecorder
 
@@ -76,6 +77,7 @@ __all__ = [
     'AbstractDetector',
     'AbstractRecorder',
     'ThreePointDetector',
+    'FourPointDetector',
     'FKMDetector',
     'LoopValueRecorder',
     'FullRecorder',
