@@ -158,14 +158,18 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
 
         transformed = self.transform_to_failure_probability(failure_probability)
 
-        load, wc = signal.Broadcaster(transformed).broadcast(np.asfarray(load))
+        load_index = None if not isinstance(load, pd.Series) else load.index
+        load = np.asfarray(load)
+        load, wc = signal.Broadcaster(transformed).broadcast(load)
         cycles = np.full_like(load, np.inf)
 
         k = self._make_k(load, wc.SD)
         in_limit = np.isfinite(k)
         cycles[in_limit] = wc.ND[in_limit] * np.power(load[in_limit]/wc.SD[in_limit], -k[in_limit])
 
-        return cycles
+        if load_index is None:
+            return cycles
+        return pd.Series(cycles, index=load_index)
 
     def basquin_load(self, cycles, failure_probability=0.5):
         """Calculate the load values from loads according to the Basquin equation.

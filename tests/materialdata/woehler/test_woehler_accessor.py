@@ -189,13 +189,23 @@ def test_woehler_basquin_cycles_integer_load():
     wc_data.woehler.basquin_cycles(200)
 
 
-def test_woehler_integer_overflow():
-    wc = pd.Series({
-        'k_1': 4.,
-        'SD': 100.,
-        'ND': 1e6
-    })
-    assert wc.woehler.basquin_cycles(50) > 0.0
+wc_int_overflow = pd.Series({
+    'k_1': 4.,
+    'SD': 100.,
+    'ND': 1e6
+})
+
+def test_woehler_integer_overflow_scalar():
+    assert wc_int_overflow.woehler.basquin_cycles(50) > 0.0
+
+def test_woehler_integer_overflow_list():
+    assert (wc_int_overflow.woehler.basquin_cycles([50, 50]) > 0.0).all()
+
+def test_woehler_integer_overflow_series():
+    load = pd.Series([50, 50], index=pd.Index(['foo', 'bar']))
+    cycles = wc_int_overflow.woehler.basquin_cycles(load)
+    assert (cycles > 0.0).all()
+    pd.testing.assert_index_equal(cycles.index, load.index)
 
 
 def test_woehler_ND():
