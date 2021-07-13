@@ -25,79 +25,109 @@ import pylife.core.signal as signal
 from pylife.core.broadcaster import Broadcaster
 
 
-foo_bar_baz = pd.DataFrame({'foo': [1.0, 1.0], 'bar': [1.0, 1.0], 'baz': [1.0, 1.0]})
+foo_bar_series = pd.Series({'foo': 1.0, 'bar': 2.0})
+foo_bar_series_twice_in_frame = pd.DataFrame([foo_bar_series, foo_bar_series])
 
+series_named_index = foo_bar_series.copy()
+series_named_index.index.name = 'idx1'
 
-def test_broadcast_series_to_scalar():
-    param, obj = Broadcaster(foo_bar_baz.loc[0]).broadcast(1.0)
-
-    assert param == 1.0
-    pd.testing.assert_series_equal(foo_bar_baz.loc[0], obj)
+foo_bar_frame = pd.DataFrame({'foo': [1.0, 1.5], 'bar': [2.0, 1.5]})
 
 
 def test_broadcast_series_to_array():
-    param, obj = Broadcaster(foo_bar_baz.loc[0]).broadcast([1.0, 2.0])
+    param, obj = Broadcaster(foo_bar_series).broadcast([1.0, 2.0])
 
-    assert isinstance(param, np.ndarray)
-    np.testing.assert_array_equal(param, [1.0, 2.0])
-    pd.testing.assert_frame_equal(foo_bar_baz, obj)
-
-
-def test_broadcast_series_to_series():
-    series = pd.Series([1.0, 2.0], index=[3, 4])
-    param, obj = Broadcaster(foo_bar_baz.loc[0]).broadcast(series)
-
-    expected = foo_bar_baz.set_index(series.index)
-    pd.testing.assert_frame_equal(expected, obj)
-
-
-def test_broadcast_frame_to_scalar():
-    param, obj = Broadcaster(foo_bar_baz).broadcast(1.0)
-
-    assert param.shape == (2,)
-    np.testing.assert_array_equal(param, [1.0, 1.0])
-    pd.testing.assert_frame_equal(foo_bar_baz, obj)
+    pd.testing.assert_series_equal(param, pd.Series([1.0, 2.0]))
+    pd.testing.assert_frame_equal(foo_bar_series_twice_in_frame, obj)
 
 
 def test_broadcast_frame_to_array_match():
-    param, obj = Broadcaster(foo_bar_baz).broadcast([1.0, 2.0])
+    param, obj = Broadcaster(foo_bar_frame).broadcast([1.0, 2.0])
 
     np.testing.assert_array_equal(param, [1.0, 2.0])
-    pd.testing.assert_frame_equal(foo_bar_baz, obj)
+    pd.testing.assert_frame_equal(foo_bar_frame, obj)
 
 
 def test_broadcast_frame_to_array_mismatch():
     with pytest.raises(ValueError, match=r"Dimension mismatch. "
                        "Cannot map 3 value array-like to a 2 element DataFrame signal."):
-        Broadcaster(foo_bar_baz).broadcast([1.0, 2.0, 3.0])
+        Broadcaster(foo_bar_frame).broadcast([1.0, 2.0, 3.0])
 
 
-def test_broadcast_series_to_frame_2_elements():
+def test_broadcast_series_to_scalar():
+    param, obj = Broadcaster(foo_bar_series).broadcast(1.0)
+
+    assert param == 1.0
+    pd.testing.assert_series_equal(foo_bar_series, obj)
+
+
+def test_broadcast_frame_to_scalar():
+    param, obj = Broadcaster(foo_bar_frame).broadcast(1.0)
+
+    expected_param = pd.Series([1.0, 1.0], index=foo_bar_frame.index)
+    pd.testing.assert_series_equal(expected_param, param)
+    pd.testing.assert_frame_equal(foo_bar_frame, obj)
+
+
+def test_broadcast_series_to_series_index_none():
+    series = pd.Series([1.0, 2.0], index=pd.Index([3, 4], name='idx2'))
+    param, obj = Broadcaster(foo_bar_series).broadcast(series)
+
+    expected = pd.DataFrame([foo_bar_series, foo_bar_series], index=series.index)
+    pd.testing.assert_series_equal(series, param)
+    pd.testing.assert_frame_equal(expected, obj)
+
+
+def test_broadcast_series_to_series_2_elements_index_none():
+    series = pd.Series([5., 6.], index=pd.Index(['x', 'y'], name='idx2'))
+
+    param, obj = Broadcaster(series_named_index).broadcast(series)
+
+    expected_param = pd.Series({
+        ('foo', 'x'): 5.0,
+        ('foo', 'y'): 6.0,
+        ('bar', 'x'): 5.0,
+        ('bar', 'y'): 6.0
+    })
+    expected_obj = pd.Series({
+        ('foo', 'x'): 1.0,
+        ('foo', 'y'): 1.0,
+        ('bar', 'x'): 2.0,
+        ('bar', 'y'): 2.0
+    })
+    expected_obj.index.names = ['idx1', 'idx2']
+    expected_param.index.names = ['idx1', 'idx2']
+
+    pd.testing.assert_series_equal(param, expected_param)
+    pd.testing.assert_series_equal(obj, expected_obj)
+
+
+def test_broadcast_series_to_frame_2_elements_index_none():
     df = pd.DataFrame({
         'a': [1, 3],
         'b': [2, 4]
     }, index=['x', 'y'])
 
-    param, obj = Broadcaster(foo_bar_baz.loc[0]).broadcast(df)
+    param, obj = Broadcaster(foo_bar_series).broadcast(df)
 
     expected_obj = pd.DataFrame({
-        'foo': [1.0, 1.0], 'bar': [1.0, 1.0], 'baz': [1.0, 1.0]
+        'foo': [1.0, 1.0], 'bar': [2.0, 2.0]
     }, index=['x', 'y'])
 
     pd.testing.assert_frame_equal(param, df)
     pd.testing.assert_frame_equal(obj, expected_obj)
 
 
-def test_broadcast_series_to_frame_3_elements():
+def test_broadcast_series_to_frame_3_elements_index_none():
     df = pd.DataFrame({
         'a': [1, 3, 5],
         'b': [2, 4, 6]
     }, index=['x', 'y', 'z'])
 
-    param, obj = Broadcaster(foo_bar_baz.loc[0]).broadcast(df)
+    param, obj = Broadcaster(foo_bar_series).broadcast(df)
 
     expected_obj = pd.DataFrame({
-        'foo': [1.0, 1.0, 1.0], 'bar': [1.0, 1.0, 1.0], 'baz': [1.0, 1.0, 1.0]
+        'foo': [1.0, 1.0, 1.0], 'bar': [2.0, 2.0, 2.0],
     }, index=['x', 'y', 'z'])
 
     pd.testing.assert_frame_equal(param, df)
@@ -201,14 +231,14 @@ def test_broadcast_frame_to_frame_different_single_index_name():
     foo_bar = pd.DataFrame({'foo': [1, 2], 'bar': [3, 4]}, index=pd.Index([1, 2], name='srcname'))
 
     expected_obj = pd.DataFrame({
-        'foo': [1, 2, 1, 2],
-        'bar': [3, 4, 3, 4],
-    }, index=pd.MultiIndex.from_tuples([(1, 'x'), (2, 'x'), (1, 'y'), (2, 'y')], names=['srcname', 'iname1']))
+        'foo': [1, 1, 2, 2],
+        'bar': [3, 3, 4, 4],
+    }, index=pd.MultiIndex.from_tuples([(1, 'x'), (1, 'y'), (2, 'x'), (2, 'y')], names=['srcname', 'iname1']))
 
     expected_param = pd.DataFrame({
-        'a': [1, 1, 3, 3],
-        'b': [2, 2, 4, 4]
-    }, index=pd.MultiIndex.from_tuples([(1, 'x'), (2, 'x'), (1, 'y'), (2, 'y')], names=['srcname', 'iname1']))
+        'a': [1, 3, 1, 3],
+        'b': [2, 4, 2, 4]
+    }, index=pd.MultiIndex.from_tuples([(1, 'x'), (1, 'y'), (2, 'x'), (2, 'y')], names=['srcname', 'iname1']))
 
     param, obj = Broadcaster(foo_bar).broadcast(df)
 

@@ -23,17 +23,84 @@ import pandas as pd
 
 
 class Broadcaster:
+    """ The Broadcaster to align pyLife signals to operands
+
+
+    Series           Scalar     Series           Scalar
+    |------|-----|              |------|-----|
+    | idx  |     |              | idx  |     |
+    |------|-----| + 5.0   ->   |------|-----| + 5.0
+    | foo  | 1.0 |              | foo  | 1.0 |
+    | bar  | 2.0 |              | bar  | 2.0 |
+    |------|-----|              |------|-----|
+
+
+    DataFrame              Scalar     DataFrame              Series
+    |------|-----|-----|              |------|-----|-----|   |------|-----|
+    | idx  | foo | bar |              | idx  | foo | bar |   | idx  |     |
+    |------|-----|-----|              |------|-----|-----|   |------|-----|
+    | 0    | 1.0 | 2.0 | + 5.0   ->   | 0    | 1.0 | 2.0 | + | 0    | 5.0 |
+    | 1    | 1.0 | 2.0 |              | 1    | 1.0 | 2.0 |   | 1    | 5.0 |
+    | ...  | ... | ... |              | ...  | ... | ... |   | ...  | ... |
+    |------|-----|-----|              |------|-----|-----|   |------|-----|
+
+
+    Series           Series/DataFrame        DataFrame              Series/DataFrame
+    |------|-----|   |------|-----|          |------|-----|-----|   |------|-----|
+    | None |     |   | idx  |     |          | idx  | foo | bar |   | idx  |     |
+    |------|-----| + |------|-----|    ->    |------|-----|-----| + |------|-----|
+    | foo  | 1.0 |   | 0    | 5.0 |          | 0    | 1.0 | 2.0 |   | 0    | 5.0 |
+    | bar  | 2.0 |   | 1    | 6.0 |          | 1    | 1.0 | 2.0 |   | 1    | 6.0 |
+    |------|-----|   | ...  | ... |          | ...  | ... | ... |   | ...  | ... |
+                     |------|-----|          |------|-----|-----|   |------|-----|
+
+
+    Series/DataFrame Series/DataFrame      Series/DataFrame Series/DataFrame
+    |------|-----|   |------|-----|        |------|-----|   |------|-----|
+    | xidx |     |   | xidx |     |        | xidx |     |   | xidx |     |
+    |------|-----| + |------|-----|   ->   |------|-----| + |------|-----|
+    | foo  | 1.0 |   | tau  | 5.0 |        | foo  | 1.0 |   | foo  | nan |
+    | bar  | 2.0 |   | bar  | 6.0 |        | bar  | 2.0 |   | bar  | 6.0 |
+    |------|-----|   |------|-----|        | tau  | nan |   | tau  | 5.0 |
+                                           |------|-----|   |------|-----|
+
+
+    Series/DataFrame Series/DataFrame      Series/DataFrame        Series/DataFrame
+    |------|-----|   |------|-----|        |------|------|-----|   |------|------|-----|
+    | xidx |     |   | yidx |     |        | xidx | yidx |     |   | xidx | yidx |     |
+    |------|-----| + |------|-----|   ->   |------|------|-----| + |------|------|-----|
+    | foo  | 1.0 |   | tau  | 5.0 |        | foo  | tau  | 1.0 |   | foo  | tau  | 5.0 |
+    | bar  | 2.0 |   | chi  | 6.0 |        |      | chi  | 1.0 |   |      | chi  | 6.0 |
+    |------|-----|   |------|-----|        | bar  | tau  | 2.0 |   | bar  | tau  | 5.0 |
+                                           |      | chi  | 2.0 |   |      | chi  | 6.0 |
+                                           |------|------|-----|   |------|------|-----|
+
+
+
+
+
+
+
+
+
+
+
+
+    """
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
 
     def broadcast(self, parameter):
-        if isinstance(self._obj, pd.Series):
-            if isinstance(parameter, pd.DataFrame):
-                return self._broadcast_series_to_frame(parameter)
-            return self._broadcast_series(parameter)
-        if isinstance(parameter, pd.DataFrame):
-            return self._broadcast_frame_to_frame(parameter)
-        return self._broadcast_frame(parameter)
+        if not isinstance(parameter, pd.Series) and not isinstance(parameter, pd.DataFrame):
+            if isinstance(self._obj, pd.Series):
+                return self._broadcast_series(parameter)
+            return self._broadcast_frame(parameter)
+
+        if self._obj.index.names == [None] and isinstance(self._obj, pd.Series):
+            df = pd.DataFrame(index=parameter.index, columns=self._obj.index).assign(**self._obj)
+            return parameter, df
+
+        return self._broadcast_frame_to_frame(parameter)
 
     def _broadcast_series(self, parameter):
         prm = np.asarray(parameter)
@@ -42,9 +109,9 @@ class Broadcaster:
 
         df = self._broadcasted_dataframe(parameter)
         if isinstance(parameter, pd.Series):
-            df.set_index(parameter.index, inplace=True)
+            return parameter, df.set_index(parameter.index, inplace=True)
 
-        return prm, df
+        return pd.Series(prm), df
 
     def _broadcast_series_to_frame(self, parameter):
         return parameter, self._broadcasted_dataframe(parameter).set_index(parameter.index)
@@ -60,13 +127,13 @@ class Broadcaster:
         def cross_join_and_align_obj_and_parameter():
             prm_index = parameter.index.to_frame().reset_index(drop=True)
             obj_index = self._obj.index.to_frame()[obj_index_names]
-            new_index = (prm_index
-                         .join(obj_index, how='cross')
+            new_index = (obj_index
+                         .join(prm_index, how='cross')
                          .set_index(total_columns)
                          .reorder_levels(total_columns).index)
 
-            obj = pd.DataFrame(index=new_index).join(self._obj, how='left')
-            prm = parameter.join(obj, how='right')[parameter.columns]
+            obj = _broadcast_to(self._obj, new_index)
+            prm = _broadcast_to(parameter, new_index)
 
             return obj.align(prm, axis=0)
 
@@ -88,9 +155,21 @@ class Broadcaster:
             raise ValueError("Dimension mismatch. "
                              "Cannot map %d value array-like to a %d element DataFrame signal."
                              %(len(parameter), len(self._obj)))
-        return parameter, self._obj
+        return pd.Series(parameter, index=self._obj.index), self._obj
 
     def _broadcasted_dataframe(self, parameter):
         data = np.empty((len(parameter), len(self._obj)))
         df = pd.DataFrame(data, columns=self._obj.index).assign(**self._obj)
         return df
+
+
+def _broadcast_to(obj, new_index):
+    if isinstance(obj, pd.DataFrame):
+        new = obj
+    else:
+        new = pd.DataFrame(obj)
+    new = pd.DataFrame(index=new_index).join(new, how='left')
+    if isinstance(obj, pd.Series):
+        new = new.iloc[:, 0]
+        new.name = None
+    return new
