@@ -58,3 +58,28 @@ class RainflowAccessor(signal.PylifeSignal):
     def use_class_left(self):
         self._class_location = 'left'
         return self
+
+    def scale(self, factors):
+        return self._shift_or_scale(lambda x, y: x * y, factors).rainflow
+
+    def shift(self, diffs):
+        return self._shift_or_scale(lambda x, y: x + y, diffs, skip=['range']).rainflow
+
+    def _shift_or_scale(self, func, operand, skip=[]):
+        def do_transform_interval_index(level_name):
+            level = obj.index.get_level_values(level_name)
+            if level.name not in self._obj.index.names or level_name in skip:
+                return level
+            values = level.values
+            left = func(values.left, operand_broadcast)
+            right = func(values.right, operand_broadcast)
+
+            index = pd.IntervalIndex.from_arrays(left, right)
+            return index
+
+        operand_broadcast, obj = self.broadcast(operand)
+
+        levels = [do_transform_interval_index(lv) for lv in obj.index.names]
+
+        new_index = pd.MultiIndex.from_arrays(levels, names=obj.index.names)
+        return pd.Series(obj.values, index=new_index, name='frequency')
