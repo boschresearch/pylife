@@ -171,5 +171,5 @@ def _broadcast_to(obj, new_index):
     new = pd.DataFrame(index=new_index).join(new, how='left')
     if isinstance(obj, pd.Series):
         new = new.iloc[:, 0]
-        new.name = None
+        new.name = obj.name
     return new

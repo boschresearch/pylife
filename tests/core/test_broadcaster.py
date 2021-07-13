@@ -21,7 +21,6 @@ import pytest
 import numpy as np
 import pandas as pd
 
-import pylife.core.signal as signal
 from pylife.core.broadcaster import Broadcaster
 
 
@@ -132,6 +131,31 @@ def test_broadcast_series_to_frame_3_elements_index_none():
 
     pd.testing.assert_frame_equal(param, df)
     pd.testing.assert_frame_equal(obj, expected_obj)
+
+
+def test_broadcast_series_to_seires_same_single_index():
+    series = pd.Series([1, 3], index=pd.Index(['x', 'y'], name='iname1'), name='src')
+
+    foo_bar = pd.Series([1, 2], index=pd.Index(['x', 'y'], name='iname1'), name='dst')
+
+    param, obj = Broadcaster(foo_bar).broadcast(series)
+    pd.testing.assert_series_equal(param, series)
+    pd.testing.assert_series_equal(obj, foo_bar)
+
+
+def test_broadcast_series_to_series_different_single_index_name():
+    series = pd.Series([1, 3], index=pd.Index(['x', 'y'], name='iname1'), name='dest')
+
+    foo_bar = pd.Series([1, 2], index=pd.Index([1, 2], name='srcname'), name='src')
+
+    expected_index = pd.MultiIndex.from_tuples([(1, 'x'), (1, 'y'), (2, 'x'), (2, 'y')], names=['srcname', 'iname1'])
+    expected_obj = pd.Series([1, 1, 2, 2], name='src', index=expected_index)
+    expected_param = pd.Series([1, 3, 1, 3], name='dest', index=expected_index)
+
+    param, obj = Broadcaster(foo_bar).broadcast(series)
+
+    pd.testing.assert_series_equal(param, expected_param)
+    pd.testing.assert_series_equal(obj, expected_obj)
 
 
 def test_broadcast_frame_to_frame_same_single_index():
