@@ -152,3 +152,12 @@ def test_register_method_fail_already():
         @signal.register_method(AccessorNone, 'already_here')
         def already_here_method(df):
             return pd.DataFrame({'baz': df['foo'] + df['bar']})
+
+
+def test_pandas_series():
+    series = foo_bar_baz.iloc[0]
+    pd.testing.assert_series_equal(series.test_accessor_none.to_pandas(), series)
+
+
+def test_pandas_frame():
+    pd.testing.assert_frame_equal(foo_bar_baz.test_accessor_none.to_pandas(), foo_bar_baz)

@@ -75,7 +75,6 @@ class PylifeSignal(Broadcaster):
 
         return self._MethodCaller(method, self._obj)
 
-
     @classmethod
     def _register_method(cls, method_name):
         def method_decorator(method):
@@ -85,6 +84,24 @@ class PylifeSignal(Broadcaster):
                 raise ValueError("%s already has an attribute '%s'" % (cls.__name__, method_name))
             cls._method_dict[method_name] = method
         return method_decorator
+
+    def to_pandas(self):
+        """Expose the pandas object of the signal.
+
+        Returns
+        -------
+        pandas_object : pd.DataFrame or pd.Series
+            The pandas object representing the signal
+
+
+        Notes
+        -----
+
+        The default implementation just returns the object given when
+        instantiating the signal class. Derived classes may return a modified
+        object or augmented, if they store some extra information.
+        """
+        return self._obj
 
 
 def register_method(cls, method_name):
