@@ -24,22 +24,19 @@ import numpy as np
 import pylife.stress.rainflow
 
 
-def matrix_index():
-    range_intervals = pd.interval_range(-4., 8., 3)
-    mean_intervals = pd.interval_range(-2., 4., 3)
-    return pd.MultiIndex.from_product([range_intervals, mean_intervals])
-
 @pytest.fixture
 def rainflow_matrix_range_mean():
-    index = matrix_index()
-    index.names = ['range', 'mean']
+    range_intervals = pd.interval_range(0., 12., 3)
+    mean_intervals = pd.interval_range(-2., 4., 3)
+    index = pd.MultiIndex.from_product([range_intervals, mean_intervals], names=['range', 'mean'])
     return pd.Series(1, index=index)
 
 
 @pytest.fixture
 def rainflow_matrix_from_to():
-    index = matrix_index()
-    index.names = ['from', 'to']
+    from_intervals = pd.interval_range(-4., 8., 3)
+    to_intervals = pd.interval_range(-2., 4., 3)
+    index = pd.MultiIndex.from_product([from_intervals, to_intervals], names=['from', 'to'])
     return pd.Series(1, index=index)
 
 
@@ -84,25 +81,25 @@ def test_rainflow_from_to_amplitude_right(rainflow_matrix_from_to):
     pd.testing.assert_series_equal(rainflow_matrix_from_to.rainflow.use_class_right().amplitude, expected)
 
 
-def test_rainflow_range_mean_amplitude_right(rainflow_matrix_range_mean):
-    expected = pd.Series([0., 0., 0., 2., 2., 2., 4., 4., 4.],
-                         name='amplitude',
-                         index=rainflow_matrix_range_mean.index)
-    pd.testing.assert_series_equal(rainflow_matrix_range_mean.rainflow.use_class_right().amplitude, expected)
-
-
 def test_rainflow_range_mean_amplitude_mid(rainflow_matrix_range_mean):
-    expected = pd.Series([-1., -1., -1., 1., 1., 1., 3., 3., 3.],
+    expected = pd.Series([1., 1., 1., 3., 3., 3., 5., 5., 5.],
                          name='amplitude',
                          index=rainflow_matrix_range_mean.index)
     pd.testing.assert_series_equal(rainflow_matrix_range_mean.rainflow.amplitude, expected)
 
 
 def test_rainflow_range_mean_amplitude_left(rainflow_matrix_range_mean):
-    expected = pd.Series([-2., -2., -2., 0., 0., 0., 2., 2., 2.],
+    expected = pd.Series([0., 0., 0., 2., 2., 2., 4., 4., 4.],
                          name='amplitude',
                          index=rainflow_matrix_range_mean.index)
     pd.testing.assert_series_equal(rainflow_matrix_range_mean.rainflow.use_class_left().amplitude, expected)
+
+
+def test_rainflow_range_mean_amplitude_right(rainflow_matrix_range_mean):
+    expected = pd.Series([2., 2., 2., 4., 4., 4., 6., 6., 6.],
+                         name='amplitude',
+                         index=rainflow_matrix_range_mean.index)
+    pd.testing.assert_series_equal(rainflow_matrix_range_mean.rainflow.use_class_right().amplitude, expected)
 
 
 def test_rainflow_frequency(rainflow_matrix_range_mean):
@@ -158,7 +155,7 @@ def test_rainflow_from_to_scale_series(rainflow_matrix_from_to):
 
 
 def test_rainflow_range_mean_scale(rainflow_matrix_range_mean):
-    range_intervals = pd.interval_range(-2., 4., 3)
+    range_intervals = pd.interval_range(0., 6., 3)
     mean_intervals = pd.interval_range(-1., 2., 3)
     expected_index = pd.MultiIndex.from_product([range_intervals, mean_intervals], names=['range', 'mean'])
     expected = pd.Series(1, index=expected_index, name='frequency')
@@ -171,13 +168,13 @@ def test_rainflow_range_mean_scale(rainflow_matrix_range_mean):
 def test_rainflow_range_mean_scale_series(rainflow_matrix_range_mean):
     range_intervals = pd.IntervalIndex.from_arrays(
         [
-            -2., -8., -2., -8., -2, -8.,
-            0., 0., 0., 0., 0., 0.,
-            2., 8., 2., 8., 2., 8.
-        ], [
             0., 0., 0., 0., 0., 0.,
             2., 8., 2., 8., 2., 8.,
             4., 16., 4., 16., 4., 16.
+        ], [
+            2., 8., 2., 8., 2., 8.,
+            4., 16., 4., 16., 4., 16.,
+            6., 24., 6., 24., 6., 24.
         ]
     )
     mean_intervals = pd.IntervalIndex.from_arrays(
@@ -250,7 +247,7 @@ def test_rainflow_from_to_shift_series(rainflow_matrix_from_to):
 
 
 def test_rainflow_range_mean_shift_scalar(rainflow_matrix_range_mean):
-    range_intervals = pd.interval_range(-4., 8., 3)
+    range_intervals = pd.interval_range(0., 12., 3)
     mean_intervals = pd.interval_range(2., 8., 3)
     expected_index = pd.MultiIndex.from_product([range_intervals, mean_intervals], names=['range', 'mean'])
     expected = pd.Series(1, index=expected_index, name='frequency')
@@ -263,13 +260,13 @@ def test_rainflow_range_mean_shift_scalar(rainflow_matrix_range_mean):
 def test_rainflow_range_mean_shift_series(rainflow_matrix_range_mean):
     range_intervals = pd.IntervalIndex.from_arrays(
         [
-            -4., -4., -4., -4., -4., -4.,
-            0., 0., 0., 0., 0., 0.,
-            4., 4., 4., 4., 4., 4.
-        ], [
             0., 0., 0., 0., 0., 0.,
             4., 4., 4., 4., 4., 4.,
             8., 8., 8., 8., 8., 8.
+        ], [
+            4., 4., 4., 4., 4., 4.,
+            8., 8., 8., 8., 8., 8.,
+            12., 12., 12., 12., 12., 12.
         ]
     )
     mean_intervals = pd.IntervalIndex.from_arrays(
