@@ -137,15 +137,21 @@ class Broadcaster:
 
             return obj.align(prm, axis=0)
 
+        uuids = _replace_none_index_names_with_unique_string([parameter, self._obj])
+
         prm_index_names = list(parameter.index.names)
         obj_index_names = list(self._obj.index.names)
+
         total_columns = obj_index_names + [lv for lv in prm_index_names if lv not in obj_index_names]
         have_commons = len(total_columns) < len(prm_index_names) + len(obj_index_names)
 
         if have_commons:
-            return align_and_reorder()
+            prm, obj = align_and_reorder()
+        else:
+            obj, prm = cross_join_and_align_obj_and_parameter()
 
-        obj, prm = cross_join_and_align_obj_and_parameter()
+        _replace_unique_string_with_none_name([obj, prm, self._obj, parameter], uuids)
+
         return prm, obj
 
     def _broadcast_frame(self, parameter):
@@ -168,8 +174,30 @@ def _broadcast_to(obj, new_index):
         new = obj
     else:
         new = pd.DataFrame(obj)
+
     new = pd.DataFrame(index=new_index).join(new, how='left')
     if isinstance(obj, pd.Series):
         new = new.iloc[:, 0]
         new.name = obj.name
     return new
+
+
+def _replace_none_index_names_with_unique_string(objs):
+    import uuid
+
+    def make_uuid():
+        this_uuid = uuid.uuid4().hex
+        uuids.append(this_uuid)
+        return this_uuid
+
+    uuids = []
+
+    for obj in objs:
+        obj.index.names = [name if name is not None else make_uuid() for name in obj.index.names]
+
+    return uuids
+
+
+def _replace_unique_string_with_none_name(objs, uuids):
+    for obj in objs:
+        obj.index.names = [None if name in uuids else name for name in obj.index.names]

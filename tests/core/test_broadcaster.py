@@ -68,18 +68,8 @@ def test_broadcast_frame_to_scalar():
     pd.testing.assert_frame_equal(foo_bar_frame, obj)
 
 
-def test_broadcast_series_to_series_index_none():
-    series = pd.Series([1.0, 2.0], index=pd.Index([3, 4], name='idx2'))
-    param, obj = Broadcaster(foo_bar_series).broadcast(series)
-
-    expected = pd.DataFrame([foo_bar_series, foo_bar_series], index=series.index)
-    pd.testing.assert_series_equal(series, param)
-    pd.testing.assert_frame_equal(expected, obj)
-
-
-def test_broadcast_series_to_series_2_elements_index_none():
-    series = pd.Series([5., 6.], index=pd.Index(['x', 'y'], name='idx2'))
-
+def test_broadcast_series_index_named_to_series_index_named():
+    series = pd.Series([5.0, 6.0], index=pd.Index(['x', 'y'], name='idx2'))
     param, obj = Broadcaster(series_named_index).broadcast(series)
 
     expected_param = pd.Series({
@@ -97,8 +87,51 @@ def test_broadcast_series_to_series_2_elements_index_none():
     expected_obj.index.names = ['idx1', 'idx2']
     expected_param.index.names = ['idx1', 'idx2']
 
-    pd.testing.assert_series_equal(param, expected_param)
-    pd.testing.assert_series_equal(obj, expected_obj)
+    pd.testing.assert_series_equal(expected_param, param)
+    pd.testing.assert_series_equal(expected_obj, obj)
+
+
+def test_broadcast_series_index_named_to_series_index_none():
+    series = pd.Series([5.0, 6.0], index=pd.Index([3, 4]))
+    param, obj = Broadcaster(series_named_index).broadcast(series)
+
+    expected_param = pd.Series({
+        ('foo', 3): 5.0,
+        ('foo', 4): 6.0,
+        ('bar', 3): 5.0,
+        ('bar', 4): 6.0
+    })
+    expected_obj = pd.Series({
+        ('foo', 3): 1.0,
+        ('foo', 4): 1.0,
+        ('bar', 3): 2.0,
+        ('bar', 4): 2.0
+    })
+    expected_obj.index.names = ['idx1', None]
+    expected_param.index.names = ['idx1', None]
+
+    pd.testing.assert_series_equal(expected_param, param)
+    pd.testing.assert_series_equal(expected_obj, obj)
+
+
+def test_broadcast_series_index_none_to_series_index_none():
+    series = pd.Series([1.0, 2.0], index=pd.Index([3, 4]))
+    param, obj = Broadcaster(foo_bar_series).broadcast(series)
+
+    expected = pd.DataFrame([foo_bar_series, foo_bar_series], index=series.index)
+    pd.testing.assert_series_equal(series, param)
+    pd.testing.assert_frame_equal(expected, obj)
+
+
+def test_broadcast_series_index_none_to_series_index_named():
+    series = pd.Series([1.0, 2.0], index=pd.Index([3, 4], name='idx2'))
+    foo_bar = foo_bar_series.copy()
+    foo_bar.index.name = None
+    param, obj = Broadcaster(foo_bar).broadcast(series)
+
+    expected = pd.DataFrame([foo_bar_series, foo_bar_series], index=series.index)
+    pd.testing.assert_series_equal(series, param)
+    pd.testing.assert_frame_equal(expected, obj)
 
 
 def test_broadcast_series_to_frame_2_elements_index_none():
