@@ -256,6 +256,8 @@ class MeshAccessor(PlainMeshAccessor):
 
     _element_types_2d = {
         # Resolve number of nodes of element to number of first order nodes and vtk element type
+        # see https://kitware.github.io/vtk-examples/site/VTKFileFormats/
+        # number_of_nodes: (number_of_first_order_nodes, vtk_element_type)
         3: (3, 5),  # tri lin
         6: (3, 5),  # tri quad
         4: (4, 9),  # squ lin
@@ -263,11 +265,13 @@ class MeshAccessor(PlainMeshAccessor):
     }
     _element_types_3d = {
         # Resolve number of nodes of element to number of first order nodes and vtk element type
+        # see https://kitware.github.io/vtk-examples/site/VTKFileFormats/
+        # number_of_nodes: (number_of_first_order_nodes, vtk_element_type)
         4: (4, 10),   # tet lin
         6: (6, 13),   # wedge lin
         8: (8, 12),   # hex lin
         10: (4, 10),  # tet quad
-        15: (6, 13),  # tet quad
+        15: (6, 13),  # tet wedge
         20: (8, 12),  # hex quad
     }
 
