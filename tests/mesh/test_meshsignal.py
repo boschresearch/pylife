@@ -585,7 +585,7 @@ def test_vtk_grid_3d_wedge_quad():
         6, 4, 5, 3, 0, 6, 7,
         6, 4, 5, 1, 0, 6, 2
     ]
-    expected_cell_types = [13, 13]  # VTK_WEDGE
+    expected_cell_types = [26, 26]  # VTK_WEDGE
     expected_points = [
         [0., 2., 0.],  # 0
         [0., 0., 2.],  # 1
