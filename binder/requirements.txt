@@ -4,3 +4,9 @@ tables
 jupyter
 matplotlib
 pyvista
+ipykernel
+pyvista
+itkwidgets
+panel
+ipyvtklink
+xvfbwrapper
