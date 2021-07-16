@@ -9,7 +9,6 @@ dependencies:
 - jupyter
 - pandoc
 - pip = 20.2
-- h5py
-- pyvista
 - pip:
   - -e .
+  - pyvista
