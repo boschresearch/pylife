@@ -73,6 +73,7 @@ element_id node_id
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
+import numpy as np
 import pandas as pd
 from pylife import signal
 
@@ -103,6 +104,25 @@ class PlainMeshAccessor(signal.PylifeSignal):
         validator.fail_if_key_missing(obj, self._coord_keys)
         if 'z' in obj.columns:
             self._coord_keys.append('z')
+        self._cached_dimensions = None
+
+    @property
+    def dimensions(self):
+        """The dimensions of the mesh (2 for 2D and 3 for 3D)
+
+        Note
+        ----
+        If all the coordinates in z-direction are equal the mesh is considered 2D.
+        """
+        if self._cached_dimensions is not None:
+            return self._cached_dimensions
+
+        if len(self._coord_keys) == 2 or (self._obj.z == self._obj.z.iloc[0]).all():
+            self._cached_dimensions = 2
+        else:
+            self._cached_dimensions = 3
+
+        return self._cached_dimensions
 
     @property
     def coordinates(self):
@@ -154,5 +174,111 @@ class MeshAccessor(PlainMeshAccessor):
     '''
     def _validate(self, obj, validator):
         super(MeshAccessor, self)._validate(obj, validator)
+        self._cached_element_groups = None
         if set(obj.index.names) != set(['element_id', 'node_id']):
             raise AttributeError("A mesh needs a pd.MultiIndex with the names `element_id` and `node_id`")
+
+
+    @property
+    def connectivity(self):
+        """The connectivity of the mesh."""
+        return self._element_groups['node_id'].apply(np.hstack)
+
+    def vtk_data(self):
+        """Make VTK data structure easily plot the mesh with pyVista.
+
+        Returns
+        -------
+        offsets : ndarray
+            An empty numpy array as ``pyVista.UnstructuredGrid()`` still
+            demands the argument for the offsets, even though VTK>9 does not
+            accept it.
+        cells : ndarray
+            The location of the cells describing the points in a way
+            ``pyVista.UnstructuredGrid()`` needs it
+        cell_types : ndarray
+            The VTK code for the cell types (see https://github.com/Kitware/VTK/blob/master/Common/DataModel/vtkCellType.h)
+        points : ndarray
+            The coordinates of the cell points
+
+        Notes
+        -----
+        This is a convenience function to easily plot a 3D mesh with
+        pyVista. It prepares a data structure which can be passed to
+        ``pyVista.UnstructuredGrid()``
+
+        Example
+        -------
+        >>> import pyvista as pv
+        >>> grid = pv.UnstructuredGrid(*our_mesh.mesh.vtk_data())
+        >>> plotter = pv.Plotter(window_size=[1920, 1080])
+        >>> plotter.add_mesh(grid, scalars=our_mesh.groupby('element_id')['val'].mean().to_numpy())
+        >>> plotter.show()
+
+        Note the `*` that needs to be added when calling ``pv.UnstructuredGrid()``.
+        """
+        def choose_element_types_dict():
+            return self._element_types_3d if self.dimensions == 3 else self._element_types_2d
+
+        def cells_with_lengths(index, connectivity):
+            def locs(nodes):
+                return np.array(list(map(index.get_loc, nodes)))
+
+            cells = connectivity.apply(locs)
+            return np.array([nd for cell in cells.values for nd in np.insert(cell, 0, cell.shape[0])])
+
+        def calc_cells():
+            element_types_dict = choose_element_types_dict()
+
+            groups = self._element_groups['node_id']
+            connectivity = groups.apply(np.hstack)
+            count = groups.count()
+
+            for total_num, (first_order_num, _) in element_types_dict.items():
+                choice = count == total_num
+                connectivity[choice] = connectivity[choice].apply(lambda nds: nds[:first_order_num])
+
+            return connectivity, count.apply(lambda c: element_types_dict[c][1]).to_numpy()
+
+        def first_order_points(connectivity):
+            points = self._obj.groupby('node_id', sort=False).first()[self._coord_keys]
+            nodes = pd.Series([nd for element in connectivity.values for nd in element], name='node_id').unique()
+            selection = points.index.isin(nodes)
+            return points[selection]
+
+        connectivity, cell_types = calc_cells()
+        points = first_order_points(connectivity)
+        cells = cells_with_lengths(points.index, connectivity)
+
+        offsets = np.array([])  # (groups.aggregate(lambda nds: nds.shape[0]+1).cumsum()-groups.count()-1).to_numpy()
+
+        return offsets, cells, cell_types, points.to_numpy()
+
+    _element_types_2d = {
+        # Resolve number of nodes of element to number of first order nodes and vtk element type
+        # see https://kitware.github.io/vtk-examples/site/VTKFileFormats/
+        # and https://github.com/Kitware/VTK/blob/master/Common/DataModel/vtkCellType.h
+        # number_of_nodes: (number_of_first_order_nodes, vtk_element_type)
+        3: (3, 5),  # tri lin
+        6: (3, 5),  # tri quad
+        4: (4, 9),  # squ lin
+        8: (4, 9),  # squ quad
+    }
+    _element_types_3d = {
+        # Resolve number of nodes of element to number of first order nodes and vtk element type
+        # see https://kitware.github.io/vtk-examples/site/VTKFileFormats/
+        # and https://github.com/Kitware/VTK/blob/master/Common/DataModel/vtkCellType.h
+        # number_of_nodes: (number_of_first_order_nodes, vtk_element_type)
+        4: (4, 10),   # tet lin
+        6: (6, 13),   # wedge lin
+        8: (8, 12),   # hex lin
+        10: (4, 10),  # tet quad
+        15: (6, 26),  # tet wedge
+        20: (8, 12),  # hex quad
+    }
+
+    @property
+    def _element_groups(self):
+        if self._cached_element_groups is None:
+            self._cached_element_groups = self._obj.reset_index().groupby('element_id')
+        return self._cached_element_groups
