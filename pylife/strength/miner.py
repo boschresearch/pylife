@@ -273,7 +273,7 @@ class MinerBase:
         #   methods like miner-haibach who do not allow that have internal sanity checks
         n_woehler_load_level = self.sn_curve.calc_N(load_level, ignore_limits=True)
         if A is None:
-            A = self.calc_A()
+            A = self.calc_A(None)
         return n_woehler_load_level * A
 
 
