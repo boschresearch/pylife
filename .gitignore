@@ -15,6 +15,9 @@ _venv*
 pylife.egg-info
 .ipynb_checkpoints
 __pycache__
+.mutmut-cache
+htmlcov
+.mypy_cache
 coverage_report*
 .coverage
 junit.xml
