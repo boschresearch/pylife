@@ -71,8 +71,8 @@ def generate_transformed_pylife_collective():
 
     y = tsgen.query(2000000)
 
-    rfc = RainflowCounterThreePoint().process(y)
-    rfm = rfc.get_rainflow_matrix_frame(128)
+    rfc = ThreePointDetector(LoopValueRecorder()).process(y)
+    rfm = rfc.recorder.matrix_series(128)
 
     transformed = rfm.meanstress_hist.FKM_goodman(pd.Series({'M': 0.3, 'M2': 0.1}), R_goal=-1)
 

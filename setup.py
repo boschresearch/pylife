@@ -32,7 +32,11 @@ with open("README.md", "r", encoding='utf-8') as fh:
     long_description = fh.read()
 
 cython_modules = [
-    setuptools.Extension('pylife.stress.rainflow', sources=['pylife/stress/rainflow.py'])
+    setuptools.Extension('pylife.stress.rainflow',
+                         sources=[
+                             'pylife/stress/rainflow/threepoint.py',
+                             'pylife/stress/rainflow/fkm.py'
+                         ])
 ]
 
 if os.getenv('NO_INSTALL_REQUIREMENTS') != 'true':

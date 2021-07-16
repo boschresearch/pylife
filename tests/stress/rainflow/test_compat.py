@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
+
 import numpy as np
 import pandas as pd
 
@@ -37,10 +40,6 @@ def test_rainflow_simple_sine():
     expected = make_empty_rainflow_matrix(-1.5, 1.5, -0.25, 1.25, 4)
     expected.loc[(-1, 1)] = 1
 
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(rfc.loops_from)
-    print(rfc.loops_to)
-
     pd.testing.assert_frame_equal(res, expected)
 
 
@@ -52,12 +51,6 @@ def test_rainflow_two_amplitudes():
     expected = make_empty_rainflow_matrix(-1.25, 1.25, -0.25, 1.25, 4)
     expected.loc[(-1, 1)] = 1
     expected.loc[(1, 0)] = 2
-
-    print(expected)
-    print(res)
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(rfc.loops_from)
-    print(rfc.loops_to)
 
     pd.testing.assert_frame_equal(res, expected)
 
@@ -87,10 +80,6 @@ def test_rainflow_hits():
     expected.loc[(1, 5)] = 1
     expected.loc[(4, 3)] = 3
     expected.loc[(1, 4)] = 1
-
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
 
     pd.testing.assert_frame_equal(res, expected)
 
@@ -128,10 +117,6 @@ def test_rainflow_haibach_example():
 
     expected_residuals = np.array([2, 6, 1, 5, 2])
 
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
-
     pd.testing.assert_frame_equal(res, expected)
     np.testing.assert_array_equal(np.ceil(rfc.residuals()).astype(int), expected_residuals)
 
@@ -163,10 +148,6 @@ def test_rainflow_lecture_example():
     expected.loc[(5, 3)] = 1
     expected_residuals = np.array([1, 7, 1, 2])
 
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
-
     pd.testing.assert_frame_equal(res, expected)
     np.testing.assert_array_equal(np.ceil(rfc.residuals()).astype(int), expected_residuals)
 
@@ -197,10 +178,6 @@ def test_rainflow_lower_after_main():
     expected.loc[(4, 5)] = 1
 
     expected_residuals = np.array([4, 3, 6, 2, 5, 3])
-
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
 
     pd.testing.assert_frame_equal(res, expected)
     np.testing.assert_array_equal(np.ceil(rfc.residuals()).astype(int), expected_residuals)
@@ -234,10 +211,6 @@ def test_rainflow_lower_after_main_one_more_close():
 
     expected_residuals = np.array([4, 3, 6, 1, 2])
 
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
-
     pd.testing.assert_frame_equal(res, expected)
     np.testing.assert_array_equal(np.ceil(rfc.residuals()).astype(int), expected_residuals)
 
@@ -265,10 +238,6 @@ def test_rainflow_dampening():
 
     expected = make_empty_rainflow_matrix(0, 6, 0, 6, 6)
     expected_residuals = np.array([1, 6, 2, 5, 3, 4])
-
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
 
     pd.testing.assert_frame_equal(res, expected)
     np.testing.assert_array_equal(np.ceil(rfc.residuals()).astype(int), expected_residuals)
@@ -301,159 +270,8 @@ def test_rainflow_dampening_closed():
 
     expected_residuals = np.array([1, 6, 1])
 
-    print(np.flipud(res.values.reshape(res.index.levshape).T))
-    print(np.ceil(rfc.loops_from))
-    print(np.ceil(rfc.loops_to))
-
     pd.testing.assert_frame_equal(res, expected)
     np.testing.assert_array_equal(np.ceil(rfc.residuals()).astype(int), expected_residuals)
-
-
-def test_rainflow_partial_get_turns_general():
-    tsgen = TimeSignalGenerator(10, {'number': 50,
-                                     'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
-                                     'frequency_median': 4, 'frequency_std_dev': 3,
-                                     'offset_median': 0, 'offset_std_dev': 0.4},
-                                None, None)
-
-    signal_tot = tsgen.query(10000)
-    turns_tot = RF.RainflowCounterFKM()._get_new_turns(signal_tot)
-    rfc_partial = RF.RainflowCounterFKM()
-    turns_partial = np.concatenate((
-        rfc_partial._get_new_turns(signal_tot[:3424]),
-        rfc_partial._get_new_turns(signal_tot[3424:])))
-
-    np.testing.assert_array_equal(turns_tot, turns_partial)
-
-
-def test_rainflow_partial_signals_get_turns_splitturn():
-    tsgen = TimeSignalGenerator(10, {'number': 50,
-                                     'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
-                                     'frequency_median': 4, 'frequency_std_dev': 3,
-                                     'offset_median': 0, 'offset_std_dev': 0.4},
-                                None, None)
-
-    signal_tot = tsgen.query(10000)
-    turns_tot = RF.AbstractRainflowCounter()._get_new_turns(signal_tot)
-    turn_points, _ = RF.get_turns(signal_tot)
-    turn_points = np.insert(turn_points, 0, 0)
-    turn_num = turn_points.shape[0]
-    split_points = [int(np.ceil(turn_num*x)) for x in [0.0, 0.137, 0.23, 0.42, 1.0]]
-    rfc_partial = RF.AbstractRainflowCounter()
-    turns_partial = np.empty(0)
-    for i in range(len(split_points)-1):
-        lower = turn_points[split_points[i]]
-        upper = 10000 if split_points[i+1] == turn_points.shape[0] else turn_points[split_points[i+1]]
-        turns_partial = np.concatenate((turns_partial, rfc_partial._get_new_turns(signal_tot[lower:upper])))
-
-    print(turns_tot[-5:])
-    print(turns_partial[-5:])
-    np.testing.assert_array_equal(turns_tot, turns_partial)
-
-
-def test_rainflow_partial_get_turns_no_turns():
-    samples = np.array([0., 1.])
-    index, values = RF.get_turns(samples)
-    assert len(index) == 0
-    assert len(values) == 0
-
-
-def test_rainflow_partial_get_turns_consecutive_duplicates():
-    samples = np.array([1., 1., 0.5, 0.5, 1., 1., 1., -1., -1., 0.5, 1.])
-    index, values = RF.get_turns(samples)
-    np.testing.assert_array_equal(values, np.array([0.5, 1., -1.]))
-    np.testing.assert_array_equal(index, np.array([2, 4, 7]))
-
-
-def test_rainflow_duplicates_no_peak_up():
-    samples = np.array([1., 2., 2., 3.])
-    index, values = RF.get_turns(samples)
-    assert len(index) == 0
-    assert len(values) == 0
-
-
-def test_rainflow_duplicates_no_peak_down():
-    samples = np.array([3., 2., 2., 1.])
-    index, values = RF.get_turns(samples)
-    assert len(index) == 0
-    assert len(values) == 0
-
-
-def test_rainflow_get_turns_shifted_index():
-    samples = np.array([32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.])
-    expected_index = [4, 10, 14]
-    expected_values = [33., 32., 40.]
-    index, values = RF.get_turns(samples)
-    np.testing.assert_array_equal(index, expected_index)
-    np.testing.assert_array_equal(values, expected_values)
-
-
-def test_rainflow_get_turns_shifted_index_four_leading_dups():
-    samples = np.array([32., 32., 32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.])
-    expected_index = [6, 12, 16]
-    expected_values = [33., 32., 40.]
-    index, values = RF.get_turns(samples)
-    np.testing.assert_array_equal(index, expected_index)
-    np.testing.assert_array_equal(values, expected_values)
-
-
-def test_rainflow_get_turns_shifted_index_four_trailing_dups():
-    samples = np.array([32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33., 33., 33., 33., 33.])
-    expected_index = [3, 9, 13]
-    expected_values = [33., 32., 40.]
-    index, values = RF.get_turns(samples)
-    np.testing.assert_array_equal(index, expected_index)
-    np.testing.assert_array_equal(values, expected_values)
-
-
-def test_rainflow_get_turns_leading_dups():
-    samples = np.array([1., 1., 1., 2., 1.])
-    expected_index = [3]
-    expected_values = [2.]
-
-    index, values = RF.get_turns(samples)
-    np.testing.assert_array_equal(index, expected_index)
-    np.testing.assert_array_equal(values, expected_values)
-
-
-def test_rainflow_get_turns_trailing_dups():
-    samples = np.array([1., 2., 1., 1., 1.])
-    expected_index = [1]
-    expected_values = [2.]
-
-    index, values = RF.get_turns(samples)
-    np.testing.assert_array_equal(index, expected_index)
-    np.testing.assert_array_equal(values, expected_values)
-
-
-def test_get_turns_leading_and_trailing_dups():
-    samples = np.array([0., 0., 1., 2., 2., 1., 0., 0., 1., 2., 2.])
-    expected_index = [3, 6]
-    expected_values = [2., 0.]
-
-    index, values = RF.get_turns(samples)
-    np.testing.assert_array_equal(index, expected_index)
-    np.testing.assert_array_equal(values, expected_values)
-
-
-def test_get_turns_leading_and_trailing_dups_no_turns():
-    samples = np.array([0.0, 0.0, 0.5, 1.0, 1.0])
-    expected_index = []
-    expected_values = []
-
-    index, values = RF.get_turns(samples)
-    np.testing.assert_array_equal(index, expected_index)
-    np.testing.assert_array_equal(values, expected_values)
-
-
-def test_get_turns_flat_signal():
-    samples = np.array([0.0, 0.0, 0.0, 0.0])
-    expected_index = []
-    expected_values = []
-
-    index, values = RF.get_turns(samples)
-    np.testing.assert_array_equal(index, expected_index)
-    np.testing.assert_array_equal(values, expected_values)
 
 
 def test_rainflow_partial_signals_general_FKM():
@@ -497,10 +315,10 @@ def test_rainflow_partial_signals_splitturn_FKM():
 
     signal_tot = tsgen.query(10000)
     rfc_tot = RF.RainflowCounterFKM().process(signal_tot)
-    turn_points, _ = RF.get_turns(signal_tot)
+    turn_points, _ = RF.find_turns(signal_tot)
     turn_points = np.insert(turn_points, 0, 0)
     turn_num = turn_points.shape[0]
-    split_points = [int(np.ceil(turn_num*x)) for x in [ 0.0, 0.137, 0.23, 0.42, 1.0 ]]
+    split_points = [int(np.ceil(turn_num*x)) for x in [0.0, 0.137, 0.23, 0.42, 1.0 ]]
     rfc_partial = RF.RainflowCounterFKM()
     for i in range(len(split_points)-1):
         lower = turn_points[split_points[i]]
@@ -521,7 +339,7 @@ def test_rainflow_partial_signals_splitturn():
     signal_tot = tsgen.query(10000)
 
     rfc_tot = RF.RainflowCounterThreePoint().process(signal_tot)
-    turn_points, _ = RF.get_turns(signal_tot)
+    turn_points, _ = RF.find_turns(signal_tot)
     turn_points = np.insert(turn_points, 0, 0)
     turn_num = turn_points.shape[0]
     split_points = [int(np.ceil(turn_num*x)) for x in [0.0, 0.137, 0.23, 0.42, 1.0]]
@@ -529,7 +347,7 @@ def test_rainflow_partial_signals_splitturn():
     for i in range(len(split_points)-1):
         lower = turn_points[split_points[i]]
         upper = 10000 if split_points[i+1] == turn_points.shape[0] else turn_points[split_points[i+1]]
-        _, tot_turns = RF.get_turns(signal_tot[:upper])
+        _, tot_turns = RF.find_turns(signal_tot[:upper])
         rfc_partial.process(signal_tot[lower:upper])
 
     np.testing.assert_array_almost_equal(rfc_tot.loops_from, rfc_partial.loops_from)
@@ -539,10 +357,6 @@ def test_rainflow_partial_signals_splitturn():
 def test_rainflow_FKM_memory1_inner():
     signal = np.array([0., 100., 0., 80., 20., 60., 40., 100., 0., 80., 20., 60., 40., 45.])
     rfc = RF.RainflowCounterFKM().process(signal)
-
-    print(rfc.loops_from)
-    print(rfc.loops_to)
-    print(rfc.residuals())
 
     np.testing.assert_array_equal(rfc.loops_from, np.array([60., 80., 100.]))
     np.testing.assert_array_equal(rfc.loops_to, np.array([40., 20., 0.]))
@@ -556,10 +370,6 @@ def test_rainflow_FKM_memory1_2_3():
                        -1.8])
     rfc = RF.RainflowCounterFKM().process(signal)
 
-    print(rfc.loops_from)
-    print(rfc.loops_to)
-    print(rfc.residuals())
-
-    np.testing.assert_array_equal(rfc.loops_from, np.array([ 1., -2., 2., -2.,  1., -2., -2., 2., -2.]))
+    np.testing.assert_array_equal(rfc.loops_from, np.array([1., -2., 2., -2.,  1., -2., -2., 2., -2.]))
     np.testing.assert_array_equal(rfc.loops_to,   np.array([-1., -1., 0.,  2., -1.,  1., -1., 0.,  2.]))
     np.testing.assert_array_equal(rfc.residuals(), np.array([1., -2.]))
