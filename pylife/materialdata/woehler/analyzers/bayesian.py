@@ -81,18 +81,16 @@ class Bayesian(Elementary):
 
         slope = slope_trace.get_values('x')[nburn:].mean()
         intercept = slope_trace.get_values('Intercept')[nburn:].mean()
-        SD_50 = SD_TS_trace.get_values('SD_50')[nburn:].mean()
-        ND_50 = np.power(10., np.log10(SD_50) * slope + intercept)
+        SD = SD_TS_trace.get_values('SD')[nburn:].mean()
+        ND = np.power(10., np.log10(SD) * slope + intercept)
 
-        res = {
-            'SD_50': SD_50,
-            'TS': 1./SD_TS_trace.get_values('TS_50')[nburn:].mean(),
-            'ND_50': ND_50,
+        return pd.Series({
+            'SD': SD,
+            'TS': 1./SD_TS_trace.get_values('TS')[nburn:].mean(),
+            'ND': ND,
             'k_1': -slope,
             'TN': 1./TN_trace.get_values('mu')[nburn:].mean(),
-        }
-
-        return pd.Series(res)
+        })
 
     def _slope_trace(self, chains=2, random_seed=None, tune=1000, **kw):
         data_dict = {
@@ -132,8 +130,8 @@ class Bayesian(Elementary):
 
         with pm.Model():
             inf_load = self._fd.infinite_zone.load
-            SD = pm.Normal('SD_50', mu=inf_load.mean(), sigma=inf_load.std()*5)
-            TS = pm.Lognormal('TS_50', mu=np.log10(1. / 1.1), sigma=np.log10(0.5))
+            SD = pm.Normal('SD', mu=inf_load.mean(), sigma=inf_load.std()*5)
+            TS = pm.Lognormal('TS', mu=np.log10(1. / 1.1), sigma=np.log10(0.5))
 
             # convert m and c to a tensor vector
             var = tt.as_tensor_variable([SD, TS])

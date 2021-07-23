@@ -29,8 +29,8 @@ class Elementary:
 
     The common base class for all SN-data analyzers calculates the first
     estimation of a Wöhler curve in the finite zone of the SN-data. It
-    calculates the slope `k`, the fatigue limit `SD_50`, the transition cycle
-    number `ND_50` and the scatter in load direction `1/TN`.
+    calculates the slope `k`, the fatigue limit `SD`, the transition cycle
+    number `ND` and the scatter in load direction `1/TN`.
 
     The result is just meant to be a first guess. Derived classes are supposed
     to use those first guesses as starting points for their specific
@@ -82,8 +82,10 @@ class Elementary:
         TN, TS = self._pearl_chain_method()
         return pd.Series({
             'k_1': -self._slope,
-            'ND_50': self._transition_cycles(self._fd.fatigue_limit),
-            'SD_50': self._fd.fatigue_limit, 'TN': TN, 'TS': TS
+            'ND': self._transition_cycles(self._fd.fatigue_limit),
+            'SD': self._fd.fatigue_limit,
+            'TN': TN,
+            'TS': TS
         })
 
     def _specific_analysis(self, wc):
@@ -107,8 +109,8 @@ class Elementary:
 
     def __calc_bic(self, wc):
         '''         '''
-        param_num = 5  # SD_50, TS, k_1, ND_50, TN
-        log_likelihood = self._lh.likelihood_total(wc['SD_50'], wc['TS'], wc['k_1'], wc['ND_50'], wc['TN'])
+        param_num = 5  # SD, TS, k_1, ND, TN
+        log_likelihood = self._lh.likelihood_total(wc['SD'], wc['TS'], wc['k_1'], wc['ND'], wc['TN'])
         self._bic = (-2 * log_likelihood) + (param_num * np.log(self._fd.num_tests))
 
     def _fit_slope(self):

@@ -31,7 +31,7 @@ class Probit(Elementary):
             warnings.warn(UserWarning("Probit needs at least two runout load levels. Falling back to Elementary."))
             return wc
 
-        wc['TS'], wc['SD_50'], wc['ND_50'] = self.__probit_analysis()
+        wc['TS'], wc['SD'], wc['ND'] = self.__probit_analysis()
         return wc
 
     def __probit_rossow_estimation(self):
@@ -62,10 +62,10 @@ class Probit(Elementary):
         self._probability_fit = ProbabilityFit(fprobs, load)
 
         TS = functions.std2scatteringRange(1./self._probability_fit.slope)
-        SD_50 = 10**(-self._probability_fit.intercept/self._probability_fit.slope)
-        ND_50 = self._transition_cycles(SD_50)
+        SD = 10**(-self._probability_fit.intercept/self._probability_fit.slope)
+        ND = self._transition_cycles(SD)
 
-        return TS, SD_50, ND_50
+        return TS, SD, ND
 
 
     def fitter(self):

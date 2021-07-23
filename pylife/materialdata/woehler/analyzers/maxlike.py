@@ -23,11 +23,11 @@ import warnings
 
 class MaxLikeInf(Elementary):
     def _specific_analysis(self, wc):
-        SD_50, TS = self.__max_likelihood_inf_limit()
+        SD, TS = self.__max_likelihood_inf_limit()
 
-        wc['SD_50'] = SD_50
+        wc['SD'] = SD
         wc['TS'] = TS
-        wc['ND_50'] = self._transition_cycles(SD_50)
+        wc['ND'] = self._transition_cycles(SD)
 
         return wc
 
@@ -81,10 +81,10 @@ class MaxLikeFull(Elementary):
             nonlocal fixed_prms
             if self._fd.num_runouts == 0:
                 warnings.warn(UserWarning("MaxLikeHood: no runouts are present in fatigue data. "
-                                          "Proceeding with SD_50 = 0 and TS = 1 as fixed parameters. "
+                                          "Proceeding with SD = 0 and TS = 1 as fixed parameters. "
                                           "This is NOT a standard evaluation!"))
                 fixed_prms = fixed_prms.copy()
-                fixed_prms.update({'SD_50': 0.0, 'TS': 1.0})
+                fixed_prms.update({'SD': 0.0, 'TS': 1.0})
 
         def fail_if_less_than_three_fractures():
             if self._fd.num_fractures < 3 or len(self._fd.fractured_loads) < 2:
@@ -124,10 +124,10 @@ class MaxLikeFull(Elementary):
         return self.__make_parameters(res)
 
     def __make_parameters(self, params):
-        params['SD_50'] = np.abs(params['SD_50'])
+        params['SD'] = np.abs(params['SD'])
         params['TS'] = np.abs(params['TS'])
         params['k_1'] = np.abs(params['k_1'])
-        params['ND_50'] = np.abs(params['ND_50'])
+        params['ND'] = np.abs(params['ND'])
         params['TN'] = np.abs(params['TN'])
         return params
 
@@ -141,4 +141,4 @@ class MaxLikeFull(Elementary):
         args.update(zip(var_keys, var_args))
         args = self.__make_parameters(args)
 
-        return -self._lh.likelihood_total(args['SD_50'], args['TS'], args['k_1'], args['ND_50'], args['TN'])
+        return -self._lh.likelihood_total(args['SD'], args['TS'], args['k_1'], args['ND'], args['TN'])

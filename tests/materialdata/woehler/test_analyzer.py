@@ -721,9 +721,9 @@ def test_woehler_endure_zones_no_runouts():
 
 def test_woehler_elementary():
     expected = pd.Series({
-        'SD_50': 362.5,
+        'SD': 362.5,
         'k_1': 7.0,
-        'ND_50': 3e5,
+        'ND': 3e5,
         'TN': 1. / 5.3,
         'TS': 1. / 1.27
     }).sort_index()
@@ -735,9 +735,9 @@ def test_woehler_elementary():
 
 def test_woehler_elementary_initialize_with_determined_fractures():
     expected = pd.Series({
-        'SD_50': 362.5,
+        'SD': 362.5,
         'k_1': 7.0,
-        'ND_50': 3e5,
+        'ND': 3e5,
         'TN': 1. / 5.3,
         'TS': 1. / 1.27
     }).sort_index()
@@ -749,9 +749,9 @@ def test_woehler_elementary_initialize_with_determined_fractures():
 
 def test_woehler_elementary_initialize_with_pandas_dataframe():
     expected = pd.Series({
-        'SD_50': 362.5,
+        'SD': 362.5,
         'k_1': 7.0,
-        'ND_50': 3e5,
+        'ND': 3e5,
         'TN': 1. / 5.3,
         'TS': 1. / 1.27
     }).sort_index()
@@ -762,14 +762,14 @@ def test_woehler_elementary_initialize_with_pandas_dataframe():
 
 def test_woehler_elementary_no_runouts():
     expected = pd.Series({
-        'SD_50': 0.0,
+        'SD': 0.0,
         'k_1': 7.0,
         'TN': 1. / 5.3,
         'TS': 1. / 1.27
     }).sort_index()
 
     fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
-    wc = woehler.Elementary(fd).analyze().sort_index().drop('ND_50')
+    wc = woehler.Elementary(fd).analyze().sort_index().drop('ND')
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
@@ -782,10 +782,10 @@ def test_woehler_elementary_only_one_load_level():
 
 def test_woehler_probit():
     expected = pd.Series({
-        'SD_50': 335,
+        'SD': 335,
         'TS': 1. / 1.19,
         'k_1': 6.94,
-        'ND_50': 463000.,
+        'ND': 463000.,
         'TN': 1. / 5.26
     }).sort_index()
 
@@ -805,10 +805,10 @@ def test_woehler_probit_one_runout_load_level():
 @pytest.mark.filterwarnings("error:invalid")
 def test_woehler_probit_data01():
     expected = pd.Series({
-        'SD_50': 490,
+        'SD': 490,
         'TS': 1. / 1.1,
         'k_1': 8.0,
-        'ND_50': 530e3,
+        'ND': 530e3,
         'TN': 1. / 3.0
     }).sort_index()
 
@@ -820,10 +820,10 @@ def test_woehler_probit_data01():
 
 def test_woehler_probit_no_runouts():
     expected = pd.Series({
-        'SD_50': 0.,
+        'SD': 0.,
         'TS': 1. / 1.27,
         'k_1': 6.94,
-        'ND_50': 4.4e30,
+        'ND': 4.4e30,
         'TN': 1. / 5.26
     }).sort_index()
 
@@ -836,10 +836,10 @@ def test_woehler_probit_no_runouts():
 
 def test_woehler_max_likelihood_inf_limit():
     expected = pd.Series({
-        'SD_50': 335,
+        'SD': 335,
         'TS': 1. / 1.19,
         'k_1': 6.94,
-        'ND_50': 463000.,
+        'ND': 463000.,
         'TN': 1. / 5.26
     }).sort_index()
 
@@ -857,10 +857,10 @@ def test_bic_without_analysis():
 
 def test_woehler_max_likelihood_inf_limit_no_runouts():
     expected = pd.Series({
-        'SD_50': 0.,
+        'SD': 0.,
         'TS': 1. / 1.19,
         'k_1': 6.94,
-        'ND_50': 4.4e30,
+        'ND': 4.4e30,
         'TN': 1. / 5.26
     }).sort_index()
 
@@ -871,10 +871,10 @@ def test_woehler_max_likelihood_inf_limit_no_runouts():
 
 def test_woehler_max_likelihood_full_without_fixed_params():
     expected = pd.Series({
-        'SD_50': 335,
+        'SD': 335,
         'TS': 1. / 1.19,
         'k_1': 6.94,
-        'ND_50': 463000.,
+        'ND': 463000.,
         'TN': 1. / 4.7
     }).sort_index()
 
@@ -889,10 +889,10 @@ def test_woehler_max_likelihood_full_without_fixed_params():
 
 def test_woehler_max_likelihood_full_without_fixed_params_no_runouts():
     expected = pd.Series({
-        'SD_50': 0,
+        'SD': 0,
         'TS': 1. / 1.,
         'k_1': 6.94,
-        'ND_50': 4.4e30,
+        'ND': 4.4e30,
         'TN': 1. / 5.7
     }).sort_index()
 
@@ -908,10 +908,10 @@ def test_woehler_max_likelihood_full_without_fixed_params_no_runouts():
 
 def test_max_likelihood_full_with_fixed_params():
     expected = pd.Series({
-        'SD_50': 335,
+        'SD': 335,
         'TS': 1. / 1.19,
         'k_1': 8.0,
-        'ND_50': 520000.,
+        'ND': 520000.,
         'TN': 1. / 6.0
     }).sort_index()
 
@@ -930,7 +930,7 @@ def test_max_likelihood_full_method_with_all_fixed_params():
     """
     Test of woehler curve parameters evaluation with the maximum likelihood method
     """
-    fp = {'k_1': 15.7, 'TN': 1. / 1.2, 'SD_50': 280, 'TS': 1. / 1.2, 'ND_50': 10000000}
+    fp = {'k_1': 15.7, 'TN': 1. / 1.2, 'SD': 280, 'TS': 1. / 1.2, 'ND': 10000000}
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     with pytest.raises(AttributeError, match=r'You need to leave at least one parameter empty!'):
         (
@@ -959,10 +959,10 @@ def test_max_likelihood_parameter_sign(data, no):
             assert x >= 0
             assert not np.isclose(x, 0.0)
 
-    assert_positive_or_nan_but_not_zero(wl['SD_50'])
+    assert_positive_or_nan_but_not_zero(wl['SD'])
     assert_positive_or_nan_but_not_zero(wl['TS'])
     assert_positive_or_nan_but_not_zero(wl['k_1'])
-    assert_positive_or_nan_but_not_zero(wl['ND_50'])
+    assert_positive_or_nan_but_not_zero(wl['ND'])
     assert_positive_or_nan_but_not_zero(wl['TN'])
 
 
@@ -976,10 +976,10 @@ def test_max_likelihood_min_three_fractures_on_two_load_levels(invalid_data):
 
 def test_max_likelihood_one_mixed_horizon():
     expected = pd.Series({
-        'SD_50': 489.3,
+        'SD': 489.3,
         'TS': 1. / 1.147,
         'k_1': 7.99,
-        'ND_50': 541e3,
+        'ND': 541e3,
         'TN': 1. / 2.51
     }).sort_index()
 
@@ -1054,7 +1054,7 @@ def test_bayesian_SD_TS_trace_mock(pm, tt):
         bayes._nsamples = 1000
         bayes._SD_TS_trace()
 
-    pm.Normal.assert_called_once_with('SD_50', mu=inf_load_mean, sigma=inf_load_std * 5)
+    pm.Normal.assert_called_once_with('SD', mu=inf_load_mean, sigma=inf_load_std * 5)
     pm.Lognormal.assert_called_once()
     np.testing.assert_approx_equal(pm.Lognormal.call_args_list[0][1]['mu'], np.log10(1./1.1))
     np.testing.assert_approx_equal(pm.Lognormal.call_args_list[0][1]['sigma'], np.log10(0.5))
@@ -1075,10 +1075,10 @@ def test_bayesian_SD_TS_trace_mock(pm, tt):
 @mock.patch('pylife.materialdata.woehler.analyzers.bayesian.Bayesian._slope_trace')
 def test_bayesian_mock(_slope_trace, _TN_trace, _SD_TS_trace):
     expected = pd.Series({
-        'SD_50': 100.,
+        'SD': 100.,
         'TS': 1. / 1.12,
         'k_1': 7.0,
-        'ND_50': 1e6,
+        'ND': 1e6,
         'TN': 1. / 5.3
     }).sort_index()
 
@@ -1088,8 +1088,8 @@ def test_bayesian_mock(_slope_trace, _TN_trace, _SD_TS_trace):
     }
 
     expected_SD_TS_trace = {
-        'SD_50': np.array([0.0, 150., 50]),
-        'TS_50': np.array([0.0, 1.22, 1.02])
+        'SD': np.array([0.0, 150., 50]),
+        'TS': np.array([0.0, 1.22, 1.02])
     }
 
     _slope_trace.__call__().get_values.side_effect = lambda key: expected_slope_trace[key]
@@ -1105,10 +1105,10 @@ def test_bayesian_mock(_slope_trace, _TN_trace, _SD_TS_trace):
 @pytest.mark.slow_acceptance
 def test_bayesian_full():
     expected = pd.Series({
-        'SD_50': 340.,
+        'SD': 340.,
         'TS': 1. / 1.12,
         'k_1': 7.0,
-        'ND_50': 400000.,
+        'ND': 400000.,
         'TN': 1. / 5.3
     }).sort_index()
 
