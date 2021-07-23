@@ -725,7 +725,8 @@ def test_woehler_elementary():
         'k_1': 7.0,
         'ND': 3e5,
         'TN': 1. / 5.3,
-        'TS': 1. / 1.27
+        'TS': 1. / 1.27,
+        'failure_probability': 0.5
     }).sort_index()
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
@@ -739,7 +740,8 @@ def test_woehler_elementary_initialize_with_determined_fractures():
         'k_1': 7.0,
         'ND': 3e5,
         'TN': 1. / 5.3,
-        'TS': 1. / 1.27
+        'TS': 1. / 1.27,
+        'failure_probability': 0.5
     }).sort_index()
 
     fd = woehler.determine_fractures(data, 1e7)
@@ -753,7 +755,8 @@ def test_woehler_elementary_initialize_with_pandas_dataframe():
         'k_1': 7.0,
         'ND': 3e5,
         'TN': 1. / 5.3,
-        'TS': 1. / 1.27
+        'TS': 1. / 1.27,
+        'failure_probability': 0.5
     }).sort_index()
 
     wc = woehler.Elementary(data).analyze().sort_index()
@@ -765,7 +768,8 @@ def test_woehler_elementary_no_runouts():
         'SD': 0.0,
         'k_1': 7.0,
         'TN': 1. / 5.3,
-        'TS': 1. / 1.27
+        'TS': 1. / 1.27,
+        'failure_probability': 0.5
     }).sort_index()
 
     fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
@@ -786,7 +790,8 @@ def test_woehler_probit():
         'TS': 1. / 1.19,
         'k_1': 6.94,
         'ND': 463000.,
-        'TN': 1. / 5.26
+        'TN': 1. / 5.26,
+        'failure_probability': 0.5
     }).sort_index()
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
@@ -809,7 +814,8 @@ def test_woehler_probit_data01():
         'TS': 1. / 1.1,
         'k_1': 8.0,
         'ND': 530e3,
-        'TN': 1. / 3.0
+        'TN': 1. / 3.0,
+        'failure_probability': 0.5
     }).sort_index()
 
     fd = woehler.determine_fractures(data_01, 1e7).fatigue_data
@@ -824,7 +830,8 @@ def test_woehler_probit_no_runouts():
         'TS': 1. / 1.27,
         'k_1': 6.94,
         'ND': 4.4e30,
-        'TN': 1. / 5.26
+        'TN': 1. / 5.26,
+        'failure_probability': 0.5
     }).sort_index()
 
     fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
@@ -840,7 +847,8 @@ def test_woehler_max_likelihood_inf_limit():
         'TS': 1. / 1.19,
         'k_1': 6.94,
         'ND': 463000.,
-        'TN': 1. / 5.26
+        'TN': 1. / 5.26,
+        'failure_probability': 0.5
     }).sort_index()
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
@@ -861,7 +869,8 @@ def test_woehler_max_likelihood_inf_limit_no_runouts():
         'TS': 1. / 1.19,
         'k_1': 6.94,
         'ND': 4.4e30,
-        'TN': 1. / 5.26
+        'TN': 1. / 5.26,
+        'failure_probability': 0.5
     }).sort_index()
 
     fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
@@ -875,7 +884,8 @@ def test_woehler_max_likelihood_full_without_fixed_params():
         'TS': 1. / 1.19,
         'k_1': 6.94,
         'ND': 463000.,
-        'TN': 1. / 4.7
+        'TN': 1. / 4.7,
+        'failure_probability': 0.5
     }).sort_index()
 
     bic = 45.35256860035525
@@ -893,7 +903,8 @@ def test_woehler_max_likelihood_full_without_fixed_params_no_runouts():
         'TS': 1. / 1.,
         'k_1': 6.94,
         'ND': 4.4e30,
-        'TN': 1. / 5.7
+        'TN': 1. / 5.7,
+        'failure_probability': 0.5
     }).sort_index()
 
     bic = np.inf
@@ -912,7 +923,8 @@ def test_max_likelihood_full_with_fixed_params():
         'TS': 1. / 1.19,
         'k_1': 8.0,
         'ND': 520000.,
-        'TN': 1. / 6.0
+        'TN': 1. / 6.0,
+        'failure_probability': 0.5
     }).sort_index()
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
@@ -980,7 +992,8 @@ def test_max_likelihood_one_mixed_horizon():
         'TS': 1. / 1.147,
         'k_1': 7.99,
         'ND': 541e3,
-        'TN': 1. / 2.51
+        'TN': 1. / 2.51,
+        'failure_probability': 0.5
     }).sort_index()
 
     fd = woehler.determine_fractures(data_01, 1e7).fatigue_data
@@ -1079,7 +1092,8 @@ def test_bayesian_mock(_slope_trace, _TN_trace, _SD_TS_trace):
         'TS': 1. / 1.12,
         'k_1': 7.0,
         'ND': 1e6,
-        'TN': 1. / 5.3
+        'TN': 1. / 5.3,
+        'failure_probability': 0.5
     }).sort_index()
 
     expected_slope_trace = {
@@ -1109,7 +1123,8 @@ def test_bayesian_full():
         'TS': 1. / 1.12,
         'k_1': 7.0,
         'ND': 400000.,
-        'TN': 1. / 5.3
+        'TN': 1. / 5.3,
+        'failure_probability': 0.5
     }).sort_index()
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data

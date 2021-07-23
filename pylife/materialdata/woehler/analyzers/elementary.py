@@ -75,6 +75,8 @@ class Elementary:
         wc = self._common_analysis()
         wc = self._specific_analysis(wc, **kwargs)
         self.__calc_bic(wc)
+        wc['failure_probability'] = 0.5
+
         return wc
 
     def _common_analysis(self):
