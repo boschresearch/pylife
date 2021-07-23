@@ -129,11 +129,3 @@ class DataValidator:
             the_class = stack[2][0].f_locals['self'].__class__
             msg = the_class.__name__ + ' must have the items %s. Missing %s.'
         raise AttributeError(msg % (', '.join(keys_to_check), ', '.join(missing_keys)))
-
-    @staticmethod
-    def fill_member(key, values):
-        if key in values:
-            member = values[key]
-        else:
-            member = ''
-        return member
