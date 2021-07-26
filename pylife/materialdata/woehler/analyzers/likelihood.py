@@ -25,10 +25,12 @@ from pylife.utils.functions import scatteringRange2std, std2scatteringRange
 
 
 class Likelihood:
+    """Calculate the likelihood a fatigue dataset matches with Wöhler curve parameters."""
+
     def __init__(self, fatigue_data):
         self._fd = fatigue_data
 
-    def likelihood_total(self, SD, TS, k, N_E, TN):
+    def likelihood_total(self, SD, TS, k_1, ND, TN):
         """
         Produces the likelihood functions that are needed to compute the parameters of the woehler curve.
         The likelihood functions are represented by probability and cummalative distribution functions.
@@ -41,19 +43,12 @@ class Likelihood:
             Endurnace limit start value to be optimzed, unless the user fixed it.
         TS:
             The scatter in load direction 1/TS to be optimzed, unless the user fixed it.
-        k:
+        k_1:
             The slope k_1 to be optimzed, unless the user fixed it.
-        N_E:
+        ND:
             Load-cycle endurance start value to be optimzed, unless the user fixed it.
         TN:
             The scatter in load-cycle direction 1/TN to be optimzed, unless the user fixed it.
-        fractures:
-            The data that our log-likelihood function takes in. This data represents the fractured data.
-        zone_inf:
-            The data that our log-likelihood function takes in. This data is found in the infinite zone.
-        load_cycle_limit:
-            The dependent variable that our model requires, in order to seperate the fractures from the
-            runouts.
 
         Returns
         -------
@@ -63,14 +58,14 @@ class Likelihood:
             estimate of a function is the same as minimizing the negative log likelihood of the function.
 
         """
-        return self.likelihood_finite(SD, k, N_E, TN) + self.likelihood_infinite(SD, TS)
+        return self.likelihood_finite(SD, k_1, ND, TN) + self.likelihood_infinite(SD, TS)
 
-    def likelihood_finite(self, SD, k, N_E, TN):
+    def likelihood_finite(self, SD, k_1, ND, TN):
         if not (SD > 0.0).all():
             return -np.inf
         fractures = self._fd.fractures
-        x = np.log10(fractures.cycles * ((fractures.load/SD)**(k)))
-        mu = np.log10(N_E)
+        x = np.log10(fractures.cycles * ((fractures.load/SD)**k_1))
+        mu = np.log10(ND)
         sigma = scatteringRange2std(TN)
         log_likelihood = np.log(stats.norm.pdf(x, mu, abs(sigma)))
 
@@ -84,13 +79,10 @@ class Likelihood:
 
         Parameters
         ----------
-        variables:
-            The start values to be optimized. (Endurance limit SD, Scatter in load direction 1/TS)
-        zone_inf:
-            The data that our log-likelihood function takes in. This data is found in the infinite zone.
-        load_cycle_limit:
-            The dependent variable that our model requires, in order to seperate the fractures from the
-            runouts.
+        SD:
+            Endurnace limit start value to be optimzed, unless the user fixed it.
+        TS:
+            The scatter in load direction 1/TS to be optimzed, unless the user fixed it.
 
         Returns
         -------

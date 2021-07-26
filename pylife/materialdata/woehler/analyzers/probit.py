@@ -19,7 +19,7 @@ import warnings
 from .elementary import Elementary
 
 import numpy as np
-import scipy.stats as stats
+
 import pylife.utils.functions as functions
 from pylife.utils.probability_data import ProbabilityFit
 
