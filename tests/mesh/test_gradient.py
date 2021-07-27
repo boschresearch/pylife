@@ -29,9 +29,9 @@ def test_grad_constant():
                        'fct': fkt}).set_index(['node_id', 'element_id'])
 
     expected = pd.DataFrame({
-        'dx': np.zeros(9),
-        'dy': np.zeros(9),
-        'dz': np.zeros(9)
+        'dfct_dx': np.zeros(9),
+        'dfct_dy': np.zeros(9),
+        'dfct_dz': np.zeros(9)
     }, index=pd.RangeIndex(1, 10, name='node_id'))
 
     grad = df.gradient.gradient_of('fct')
@@ -50,9 +50,9 @@ def test_grad_dx():
     df = df.set_index(['node_id', 'element_id'])
 
     expected = pd.DataFrame({
-        'dx': np.full(9, 3.0),
-        'dy': np.zeros(9),
-        'dz': np.zeros(9)
+        'dfct_dx': np.full(9, 3.0),
+        'dfct_dy': np.zeros(9),
+        'dfct_dz': np.zeros(9)
     }, index=pd.RangeIndex(1, 10, name='node_id'))
 
     grad = df.gradient.gradient_of('fct')
@@ -72,9 +72,9 @@ def test_grad_dx_shuffle():
     df = df.sample(frac=1)
 
     expected = pd.DataFrame({
-        'dx': np.full(9, 3.0),
-        'dy': np.zeros(9),
-        'dz': np.zeros(9)
+        'dfct_dx': np.full(9, 3.0),
+        'dfct_dy': np.zeros(9),
+        'dfct_dz': np.zeros(9)
     }, index=pd.RangeIndex(1, 10, name='node_id'))
 
     grad = df.gradient.gradient_of('fct')
@@ -94,9 +94,9 @@ def test_grad_dy():
     df = df.sample(frac=1)
 
     expected = pd.DataFrame({
-        'dx': np.zeros(9),
-        'dy': np.full(9, 3.0),
-        'dz': np.zeros(9)
+        'dfct_dx': np.zeros(9),
+        'dfct_dy': np.full(9, 3.0),
+        'dfct_dz': np.zeros(9)
     }, index=pd.RangeIndex(1, 10, name='node_id'))
 
     grad = df.gradient.gradient_of('fct')
@@ -115,9 +115,9 @@ def test_grad_dy_shuffle():
     df = df.set_index(['node_id', 'element_id'])
 
     expected = pd.DataFrame({
-        'dx': np.zeros(9),
-        'dy': np.full(9, 3.0),
-        'dz': np.zeros(9)
+        'dfct_dx': np.zeros(9),
+        'dfct_dy': np.full(9, 3.0),
+        'dfct_dz': np.zeros(9)
     }, index=pd.RangeIndex(1, 10, name='node_id'))
 
     grad = df.gradient.gradient_of('fct')
@@ -136,9 +136,9 @@ def test_grad_dxy_simple():
     df = df.set_index(['node_id', 'element_id'])
 
     expected = pd.DataFrame({
-        'dx': np.full(9, 4.0),
-        'dy': np.full(9, 3.0),
-        'dz': np.zeros(9)
+        'dfct_dx': np.full(9, 4.0),
+        'dfct_dy': np.full(9, 3.0),
+        'dfct_dz': np.zeros(9)
     }, index=pd.RangeIndex(1, 10, name='node_id'))
 
     grad = df.gradient.gradient_of('fct')
@@ -157,9 +157,9 @@ def test_grad_dxy_complex():
     df = df.set_index(['node_id', 'element_id'])
 
     expected = pd.DataFrame({
-        'dx': np.array([1, 0, -1, 1, 0, -1,  1, 0, -1])/3.,
-        'dy': np.array([1, 1, 1, 0,  0, 0, -1, -1, -1])/3.,
-        'dz': np.zeros(9)
+        'dfct_dx': np.array([1, 0, -1, 1, 0, -1,  1, 0, -1])/3.,
+        'dfct_dy': np.array([1, 1, 1, 0,  0, 0, -1, -1, -1])/3.,
+        'dfct_dz': np.zeros(9)
     }, index=pd.RangeIndex(1, 10, name='node_id'))
 
     grad = df.gradient.gradient_of('fct')
@@ -179,9 +179,9 @@ def test_grad_dxy_simple_shuffle():
     df = df.sample(frac=1)
 
     expected = pd.DataFrame({
-        'dx': np.full(9, 4.0),
-        'dy': np.full(9, 3.0),
-        'dz': np.zeros(9)
+        'dfct_dx': np.full(9, 4.0),
+        'dfct_dy': np.full(9, 3.0),
+        'dfct_dz': np.zeros(9)
     }, index=pd.RangeIndex(1, 10, name='node_id'))
 
     grad = df.gradient.gradient_of('fct')
@@ -202,9 +202,9 @@ def test_grad_dxy_complex_shuffle():
     df = df.sample(frac=1)
 
     expected = pd.DataFrame({
-        'dx': np.array([1, 0, -1, 1, 0, -1,  1, 0, -1])/3.,
-        'dy': np.array([1, 1, 1, 0,  0, 0, -1, -1, -1])/3.,
-        'dz': np.zeros(9)
+        'dfct_dx': np.array([1, 0, -1, 1, 0, -1,  1, 0, -1])/3.,
+        'dfct_dy': np.array([1, 1, 1, 0,  0, 0, -1, -1, -1])/3.,
+        'dfct_dz': np.zeros(9)
     }, index=pd.RangeIndex(1, 10, name='node_id'))
 
     grad = df.gradient.gradient_of('fct')

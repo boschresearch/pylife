@@ -85,7 +85,7 @@ class Gradient(MeshAccessor):
         gradient : pd.DataFrame
             A table describing the gradient indexed by ``node_id``.
             The keys for the components of the gradients are
-            ``['dx', 'dy', 'dz']``.
+            ``['d{value_key}_dx', 'd{value_key}_dy', 'd{value_key}_dz']``.
         '''
         self.value_key = value_key
 
@@ -95,9 +95,9 @@ class Gradient(MeshAccessor):
         self._calc_lst_sqr()
 
         df_grad = pd.DataFrame({'node_id': self.nodes_id,
-                                'dx': [*self.lst_sqr_grad_dx.values()],
-                                'dy': [*self.lst_sqr_grad_dy.values()],
-                                'dz': [*self.lst_sqr_grad_dz.values()]})
+                                "d%s_dx" % value_key: [*self.lst_sqr_grad_dx.values()],
+                                "d%s_dy" % value_key: [*self.lst_sqr_grad_dy.values()],
+                                "d%s_dz" % value_key: [*self.lst_sqr_grad_dz.values()]})
         df_grad = df_grad.set_index('node_id')
 
         return df_grad
