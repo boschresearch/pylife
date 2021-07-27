@@ -51,7 +51,9 @@ def combine_hist(hist_list, method='sum', nbins=64):
     index_max = hist_combined.index.right.max()
 
     kwargs = {'ddof': 0} if method == 'std' else {}
-    return (hist_combined
-            .groupby(pd.cut(hist_combined.index.mid.values, np.linspace(index_min, index_max, nbins+1)))
-            .agg(method, **kwargs)
-            .set_index(pd.interval_range(index_min, index_max, nbins, name='range')))
+
+    result = (hist_combined
+              .groupby(pd.cut(hist_combined.index.mid.values, np.linspace(index_min, index_max, nbins+1)))
+              .agg(method, **kwargs))
+    result.index = pd.interval_range(index_min, index_max, nbins, name='range')
+    return result

@@ -21,16 +21,19 @@ import numpy as np
 import pandas as pd
 
 import pylife.materialdata.woehler as WL
+import pylife.stress.rainflow
+
 
 @pd.api.extensions.register_series_accessor('fatigue')
 @pd.api.extensions.register_dataframe_accessor('fatigue')
 class FatigueAccessor(WL.WoehlerCurveAccessor):
 
     def damage(self, load_hist):
-        load_values = load_hist.index.get_level_values('range').mid.values
-        cycles = self.basquin_cycles(load_values)
+        cycles = self.basquin_cycles(load_hist.amplitude)
 
-        return load_hist.divide(cycles, axis=0)
+        result = load_hist.frequency.divide(cycles, axis=0)
+        result.name = 'damage'
+        return result
 
     def security_load(self, load, cycles, allowed_failure_probability):
         allowed_load = self.basquin_load(cycles, allowed_failure_probability)
