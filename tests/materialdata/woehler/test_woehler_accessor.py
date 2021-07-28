@@ -284,6 +284,31 @@ def test_woehler_miner_haibach():
     assert wc_data.woehler.miner_haibach().k_2 == 13.0
 
 
+def test_woehler_to_pandas():
+    expected = pd.Series({
+        'k_1': 0.5,
+        'k_2': np.inf,
+        'TN': 1. / 1.75,
+        'TS': 1. / 1.75 / 1.75,
+        'ND': 1e6,
+        'SD': 300.0,
+        'failure_probability': 0.5,
+    }).sort_index()
+    wc = wc_data.copy()
+    wc['k_1'] = 0.5
+
+    pd.testing.assert_series_equal(wc.woehler.to_pandas().sort_index(), expected)
+
+    wc = wc_data.copy()
+    wc['k_1'] = 0.5
+    del wc['TN']
+
+    expected['TN'] = 1.
+    expected['TS'] = 1.
+
+    pd.testing.assert_series_equal(wc.woehler.to_pandas().sort_index(), expected)
+
+
 @pytest.mark.parametrize('pf', [0.1, 0.5, 0.9])
 def test_woehler_miner_original_homogenious_load(pf):
     cycles = np.logspace(3., 7., 50)

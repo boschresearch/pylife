@@ -71,6 +71,16 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
 
         self._failure_probability = obj.get('failure_probability', 0.5)
 
+    def to_pandas(self):
+        res = self._obj.copy()
+        res['k_2'] = self._k_2
+        res['failure_probability'] = self._failure_probability
+        if 'TS' not in self._obj:
+            res['TS'] = self._TS
+        if 'TN' not in self._obj:
+            res['TN'] = self._TN
+        return res
+
     @property
     def SD(self):
         return self._obj.SD
