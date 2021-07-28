@@ -127,7 +127,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         transformed['ND'] = ND
         transformed['failure_probability'] = failure_probability
 
-        return transformed
+        return WoehlerCurveAccessor(transformed)
 
     def miner_elementary(self):
         """Set k_2 to k_1 according Miner Elementary method (k_2 = k_1).
@@ -170,7 +170,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
 
         load_index = None if not isinstance(load, pd.Series) else load.index
         load = np.asfarray(load)
-        load, wc = signal.Broadcaster(transformed).broadcast(load)
+        load, wc = transformed.broadcast(load)
         cycles = np.full_like(load, np.inf)
 
         k = self._make_k(load, wc.SD)
@@ -199,7 +199,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         """
         transformed = self.transform_to_failure_probability(failure_probability)
 
-        cycles, wc = signal.Broadcaster(transformed).broadcast(cycles)
+        cycles, wc = transformed.broadcast(cycles)
         load = np.asarray(wc.SD.copy())
         cycles = np.asarray(cycles)
 

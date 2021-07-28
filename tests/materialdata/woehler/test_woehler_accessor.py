@@ -44,6 +44,7 @@ def test_woehler_accessor():
 def test_woehler_transform_probability():
     wc_50 = pd.Series({
         'k_1': 2,
+        'k_2': np.inf,
         'TS': 1. / 2.,
         'TN': 1. / 9.,
         'ND': 3e6,
@@ -51,16 +52,16 @@ def test_woehler_transform_probability():
         'failure_probability': 0.5
     }).sort_index()
 
-    transformed_90 = wc_50.woehler.transform_to_failure_probability(0.9)
+    transformed_90 = wc_50.woehler.transform_to_failure_probability(0.9).to_pandas()
     pd.testing.assert_series_equal(transformed_90[['SD', 'ND', 'failure_probability']],
                                    pd.Series({'SD': 600.0, 'ND': 4.5e6, 'failure_probability': 0.9}))
-    transformed_back = transformed_90.woehler.transform_to_failure_probability(0.5)
+    transformed_back = transformed_90.woehler.transform_to_failure_probability(0.5).to_pandas()
     pd.testing.assert_series_equal(transformed_back, wc_50)
 
-    transformed_10 = wc_50.woehler.transform_to_failure_probability(0.1)
+    transformed_10 = wc_50.woehler.transform_to_failure_probability(0.1).to_pandas()
     pd.testing.assert_series_equal(transformed_10[['SD', 'ND', 'failure_probability']],
                                    pd.Series({'SD': 300.0, 'ND': 2e6, 'failure_probability': 0.1}))
-    transformed_back = transformed_10.woehler.transform_to_failure_probability(0.5)
+    transformed_back = transformed_10.woehler.transform_to_failure_probability(0.5).to_pandas()
     pd.testing.assert_series_equal(transformed_back, wc_50)
 
 
