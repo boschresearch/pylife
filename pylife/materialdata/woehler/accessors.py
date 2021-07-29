@@ -54,6 +54,12 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
                if given.
     """
 
+    def __init__(self, pandas_obj):
+        self._validator = signal.DataValidator()
+        pandas_obj = pandas_obj.copy()
+        self._validate(pandas_obj, self._validator)
+        self._obj = pandas_obj
+
     def _validate(self, obj, validator):
         validator.fail_if_key_missing(obj, ['k_1', 'ND', 'SD'])
         self._k_2 = obj.get('k_2', np.inf)
@@ -70,6 +76,10 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
             self._TN = np.power(self._TS, obj.k_1)
 
         self._failure_probability = obj.get('failure_probability', 0.5)
+
+        obj['TN'] = self._TN
+        obj['TS'] = self._TS
+        obj['failure_probability'] = self._failure_probability
 
     def to_pandas(self):
         res = self._obj.copy()
@@ -113,16 +123,19 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
     def failure_probability(self):
         return self._failure_probability
 
-
     def transform_to_failure_probability(self, failure_probability):
-        native_ppf = stats.norm.ppf(self._failure_probability)
+        failure_probability = np.asfarray(failure_probability)
+
+        failure_probability, obj = self.broadcast(failure_probability)
+
+        native_ppf = stats.norm.ppf(obj.failure_probability)
         goal_ppf = stats.norm.ppf(failure_probability)
 
-        SD = self._obj.SD / 10**((native_ppf-goal_ppf)*scatteringRange2std(self.TS))
-        ND = self._obj.ND / 10**((native_ppf-goal_ppf)*scatteringRange2std(self.TN))
-        ND *= np.power(SD/self._obj.SD, -self._obj.k_1)
+        SD = np.asarray(obj.SD / 10**((native_ppf-goal_ppf)*scatteringRange2std(obj.TS)))
+        ND = np.asarray(obj.ND / 10**((native_ppf-goal_ppf)*scatteringRange2std(obj.TN)))
+        ND[SD != 0] *= np.power(SD[SD != 0]/obj.SD, -obj.k_1)
 
-        transformed = self._obj.copy()
+        transformed = obj.copy()
         transformed['SD'] = SD
         transformed['ND'] = ND
         transformed['failure_probability'] = failure_probability

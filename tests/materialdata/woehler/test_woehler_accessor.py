@@ -65,6 +65,77 @@ def test_woehler_transform_probability():
     pd.testing.assert_series_equal(transformed_back, wc_50)
 
 
+def test_woehler_transform_probability_multiple():
+    wc_50 = pd.Series({
+        'k_1': 2,
+        'k_2': np.inf,
+        'TS': 1. / 2.,
+        'TN': 1. / 9.,
+        'ND': 3e6,
+        'SD': 300 * np.sqrt(2.),
+        'failure_probability': 0.5
+    }).sort_index()
+
+    transformed = wc_50.woehler.transform_to_failure_probability([.1, .9]).to_pandas()
+    expected = pd.DataFrame({
+        'k_1': [2., 2.],
+        'k_2': [np.inf, np.inf],
+        'TS': [1. / 2., 1. / 2.],
+        'TN': [1. / 9., 1. / 9.],
+        'ND': [2e6, 4.5e6],
+        'SD': [300., 600.],
+        'failure_probability': [0.1, 0.9]
+    })
+
+    pd.testing.assert_frame_equal(transformed, expected, check_like=True)
+
+    transformed_back = transformed.woehler.transform_to_failure_probability([0.5, 0.5]).to_pandas()
+    expected = pd.DataFrame({
+        'k_1': [2., 2.],
+        'k_2': [np.inf, np.inf],
+        'TS': [1. / 2., 1. / 2.],
+        'TN': [1. / 9., 1. / 9.],
+        'ND': [3e6, 3e6],
+        'SD': [300. * np.sqrt(2.), 300. * np.sqrt(2.)],
+        'failure_probability': [0.5, 0.5]
+    })
+
+    pd.testing.assert_frame_equal(transformed_back, expected, check_like=True)
+
+
+def test_woehler_transform_probability_SD_0():
+    wc_50 = pd.Series({
+        'k_1': 2,
+        'k_2': np.inf,
+        'TS': 1. / 2.,
+        'TN': 1. / 9.,
+        'ND': 3e6,
+        'SD': 0.0,
+        'failure_probability': 0.5
+    }).sort_index()
+
+    transformed_90 = wc_50.woehler.transform_to_failure_probability(0.9).to_pandas()
+    pd.testing.assert_series_equal(transformed_90[['SD', 'ND', 'failure_probability']],
+                                   pd.Series({'SD': 0, 'ND': 9e6, 'failure_probability': 0.9}))
+    transformed_back = transformed_90.woehler.transform_to_failure_probability(0.5).to_pandas()
+    pd.testing.assert_series_equal(transformed_back, wc_50)
+
+    transformed_10 = wc_50.woehler.transform_to_failure_probability(0.1).to_pandas()
+    pd.testing.assert_series_equal(transformed_10[['SD', 'ND', 'failure_probability']],
+                                   pd.Series({'SD': 0.0, 'ND': 1e6, 'failure_probability': 0.1}))
+    transformed_back = transformed_10.woehler.transform_to_failure_probability(0.5).to_pandas()
+    pd.testing.assert_series_equal(transformed_back, wc_50)
+
+
+def test_woehler_basquin_cycles_50_single_load_single_wc():
+    load = 500.
+
+    cycles = wc_data.woehler.basquin_cycles(load)
+    expected_cycles = 27994
+
+    np.testing.assert_allclose(cycles, expected_cycles, rtol=1e-4)
+
+
 def test_woehler_basquin_cycles_50_multiple_load_single_wc():
     load = [200., 300., 400., 500.]
 
@@ -123,6 +194,15 @@ def test_woehler_basquin_cycles_10_90():
 
     expected = [np.inf, 1.75, 1.75]
     np.testing.assert_allclose(cycles_90/cycles_10, expected)
+
+
+def test_woehler_basquin_load_50_single_cycles_single_wc():
+    cycles = 27994
+
+    load = wc_data.woehler.basquin_load(cycles)
+    expected_load = 500.
+
+    np.testing.assert_allclose(load, expected_load, rtol=1e-4)
 
 
 def test_woehler_basquin_load_50_multiple_cycles_single_wc():
