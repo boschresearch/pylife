@@ -359,10 +359,12 @@ def test_woehler_miner_original():
 
 def test_woehler_miner():
     assert wc_data.woehler.miner_elementary().k_2 == wc_data.k_1
+    assert wc_data.woehler.miner_elementary().to_pandas().k_2 == wc_data.k_1
 
 
 def test_woehler_miner_haibach():
     assert wc_data.woehler.miner_haibach().k_2 == 13.0
+    assert wc_data.woehler.miner_haibach().to_pandas().k_2 == 13.0
 
 
 def test_woehler_to_pandas():

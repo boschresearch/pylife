@@ -77,19 +77,10 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
 
         self._failure_probability = obj.get('failure_probability', 0.5)
 
+        obj['k_2'] = self._k_2
         obj['TN'] = self._TN
         obj['TS'] = self._TS
         obj['failure_probability'] = self._failure_probability
-
-    def to_pandas(self):
-        res = self._obj.copy()
-        res['k_2'] = self._k_2
-        res['failure_probability'] = self._failure_probability
-        if 'TS' not in self._obj:
-            res['TS'] = self._TS
-        if 'TN' not in self._obj:
-            res['TN'] = self._TN
-        return res
 
     @property
     def SD(self):
@@ -107,17 +98,17 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
     @property
     def k_2(self):
         """The second Wöhler slope."""
-        return self._k_2
+        return self._obj.k_2
 
     @property
     def TN(self):
         """The load direction scatter value TN."""
-        return self._TN
+        return self._obj.TN
 
     @property
     def TS(self):
         """The load direction scatter value TS."""
-        return self._TS
+        return self._obj.TS
 
     @property
     def failure_probability(self):
@@ -149,7 +140,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         -------
         self
         """
-        self._k_2 = self._obj.k_1
+        self._obj['k_2'] = self._obj.k_1
         return self
 
     def miner_haibach(self):
@@ -159,7 +150,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         -------
         self
         """
-        self._k_2 = 2. * self._obj.k_1 - 1.
+        self._obj['k_2'] = 2. * self._obj.k_1 - 1.
         return self
 
     def basquin_cycles(self, load, failure_probability=0.5):
@@ -223,9 +214,11 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
 
     def _make_k(self, src, ref):
         k = np.asfarray(self._obj.k_1)
+        k_2 = np.asfarray(self._obj.k_2)
         if k.shape == ():
             k = np.full_like(src, k, dtype=np.double)
-        k[src < ref] = self._k_2
+            k_2 = np.full_like(src, k_2, dtype=np.double)
+        k[src < ref] = k_2[src < ref]
 
         return k
 
