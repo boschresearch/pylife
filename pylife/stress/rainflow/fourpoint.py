@@ -73,7 +73,7 @@ class FourPointDetector(AbstractDetector):
 
         Returns
         -------
-        self : ThreePointDetector
+        self : FourPointDetector
             The ``self`` object so that processing can be chained
         """
 
