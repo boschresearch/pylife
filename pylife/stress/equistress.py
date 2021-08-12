@@ -23,6 +23,7 @@ Library to calculate the equivalent stress values of a FEM stress tensor.
 
 By now the following calculation methods are implemented:
 
+* Principal stresses
 * Maximum principal stress
 * Minimum principal stress
 * Absolute maximum principal stress
@@ -257,6 +258,32 @@ def abs_max_principal(s11, s22, s33, s12, s13, s23):
     return w_max * positive_sign_bool + w_min * np.invert(positive_sign_bool)
 
 
+def principal(s11, s22, s33, s12, s13, s23):
+    """Calculate maximum principal stress (maximum of eigenvalues).
+
+    Parameters
+    ----------
+    s11: array_like
+        Component 11 of 3D tensor.
+    s22: array_like
+        Component 22 of 3D tensor.
+    s33: array_like
+        Component 33 of 3D tensor.
+    s12: array_like
+        Component 12 of 3D tensor.
+    s13: array_like
+        Component 13 of 3D tensor.
+    s23: array_like
+        Component 23 of 3D tensor.
+
+    Returns
+    -------
+    numpy.ndarray:
+        Maximum principal stress. Shape `(..., 3)`.
+    """
+    return eigenval(s11, s22, s33, s12, s13, s23)
+
+
 def max_principal(s11, s22, s33, s12, s13, s23):
     """Calculate maximum principal stress (maximum of eigenvalues).
 
@@ -441,6 +468,18 @@ class StressTensorEquistressAccessor(stresssignal.StressTensorVoigtAccessor):
                                                              s13=self._obj['S13'].to_numpy(),
                                                              s23=self._obj['S23'].to_numpy())},
                             index=self._obj.index)
+
+    def principal(self):
+        all_princ = eigenval(s11=self._obj['S11'].to_numpy(),   # ascending order (numpy.eigvalsh)
+                             s22=self._obj['S22'].to_numpy(),
+                             s33=self._obj['S33'].to_numpy(),
+                             s12=self._obj['S12'].to_numpy(),
+                             s13=self._obj['S13'].to_numpy(),
+                             s23=self._obj['S23'].to_numpy())
+        return pd.DataFrame({'min_principal': all_princ[...,0],
+                             'med_principal': all_princ[...,1],
+                             'max_principal': all_princ[...,2]},
+                             index=self._obj.index)
 
     def abs_max_principal(self):
         return pd.DataFrame({'abs_max_principal': abs_max_principal(s11=self._obj['S11'].to_numpy(),
