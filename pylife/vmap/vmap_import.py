@@ -268,6 +268,32 @@ class VMAPImport:
         self._mesh = None
         return ret
 
+    def variables(self, geometry, state):
+        """Ask for available variables for a certain geometry and state.
+
+        Parameters
+        ----------
+        geometry : string
+            Name of the geometry
+        state : string
+            Name of the state
+
+        Returns
+        -------
+        variables : list
+            List of available variable names for the geometry state combination
+
+        Raises
+        ------
+        KeyError
+            if the geometry state combination is not available.
+        """
+        self._fail_if_unknown_geometry(geometry)
+        self._fail_if_unknown_state(state)
+        if geometry not in self._file['/VMAP/VARIABLES/%s' % state].keys():
+            raise KeyError("Geometry '%s' not available in state '%s'." % (geometry, state))
+        return list(self._file['/VMAP/VARIABLES/%s/%s' % (state, geometry)].keys())
+
     def join_variable(self, var_name, state=None, column_names=None):
         """Joins a field output variable to the mesh
 
@@ -342,25 +368,40 @@ class VMAPImport:
         """
         if self._mesh is None:
             raise APIUseError("Need to make_mesh() before joining a variable.")
+        state = self._update_state(state)
+        self._fail_if_geometry_unknown_in_state(self._geometry, state)
+        self._state = state
+        variable_data = (pd.DataFrame(index=self._mesh.index)
+                         .join(self._variable(self._geometry, self._state, var_name, column_names)))
+        self._mesh = self._mesh.join(variable_data.loc[self._mesh.index])
+        return self
+
+    def _update_state(self, state):
         if state is None:
             state = self._state
         if state is None:
             raise APIUseError("No state name given.\n"
                               "Must be either given in make_mesh() or in join_variable() as optional state argument.")
-        if state not in self.states():
-            raise KeyError("State '%s' not found. Available states: [%s]."
-                           % (state,
-                              ', '.join("'"+s+"'" for s in self.states())))
-        self._state = state
-        variable_data = (pd.DataFrame(index=self._mesh.index)
-                         .join(self._variable(self._geometry, state, var_name, column_names)))
-        self._mesh = self._mesh.join(variable_data.loc[self._mesh.index])
-        return self
+        return state
 
-    def _mesh_index(self, geometry):
+    def _fail_if_unknown_geometry(self, geometry):
         if geometry not in self.geometries():
             raise KeyError("Geometry '%s' not found. Available geometries: [%s]."
                            % (geometry, ', '.join(["'"+g+"'" for g in self.geometries()])))
+
+    def _fail_if_unknown_state(self, state):
+        if state not in self.states():
+            raise KeyError("State '%s' not found. Available states: [%s]."
+                           % (state, ', '.join(["'"+s+"'" for s in self.states()])))
+
+    def _fail_if_geometry_unknown_in_state(self, geometry, state):
+        self._fail_if_unknown_geometry(geometry)
+        self._fail_if_unknown_state(state)
+        if geometry not in self._file['/VMAP/VARIABLES/%s' % state].keys():
+            raise KeyError("Geometry '%s' not available in state '%s'." % (geometry, state))
+
+    def _mesh_index(self, geometry):
+        self._fail_if_unknown_geometry(geometry)
         connectivity = self._element_connectivity(geometry).connectivity
         length = sum([el.shape[0] for el in connectivity])
         index_np = np.empty((2, length), dtype=np.int64)
@@ -381,7 +422,11 @@ class VMAPImport:
             except KeyError:
                 raise KeyError("No column name for variable %s. Please provide with column_names parameter." % var_name)
 
-        var_tree = self._file["/VMAP/VARIABLES/%s/%s/%s" % (state, geometry, var_name)]
+        state_group = self._file["/VMAP/VARIABLES/%s/%s" % (state, geometry)]
+        if var_name not in state_group.keys():
+            raise KeyError("Variable '%s' not found in geometry '%s', '%s'."
+                           % (var_name, geometry, state))
+        var_tree = state_group[var_name]
         var_dimension = var_tree.attrs['MYDIMENSION']
         if len(column_names) != var_dimension:
             raise ValueError("Length of column name list (%d) does not match variable dimension (%d)."
