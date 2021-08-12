@@ -41,11 +41,17 @@ def test_get_states(beam_2d_squ):
 def test_get_nodes_2d(beam_2d_squ):
     pd.testing.assert_frame_equal(beam_2d_squ.nodes('1'), RD.beam_2d_squ_nodes)
 
+
 def test_make_mesh_no_set(beam_2d_squ):
     df = beam_2d_squ.make_mesh('1').to_frame()
     assert df.shape[1] == 0
     pd.testing.assert_index_equal(df.index, RD.beam_2d_squ_mesh_coords.index)
 
+
+def test_make_mesh_unknown_geometry(beam_2d_squ):
+    with pytest.raises(KeyError, match=re.escape("Geometry 'foo' not found. "
+                                                   "Available geometries: ['1'].")):
+        beam_2d_squ.make_mesh('foo')
 
 def test_get_make_mesh_beam_2d_sq_node_set_load(beam_2d_squ):
     pd.testing.assert_index_equal(beam_2d_squ.make_mesh('1').filter_node_set('LOAD').to_frame().index,
@@ -139,6 +145,12 @@ def test_join_node_variable_displacement(beam_2d_squ):
     pd.testing.assert_frame_equal(groups.mean(), RD.beam_2d_squ_node_displacement)
     pd.testing.assert_frame_equal(groups.min(), RD.beam_2d_squ_node_displacement)
     pd.testing.assert_frame_equal(groups.max(), RD.beam_2d_squ_node_displacement)
+
+
+def test_join_variable_unknown_state(beam_2d_squ):
+    with pytest.raises(KeyError, match=re.escape("State 'foo' not found. "
+                                                 "Available states: ['STATE-1', 'STATE-2'].")):
+        beam_2d_squ.make_mesh('1').join_variable('DISPLACEMENT', 'foo')
 
 
 def test_join_element_variable_evol_no_column_name(beam_3d_hex):

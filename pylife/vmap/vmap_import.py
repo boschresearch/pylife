@@ -347,6 +347,10 @@ class VMAPImport:
         if state is None:
             raise APIUseError("No state name given.\n"
                               "Must be either given in make_mesh() or in join_variable() as optional state argument.")
+        if state not in self.states():
+            raise KeyError("State '%s' not found. Available states: [%s]."
+                           % (state,
+                              ', '.join("'"+s+"'" for s in self.states())))
         self._state = state
         variable_data = (pd.DataFrame(index=self._mesh.index)
                          .join(self._variable(self._geometry, state, var_name, column_names)))
@@ -354,6 +358,9 @@ class VMAPImport:
         return self
 
     def _mesh_index(self, geometry):
+        if geometry not in self.geometries():
+            raise KeyError("Geometry '%s' not found. Available geometries: [%s]."
+                           % (geometry, ', '.join(["'"+g+"'" for g in self.geometries()])))
         connectivity = self._element_connectivity(geometry).connectivity
         length = sum([el.shape[0] for el in connectivity])
         index_np = np.empty((2, length), dtype=np.int64)
