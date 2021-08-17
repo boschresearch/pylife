@@ -1,0 +1,109 @@
+# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# see the NOTICE file and/or the repository
+# https://github.com/boschresearch/pylife
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
+
+
+import pickle
+import subprocess as sp
+
+import numpy as np
+import pandas as pd
+
+
+class OdbClient:
+
+    def __init__(self, abaqus_bin, python_path, odb_file):
+        env = {'PYTHONPATH': python_path}
+        self._proc = sp.Popen([abaqus_bin, 'python', '-m', 'odbserver',  odb_file],
+                              stdout=sp.PIPE, stdin=sp.PIPE, env=env)
+
+    def instances(self):
+        return _decode_ascii_list(self._query('get_instances'))
+
+    def nodes(self, instance_name):
+        index, node_data = self._query('get_nodes', instance_name)
+        return pd.DataFrame(data=node_data, columns=['x', 'y', 'z'],
+                            index=pd.Int64Index(index, name='node_id'))
+
+    def connectivity(self, instance_name):
+        index, connectivity = self._query('get_connectivity', instance_name)
+        return pd.DataFrame({'connectivity': connectivity},
+                            index=pd.Int64Index(index, name='element_id'))
+
+    def node_sets(self, instance_name):
+        return _decode_ascii_list(self._query('get_node_sets', instance_name))
+
+    def node_set(self, instance_name, node_set_name):
+        node_set = self._query('get_node_set', (instance_name, node_set_name))
+        return pd.Int64Index(node_set, name='node_id')
+
+    def element_sets(self, instance_name):
+        return _decode_ascii_list(self._query('get_element_sets', instance_name))
+
+    def element_set(self, instance_name, element_set_name):
+        element_set = self._query('get_element_set', (instance_name, element_set_name))
+        return pd.Int64Index(element_set, name='element_id')
+
+    def steps(self):
+        return self._query('get_steps')
+
+    def frames(self, step_name):
+        return self._query('get_frames', step_name)
+
+    def variable_names(self, step, frame):
+        return _decode_ascii_list(self._query('get_variable_names', (step, frame)))
+
+    def variable(self, instance, step, frame, var_name, nset=None, elset=None):
+        response = self._query('get_variable', (instance, step, frame, var_name, nset, elset))
+        (labels, index_labels, index_data, values) = response
+
+        index_labels = _decode_ascii_list(index_labels)
+        if len(index_labels) == 2:
+            index = pd.DataFrame(index_data, columns=index_labels).set_index(index_labels).index
+        else:
+            index = pd.Int64Index(index_data[:, 0], name=index_labels[0])
+
+        column_names = _decode_ascii_list(labels)
+        return pd.DataFrame(values, index=index, columns=column_names)
+
+    def _query(self, command, args=None):
+        self._send_command(command, args)
+        response = pickle.load(self._proc.stdout, encoding='bytes')
+
+        array_num, pickle_data = response
+
+        if isinstance(pickle_data, Exception):
+            raise pickle_data
+
+        if array_num == 0:
+            return pickle_data
+
+        numpy_arrays = [np.lib.format.read_array(self.proc.stdout) for _ in range(array_num)]
+
+        return pickle_data, numpy_arrays
+
+    def _send_command(self, command, args=None):
+        pickle.dump((command, args), self._proc.stdin, protocol=2)
+        self._proc.stdin.flush()
+
+    def __del__(self):
+        self._send_command('QUIT')
+
+
+def _decode_ascii_list(ascii_list):
+    return [item.decode('ascii') for item in ascii_list]
