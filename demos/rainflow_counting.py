@@ -55,7 +55,8 @@ from matplotlib import cm
 import matplotlib as mpl
 
 from scipy.stats import norm
-
+from scipy.signal import sg
+from matplotlib.mlab import magnitude_spectrum, psd
 
 # mpl.style.use('seaborn')
 # mpl.style.use('seaborn-notebook')
@@ -92,65 +93,24 @@ signal_df = pd.DataFrame(data = np.array([80 * np.random.randn(len(t)), 160 * np
                          index=t)
 signal_df["SoR"] = signal_df["wn"] + signal_df["sine"]
 signal_df.plot(subplots=True)
-
+ts.psd_df(signal_df, NFFT = 512).plot(loglog=True)
 # In[ ]:
 
 f_min = 5.0    # Hz
 f_max = 100.0  # Hz
 
-bandpass_df = ts.butter_bandpass(signal_df, f_min, f_max, sample_frequency)
+bandpass_df = ts.butter_bandpass(signal_df, f_min, f_max)
 
+df_psd = ts.psd_df(bandpass_df, NFFT = 512)
+df_psd.plot(loglog=True)
+# In[ ]: let us add some spike in to the signal and see, if we could filter it out
+bandpass_df["spiky"] = bandpass_df["SoR"] + 1e3 * sg.unit_impulse(signal_df.shape[0], idx="mid")
+cleaned_df = pts.clean_timeseries(bandpass_df, "spiky", window_size=200, overlap=20,
+                     feature="abs_energy", n_gridpoints=3,
+                     percentage_max=0.05, order=3).drop(["time"], axis=1)
+
+ts.psd_df(cleaned_df, NFFT = 512).plot(loglog=True)
 # In[ ]:
-
-
-# bandpass = {}
-# for k, df_act in meas_resample.items():
-#     bandpassDF = pd.DataFrame(index = df_act.index)
-#     for col_act in df_act.columns:
-#         bandpassDF[col_act] = ts.TimeSignalPrep(df_act[col_act]).butter_bandpass(f_min, f_max, resampling_freq, 5)
-#     bandpass[k] = bandpassDF
-    
-# display(bandpassDF)
-
-
-# ### Running statistics
-
-# In[ ]:
-
-
-statistics_method = 'rms'  # alternatively 'max', 'min', 'abs'
-
-run_statt = 'window_length' # alternatively 'buffer_overlap', 'limit'
-
-window_length = 800
-buffer_overlap = 0.1
-limit = 0.15
-
-
-# In[ ]:
-
-
-""" Running statistics to drop out zero values """
-cleaned = {}
-for k, df_act in bandpass.items():
-    cleaned_df = ts.TimeSignalPrep(df_act).running_stats_filt(
-                            col="sensor_1",
-                            window_length=window_length,
-                            buffer_overlap=buffer_overlap,
-                            limit=limit,
-                            method=statistics_method)
-    cleaned[k] = cleaned_df
-
-
-# In[ ]:
-
-
-fig, ax = plt.subplots(len(meas_resample))
-fig.suptitle('Cleaned input data')
-for ax, (k, df_act) in zip(ax, cleaned.items()):
-    ax.plot(df_act.index, df_act['sensor_1'])
-
-
 # ### Rainflow ###
 
 # In[ ]:
@@ -160,8 +120,6 @@ rainflow_bins = 64
 
 
 # In[ ]:
-
-
 rainflow = {}
 for k, df_act in cleaned.items():
     rfc = RainflowCounterFKM().process(df_act['sensor_1'].values)

@@ -21,9 +21,8 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 import scipy.signal as signal
-import time
 import tsfresh as ts
-
+from matplotlib.mlab import magnitude_spectrum, psd
 
 class TimeSignalGenerator:
     '''Generates mixed time signals
@@ -116,6 +115,27 @@ class TimeSignalGenerator:
         '''
         self.time_position = 0.0
 
+def fs_calc(df):
+    """
+    Calculates the sample frequency of a DataFrame time series
+
+    Parameters
+    ----------
+    df : DataFrame
+        time series.
+
+    Returns
+    -------
+    fs : int, float
+        sample freqency
+
+    """
+    try:
+        fs = 1/np.mean(np.diff(df.index))
+    except TypeError:
+        print("Index has to be a number not a string. We assume fs = 1")
+        fs = 1
+    return fs
 
 def resample_acc(df, fs=1):
     """ Resamples a pandas time series DataFrame
@@ -133,14 +153,14 @@ def resample_acc(df, fs=1):
     -------
     DataFrame
     """
-    index_new = np.arange(df.index.min(), df.index.max(), 1/fs)
+    index_new = np.arange(df.index.min(), df.index.max() + 1/fs, 1/fs)
 
     df_rs = pd.DataFrame(df.apply(lambda x: np.interp(index_new, df.index, x)).values,
                          index=index_new, columns=df.columns)
     return df_rs
 
 
-def butter_bandpass(df, lowcut, highcut, fs, order=5):
+def butter_bandpass(df, lowcut, highcut, order=5):
     """ Use the functonality of scipy
 
 
@@ -152,8 +172,6 @@ def butter_bandpass(df, lowcut, highcut, fs, order=5):
         low frequency
     highcut : float
         high freqency.
-    fs: float
-        sample rate of the resampled time series
     order : int, optional
         Butterworth filter order. The default is 5.
 
@@ -162,11 +180,36 @@ def butter_bandpass(df, lowcut, highcut, fs, order=5):
     TSout : DataFrame
 
     """
+    fs = fs_calc(df) 
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
     b, a = signal.butter(order, [low, high], btype='band')
     return df.apply(lambda x: signal.filtfilt(b, a, x))
+
+def psd_df(df_ts, NFFT=512):
+    """
+    calculates the psd using Welch algorithm from matplotlib functionality
+
+    Parameters
+    ----------
+    df_ts : DataFram
+        time series dataframe
+    NFFT : int, optional
+        BufferSize. The default is 512.
+
+    Returns
+    -------
+    df_psd : DataFrame
+        PSD.
+
+    """
+    fs = fs_calc(df_ts)
+    df_psd = pd.DataFrame()
+    for col in df_ts:
+        df_psd[col], freq = psd(df_ts[col], Fs=fs,NFFT = NFFT)
+    df_psd.index = freq                        
+    return df_psd
 
 
 def _prepare_rolling(df):

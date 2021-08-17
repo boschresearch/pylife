@@ -18,97 +18,120 @@ import pytest
 import numpy as np
 import pandas as pd
 from scipy import signal as sg
-from pylife.stress import timesignal as tsig
+from pylife.stress import timesignal as pts
 
 
-def test_resample_acc():
-    t=t = np.arange(0, 10, 1/4096)
+def create_input_DF():
+    fs = 2048
+    t = np.arange(0, 30, 1/fs)
+    ts_df = pd.DataFrame({"sin1": np.sin(10* 2 * np.pi * t), 
+                          "sin2": 2 * np.sin(10* 2 * np.pi * t + 0.05), 
+                          "cos": 10 * np.cos(5* 2 * np.pi * t),
+                          "wn": np.random.rand(len(t))},
+                         index=t)
+    ts_df.index.name = "t"
+    return ts_df
+
+def test_fs_calc_true():
+    df = create_input_DF()
+    fs = 2048
+    assert fs == pts.fs_calc(df)
+    
+def test_fs_calc_false():    
+    df = create_input_DF()
+    df.index = df.index.astype(str)
+    assert 1 == pts.fs_calc(df)
+
+def test_resample_acc_sine():
     # sine
     omega = 10*2*np.pi  # Hz
     ts_sin = pd.DataFrame(np.sin(
         omega*np.arange(0, 2, 1/1024)), index=np.arange(0, 2, 1/1024))
     expected_sin = ts_sin.describe().drop(['count', 'mean', '50%', '25%', '75%'])
-    test_sin = tsig.TimeSignalPrep(ts_sin).resample_acc(int(12*omega)).describe().drop(
+    test_sin = pts.resample_acc(ts_sin, int(12*omega)).describe().drop(
         ['count', 'mean', '50%', '25%', '75%'])
     pd.testing.assert_frame_equal(test_sin, expected_sin, rtol=2)
+    
+def test_resample_acc_wn():    
     # white noise
     ts_wn = pd.DataFrame(np.random.randn(129), index=np.linspace(0, 1, 129))
     expected_wn = ts_wn.describe()
-    test_wn = tsig.TimeSignalPrep(ts_wn).resample_acc(128).describe()
+    test_wn = pts.resample_acc(ts_wn, fs = pts.fs_calc(ts_wn)).describe()
     pd.testing.assert_frame_equal(test_wn, expected_wn, check_exact=True)
+def test_resample_acc_Sor():    
     # SoR
     t = np.arange(0, 20, 1/4096)
     ts_sin = pd.DataFrame(np.sin(10 * 2 * np.pi * t), index=t)
     expected_sin = ts_sin.describe().drop(
         ['count', 'mean', '50%', '25%', '75%'])
-    test_sin = tsig.resample_acc(ts_sin, 2048).describe().drop(
+    test_sin = pts.resample_acc(ts_sin, 2048).describe().drop(
         ['count', 'mean', '50%', '25%', '75%'])
     pd.testing.assert_frame_equal(test_sin, expected_sin, rtol=1e-2)
+def test_resample_acc_sawtooth():    
     # sawtooth
+    t=t = np.arange(0, 10, 1/4096)
     ts_st = pd.DataFrame(sg.sawtooth(2 * np.pi * 1 * t), index=t)
     expected_st = ts_st.describe().drop(['count', '50%', 'mean'])
-    test_st = tsig.resample_acc(ts_st, 1024).describe().drop(['count', '50%', 'mean'])
+    test_st = pts.resample_acc(ts_st, 1024).describe().drop(['count', '50%', 'mean'])
     pd.testing.assert_frame_equal(test_st, expected_st, rtol=1e-2)
-    # SoR
-    f = np.logspace(np.log10(1), np.log10(10), num=len(t))
-    df = pd.DataFrame(data=np.multiply(
-        np.interp(f, np.array([1, 10]), np.array([0.5, 5]), left=0, right=0),
-        sg.chirp(t, 1, 20, 10, method="logarithmic", phi=-90)),
-        index=t, columns=["Sweep"])
-    df['sor'] = df['Sweep'] + 0.1*np.random.randn(len(df))
-    expected_sor = df.describe().drop(['count', 'mean', '50%', '25%', '75%'])
-    test_sor = tsig.TimeSignalPrep(df).resample_acc(
-        2048).describe().drop(['count', 'mean', '50%', '25%', '75%'])
-    pd.testing.assert_frame_equal(test_sor, expected_sor, rtol=1)
 
+def test_ps_df():
+    sample_frequency = 512
+    t = np.linspace(0, 60, 60 * sample_frequency)
+    ts_df = pd.DataFrame(data = np.array([np.random.randn(len(t)), np.sin(2 * np.pi * 10 * t)]).T,
+                         columns=["wn", "sine"],
+                         index=t)
+    test_psd = pts.psd_df(ts_df, 512)
+    
+    np.testing.assert_allclose(test_psd.sum().values, np.array([1, 0.5]), rtol=1e-2)
 
-def test_running_stats_filt():
-    t = np.linspace(0, 1, 2048+1)
-    sin1 = -abs(150*np.sin(2*np.pi*10*t)+152)
-    sin2 = 300*np.sin(2*np.pi*10*t)
-    wn1 = np.ones(len(t))
-    wn1[500] = -250
-    wn2 = np.zeros(len(t))
-    wn2[0] = 350
-    df = pd.DataFrame(np.hstack((
-        sin1,
-        sin2,
-        wn1,
-        wn2)), columns=['data'])
-    df_sep = pd.DataFrame(np.vstack((
-        sin1,
-        sin2,
-        wn1,
-        wn2))).T
-    df_sep.columns = ['sin1', 'sin2', 'wn1', 'wn2']
+# def test_running_stats_filt():
+#     t = np.linspace(0, 1, 2048+1)
+#     sin1 = -abs(150*np.sin(2*np.pi*10*t)+152)
+#     sin2 = 300*np.sin(2*np.pi*10*t)
+#     wn1 = np.ones(len(t))
+#     wn1[500] = -250
+#     wn2 = np.zeros(len(t))
+#     wn2[0] = 350
+#     df = pd.DataFrame(np.hstack((
+#         sin1,
+#         sin2,
+#         wn1,
+#         wn2)), columns=['data'])
+#     df_sep = pd.DataFrame(np.vstack((
+#         sin1,
+#         sin2,
+#         wn1,
+#         wn2))).T
+#     df_sep.columns = ['sin1', 'sin2', 'wn1', 'wn2']
 
-    test_rms = tsig.TimeSignalPrep(df).running_stats_filt(
-        col='data', window_length=2049, buffer_overlap=0.0, limit=0.95, method="rms")
-    test_rms.columns = ['sin2']
-    pd.testing.assert_frame_equal(test_rms, pd.DataFrame(df_sep['sin2']),
-                                  check_index_type=False)
+#     test_rms = pts.TimeSignalPrep(df).running_stats_filt(
+#         col='data', window_length=2049, buffer_overlap=0.0, limit=0.95, method="rms")
+#     test_rms.columns = ['sin2']
+#     pd.testing.assert_frame_equal(test_rms, pd.DataFrame(df_sep['sin2']),
+#                                   check_index_type=False)
 
-    test_max = tsig.TimeSignalPrep(df).running_stats_filt(
-        col='data', window_length=2049, buffer_overlap=0.0, limit=0.95, method="max")
-    test_max.columns = ['wn2']
-    pd.testing.assert_frame_equal(test_max, pd.DataFrame(df_sep['wn2']),
-                                  check_index_type=False)
+#     test_max = pts.TimeSignalPrep(df).running_stats_filt(
+#         col='data', window_length=2049, buffer_overlap=0.0, limit=0.95, method="max")
+#     test_max.columns = ['wn2']
+#     pd.testing.assert_frame_equal(test_max, pd.DataFrame(df_sep['wn2']),
+#                                   check_index_type=False)
 
-    test_min = tsig.TimeSignalPrep(df).running_stats_filt(
-        col='data', window_length=2049, buffer_overlap=0.0, limit=1, method="min")
-    test_min.columns = ['sin1']
-    pd.testing.assert_frame_equal(test_min, pd.DataFrame(df_sep['sin1']),
-                                  check_index_type=False)
+#     test_min = pts.TimeSignalPrep(df).running_stats_filt(
+#         col='data', window_length=2049, buffer_overlap=0.0, limit=1, method="min")
+#     test_min.columns = ['sin1']
+#     pd.testing.assert_frame_equal(test_min, pd.DataFrame(df_sep['sin1']),
+#                                   check_index_type=False)
 
-    test_abs = tsig.TimeSignalPrep(df).running_stats_filt(
-        col='data', window_length=2049, buffer_overlap=0.0, limit=0.1, method="abs")
-    pd.testing.assert_frame_equal(test_abs, df,
-                                  check_index_type=False)
-    test_sor = tsig.resample_acc(df, 2048).describe().drop(
-        ['count', 'mean', '50%', '25%', '75%'])
-    # return expected_sor, test_sor
-    pd.testing.assert_frame_equal(test_sor, expected_sor, rtol=1e-2)
-    return
+#     test_abs = pts.TimeSignalPrep(df).running_stats_filt(
+#         col='data', window_length=2049, buffer_overlap=0.0, limit=0.1, method="abs")
+#     pd.testing.assert_frame_equal(test_abs, df,
+#                                   check_index_type=False)
+#     test_sor = pts.resample_acc(df, 2048).describe().drop(
+#         ['count', 'mean', '50%', '25%', '75%'])
+#     # return expected_sor, test_sor
+#     pd.testing.assert_frame_equal(test_sor, expected_sor, rtol=1e-2)
+#     return
 
 
 # %%
@@ -129,7 +152,7 @@ def test_prepare_rolling(ts_inp):
                               })
     exact_res.index = exact_res["time"]
     global ts_prep_rolling
-    ts_prep_rolling = tsig._prepare_rolling(ts_inp)
+    ts_prep_rolling = pts._prepare_rolling(ts_inp)
 
     pd.testing.assert_frame_equal(exact_res, ts_prep_rolling)
     return ts_prep_rolling
@@ -137,7 +160,7 @@ def test_prepare_rolling(ts_inp):
 
 def test_roll_dataset():
     global df_rolled
-    df_rolled = tsig._roll_dataset(ts_prep_rolling, window_size=3, overlap=1)
+    df_rolled = pts._roll_dataset(ts_prep_rolling, window_size=3, overlap=1)
 
     x = np.array([0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 8])
 
@@ -159,7 +182,7 @@ def test_roll_dataset():
 
 def test_extract_feature_df():
     global extracted_features
-    extracted_features = tsig._extract_feature_df(df_rolled, feature="maximum")
+    extracted_features = pts._extract_feature_df(df_rolled, feature="maximum")
     exact_res = pd.DataFrame({'x__maximum': [4., 16., 36., 64.]})
     pd.testing.assert_frame_equal(exact_res, extracted_features)
     return extracted_features
@@ -173,7 +196,7 @@ def test_select_relevant_windows():
     ts_prep_selected = ts_prep_rolling.copy()
     global grid_points
     global liste
-    grid_points = tsig._select_relevant_windows(ts_prep_rolling, extracted_features, 'x__maximum',
+    grid_points = pts._select_relevant_windows(ts_prep_rolling, extracted_features, 'x__maximum',
                                                 fraction_max=0.24, window_size=3,
                                                 overlap=1, n_gridpoints=3)
     ts_prep_selected.iloc[0:3, 0] = None
@@ -199,7 +222,7 @@ def test_polyfit_gridpoints1():
     ts_time.index = ts_time.index + delta_t
     ts_time['time'] = ts_time.index.values
 
-    poly_gridpoints = tsig._polyfit_gridpoints(
+    poly_gridpoints = pts._polyfit_gridpoints(
         grid_points, ts_time, order=1, verbose=False, n_gridpoints=3)
     x = [0, 4]
     y = [0, 9]
@@ -229,7 +252,7 @@ def test_polyfit_gridpoints1():
 def test_clean_timeseries(ts_inp):
     global ts_cleaned
 
-    ts_cleaned = tsig.clean_timeseries(ts_inp, 'x', window_size=3,
+    ts_cleaned = pts.clean_timeseries(ts_inp, 'x', window_size=3,
                                        overlap=1, feature="maximum", n_gridpoints=2,
                                        percentage_max=0.24, order=1)
     poly_gridpoints.pop("id")
@@ -251,19 +274,19 @@ def ts_gaps():
 
 @pytest.fixture
 def df_gaps_prep(ts_gaps):
-    df_gaps_prep = tsig._prepare_rolling(ts_gaps)
+    df_gaps_prep = pts._prepare_rolling(ts_gaps)
     return df_gaps_prep
 
 
 @pytest.fixture
 def df_gaps_rolled(df_gaps_prep):
-    df_gaps_rolled = tsig._roll_dataset(df_gaps_prep, window_size=5, overlap=2)
+    df_gaps_rolled = pts._roll_dataset(df_gaps_prep, window_size=5, overlap=2)
     return df_gaps_rolled
 
 
 @pytest.fixture
 def extraced_feature_gaps(df_gaps_rolled):
-    extraced_feature_gaps = tsig._extract_feature_df(
+    extraced_feature_gaps = pts._extract_feature_df(
         df_gaps_rolled, feature="maximum")
     return extraced_feature_gaps
 
@@ -271,7 +294,7 @@ def extraced_feature_gaps(df_gaps_rolled):
 def test_select_relevant_windows2(df_gaps_prep, extraced_feature_gaps):
     ts_gaps_selected = df_gaps_prep.copy()
     global grid_points_gaps
-    grid_points_gaps = tsig._select_relevant_windows(df_gaps_prep, extraced_feature_gaps,
+    grid_points_gaps = pts._select_relevant_windows(df_gaps_prep, extraced_feature_gaps,
                                                      "0__maximum", fraction_max=0.80,
                                                      window_size=5, overlap=2)
     ts_gaps_selected.iloc[3*2:3*2+5, 0:2] = np.nan
@@ -287,13 +310,13 @@ def test_select_relevant_windows2(df_gaps_prep, extraced_feature_gaps):
 
 
 def test_clean_timeseries2(ts_gaps, df_gaps_prep):
-    poly_gridpoints_gaps = tsig._polyfit_gridpoints(
+    poly_gridpoints_gaps = pts._polyfit_gridpoints(
         grid_points_gaps, df_gaps_prep, order=3, verbose=False, n_gridpoints=3)
     poly_gridpoints_gaps = poly_gridpoints_gaps.dropna(
         axis=0, how='any', thresh=None, subset=None)
     poly_gridpoints_gaps.pop("id")
     exact_res = poly_gridpoints_gaps
-    ts_cleaned = tsig.clean_timeseries(ts_gaps, "0", window_size=5,
+    ts_cleaned = pts.clean_timeseries(ts_gaps, "0", window_size=5,
                                        overlap=2, feature="maximum", n_gridpoints=3,
                                        percentage_max=0.91, order=3)
     pd.testing.assert_frame_equal(exact_res, ts_cleaned)
@@ -312,14 +335,14 @@ def test_clean_timeseries3():
                           data=y)
 
     ts_sin_test = ts_sin.copy()
-    ts_cleaned = tsig.clean_timeseries(ts_sin_test, "0", window_size=100,
+    ts_cleaned = pts.clean_timeseries(ts_sin_test, "0", window_size=100,
                                        overlap=99, feature="maximum", n_gridpoints=5,
                                        percentage_max=0.3, order=3)
 
-    ts_time = tsig._prepare_rolling(ts_sin)
+    ts_time = pts._prepare_rolling(ts_sin)
 
     exact_res = pd.DataFrame(index=t1, data=y1)
-    exact_res = tsig._prepare_rolling(exact_res)
+    exact_res = pts._prepare_rolling(exact_res)
 
     delta_t = exact_res.index[1]-exact_res.index[0]
     line = pd.DataFrame(exact_res.iloc[:1], index=[- delta_t])
