@@ -12,3 +12,6 @@ dependencies:
 - pip:
   - -e .
   - pyvista
+  - mystic
+  - tables
+  - tsfresh
