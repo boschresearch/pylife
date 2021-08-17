@@ -42,8 +42,15 @@ class OdbClient:
                               stdout=sp.PIPE, stdin=sp.PIPE, stderr=sp.PIPE,
                               env=env)
 
+        if lock_file_exists:
+            self._gulp_lock_file_warning()
+
         time.sleep(1)
         self._check_if_process_still_alive()
+
+    def _gulp_lock_file_warning(self):
+            self._proc.stdout.readline()
+            self._proc.stdout.readline()
 
     def instances(self):
         return _decode_ascii_list(self._query('get_instances'))
