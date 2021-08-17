@@ -17,7 +17,8 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
-
+import os
+import time
 import pickle
 import subprocess as sp
 
@@ -25,12 +26,24 @@ import numpy as np
 import pandas as pd
 
 
+class OdbServerError(Exception):
+    pass
+
+
 class OdbClient:
 
-    def __init__(self, abaqus_bin, python_path, odb_file):
-        env = {'PYTHONPATH': python_path}
-        self._proc = sp.Popen([abaqus_bin, 'python', '-m', 'odbserver',  odb_file],
-                              stdout=sp.PIPE, stdin=sp.PIPE, env=env)
+    def __init__(self, abaqus_bin, python_env_path, odb_file):
+        env = os.environ
+        env['PYTHONPATH'] = os.path.join(python_env_path, 'lib', 'python2.7', 'site-packages')
+
+        lock_file_exists = os.path.isfile(os.path.splitext(odb_file)[0] + '.lck')
+
+        self._proc = sp.Popen([abaqus_bin, 'python', '-m', 'odbserver', odb_file],
+                              stdout=sp.PIPE, stdin=sp.PIPE, stderr=sp.PIPE,
+                              env=env)
+
+        time.sleep(1)
+        self._check_if_process_still_alive()
 
     def instances(self):
         return _decode_ascii_list(self._query('get_instances'))
@@ -98,12 +111,19 @@ class OdbClient:
         return pickle_data, numpy_arrays
 
     def _send_command(self, command, args=None):
+        self._check_if_process_still_alive()
         pickle.dump((command, args), self._proc.stdin, protocol=2)
         self._proc.stdin.flush()
 
     def __del__(self):
         self._send_command('QUIT')
 
+    def _check_if_process_still_alive(self):
+        if self._proc.poll() is not None:
+            _, error_message = self._proc.communicate()
+            self._proc = None
+
+            raise OdbServerError(error_message.decode('ascii'))
 
 def _decode_ascii_list(ascii_list):
     return [item.decode('ascii') for item in ascii_list]

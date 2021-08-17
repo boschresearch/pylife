@@ -95,7 +95,12 @@ def _send_response(pickle_data, numpy_arrays=[]):
 def main():
 
     odbfile = sys.argv[1]
-    server = OdbServer(odbfile)
+
+    try:
+        server = OdbServer(odbfile)
+    except Exception as e:
+        print >> sys.stderr, e.message
+        sys.exit(1)
 
     command = ''
     while True:
