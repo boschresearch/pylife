@@ -83,7 +83,7 @@ def test_ps_df():
                          index=t)
     test_psd = pts.psd_df(ts_df, 512)
     
-    np.testing.assert_allclose(test_psd.sum().values, np.array([1, 0.5]), rtol=1e-2)
+    np.testing.assert_allclose(test_psd.sum().values, np.array([1, 0.5]), rtol=1e-1)
 
 # def test_running_stats_filt():
 #     t = np.linspace(0, 1, 2048+1)

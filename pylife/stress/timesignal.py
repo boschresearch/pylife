@@ -208,7 +208,7 @@ def psd_df(df_ts, NFFT=512):
     df_psd = pd.DataFrame()
     for col in df_ts:
         df_psd[col], freq = psd(df_ts[col], Fs=fs,NFFT = NFFT)
-    df_psd.index = freq                        
+    df_psd.index = pd.Index(freq, name="frequency")
     return df_psd
 
 

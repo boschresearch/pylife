@@ -33,20 +33,11 @@
 import numpy as np
 import pandas as pd
 
-from pylife.stress.histogram import *
+import pylife.stress.histogram as psh
 import pylife.stress.timesignal as ts
 import pylife.stress.rainflow as RF
 import pylife.stress.rainflow.recorders as RFR
-import pylife.stress.equistress
 
-import pylife.stress.rainflow
-import pylife.strength.meanstress
-import pylife.strength.fatigue
-
-import pylife.mesh.meshsignal
-
-from pylife.strength import failure_probability as fp
-import pylife.vmap
 
 import pyvista as pv
 
@@ -55,7 +46,6 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import matplotlib as mpl
 
-from scipy.stats import norm
 from scipy import signal as sg
 
 # mpl.style.use('seaborn')
@@ -133,7 +123,15 @@ ts.psd_df(cleaned_df, NFFT = 512).plot(loglog=True)
 #%% Rainflow for a multiple time series
 recorder_dict = {key: RFR.FullRecorder() for key in cleaned_df}
 detector_dict = {key: RF.FKMDetector(recorder=recorder_dict[key]).process(cleaned_df[key]) for key in cleaned_df}
-rf_series_dict = {key: detector_dict[key].recorder.matrix_series(64) for  key in detector_dict.keys()}
+rf_series_dict = {key: detector_dict[key].recorder.matrix_series(10) for  key in detector_dict.keys()}
 
-for  key in rf_series_dict.keys():
-    plot_rf(rf_series_dict[key])
+plot_rf(rf_series_dict)
+    
+#%% Now Combining different RFs to one
+rf_series_dict["wn + sn"] = psh.combine_hist([rf_series_dict["wn"],rf_series_dict["sine"]],
+                                             method="sum")
+rf_series_dict.pop("spiky")
+plot_rf(rf_series_dict)
+#%%
+df_psd["max"] =  df_psd[["sine", "wn"]].max(axis = 1)
+df_psd.plot(loglog=True)
