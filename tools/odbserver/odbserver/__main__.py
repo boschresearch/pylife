@@ -102,6 +102,8 @@ def main():
         print >> sys.stderr, e.message
         sys.exit(1)
 
+    print "ready"
+    sys.stdout.flush()
     command = ''
     while True:
         command, parameters = pickle.load(sys.stdin)

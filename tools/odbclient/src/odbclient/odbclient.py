@@ -22,6 +22,9 @@ import time
 import pickle
 import subprocess as sp
 
+import threading as THR
+import queue as QU
+
 import numpy as np
 import pandas as pd
 
@@ -33,6 +36,7 @@ class OdbServerError(Exception):
 class OdbClient:
 
     def __init__(self, abaqus_bin, python_env_path, odb_file):
+        self._proc = None
         env = os.environ
         env['PYTHONPATH'] = os.path.join(python_env_path, 'lib', 'python2.7', 'site-packages')
 
@@ -45,12 +49,36 @@ class OdbClient:
         if lock_file_exists:
             self._gulp_lock_file_warning()
 
-        time.sleep(1)
-        self._check_if_process_still_alive()
+        self._wait_for_server_ready_sign()
 
     def _gulp_lock_file_warning(self):
             self._proc.stdout.readline()
             self._proc.stdout.readline()
+
+    def _wait_for_server_ready_sign(self):
+        def wait_for_input(stdout, queue):
+            sign = stdout.read(6)
+            queue.put(sign)
+
+        queue = QU.Queue()
+        thread = THR.Thread(target=wait_for_input, args=(self._proc.stdout, queue))
+        thread.daemon = True
+        thread.start()
+
+        while True:
+            print("waiting")
+            self._check_if_process_still_alive()
+            try:
+                sign = queue.get_nowait()
+            except QU.Empty:
+                time.sleep(1)
+            else:
+                if sign != b'ready\n':
+                    raise OdbServerError("Expected ready sign from server, received %s" % sign)
+                return
+
+
+
 
     def instances(self):
         return _decode_ascii_list(self._query('get_instances'))
@@ -123,7 +151,8 @@ class OdbClient:
         self._proc.stdin.flush()
 
     def __del__(self):
-        self._send_command('QUIT')
+        if self._proc is not None:
+            self._send_command('QUIT')
 
     def _check_if_process_still_alive(self):
         if self._proc.poll() is not None:
