@@ -18,6 +18,7 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 import os
+import sys
 import time
 import pickle
 import subprocess as sp
@@ -38,7 +39,7 @@ class OdbClient:
     def __init__(self, abaqus_bin, python_env_path, odb_file):
         self._proc = None
         env = os.environ
-        env['PYTHONPATH'] = os.path.join(python_env_path, 'lib', 'python2.7', 'site-packages')
+        env['PYTHONPATH'] = self._guess_pythonpath(python_env_path)
 
         lock_file_exists = os.path.isfile(os.path.splitext(odb_file)[0] + '.lck')
 
@@ -50,6 +51,11 @@ class OdbClient:
             self._gulp_lock_file_warning()
 
         self._wait_for_server_ready_sign()
+
+    def _guess_pythonpath(self, python_env_path):
+        if sys.platform == 'win32':
+            return os.path.join(python_env_path, 'lib', 'site-packages')
+        return os.path.join(python_env_path, 'lib', 'python2.7', 'site-packages')
 
     def _gulp_lock_file_warning(self):
             self._proc.stdout.readline()
@@ -66,7 +72,6 @@ class OdbClient:
         thread.start()
 
         while True:
-            print("waiting")
             self._check_if_process_still_alive()
             try:
                 sign = queue.get_nowait()
