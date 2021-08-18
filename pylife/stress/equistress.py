@@ -258,8 +258,8 @@ def abs_max_principal(s11, s22, s33, s12, s13, s23):
     return w_max * positive_sign_bool + w_min * np.invert(positive_sign_bool)
 
 
-def principal(s11, s22, s33, s12, s13, s23):
-    """Calculate maximum principal stress (maximum of eigenvalues).
+def principals(s11, s22, s33, s12, s13, s23):
+    """Calculate all principal stress components (eigenvalues).
 
     Parameters
     ----------
@@ -279,7 +279,7 @@ def principal(s11, s22, s33, s12, s13, s23):
     Returns
     -------
     numpy.ndarray:
-        Maximum principal stress. Shape `(..., 3)`.
+        All principal stresses. Shape `(..., 3)`.
     """
     return eigenval(s11, s22, s33, s12, s13, s23)
 
@@ -469,7 +469,7 @@ class StressTensorEquistressAccessor(stresssignal.StressTensorVoigtAccessor):
                                                              s23=self._obj['S23'].to_numpy())},
                             index=self._obj.index)
 
-    def principal(self):
+    def principals(self):
         all_princ = eigenval(s11=self._obj['S11'].to_numpy(),   # ascending order (numpy.eigvalsh)
                              s22=self._obj['S22'].to_numpy(),
                              s33=self._obj['S33'].to_numpy(),

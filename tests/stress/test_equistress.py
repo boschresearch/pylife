@@ -114,16 +114,16 @@ def test_signed_tresca_abs_max_principal(s11, s22, s33, s12, s13, s23, signed_tr
     assert stress.shape == np.array(signed_tresca_abs_max_principal_check).shape
 
 
-@pytest.mark.parametrize("s11, s22, s33, s12, s13, s23, principal_check", [
+@pytest.mark.parametrize("s11, s22, s33, s12, s13, s23, principals_check", [
     (1, -2, 3, 0, 0, 0, [-2, 1, 3]),
     (-1, -2, -5, 0, 0, 0, [-5, -2, -1]),
     (1.12, 2.35, 3.78, -5.41, -3.57, 0.0, [-4.6068, 3.3229, 8.5339]),  # calculated with matlab
     ([-1, 10], [-5, 50], [-2, 20], [0, 0], [0, 0], [0, 0], [[-5, -2, -1],[10, 20, 50]]),
 ])
-def test_principal(s11, s22, s33, s12, s13, s23, principal_check):
-    stress = EQS.principal(s11, s22, s33, s12, s13, s23)
-    assert np.allclose(stress, principal_check)
-    assert stress.shape == np.array(principal_check).shape
+def test_principals(s11, s22, s33, s12, s13, s23, principals_check):
+    stress = EQS.principals(s11, s22, s33, s12, s13, s23)
+    assert np.allclose(stress, principals_check)
+    assert stress.shape == np.array(principals_check).shape
 
 
 @pytest.mark.parametrize("s11, s22, s33, s12, s13, s23, abs_max_principal_check", [
@@ -253,12 +253,12 @@ def test_signed_tresca_abs_max_principal_pandas():
                        [0.0, 13.1407, -13.1407, 7.315,  9.0,  9.0,  9.0,  -11.0])
 
 
-def test_principal_pandas():
+def test_principals_pandas():
     dummy_data = np.array([[1, -2, 3, 0, 0, 0],
                            [-1, -2, -5, 0, 0, 0],
                            [1.12, 2.35, 3.78, -5.41, -3.57, 0.0]])
     df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
-    eqs = df.equistress.principal()
+    eqs = df.equistress.principals()
     assert np.allclose(eqs['min_principal'].to_numpy(), [-2., -5., -4.6068])
     assert np.allclose(eqs['med_principal'].to_numpy(), [ 1., -2.,  3.3229])
     assert np.allclose(eqs['max_principal'].to_numpy(), [ 3., -1.,  8.5339])
