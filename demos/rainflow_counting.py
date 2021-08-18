@@ -35,7 +35,8 @@ import pandas as pd
 
 from pylife.stress.histogram import *
 import pylife.stress.timesignal as ts
-from pylife.stress.rainflow import *
+import pylife.stress.rainflow as RF
+import pylife.stress.rainflow.recorders as RFR
 import pylife.stress.equistress
 
 import pylife.stress.rainflow
@@ -55,8 +56,7 @@ from matplotlib import cm
 import matplotlib as mpl
 
 from scipy.stats import norm
-from scipy.signal import sg
-from matplotlib.mlab import magnitude_spectrum, psd
+from scipy import signal as sg
 
 # mpl.style.use('seaborn')
 # mpl.style.use('seaborn-notebook')
@@ -76,18 +76,38 @@ pv.set_jupyter_backend('panel')
 # 
 # and so on
 
+#%% 
+def plot_rf(rf_series_dict):
+    fig = plt.figure(figsize=(8, 16))
+    cmap = cm.get_cmap('jet') # 
+    for ii, key in enumerate(rf_series_dict.keys()):
+        rf_series = rf_series_dict[key]
+        ax = fig.add_subplot(1,len(rf_series_dict),ii + 1, projection='3d')
+        
+        froms = rf_series.index.get_level_values("from").mid
+        tos = rf_series.index.get_level_values("to").mid
+        
+        width = rf_series.index.get_level_values('from').length.min()
+        depth = rf_series.index.get_level_values('to').length.min()
+        bottom = np.zeros_like(rf_series)
+        
+        max_height = np.max(rf_series) 
+        min_height = np.min(rf_series)
+        rgba = [cmap((k-min_height)/max_height) for k in rf_series] 
+        ax.set_xlabel('From')
+        ax.set_ylabel('To')
+        ax.set_zlabel('Count')
+        ax.bar3d(froms.ravel(), tos.ravel(), bottom, width, depth, rf_series, 
+                 color=rgba, shade=True, zsort='average')
+        ax.set_title(key)
+    return fig
+
 # In[ ]:
 
 
 np.random.seed(4711)
 sample_frequency = 1024
 t = np.linspace(0, 60, 60 * sample_frequency)
-
-signals = {
-    'wn': pd.DataFrame(index = t, columns = ['sensor_1'], data = 240*np.random.randn(len(t))),
-    'sine': pd.DataFrame(index = t, columns = ['sensor_2'], data = 160*np.sin(2*np.pi*50*t))
-}
-
 signal_df = pd.DataFrame(data = np.array([80 * np.random.randn(len(t)), 160 * np.sin(2 * np.pi * 50 * t)]).T,
                          columns=["wn", "sine"],
                          index=t)
@@ -105,269 +125,15 @@ df_psd = ts.psd_df(bandpass_df, NFFT = 512)
 df_psd.plot(loglog=True)
 # In[ ]: let us add some spike in to the signal and see, if we could filter it out
 bandpass_df["spiky"] = bandpass_df["SoR"] + 1e3 * sg.unit_impulse(signal_df.shape[0], idx="mid")
-cleaned_df = pts.clean_timeseries(bandpass_df, "spiky", window_size=200, overlap=20,
+cleaned_df = ts.clean_timeseries(bandpass_df, "spiky", window_size=200, overlap=20,
                      feature="abs_energy", n_gridpoints=3,
                      percentage_max=0.05, order=3).drop(["time"], axis=1)
 
 ts.psd_df(cleaned_df, NFFT = 512).plot(loglog=True)
-# In[ ]:
-# ### Rainflow ###
-
-# In[ ]:
-
-
-rainflow_bins = 64
-
-
-# In[ ]:
-rainflow = {}
-for k, df_act in cleaned.items():
-    rfc = RainflowCounterFKM().process(df_act['sensor_1'].values)
-    rfm = rfc.get_rainflow_matrix_frame(rainflow_bins).loc[:, 0]
-    rainflow[k] = rfm
-
-
-# In[ ]:
-
-
-colormap = cm.ScalarMappable()
-cmap = cm.get_cmap('PuRd')
-# fig, ax = plt.subplots(2,len(rainflow))
-fig = plt.figure(figsize = (8,11))
-fig.suptitle('Rainflow of Channel sensor_1')
-
-for i, (k, rf_act) in enumerate(rainflow.items()):
-    # 2D
-    ax = fig.add_subplot(3,2,2*(i+1)-1)
-    froms = rf_act.index.get_level_values('from').mid
-    tos = rf_act.index.get_level_values('to').mid
-    counts = np.flipud((rf_act.values.reshape(rf_act.index.levshape).T))#.ravel()
-    ax.set_xlabel('From')
-    ax.set_ylabel('To')
-    ax.imshow(np.log10(counts), extent=[froms.min(), froms.max(), tos.min(), tos.max()])
-    # 3D
-    ax = fig.add_subplot(3,2,2*(i+1), projection='3d')
-    bottom = np.zeros_like(counts.ravel())
-    width = rf_act.index.get_level_values('from').length.min()
-    depth = rf_act.index.get_level_values('to').length.min()
-    max_height = np.max(counts.ravel())   # get range of colorbars
-    min_height = np.min(counts.ravel())
-    rgba = [cmap((k-min_height)/max_height) for k in counts.ravel()] 
-    ax.set_xlabel('From')
-    ax.set_ylabel('To')
-    ax.set_zlabel('Count')
-    ax.bar3d(froms.ravel(), tos.ravel(), bottom, width, depth, counts.ravel(), shade=True, color=rgba, zsort='average')
-
-
-# ### Meanstress transformation ###
-
-# In[ ]:
-
-
-meanstress_sensitivity = pd.Series({
-    'M': 0.3,
-    'M2': 0.2
-})
-
-
-# In[ ]:
-
-
-transformed = {k: rf_act.meanstress_hist.FKM_goodman(meanstress_sensitivity, R_goal=-1.) for k, rf_act in rainflow.items()}
-
-
-# ## Repeating factor
-
-# In[ ]:
-
-
-repeating = {
-    'wn': 50.0, 
-    'sine': 25.0
-}
-
-
-# In[ ]:
-
-
-transformed['total'] = combine_hist([transformed[k] * repeating[k] for k in ['wn', 'sine']], method="sum")
-
-
-# In[ ]:
-
-
-fig, ax = plt.subplots(nrows=1, ncols=2,figsize=(10, 5))
-
-for k, range_only in transformed.items():
-    amplitude = range_only.rainflow.amplitude[::-1]
-    cycles = range_only.values[::-1].ravel()
-    ax[0].step(cycles, amplitude, label=k)
-    ax[1].step(np.cumsum(cycles), amplitude, label=k)
-
-for title, ai in zip(['Count', 'Cumulated'], ax):
-    ai.set_title(title)
-    ai.xaxis.grid(True)
-    ai.legend()
-    ai.set_xlabel('count')
-    ai.set_ylabel('amplitude')
-    ai.set_ylim((0,max(amplitude)))  
-
-
-# ## Nominal stress approach ##
-
-# ### Material parameters ###
-# You can create your own material data from Woeler tests using the Notebook woehler_analyzer
-
-# In[ ]:
-
-
-mat = pd.Series({
-    'k_1': 8.,
-    'ND': 1.0e6,
-    'SD': 300.0,
-    'TN': 1./12.,
-    'TS': 1./1.1
-})
-display(mat)
-
-
-# ### Damage Calculation ###
-
-# In[ ]:
-
-
-damage_miner_original = mat.fatigue.damage(transformed['total'].rainflow)
-damage_miner_elementary = mat.fatigue.miner_elementary().damage(transformed['total'].rainflow)
-damage_miner_haibach = mat.fatigue.miner_haibach().damage(transformed['total'].rainflow)
-damage_miner_original.sum(), damage_miner_elementary.sum(), damage_miner_haibach.sum()
-
-
-# In[ ]:
-
-
-wc = mat.woehler
-cyc = pd.Series(np.logspace(1, 12, 200))
-for pf, style in zip([0.1, 0.5, 0.9], ['--', '-', '--']):
-    load = wc.basquin_load(cyc, failure_probability=pf)
-    plt.plot(cyc, load, style)
-
-plt.step(np.cumsum(cycles), transformed['total'].rainflow.amplitude[::-1])
-
-plt.loglog()
-
-
-# ## Failure Probaility ##
-
-# #### Without field scatter ####
-
-# In[ ]:
-
-
-D50 = 0.05
-
-damage = mat.fatigue.damage(transformed['total'].rainflow).sum()
-
-di = np.logspace(np.log10(1e-2*damage), np.log10(1e4*damage), 1000)
-std = pylife.utils.functions.scatteringRange2std(mat.TN)
-failprob = fp.FailureProbability(D50, std).pf_simple_load(di)
-
-fig, ax = plt.subplots()
-ax.semilogx(di, failprob, label='cdf')
-
-plt.xlabel("Damage")
-plt.ylabel("cdf")
-plt.title("Failure probability = %.2e" %fp.FailureProbability(D50,std).pf_simple_load(damage))  
-plt.ylim(0,max(failprob))
-plt.xlim(min(di), max(di))
-
-fp.FailureProbability(D50, std).pf_simple_load(damage)
-
-
-# #### With field scatter ####
-
-# In[ ]:
-
-
-field_std = 0.35
-fig, ax = plt.subplots()
-# plot pdf of material
-mat_pdf = norm.pdf(np.log10(di), loc=np.log10(D50), scale=std)
-ax.semilogx(di, mat_pdf, label='pdf_mat')
-# plot pdf of load
-field_pdf = norm.pdf(np.log10(di), loc=np.log10(damage), scale=field_std)
-ax.semilogx(di, field_pdf, label='pdf_load',color = 'r')
-plt.xlabel("Damage")
-plt.ylabel("pdf")
-plt.title("Failure probability = %.2e" %fp.FailureProbability(D50, std).pf_norm_load(damage, field_std))  
-plt.legend()
-
-
-# ## Local stress approach ##
-# #### FE based failure probability calculation
-
-# #### FE Data
-
-# In[ ]:
-
-
-vm_mesh = pylife.vmap.VMAPImport("plate_with_hole.vmap")
-pyLife_mesh = (vm_mesh.make_mesh('1', 'STATE-2')
-               .join_coordinates()
-               .join_variable('STRESS_CAUCHY')
-               .to_frame())
-
-
-# In[ ]:
-
-
-mises = pyLife_mesh.groupby('element_id')['S11', 'S22', 'S33', 'S12', 'S13', 'S23'].mean().equistress.mises()
-mises /= 200.0  # the nominal load level in the FEM analysis
-#mises
-
-
-# #### Damage Calculation ####
-
-# In[ ]:
-
-
-scaled_rainflow = transformed['total'].rainflow.scale(mises)
-#scaled_rainflow.amplitude, scaled_rainflow.frequency
-
-
-# In[ ]:
-
-
-damage = mat.fatigue.damage(scaled_rainflow)
-#damage
-
-
-# In[ ]:
-
-
-damage = damage.groupby(['element_id']).sum()
-#damage
-
-
-# In[ ]:
-
-
-#pyLife_mesh = pyLife_mesh.join(damage)
-#display(pyLife_mesh)
-
-
-# In[ ]:
-
-
-grid = pv.UnstructuredGrid(*pyLife_mesh.mesh.vtk_data())
-plotter = pv.Plotter(window_size=[1920, 1080])
-plotter.add_mesh(grid, scalars=damage.to_numpy(),
-                show_edges=True, cmap='jet')
-plotter.add_scalar_bar()
-plotter.show()
-
-
-# In[ ]:
-
-
-print("Maximal damage sum: %f" % damage.max())
-
+#%% Rainflow for a multiple time series
+recorder_dict = {key: RFR.FullRecorder() for key in cleaned_df}
+detector_dict = {key: RF.FKMDetector(recorder=recorder_dict[key]).process(cleaned_df[key]) for key in cleaned_df}
+rf_series_dict = {key: detector_dict[key].recorder.matrix_series(64) for  key in detector_dict.keys()}
+
+for  key in rf_series_dict.keys():
+    plot_rf(rf_series_dict[key])

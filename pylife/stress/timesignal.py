@@ -184,8 +184,8 @@ def butter_bandpass(df, lowcut, highcut, order=5):
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
-    b, a = signal.butter(order, [low, high], btype='band')
-    return df.apply(lambda x: signal.filtfilt(b, a, x))
+    b, a = signal.butter(order, [low, high], btype='bandpass')
+    return df.apply(lambda x: signal.filtfilt(b, a, x, padlen=int(fs/2)))
 
 def psd_df(df_ts, NFFT=512):
     """
