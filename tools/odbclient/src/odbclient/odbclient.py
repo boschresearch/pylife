@@ -63,7 +63,7 @@ class OdbClient:
 
     def _wait_for_server_ready_sign(self):
         def wait_for_input(stdout, queue):
-            sign = stdout.read(6)
+            sign = stdout.read(5)
             queue.put(sign)
 
         queue = QU.Queue()
@@ -78,12 +78,9 @@ class OdbClient:
             except QU.Empty:
                 time.sleep(1)
             else:
-                if sign != b'ready\n':
+                if sign != b'ready':
                     raise OdbServerError("Expected ready sign from server, received %s" % sign)
                 return
-
-
-
 
     def instances(self):
         return _decode_ascii_list(self._query('get_instances'))
@@ -136,9 +133,8 @@ class OdbClient:
 
     def _query(self, command, args=None):
         self._send_command(command, args)
-        response = pickle.load(self._proc.stdout, encoding='bytes')
 
-        array_num, pickle_data = response
+        array_num, pickle_data = self._parse_response()
 
         if isinstance(pickle_data, Exception):
             raise pickle_data
@@ -154,6 +150,17 @@ class OdbClient:
         self._check_if_process_still_alive()
         pickle.dump((command, args), self._proc.stdin, protocol=2)
         self._proc.stdin.flush()
+
+    def _parse_response(self):
+        s = b''
+        old = b''
+        while True:
+            c = self._proc.stdout.read(1)
+            s += c
+            if c == b'.' and old == b'\n':
+                break
+            old = c
+        return pickle.loads(s.replace(b'\r\n', b'\n'), encoding='bytes')
 
     def __del__(self):
         if self._proc is not None:
