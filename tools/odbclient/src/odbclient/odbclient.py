@@ -153,14 +153,12 @@ class OdbClient:
 
     def _parse_response(self):
         s = b''
-        old = b''
         while True:
-            c = self._proc.stdout.read(1)
-            s += c
-            if c == b'.' and old == b'\n':
+            line = self._proc.stdout.readline().rstrip() + b'\n'
+            s += line
+            if line == b'.\n':
                 break
-            old = c
-        return pickle.loads(s.replace(b'\r\n', b'\n'), encoding='bytes')
+        return pickle.loads(s, encoding='bytes')
 
     def __del__(self):
         if self._proc is not None:

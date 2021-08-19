@@ -87,7 +87,9 @@ class OdbServer:
 
 
 def _send_response(pickle_data, numpy_arrays=[]):
-    pickle.dump((len(numpy_arrays), pickle_data), sys.stdout)
+    s = pickle.dumps((len(numpy_arrays), pickle_data))
+    sys.stdout.write(s + '\n')
+    sys.stdout.flush()
     for nparr in numpy_arrays:
         np.lib.format.write_array(sys.stdout, nparr)
 
