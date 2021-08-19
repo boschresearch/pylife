@@ -37,12 +37,7 @@ As of now there is no released version of `pylife-odbserver`, same for
 * Create and activate a plain python-2.7 environment without additional
   packages.
 
-* Run `python setup.py sdist`
-
-* A directory `dist` will appear with a tarball file in.
-
-* Use `pip install dist/<filename>` where `<filename>` is the name of the
-  tarball file in `dist` to install the server.
+* Run `pip install -e .`
 
 * See the [instructions in `pylife-odbclient`](../odbclient/README.md) on how
   to install the client.

@@ -56,17 +56,24 @@ odb file. The only point you care about the server is when you instantiate an
 
 * The path to the Abaqus executable
 
-* The `PYTHONPATH` of the python environment `pylife-server` is installed
-  into. This is usually
-  `<path-to-the-environment>/lib/python2.7/site-packages`.
+* The path to the python environment `pylife-server` is installed into.
 
 Then you can instantiate a `OdbClient` object using
 
 ```python
 import odbclient as CL
 
-client = CL.OdbClient("<path-to-abaqus>/abaqus", "<PYTHONPATH>", "yourodb.odb")
+client = CL.OdbClient("<path-to-abaqus>/abaqus", "<path-to-env>", "yourodb.odb")
 ```
 
 See the API doc of `OdbClient` for details. (At the moment only in the sources,
 sorry.)
+
+
+## Limitations
+
+Only a subset of Abaqus variable locations are supported. These are: nodal,
+element nodal, whole element and centroid. Integration point variables are
+extrapolated to element nodal.
+
+You can only extract data from an odb file, not write to it.
