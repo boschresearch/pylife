@@ -53,11 +53,23 @@ class OdbServer:
     def frames(self, step_name):
         _send_response(self._odb.frame_names(str(step_name)))
 
-    def nodes(self, instance_name):
-        _send_response(self._odb.nodes(str(instance_name)))
+    def nodes(self, args):
+        instance_name, node_set_name = args
+        try:
+            nodes = self._odb.nodes(str(instance_name), str(node_set_name))
+        except Exception as e:
+            _send_response(e)
+        else:
+            _send_response(nodes)
 
-    def connectivity(self, instance_name):
-        _send_response(self._odb.connectivity(str(instance_name)))
+    def connectivity(self, args):
+        instance_name, element_set_name = args
+        try:
+            conn = self._odb.connectivity(str(instance_name), str(element_set_name))
+        except Exception as e:
+            _send_response(e)
+        else:
+            _send_response(conn)
 
     def node_sets(self, instance_name):
         _send_response(self._odb.node_sets(str(instance_name)))

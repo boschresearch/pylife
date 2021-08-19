@@ -17,6 +17,7 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
+import sys
 import numpy as np
 import odbAccess as ODB
 
@@ -43,76 +44,78 @@ class OdbInterface:
 
         return [frame.frameId for frame in step.frames]
 
-    def nodes(self, instance_name):
-        try:
-            instance = self._asm.instances[instance_name]
-        except Exception as e:
-            return e
+    def nodes(self, instance_name, node_set_name):
+        instance = self._instance_or_rootasm(instance_name)
 
-        node_data = np.empty((len(instance.nodes), 3))
-        index = np.empty(len(instance.nodes), dtype=np.int32)
+        if node_set_name == b'':
+            nodes = instance.nodes
+        elif node_set_name in instance.nodeSets.keys():
+            nodes = instance.nodeSets[node_set_name].nodes
+        elif node_set_name in self._asm.nodeSets.keys():
+            nodes = self._asm.nodeSets[node_set_name].nodes[self._asm.instances.keys().index(instance_name)]
+        else:
+            raise KeyError(node_set_name)
 
-        for i, nd in enumerate(instance.nodes):
+        node_data = np.empty((len(nodes), 3))
+        index = np.empty(len(nodes), dtype=np.int32)
+
+        for i, nd in enumerate(nodes):
             index[i] = nd.label
             node_data[i] = nd.coordinates
 
         return (index, node_data)
 
-    def connectivity(self, instance_name):
-        try:
-            instance = self._asm.instances[instance_name]
-        except Exception as e:
-            return e
+    def connectivity(self, instance_name, element_set_name):
+        instance = self._instance_or_rootasm(instance_name)
 
-        index = np.empty(len(instance.elements), dtype=np.int)
+        if element_set_name == b'':
+            elements = instance.elements
+        elif element_set_name in instance.elementSets.keys():
+            elements = instance.elementSets[element_set_name].elements
+        elif element_set_name in self._asm.elementSets.keys():
+            elements = self._asm.elementSets[element_set_name].elements[self._asm.instances.keys().index(instance_name)]
+        else:
+            raise KeyError(element_set_name)
+
+        index = np.empty(len(elements), dtype=np.int)
         connectivity = []
-        for i, el in enumerate(instance.elements):
+        for i, el in enumerate(elements):
             index[i] = el.label
             connectivity.append(list(el.connectivity))
 
         return (index, connectivity)
 
     def node_sets(self, instance_name):
-        try:
-            instance = self._asm.instances[instance_name]
-        except Exception as e:
-            return e
-
+        instance = self._instance_or_rootasm(instance_name)
         return instance.nodeSets.keys()
 
     def element_sets(self, instance_name):
-        try:
-            instance = self._asm.instances[instance_name]
-        except Exception as e:
-            return e
-
+        instance = self._instance_or_rootasm(instance_name)
         return instance.elementSets.keys()
 
     def node_set(self, instance_name, node_set_name):
-        try:
-            instance = self._asm.instances[instance_name]
-        except Exception as e:
-            return e
+        instance = self._instance_or_rootasm(instance_name)
 
         try:
             node_set = instance.nodeSets[node_set_name]
         except Exception as e:
             return e
 
-        return np.array([node.label for node in node_set.nodes], dtype=np.int32)
+        nodes = node_set.nodes[0] if instance_name == b'' else node_set.nodes
+
+        return np.array([node.label for node in nodes], dtype=np.int32)
 
     def element_set(self, instance_name, element_set_name):
-        try:
-            instance = self._asm.instances[instance_name]
-        except Exception as e:
-            return e
+        instance = self._instance_or_rootasm(instance_name)
 
         try:
             element_set = instance.elementSets[element_set_name]
         except Exception as e:
             return e
 
-        return np.array([element.label for element in element_set.elements], dtype=np.int32)
+        elements = element_set.elements[0] if instance_name == b'' else element_set.elements
+
+        return np.array([element.label for element in elements], dtype=np.int32)
 
     def variable_names(self, step_name, frame_num):
         try:
@@ -127,21 +130,23 @@ class OdbInterface:
 
         return frame.fieldOutputs.keys()
 
-    def variable(self, instance_name, step_name, frame_num, variable_name, node_set, element_set):
+    def variable(self, instance_name, step_name, frame_num, variable_name, node_set_name, element_set_name):
 
-        def block_length(block, pos):
-            if pos == ODB.NODAL:
+        def block_length(block):
+            if block.nodeLabels is not None:
                 return block.nodeLabels.shape[0]
-            else:
+            if block.elementLabels is not None:
                 return block.elementLabels.shape[0]
+            return 0
 
-        def index_block_data(block, pos):
-            if pos == ODB.NODAL:
-                return np.array([block.nodeLabels])
-            elif pos == ODB.WHOLE_ELEMENT or pos == ODB.CENTROID:
-                return np.array([block.elementLabels])
-            else:
-                return np.vstack([block.nodeLabels, block.elementLabels])
+        def index_block_data(block):
+            stack = []
+            if block.nodeLabels is not None:
+                stack.append(block.nodeLabels)
+            if block.elementLabels is not None:
+                stack.append(block.elementLabels)
+
+            return np.vstack(stack)
 
         try:
             step = self._odb.steps[step_name]
@@ -158,12 +163,35 @@ class OdbInterface:
         except Exception as e:
             return e
 
+        instance = self._asm.instances[instance_name]
+
+        region = None
+        if node_set_name != b'':
+            if node_set_name in instance.nodeSets.keys():
+                node_set = instance.nodeSets[node_set_name]
+            elif node_set_name in self._asm.nodeSets.keys():
+                node_set = self._asm.nodeSets[str(node_set_name)]
+            else:
+                raise KeyError(node_set_name)
+            region = node_set
+
+        if element_set_name != b'':
+            if element_set_name in instance.elementSets.keys():
+                element_set = instance.elementSets[element_set_name]
+            elif element_set_name in self._asm.elementSets.keys():
+                element_set = self._asm.elementSets[str(element_set_name)]
+            else:
+                raise KeyError(element_set_name)
+            region = element_set
+
         pos = field.locations[0].position
         if pos == ODB.INTEGRATION_POINT:
             pos = ODB.ELEMENT_NODAL
 
         if pos != "ABQDEFAULT":
             field = field.getSubset(position=pos)
+        if region is not None:
+            field = field.getSubset(region=region)
 
         complabels = field.componentLabels if len(field.componentLabels) > 0 else [variable_name]
         blocks = field.bulkDataBlocks
@@ -172,7 +200,7 @@ class OdbInterface:
         for block in blocks:
             if block.instance.name != instance_name:
                 continue
-            length += block_length(block, pos)
+            length += block_length(block)
 
         values = np.empty((length, len(complabels)))
 
@@ -187,7 +215,7 @@ class OdbInterface:
             block_array = block.data
             size = block_array.shape[0]
 
-            index_block = index_block_data(block, pos)
+            index_block = index_block_data(block)
 
             index[i:i+size, :] = index_block.T
             values[i:i+size, :] = block_array
@@ -201,6 +229,13 @@ class OdbInterface:
             index_labels = ['node_id', 'element_id']
         return (complabels, index_labels, index[:i, :], values[:i])
 
+    def _instance_or_rootasm(self, instance_name):
+        if instance_name == b'':
+            return self._asm
+        try:
+            return self._asm.instances[instance_name]
+        except Exception as e:
+            return e
 
 
 def _get_frame(step, frame_id):
