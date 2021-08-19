@@ -133,7 +133,7 @@ class OdbClient:
 
     def _query(self, command, args=None):
         self._send_command(command, args)
-
+        self._check_if_process_still_alive()
         array_num, pickle_data = self._parse_response()
 
         if isinstance(pickle_data, Exception):

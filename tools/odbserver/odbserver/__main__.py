@@ -83,7 +83,12 @@ class OdbServer:
         var_name = str(var_name)
         nset = str(nset)
         elset = str(elset)
-        _send_response(self._odb.variable(instance_name, step, frame, var_name, nset, elset))
+        try:
+            variable = self._odb.variable(instance_name, step, frame, var_name, nset, elset)
+        except Exception as e:
+            _send_response(e)
+        else:
+            _send_response(variable)
 
 
 def _send_response(pickle_data, numpy_arrays=[]):
