@@ -138,7 +138,7 @@ class OdbInterface:
         def index_block_data(block, pos):
             if pos == ODB.NODAL:
                 return np.array([block.nodeLabels])
-            elif pos == ODB.WHOLE_ELEMENT:
+            elif pos == ODB.WHOLE_ELEMENT or pos == ODB.CENTROID:
                 return np.array([block.elementLabels])
             else:
                 return np.vstack([block.nodeLabels, block.elementLabels])
@@ -195,7 +195,7 @@ class OdbInterface:
 
         if pos == ODB.NODAL:
             index_labels = ['node_id']
-        elif pos == ODB.WHOLE_ELEMENT:
+        elif pos == ODB.WHOLE_ELEMENT or pos == ODB.CENTROID:
             index_labels = ['element_id']
         else:
             index_labels = ['node_id', 'element_id']
