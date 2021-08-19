@@ -37,6 +37,7 @@ import pylife.stress.histogram as psh
 import pylife.stress.timesignal as ts
 import pylife.stress.rainflow as RF
 import pylife.stress.rainflow.recorders as RFR
+import pickle
 
 
 import pyvista as pv
@@ -135,3 +136,5 @@ plot_rf(rf_series_dict)
 #%%
 df_psd["max"] =  df_psd[["sine", "wn"]].max(axis = 1)
 df_psd.plot(loglog=True)
+#%%
+pickle.dump(rf_series_dict, open("rf_dict.p", "wb"))
