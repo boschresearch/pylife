@@ -36,6 +36,7 @@ import pandas as pd
 import pylife.stress.histogram as psh
 import pylife.stress.timesignal as ts
 import pylife.stress.rainflow as RF
+import pylife.strength.meanstress
 import pylife.stress.rainflow.recorders as RFR
 import pickle
 
