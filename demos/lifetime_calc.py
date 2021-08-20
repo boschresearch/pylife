@@ -33,14 +33,10 @@
 import numpy as np
 import pandas as pd
 
-import pylife.stress.histogram as psh
-import pylife.stress.timesignal as ts
 import pickle
 import pyvista as pv
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
 import matplotlib as mpl
 import pylife.strength.meanstress
 from pylife.strength.meanstress import FKM_goodman as FKM_G
