@@ -42,7 +42,7 @@ class Gradient(MeshAccessor):
     -----
 
     The gradient is calculated by fitting a plane into the nodes of
-    each coordinate and the neigbor nodes usine least square fitting.
+    each coordinate and the neighbor nodes using least square fitting.
 
     The method is described in a `thread on stackoverflow`_.
 
