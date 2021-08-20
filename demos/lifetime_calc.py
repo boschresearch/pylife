@@ -44,8 +44,10 @@ from matplotlib import cm
 import matplotlib as mpl
 import pylife.strength.meanstress
 from pylife.strength.meanstress import FKM_goodman as FKM_G
-from scipy import signal as sg
+import pylife.strength.fatigue
+from pylife.strength import failure_probability as fp
 
+from scipy.stats import norm
 # mpl.style.use('seaborn')
 # mpl.style.use('seaborn-notebook')
 mpl.style.use('bmh')
@@ -94,28 +96,28 @@ plt.plot(np.zeros_like(transformed_sine), transformed_sine, "ro")
 ### 100 times with the noise signal and 25 times with the SoR load. 
 # In[ ]:
 repeating = {
-    'wn': 50.0, 
-    'sine': 100,
-    'SoR' : 25
+    'wn': 20, 
+    'sine': 5,
+    'SoR' : 2
 }
 transformed_dict = {k:v for k,v in transformed_dict.items() if k in ["wn", "sine", "SoR"]}
 repeating_dict = {k: v * repeating[k] for k,v in transformed_dict.items()}
 # In[ ]:
 
 
-fig, ax = plt.subplots(nrows=1, ncols=1,figsize=(15, 15))
+fig, ax = plt.subplots(nrows=1, ncols=1,figsize=(10, 10))
 
 for k, range_only in repeating_dict.items():
     # range_only.T.plot(drawstyle="steps", ax = ax)
     data = range_only.sort_index(ascending=False)
-    ax.step(np.cumsum(data), data.index.mid, label=k)
+    ax.step(np.cumsum(data), data.index.mid / 2, label=k)
     # ax.step(range_only, range_only.index.mid, label=k)
 # for title, ai in zip(['Count', 'Cumulated'], ax):
 #     ai.set_title(title)
 #     ai.xaxis.grid(True)
-#     ai.legend()
-#     ai.set_xlabel('count')
-#     ai.set_ylabel('amplitude')
+    ax.legend()
+    ax.set_xlabel('count')
+    ax.set_ylabel('amplitude')
 #     ai.set_ylim((0,max(amplitude)))  
 
 
@@ -123,44 +125,38 @@ for k, range_only in repeating_dict.items():
 
 # ### Material parameters ###
 # You can create your own material data from Woeler tests using the Notebook woehler_analyzer
-
 # In[ ]:
 
 
 mat = pd.Series({
     'k_1': 8.,
     'ND': 1.0e6,
-    'SD': 300.0,
+    'SD': 125.0, # range
     'TN': 1./12.,
     'TS': 1./1.1
 })
-display(mat)
-
-
-# ### Damage Calculation ###
-
-# In[ ]:
-
-
-damage_miner_original = mat.fatigue.damage(transformed['total'].rainflow)
-damage_miner_elementary = mat.fatigue.miner_elementary().damage(transformed['total'].rainflow)
-damage_miner_haibach = mat.fatigue.miner_haibach().damage(transformed['total'].rainflow)
-damage_miner_original.sum(), damage_miner_elementary.sum(), damage_miner_haibach.sum()
-
-
-# In[ ]:
-
 
 wc = mat.woehler
 cyc = pd.Series(np.logspace(1, 12, 200))
-for pf, style in zip([0.1, 0.5, 0.9], ['--', '-', '--']):
-    load = wc.basquin_load(cyc, failure_probability=pf)
-    plt.plot(cyc, load, style)
+curves = pd.DataFrame({"pf = " + str(pf): wc.basquin_load(cyc, failure_probability=pf) for pf in [0.1, 0.5, 0.9]}).set_index(cyc)
+curves.plot(loglog=True, ax=ax)
+# ### Damage Calculation ###
+# First option: We calculate the damage of every channel and load collective.
+# Now we are using miner original and we will compare this with the Miner-Haibach approach
+# In[ ]:
+damage_miner_original = {k : mat.fatigue.damage(v.rainflow) for k,v in repeating_dict.items()}
+damage_sum = pd.DataFrame({k : v.sum() for k,v in damage_miner_original.items()},
+                                         index = ["original"])
+damage_miner_haibach = {k : mat.fatigue.miner_haibach().damage(v.rainflow) for k,v in repeating_dict.items()}
+damage_sum = damage_sum.append(pd.DataFrame({k : v.sum() for k,v in damage_miner_haibach.items()},
+                                         index = ["haibach"]))
 
-plt.step(np.cumsum(cycles), transformed['total'].rainflow.amplitude[::-1])
-
-plt.loglog()
-
+damage_sum["compare_collectives_combined"] = damage_sum.sum(axis=1)
+# Now we combine first all load collectives together and will compare the results with the previous
+collectives_combined = pd.concat(repeating_dict)
+damage_sum["collectives_combined"] = [mat.fatigue.damage(collectives_combined.rainflow).sum(),
+                          mat.fatigue.miner_haibach().damage(collectives_combined.rainflow).sum()]
+# In[ ]:
 
 # ## Failure Probaility ##
 
@@ -169,111 +165,34 @@ plt.loglog()
 # In[ ]:
 
 
-D50 = 0.05
+D50 = 5
 
-damage = mat.fatigue.damage(transformed['total'].rainflow).sum()
+di = np.logspace(-2, np.log10(1e3*damage_sum.max().max()), 1000)
 
-di = np.logspace(np.log10(1e-2*damage), np.log10(1e4*damage), 1000)
-std = pylife.utils.functions.scatteringRange2std(mat.TN)
-failprob = fp.FailureProbability(D50, std).pf_simple_load(di)
+mat_std = pylife.utils.functions.scatteringRange2std(mat.TN)
+failprob = pd.DataFrame(fp.FailureProbability(D50, mat_std).pf_simple_load(di),
+                        index = di)
 
 fig, ax = plt.subplots()
-ax.semilogx(di, failprob, label='cdf')
-
-plt.xlabel("Damage")
-plt.ylabel("cdf")
-plt.title("Failure probability = %.2e" %fp.FailureProbability(D50,std).pf_simple_load(damage))  
-plt.ylim(0,max(failprob))
-plt.xlim(min(di), max(di))
-
-fp.FailureProbability(D50, std).pf_simple_load(damage)
-
+failprob.plot(ax=ax, logx=True)
+pf_collectives_combined = fp.FailureProbability(D50, mat_std).pf_simple_load(damage_sum.collectives_combined.max())
+# ax.semilogx(di, failprob, label='cdf')
+ax.vlines(damage_sum.collectives_combined.max(), failprob.min(), pf_collectives_combined)
+plt.title("Failure probability = %.2e" %pf_collectives_combined)  
 
 # #### With field scatter ####
 
 # In[ ]:
 
-
 field_std = 0.35
 fig, ax = plt.subplots()
-# plot pdf of material
-mat_pdf = norm.pdf(np.log10(di), loc=np.log10(D50), scale=std)
-ax.semilogx(di, mat_pdf, label='pdf_mat')
-# plot pdf of load
-field_pdf = norm.pdf(np.log10(di), loc=np.log10(damage), scale=field_std)
-ax.semilogx(di, field_pdf, label='pdf_load',color = 'r')
-plt.xlabel("Damage")
-plt.ylabel("pdf")
-plt.title("Failure probability = %.2e" %fp.FailureProbability(D50, std).pf_norm_load(damage, field_std))  
-plt.legend()
+# pdf = pd.DataFrame(data=[norm.pdf(np.log10(di), loc=np.log10(D50), scale=std),
+fp_field = [fp.FailureProbability(D50, mat_std).pf_norm_load(k, field_std) for k  in damage_sum.loc["haibach"]]
+pf_pdf = pd.DataFrame({k + ", fp=%.2e" %fp_field[i] : norm.pdf(np.log10(di), loc=damage_sum.loc["haibach"][k],
+                          scale=field_std) for i,k in enumerate(damage_sum.loc["haibach"].index)},
+                         index=pd.Index(di, name="damage"))
+pf_pdf["material"] = norm.pdf(np.log10(di), loc=np.log10(D50), scale=mat_std)
+pf_pdf.plot(logx=True, title="Failure probability for different load collectives")
 
-
-# ## Local stress approach ##
-# #### FE based failure probability calculation
-
-# #### FE Data
-
-# In[ ]:
-
-
-vm_mesh = pylife.vmap.VMAPImport("plate_with_hole.vmap")
-pyLife_mesh = (vm_mesh.make_mesh('1', 'STATE-2')
-               .join_coordinates()
-               .join_variable('STRESS_CAUCHY')
-               .to_frame())
-
-
-# In[ ]:
-
-
-mises = pyLife_mesh.groupby('element_id')['S11', 'S22', 'S33', 'S12', 'S13', 'S23'].mean().equistress.mises()
-mises /= 200.0  # the nominal load level in the FEM analysis
-#mises
-
-
-# #### Damage Calculation ####
-
-# In[ ]:
-
-
-scaled_rainflow = transformed['total'].rainflow.scale(mises)
-#scaled_rainflow.amplitude, scaled_rainflow.frequency
-
-
-# In[ ]:
-
-
-damage = mat.fatigue.damage(scaled_rainflow)
-#damage
-
-
-# In[ ]:
-
-
-damage = damage.groupby(['element_id']).sum()
-#damage
-
-
-# In[ ]:
-
-
-#pyLife_mesh = pyLife_mesh.join(damage)
-#display(pyLife_mesh)
-
-
-# In[ ]:
-
-
-grid = pv.UnstructuredGrid(*pyLife_mesh.mesh.vtk_data())
-plotter = pv.Plotter(window_size=[1920, 1080])
-plotter.add_mesh(grid, scalars=damage.to_numpy(),
-                show_edges=True, cmap='jet')
-plotter.add_scalar_bar()
-plotter.show()
-
-
-# In[ ]:
-
-
-print("Maximal damage sum: %f" % damage.max())
-
+#%% Saving the combined collectives for the local stress approach (which yu can find here)
+pickle.dump(collectives_combined, open("collectives.p", "wb"))
