@@ -70,7 +70,8 @@ Certificate of Origin (DCO; from [OSDL][DCO]) and Signed-off-by tags initially
 developed by the Linux kernel project.
 
 ```
-pyLife Developer's Certificate of Origin.  Version 1.0
+
+pyLife Developer's Certificate of Origin.  Version 1.1
 
 By making a contribution to this project, I certify that:
 
@@ -78,22 +79,23 @@ By making a contribution to this project, I certify that:
     have the right to submit it under the "Apache License, Version 2.0"
     ("Apache-2.0"); or
 
-(b) The contribution is based upon previous work that is covered by
-    an appropriate open source license and I have the right under
-    that license to submit that work with modifications, whether
-    created in whole or in part by me, under the Apache-2.0 license;
-    or
+(b) The contribution is based upon previous work that, to the best
+    of my knowledge, is covered under an appropriate open source
+    license and I have the right under that license to submit that
+    work with modifications, whether created in whole or in part
+    by me, under the same open source license (unless I am
+    permitted to submit under a different license), as indicated
+    in the file; or
 
 (c) The contribution was provided directly to me by some other
-    person who certified (a) or (b) and I have not modified it.
+    person who certified (a), (b) or (c) and I have not modified
+    it.
 
 (d) I understand and agree that this project and the contribution
     are public and that a record of the contribution (including all
-    metadata and personal information I submit with it, including my
-    sign-off) is maintained indefinitely and may be redistributed
-    consistent with this project and the requirements of the Apache-2.0
-    license or any open source license(s) involved, where they are
-    relevant.
+    personal information I submit with it, including my sign-off) is
+    maintained indefinitely and may be redistributed consistent with
+    this project or the open source license(s) involved.
 
 (e) I am granting the contribution to this project under the terms of
     Apache-2.0.
