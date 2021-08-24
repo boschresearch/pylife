@@ -138,10 +138,13 @@ automatically sign the commit by running the git-commit command with the `-s`
 option.  There may be multiple sign-offs if more than one developer was
 involved in authoring the contribution.
 
-Another option to automatically add the `Signed-off-by:` line is to put the
-file `batch_scripts/prepare-commit-msg` to `.git/hooks`. Then the line will be
-automatically added to the commit message template or to the commit message
-itself, depending on the git client.
+Another option to automatically add the `Signed-off-by:` is to once use the
+command
+```
+git config core.hooksPath .githooks
+```
+in your pyLife working directory. This will then add the `Signed-off-by:` line
+automatically.
 
 For a more detailed description of this procedure, please see
 [SubmittingPatches][] which was extracted from the Linux kernel project, and
