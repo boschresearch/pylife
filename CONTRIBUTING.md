@@ -42,6 +42,23 @@ Use as little comments as possible. The code along with docstrings should be
 expressive enough. Remove any commented code lines before issuing your pull
 request.
 
+## Making commits
+
+### Configure your git client
+
+Please configure your identity in your git client appropriately. From the git
+command line you can do that using
+```
+git config user.name <Your Name>
+git config user.email <your-email@...>
+```
+
+### Writing good commit messages
+
+Please consider following the [CGL][commit guidelines] when writing your commit
+message. We will not enforce this, but we would appreciate if you
+do. [git-commit][Here] is a good read why this makes sense.
+
 ## Branching and pull requests
 
 Pull requests must be filed against the `develop` branch, except for urgent
@@ -159,6 +176,10 @@ contribution was provided directly to me by some other person who certified
 holder(s) to the [NOTICE](NOTICE) file as part of your contribution.
 
 [pytest]: https://pytest.org
+
+[CGL]: https://www.git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project#_commit_guidelines
+
+[git-commit]: https://chris.beams.io/posts/git-commit/
 
 [DCO]: http://web.archive.org/web/20070306195036/http://osdlab.org/newsroom/press_releases/2004/2004_05_24_dco.html
 
