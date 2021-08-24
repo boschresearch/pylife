@@ -55,9 +55,9 @@ git config user.email <your-email@...>
 
 ### Writing good commit messages
 
-Please consider following the [CGL][commit guidelines] when writing your commit
+Please consider following the [commit guidelines][CGL] when writing your commit
 message. We will not enforce this, but we would appreciate if you
-do. [git-commit][Here] is a good read why this makes sense.
+do. [Here][git-commit] is a good read why this makes sense.
 
 ## Branching and pull requests
 
