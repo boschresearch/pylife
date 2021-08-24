@@ -7,6 +7,11 @@ COMMIT_HASH=$3
 GIT_USER_NAME=`git config user.name`
 GIT_USER_EMAIL=`git config user.email`
 
+if grep "^Signed-off-by: " $COMMIT_MSG_FILE
+then
+    exit 0
+fi
+
 IFS= commit_msg=$(sed '/^#/,$d' $COMMIT_MSG_FILE)
 IFS= commit_hint=$(sed '/^#/,$!d' $COMMIT_MSG_FILE)
 
