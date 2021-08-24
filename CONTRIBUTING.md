@@ -126,7 +126,7 @@ By making a contribution to this project, I certify that:
 With the sign-off in a commit message you certify that you authored the patch
 or otherwise have the right to submit it under an open source license. The
 procedure is simple: To certify above pyLife Developer's Certificate of
-Origin 1.0 for your contribution just append a line
+Origin 1.1 for your contribution just append a line
 
     Signed-off-by: Random J Developer <random@developer.example.org>
 
