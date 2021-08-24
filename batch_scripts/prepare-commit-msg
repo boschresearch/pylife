@@ -1,0 +1,17 @@
+#!/bin/bash
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+COMMIT_HASH=$3
+
+GIT_USER_NAME=`git config user.name`
+GIT_USER_EMAIL=`git config user.email`
+
+IFS= commit_msg=$(sed '/^#/,$d' $COMMIT_MSG_FILE)
+IFS= commit_hint=$(sed '/^#/,$!d' $COMMIT_MSG_FILE)
+
+echo $commit_msg > $COMMIT_MSG_FILE
+
+echo -e "\nSigned-off-by:" $GIT_USER_NAME \<$GIT_USER_EMAIL\> "\n" >> $COMMIT_MSG_FILE
+
+echo -e $commit_hint >> $COMMIT_MSG_FILE
