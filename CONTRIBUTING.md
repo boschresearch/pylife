@@ -54,8 +54,10 @@ the following prefixes.
 * `bugfix/` for bugfixes, that do not change the API
 * `feature/` if a new feature is added
 * `doc/` if documentation is added or improved
-* `cleanup/` if code is cleaned or refactured without changing the feature set
+* `cleanup/` if code is cleaned or refactored without changing the behavior
 
+If your branch does not fit any of those, you can also come up with another
+appropriate prefix.
 
 ## Add / retain copyright notices
 
