@@ -262,10 +262,12 @@ def test_principals_pandas():
                            [1.12, 2.35, 3.78, -5.41, -3.57, 0.0]])
     df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
     eqs = df.equistress.principals()
-    assert np.allclose(eqs['min_principal'].to_numpy(), [-2., -5., -4.6068])
-    assert np.allclose(eqs['med_principal'].to_numpy(), [ 1., -2.,  3.3229])
-    assert np.allclose(eqs['max_principal'].to_numpy(), [ 3., -1.,  8.5339])
-
+    expected = pd.DataFrame({
+        'min_principal': [-2., -5., -4.6068],
+        'med_principal': [ 1., -2.,  3.3229],
+        'max_principal': [ 3., -1.,  8.5339],
+    })
+    pd.testing.assert_frame_equal(eqs, expected)
 
 def test_abs_max_principal_pandas():
     dummy_data = np.array([[1, -2, 3, 0, 0, 0],
