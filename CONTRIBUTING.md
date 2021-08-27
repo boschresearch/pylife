@@ -10,6 +10,7 @@ Your contribution must be licensed under the Apache-2.0 license, the license
 used by this project.
 
 ## Test driven development
+
 The functionality of your contribution (functions, class methods) need to be
 tested by [pytest][pytest] testing routines.
 
@@ -41,6 +42,23 @@ Use as little comments as possible. The code along with docstrings should be
 expressive enough. Remove any commented code lines before issuing your pull
 request.
 
+## Making commits
+
+### Configure your git client
+
+Please configure your identity in your git client appropriately. From the git
+command line you can do that using
+```
+git config user.name <Your Name>
+git config user.email <your-email@...>
+```
+
+### Writing good commit messages
+
+Please consider following the [commit guidelines][CGL] when writing your commit
+message. We will not enforce this, but we would appreciate if you
+do. [Here][git-commit] is a good read why this makes sense.
+
 ## Branching and pull requests
 
 Pull requests must be filed against the `develop` branch, except for urgent
@@ -53,8 +71,10 @@ the following prefixes.
 * `bugfix/` for bugfixes, that do not change the API
 * `feature/` if a new feature is added
 * `doc/` if documentation is added or improved
-* `cleanup/` if code is cleaned or refactured without changing the feature set
+* `cleanup/` if code is cleaned or refactored without changing the behavior
 
+If your branch does not fit any of those, you can also come up with another
+appropriate prefix.
 
 ## Add / retain copyright notices
 
@@ -70,7 +90,8 @@ Certificate of Origin (DCO; from [OSDL][DCO]) and Signed-off-by tags initially
 developed by the Linux kernel project.
 
 ```
-pyLife Developer's Certificate of Origin.  Version 1.0
+
+pyLife Developer's Certificate of Origin.  Version 1.1
 
 By making a contribution to this project, I certify that:
 
@@ -78,22 +99,23 @@ By making a contribution to this project, I certify that:
     have the right to submit it under the "Apache License, Version 2.0"
     ("Apache-2.0"); or
 
-(b) The contribution is based upon previous work that is covered by
-    an appropriate open source license and I have the right under
-    that license to submit that work with modifications, whether
-    created in whole or in part by me, under the Apache-2.0 license;
-    or
+(b) The contribution is based upon previous work that, to the best
+    of my knowledge, is covered under an appropriate open source
+    license and I have the right under that license to submit that
+    work with modifications, whether created in whole or in part
+    by me, under the same open source license (unless I am
+    permitted to submit under a different license), as indicated
+    in the file; or
 
 (c) The contribution was provided directly to me by some other
-    person who certified (a) or (b) and I have not modified it.
+    person who certified (a), (b) or (c) and I have not modified
+    it.
 
 (d) I understand and agree that this project and the contribution
     are public and that a record of the contribution (including all
-    metadata and personal information I submit with it, including my
-    sign-off) is maintained indefinitely and may be redistributed
-    consistent with this project and the requirements of the Apache-2.0
-    license or any open source license(s) involved, where they are
-    relevant.
+    personal information I submit with it, including my sign-off) is
+    maintained indefinitely and may be redistributed consistent with
+    this project or the open source license(s) involved.
 
 (e) I am granting the contribution to this project under the terms of
     Apache-2.0.
@@ -104,7 +126,7 @@ By making a contribution to this project, I certify that:
 With the sign-off in a commit message you certify that you authored the patch
 or otherwise have the right to submit it under an open source license. The
 procedure is simple: To certify above pyLife Developer's Certificate of
-Origin 1.0 for your contribution just append a line
+Origin 1.1 for your contribution just append a line
 
     Signed-off-by: Random J Developer <random@developer.example.org>
 
@@ -115,6 +137,14 @@ If you have set your `user.name` and `user.email` git configs you can
 automatically sign the commit by running the git-commit command with the `-s`
 option.  There may be multiple sign-offs if more than one developer was
 involved in authoring the contribution.
+
+Another option to automatically add the `Signed-off-by:` is to once use the
+command
+```
+git config core.hooksPath .githooks
+```
+in your pyLife working directory. This will then add the `Signed-off-by:` line
+automatically.
 
 For a more detailed description of this procedure, please see
 [SubmittingPatches][] which was extracted from the Linux kernel project, and
@@ -149,6 +179,10 @@ contribution was provided directly to me by some other person who certified
 holder(s) to the [NOTICE](NOTICE) file as part of your contribution.
 
 [pytest]: https://pytest.org
+
+[CGL]: https://www.git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project#_commit_guidelines
+
+[git-commit]: https://chris.beams.io/posts/git-commit/
 
 [DCO]: http://web.archive.org/web/20070306195036/http://osdlab.org/newsroom/press_releases/2004/2004_05_24_dco.html
 
