@@ -258,12 +258,12 @@ class MinerElementar(MinerBase):
     V_FKM = None
 
     def __init__(self, ND, k_1, SD):
-        super(MinerElementar, self).__init__(
+        super().__init__(
             ND, k_1, SD,
         )
 
     def setup(self, collective):
-        super(MinerElementar, self).setup(collective)
+        super().setup(collective)
         A = self.calc_A(self.collective)
         # at this point N_expected is equal to H0
         # i.e. the number of cycles for the collective (not N for sample failure)
@@ -286,7 +286,7 @@ class MinerElementar(MinerBase):
             then in a descending manner till the
             number of cycles of the highest stress class
         """
-        super(MinerElementar, self).calc_A(collective)
+        super().calc_A(collective)
         V = solidity_haibach(self.collective, self._woehler_curve.k_1)
         self.V_haibach = V
         self.V_FKM = V**(1/self._woehler_curve.k_1)
@@ -316,13 +316,11 @@ class MinerHaibach(MinerBase):
     evaluated_load_levels = None
 
     def __init__(self, ND, k_1, SD):
-        super(MinerHaibach, self).__init__(
-            ND, k_1, SD,
-        )
+        super().__init__(ND, k_1, SD)
         self.evaluated_load_levels = {}
 
     def setup(self, collective):
-        super(MinerHaibach, self).setup(collective)
+        super().setup(collective)
 
     def calc_A(self, load_level, collective=None, ignore_inf_rule=False):
         """Compute the lifetime multiple for Miner-modified according to Haibach
@@ -352,7 +350,7 @@ class MinerHaibach(MinerBase):
             lifetime multiple
             return value is 'inf' if load_level < SD
         """
-        super(MinerHaibach, self).calc_A(collective)
+        super().calc_A(collective)
         self.evaluated_load_levels[round(load_level)] = {}
         # this parameter makes each evaluation of A unique
         self._last_load_level_evaluated = load_level
@@ -407,5 +405,5 @@ class MinerHaibach(MinerBase):
         if A is None:
             A = self.calc_A(load_level, ignore_inf_rule=ignore_inf_rule)
 
-        N_pred = super(MinerHaibach, self).N_predict(load_level, A)
+        N_pred = super().N_predict(load_level, A)
         return N_pred

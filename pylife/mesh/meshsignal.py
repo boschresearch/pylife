@@ -173,7 +173,7 @@ class MeshAccessor(PlainMeshAccessor):
     For an example see :mod:`meshplot`.
     '''
     def _validate(self, obj, validator):
-        super(MeshAccessor, self)._validate(obj, validator)
+        super()._validate(obj, validator)
         self._cached_element_groups = None
         if set(obj.index.names) != set(['element_id', 'node_id']):
             raise AttributeError("A mesh needs a pd.MultiIndex with the names `element_id` and `node_id`")

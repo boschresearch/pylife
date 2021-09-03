@@ -71,7 +71,7 @@ class PylifeSignal(Broadcaster):
         method = self._method_dict.get(itemname)
 
         if method is None:
-            return super(PylifeSignal, self).__getattribute__(itemname)
+            return super().__getattribute__(itemname)
 
         return self._MethodCaller(method, self._obj)
 

@@ -63,7 +63,7 @@ class FiniteLifeLine(FiniteLifeBase):
     """
 
     def __init__(self, k, SD_50, ND_50):
-        super(FiniteLifeLine, self).__init__(k, SD_50, ND_50)
+        super().__init__(k, SD_50, ND_50)
 
 
 class FiniteLifeCurve(FiniteLifeBase):
@@ -87,7 +87,7 @@ class FiniteLifeCurve(FiniteLifeBase):
         number of cycles at stress SD_50
     """
     def __init__(self, k_1, SD_50, ND_50):
-        super(FiniteLifeCurve, self).__init__(k_1, SD_50, ND_50)
+        super().__init__(k_1, SD_50, ND_50)
 
     def calc_S(self, N, ignore_limits=True):
         """Calculate stress S for a given number of cycles N

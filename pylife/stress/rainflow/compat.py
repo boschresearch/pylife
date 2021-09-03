@@ -55,7 +55,7 @@ class AbstractRainflowCounter:
 
 class RainflowCounterThreePoint(AbstractRainflowCounter):
     def __init__(self):
-        super(RainflowCounterThreePoint, self).__init__()
+        super().__init__()
         self._detector = ThreePointDetector(recorder=self._recorder)
 
     def process(self, samples):
@@ -65,7 +65,7 @@ class RainflowCounterThreePoint(AbstractRainflowCounter):
 
 class RainflowCounterFKM(AbstractRainflowCounter):
     def __init__(self):
-        super(RainflowCounterFKM, self).__init__()
+        super().__init__()
         self._detector = FKMDetector(recorder=self._recorder)
 
     def process(self, samples):
