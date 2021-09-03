@@ -17,7 +17,9 @@ pyLife Documentation
    :caption: User Guide
 
    user_guide
+   data_model
    signal_api
+   variable_names
 
 .. toctree::
    :maxdepth: 1
