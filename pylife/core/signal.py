@@ -21,9 +21,8 @@ __maintainer__ = __author__
 import numpy as np
 import pandas as pd
 
-from .data_validator import DataValidator
 from .broadcaster import Broadcaster
-
+from .data_validator import DataValidator
 
 class PylifeSignal(Broadcaster):
     '''Base class for signal accessor classes
@@ -55,9 +54,97 @@ class PylifeSignal(Broadcaster):
     _method_dict = {}
 
     def __init__(self, pandas_obj):
-        self._validator = DataValidator()
-        self._validate(pandas_obj, self._validator)
         self._obj = pandas_obj
+        self._validate()
+
+
+    def keys(self):
+        """Get a list of missing keys that are needed for a signal object.
+
+        Returns
+        -------
+        keys : pd.Index
+            a pandas index of keys
+
+        Raises
+        ------
+        AttributeError
+            If `self._obj` is neither a `pandas.DataFrame` nor a `pandas.Series`
+
+        Notes
+        -----
+        If `self._obj` is a `pandas.DataFrame`, the `self._obj.columns` are returned.
+
+        If `self._obj` is a `pandas.Series`, the `self._obj.index` are returned.
+        """
+        if isinstance(self._obj, pd.Series):
+            return self._obj.index
+        elif isinstance(self._obj, pd.DataFrame):
+            return self._obj.columns
+        raise AttributeError("An accessor object needs to be either a pandas.Series or a pandas.DataFrame")
+
+    def get_missing_keys(self, keys_to_check):
+        """Get a list of missing keys that are needed for a self._obj object.
+
+        Parameters
+        ----------
+        keys_to_check : list
+            A list of keys that need to be available in `self._obj`
+
+        Returns
+        -------
+        missing_keys : list
+            a list of missing keys
+
+        Raises
+        ------
+        AttributeError
+            If `self._obj` is neither a `pandas.DataFrame` nor a `pandas.Series`
+
+        Notes
+        -----
+        If `self._obj` is a `pandas.DataFrame`, all keys of
+        `keys_to_check` not found in the `self._obj.columns` are
+        returned.
+
+        If `self._obj` is a `pandas.Series`, all keys of
+        `keys_to_check` not found in the `self._obj.index` are
+        returned.
+        """
+        return DataValidator().get_missing_keys(self._obj, keys_to_check)
+
+    def fail_if_key_missing(self, keys_to_check, msg=None):
+        """Raise an exception if any key is missing in a self._obj object.
+
+        Parameters
+        ----------
+        self._obj : pandas.DataFrame or pandas.Series
+            The object to be checked
+
+        keys_to_check : list
+            A list of keys that need to be available in `self._obj`
+
+        Raises
+        ------
+        AttributeError
+            if `self._obj` is neither a `pandas.DataFrame` nor a `pandas.Series`
+        AttributeError
+            if any of the keys is not found in the self._obj's keys.
+
+        Notes
+        -----
+        If `self._obj` is a `pandas.DataFrame`, all keys of
+        `keys_to_check` meed to be found in the `self._obj.columns`.
+
+        If `self._obj` is a `pandas.Series`, all keys of
+        `keys_to_check` meed to be found in the `self._obj.index`.
+
+        See also
+        --------
+        :func:`get_missing_keys`
+        :class:`stresssignal.StressTensorVoigtAccessor`
+        """
+        DataValidator().fail_if_key_missing(self._obj, keys_to_check)
 
     class _MethodCaller:
         def __init__(self, method, obj):

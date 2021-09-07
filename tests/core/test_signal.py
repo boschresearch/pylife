@@ -22,42 +22,33 @@ import numpy as np
 import pandas as pd
 
 import pylife.core.signal as signal
-from pylife.core.data_validator import DataValidator
 
 foo_bar_baz = pd.DataFrame({'foo': [1.0, 1.0], 'bar': [1.0, 1.0], 'baz': [1.0, 1.0]})
-val = DataValidator()
-
 
 def test_keys_dataframe():
-    pd.testing.assert_index_equal(val.keys(foo_bar_baz), pd.Index(['foo', 'bar', 'baz']))
+    pd.testing.assert_index_equal(foo_bar_baz.test_accessor_none.keys(), pd.Index(['foo', 'bar', 'baz']))
 
 
 def test_keys_series():
-    pd.testing.assert_index_equal(val.keys(foo_bar_baz.iloc[0]), pd.Index(['foo', 'bar', 'baz']))
-
-
-def test_keys_invalid_type():
-    with pytest.raises(AttributeError, match="An accessor object needs to be either a pandas.Series or a pandas.DataFrame"):
-        val.keys('lllll')
-
+    pd.testing.assert_index_equal(foo_bar_baz.iloc[0].test_accessor_none.keys(), pd.Index(['foo', 'bar', 'baz']))
 
 def test_missing_keys_none():
-    assert val.get_missing_keys(foo_bar_baz, ['foo', 'bar']) == []
+    assert foo_bar_baz.test_accessor_none.get_missing_keys(['foo', 'bar']) == []
 
 
 def test_missing_keys_one():
-    assert val.get_missing_keys(foo_bar_baz, ['foo', 'foobar']) == ['foobar']
+    assert foo_bar_baz.test_accessor_none.get_missing_keys(['foo', 'foobar']) == ['foobar']
 
 
 def test_missing_keys_two():
-    assert set(val.get_missing_keys(foo_bar_baz, ['foo', 'foobar', 'barfoo'])) == set(['foobar', 'barfoo'])
+    assert set(foo_bar_baz.test_accessor_none.get_missing_keys(['foo', 'foobar', 'barfoo'])) == set(['foobar', 'barfoo'])
 
 
 @pd.api.extensions.register_series_accessor('test_accessor_none')
 @pd.api.extensions.register_dataframe_accessor('test_accessor_none')
 class AccessorNone(signal.PylifeSignal):
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['foo', 'bar'])
+    def _validate(self):
+        self.fail_if_key_missing(['foo', 'bar'])
 
     def already_here(self):
         return 23
@@ -74,14 +65,14 @@ class AccessorNone(signal.PylifeSignal):
 @pd.api.extensions.register_series_accessor('test_accessor_one')
 @pd.api.extensions.register_dataframe_accessor('test_accessor_one')
 class AccessorOne(signal.PylifeSignal):
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['foo', 'foobar'])
+    def _validate(self):
+        self.fail_if_key_missing(['foo', 'foobar'])
 
 
 @pd.api.extensions.register_dataframe_accessor('test_accessor_two')
 class AccessorTwo(signal.PylifeSignal):
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['foo', 'foobar', 'barfoo'])
+    def _validate(self):
+        self.fail_if_key_missing(['foo', 'foobar', 'barfoo'])
 
 
 def test_signal_broadcast_inheritance_series():

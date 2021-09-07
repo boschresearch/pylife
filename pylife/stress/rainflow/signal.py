@@ -26,11 +26,11 @@ from pylife import signal
 @pd.api.extensions.register_series_accessor('rainflow')
 class RainflowAccessor(signal.PylifeSignal):
 
-    def _validate(self, obj, validator):
+    def _validate(self):
         self._class_location = 'mid'
-        if 'range' in obj.index.names:
+        if 'range' in self._obj.index.names:
             return
-        if 'from' in obj.index.names and 'to' in obj.index.names:
+        if 'from' in self._obj.index.names and 'to' in self._obj.index.names:
             return
         raise AttributeError("RainflowAccessor needs either 'range'/('mean') or 'from'/'to' in index levels.")
 

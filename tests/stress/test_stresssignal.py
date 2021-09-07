@@ -41,14 +41,12 @@ def test_cyclic_sigma_a_sigma_m():
 
 def test_cyclic_only_sigma_a():
     df = pd.DataFrame({'sigma_a': [1.0]})
-    df.cyclic_stress
-    np.testing.assert_equal(df['sigma_m'].to_numpy(), np.zeros_like(df['sigma_a'].to_numpy()))
+    np.testing.assert_equal(df.cyclic_stress.to_pandas()['sigma_m'].to_numpy(), np.zeros_like(df['sigma_a'].to_numpy()))
 
 
 def test_cyclic_sigma_a_R():
     df = pd.DataFrame({'sigma_a': [1.0, 1.0], 'R': [0.0, -1.0]})
-    df.cyclic_stress
-    np.testing.assert_equal(df['sigma_m'].to_numpy(), [1.0, 0.0])
+    np.testing.assert_equal(df.cyclic_stress.to_pandas()['sigma_m'].to_numpy(), [1.0, 0.0])
 
 
 @pytest.mark.parametrize('R, sigma_m_check', [
@@ -57,8 +55,7 @@ def test_cyclic_sigma_a_R():
 ])
 def test_cyclic_sigma_constant_R(R, sigma_m_check):
     df = pd.DataFrame({'sigma_a': [1.0], 'R': [R]})
-    df.cyclic_stress
-    np.testing.assert_equal(df['sigma_m'].to_numpy(), sigma_m_check)
+    np.testing.assert_equal(df.cyclic_stress.to_pandas()['sigma_m'].to_numpy(), sigma_m_check)
 
 
 def test_cyclic_no_sigma_a():

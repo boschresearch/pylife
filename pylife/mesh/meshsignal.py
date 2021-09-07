@@ -99,10 +99,10 @@ class PlainMeshAccessor(signal.PylifeSignal):
     :class:`MeshAccessor`: accesses meshes with connectivity information
     :func:`pandas.api.extensions.register_dataframe_accessor()`: concept of DataFrame accessors
     '''
-    def _validate(self, obj, validator):
+    def _validate(self):
         self._coord_keys = ['x', 'y']
-        validator.fail_if_key_missing(obj, self._coord_keys)
-        if 'z' in obj.columns:
+        self.fail_if_key_missing(self._coord_keys)
+        if 'z' in self._obj.columns:
             self._coord_keys.append('z')
         self._cached_dimensions = None
 
@@ -172,10 +172,10 @@ class MeshAccessor(PlainMeshAccessor):
     --------
     For an example see :mod:`meshplot`.
     '''
-    def _validate(self, obj, validator):
-        super()._validate(obj, validator)
+    def _validate(self):
+        super()._validate()
         self._cached_element_groups = None
-        if set(obj.index.names) != set(['element_id', 'node_id']):
+        if set(self._obj.index.names) != set(['element_id', 'node_id']):
             raise AttributeError("A mesh needs a pd.MultiIndex with the names `element_id` and `node_id`")
 
 

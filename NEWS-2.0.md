@@ -20,4 +20,7 @@ will be used more extensively.
   That means you will have to adjust your code where you deal with those kinds
   of scatters.
 
-*
+* `self._validate()` is no longer called with arguments.  The arguments `obj`
+  and `validator` are no longer needed.  `obj` is now accessible by
+  `self._obj`. The methods of `DataValidator` are now accessible as methods of
+  `PylifeSignal` directly.

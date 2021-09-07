@@ -20,7 +20,6 @@ import scipy.stats as stats
 
 from pylife.utils.functions import scatteringRange2std
 
-
 from pylife import signal
 from pylife import DataValidator
 
@@ -55,32 +54,30 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
     """
 
     def __init__(self, pandas_obj):
-        self._validator = signal.DataValidator()
-        pandas_obj = pandas_obj.copy()
-        self._validate(pandas_obj, self._validator)
-        self._obj = pandas_obj
+        self._obj = pandas_obj.copy()
+        self._validate()
 
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['k_1', 'ND', 'SD'])
-        self._k_2 = obj.get('k_2', np.inf)
+    def _validate(self):
+        self.fail_if_key_missing(['k_1', 'ND', 'SD'])
+        self._k_2 = self._obj.get('k_2', np.inf)
 
-        self._TN = obj.get('TN', None)
-        self._TS = obj.get('TS', None)
+        self._TN = self._obj.get('TN', None)
+        self._TS = self._obj.get('TS', None)
 
         if self._TN is None and self._TS is None:
             self._TN = 1.0
             self._TS = 1.0
         elif self._TS is None:
-            self._TS = np.power(self._TN, 1./obj.k_1)
+            self._TS = np.power(self._TN, 1./self._obj.k_1)
         elif self._TN is None:
-            self._TN = np.power(self._TS, obj.k_1)
+            self._TN = np.power(self._TS, self._obj.k_1)
 
-        self._failure_probability = obj.get('failure_probability', 0.5)
+        self._failure_probability = self._obj.get('failure_probability', 0.5)
 
-        obj['k_2'] = self._k_2
-        obj['TN'] = self._TN
-        obj['TS'] = self._TS
-        obj['failure_probability'] = self._failure_probability
+        self._obj['k_2'] = self._k_2
+        self._obj['TN'] = self._TN
+        self._obj['TS'] = self._TS
+        self._obj['failure_probability'] = self._failure_probability
 
     @property
     def SD(self):
@@ -233,8 +230,8 @@ class FatigueDataAccessor(signal.PylifeSignal):
         * ``fracture``: bool, ``True`` iff the test is a runout
      '''
 
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['load', 'cycles', 'fracture'])
+    def _validate(self):
+        self.fail_if_key_missing(['load', 'cycles', 'fracture'])
         self._fatigue_limit = None
 
     @property
