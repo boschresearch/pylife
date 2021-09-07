@@ -14,6 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""A module for Wöhler curve fatigue data analysis
+
+Overview
+========
+
+:class:`FatigueData` is a signal accessor class to handle fatigue data from a
+Wöhler test.  They can be analyzed by several analyzers according to your choice
+
+* :class:`Elementary` only treats the finite zone of the fatigue data and
+  calculates the slope and the scatter in lifetime direction.  It is the base
+  class for all other analyzers
+
+* :class:`Probit` calculates parameters not calculated by :class:`Elementary`
+  using the Probit method.
+
+* :class:`MaxLikeInf` calculates parameters not calculated by :class:`Elementary`
+  using the maximum likelihood method.
+
+* :class:`MaxLikeFull` calculates all parameters using the maximum likelihood
+  method.  The result from :class:`Elementary` is used as start values.
+
+"""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 

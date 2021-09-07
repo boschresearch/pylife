@@ -18,6 +18,14 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 from .rambgood import RambergOsgood
+from .true_stress_strain import *
 from .woehlercurve import WoehlerCurve
 
-__all__ = ['RambergOsgood', 'WoehlerCurve']
+__all__ = [
+    'RambergOsgood',
+    'true_stress',
+    'true_strain',
+    'true_fracture_stress',
+    'true_fracture_strain',
+    'WoehlerCurve'
+]
