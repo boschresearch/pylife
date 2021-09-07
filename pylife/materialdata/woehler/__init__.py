@@ -14,9 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .accessors import \
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
+
+from .fatigue_data import \
     FatigueData, \
-    WoehlerCurve, \
     determine_fractures
 
 from .analyzers.elementary import Elementary
