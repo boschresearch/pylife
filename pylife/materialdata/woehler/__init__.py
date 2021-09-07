@@ -21,7 +21,17 @@ from .fatigue_data import \
     FatigueData, \
     determine_fractures
 
-from .analyzers.elementary import Elementary
-from .analyzers.probit import Probit
-from .analyzers.maxlike import MaxLikeInf, MaxLikeFull
-from .analyzers.bayesian import Bayesian
+from .elementary import Elementary
+from .probit import Probit
+from .maxlike import MaxLikeInf, MaxLikeFull
+from .bayesian import Bayesian
+
+__all__ = [
+    'FatigueData',
+    'determine_fractures',
+    'Elementary',
+    'Probit',
+    'MaxLikeInf',
+    'MaxLikeFull',
+    'Bayesian'
+]

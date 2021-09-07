@@ -21,7 +21,7 @@ import scipy.stats as stats
 from .likelihood import Likelihood
 from .pearl_chain import PearlChainProbability
 import pylife.utils.functions as functions
-from .. import FatigueData, determine_fractures
+from . import FatigueData, determine_fractures
 
 
 class Elementary:

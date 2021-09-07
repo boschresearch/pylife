@@ -1003,7 +1003,7 @@ def test_max_likelihood_one_mixed_horizon():
     bic = ml.bayesian_information_criterion()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
-@mock.patch('pylife.materialdata.woehler.analyzers.bayesian.pm')
+@mock.patch('pylife.materialdata.woehler.bayesian.pm')
 def test_bayesian_slope_trace(pm):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     bayes = woehler.Bayesian(fd)
@@ -1020,7 +1020,7 @@ def test_bayesian_slope_trace(pm):
     pm.sample.assert_called_with(1000, target_accept=0.99, random_seed=None, chains=2, tune=1000)
 
 
-@mock.patch('pylife.materialdata.woehler.analyzers.bayesian.pm')
+@mock.patch('pylife.materialdata.woehler.bayesian.pm')
 def test_bayesian_TN_trace(pm):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     bayes = woehler.Bayesian(fd)
@@ -1047,12 +1047,12 @@ def test_bayesian_TN_trace(pm):
     pm.sample.assert_called_with(1000, target_accept=0.99, random_seed=None, chains=3, tune=1000)
 
 
-@mock.patch('pylife.materialdata.woehler.analyzers.bayesian.tt')
-@mock.patch('pylife.materialdata.woehler.analyzers.bayesian.pm')
+@mock.patch('pylife.materialdata.woehler.bayesian.tt')
+@mock.patch('pylife.materialdata.woehler.bayesian.pm')
 def test_bayesian_SD_TS_trace_mock(pm, tt):
     def check_likelihood(l, var):
         assert var == tt.as_tensor_variable.return_value
-        assert isinstance(l.likelihood, woehler.analyzers.likelihood.Likelihood)
+        assert isinstance(l.likelihood, woehler.likelihood.Likelihood)
         np.testing.assert_array_equal(l.likelihood._fd, fd)
         return 'foovar'
 
@@ -1083,9 +1083,9 @@ def test_bayesian_SD_TS_trace_mock(pm, tt):
                                  tune=1000)
 
 
-@mock.patch('pylife.materialdata.woehler.analyzers.bayesian.Bayesian._SD_TS_trace')
-@mock.patch('pylife.materialdata.woehler.analyzers.bayesian.Bayesian._TN_trace')
-@mock.patch('pylife.materialdata.woehler.analyzers.bayesian.Bayesian._slope_trace')
+@mock.patch('pylife.materialdata.woehler.bayesian.Bayesian._SD_TS_trace')
+@mock.patch('pylife.materialdata.woehler.bayesian.Bayesian._TN_trace')
+@mock.patch('pylife.materialdata.woehler.bayesian.Bayesian._slope_trace')
 def test_bayesian_mock(_slope_trace, _TN_trace, _SD_TS_trace):
     expected = pd.Series({
         'SD': 100.,
