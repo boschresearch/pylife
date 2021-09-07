@@ -56,6 +56,18 @@ Stress values
   * ``R``: R-value
 
 
+Coordinate values
+-----------------
+
+* Cartesian coordinates: ``x``, ``y``, ``z``
+
+
+Displacement values
+-------------------
+
+* Displacements in a Cartesian coordinate system: ``dx``, ``dy``, ``dz``
+
+
 Strength variables
 ------------------
 
