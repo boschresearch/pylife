@@ -24,7 +24,7 @@ from pylife import signal
 
 
 @pd.api.extensions.register_series_accessor('rainflow')
-class RainflowAccessor(signal.PylifeSignal):
+class Rainflow(signal.PylifeSignal):
 
     def _validate(self):
         self._class_location = 'mid'
@@ -32,7 +32,7 @@ class RainflowAccessor(signal.PylifeSignal):
             return
         if 'from' in self._obj.index.names and 'to' in self._obj.index.names:
             return
-        raise AttributeError("RainflowAccessor needs either 'range'/('mean') or 'from'/'to' in index levels.")
+        raise AttributeError("Rainflow needs either 'range'/('mean') or 'from'/'to' in index levels.")
 
     @property
     def amplitude(self):

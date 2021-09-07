@@ -30,7 +30,7 @@ def test_voigt():
 def test_voigt_fail():
     df = pd.DataFrame({'S11': [1.0], 'S22': [1.0], 'S33': [1.0],
                        'S12': [1.0], 'S31': [1.0], 'S23': [1.0]})
-    with pytest.raises(AttributeError, match=r'^StressTensorVoigtAccessor.*Missing S13'):
+    with pytest.raises(AttributeError, match=r'^StressTensorVoigt.*Missing S13'):
         df.voigt
 
 

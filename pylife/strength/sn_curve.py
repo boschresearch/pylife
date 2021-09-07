@@ -30,7 +30,7 @@ class FiniteLifeBase:
 
     def __init__(self, k_1, SD_50, ND_50):
         warnings.warn(DeprecationWarning("FiniteLifeBase and derived classes are deperecated. "
-                                         "Use WoehlerCurveAccessor and FatigueAccessor accessors instead."))
+                                         "Use WoehlerCurve and Fatigue accessors instead."))
         self._wc = pd.Series({
             'k_1': k_1,
             'SD': SD_50,

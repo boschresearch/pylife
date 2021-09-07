@@ -26,7 +26,7 @@ import pylife.stress.rainflow
 
 @pd.api.extensions.register_series_accessor('fatigue')
 @pd.api.extensions.register_dataframe_accessor('fatigue')
-class FatigueAccessor(WL.WoehlerCurveAccessor):
+class Fatigue(WL.WoehlerCurve):
 
     def damage(self, load_hist):
         cycles = self.basquin_cycles(load_hist.amplitude)

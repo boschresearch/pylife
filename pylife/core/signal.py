@@ -142,7 +142,7 @@ class PylifeSignal(Broadcaster):
         See also
         --------
         :func:`get_missing_keys`
-        :class:`stresssignal.StressTensorVoigtAccessor`
+        :class:`stresssignal.StressTensorVoigt`
         """
         DataValidator().fail_if_key_missing(self._obj, keys_to_check)
 
@@ -223,13 +223,13 @@ def register_method(cls, method_name):
 
 
         @pd.api.extensions.register_dataframe_accessor('foo')
-        class FooAccessor(pl.signal.PyifeSignal):
+        class Foo(pl.signal.PyifeSignal):
             def __init__(self, obj):
                 # self._validate(obj) could come here
                 self._obj = obj
 
 
-        @pl.signal.register_method(FooAccessor, 'bar')
+        @pl.signal.register_method(Foo, 'bar')
         def bar(df):
             return pd.DataFrame({'baz': df['foo'] + df['bar']})
 

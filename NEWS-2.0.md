@@ -24,3 +24,5 @@ will be used more extensively.
   and `validator` are no longer needed.  `obj` is now accessible by
   `self._obj`. The methods of `DataValidator` are now accessible as methods of
   `PylifeSignal` directly.
+
+* Signal accessor class names are no longer suffixed with `Accessor`

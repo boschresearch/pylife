@@ -15,8 +15,8 @@
 # limitations under the License.
 
 from .accessors import \
-    FatigueDataAccessor, \
-    WoehlerCurveAccessor, \
+    FatigueData, \
+    WoehlerCurve, \
     determine_fractures
 
 from .analyzers.elementary import Elementary

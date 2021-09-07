@@ -119,7 +119,7 @@ class DataValidator:
         See also
         --------
         :func:`signal.get_missing_keys`
-        :class:`stresssignal.StressTensorVoigtAccessor`
+        :class:`stresssignal.StressTensorVoigt`
         """
         missing_keys = self.get_missing_keys(signal, keys_to_check)
         if not missing_keys:

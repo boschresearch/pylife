@@ -26,7 +26,7 @@ from pylife import DataValidator
 
 @pd.api.extensions.register_series_accessor('woehler')
 @pd.api.extensions.register_dataframe_accessor('woehler')
-class WoehlerCurveAccessor(signal.PylifeSignal):
+class WoehlerCurve(signal.PylifeSignal):
     """A PylifeSignal accessor for Wöhler Curve data.
 
     Wöhler Curve (aka SN-curve) determines after how many load cycles at a
@@ -128,7 +128,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         transformed['ND'] = ND
         transformed['failure_probability'] = failure_probability
 
-        return WoehlerCurveAccessor(transformed)
+        return WoehlerCurve(transformed)
 
     def miner_elementary(self):
         """Set k_2 to k_1 according Miner Elementary method (k_2 = k_1).
@@ -221,8 +221,8 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
 
 
 @pd.api.extensions.register_dataframe_accessor('fatigue_data')
-class FatigueDataAccessor(signal.PylifeSignal):
-    '''Accessor class for fatigue data
+class FatigueData(signal.PylifeSignal):
+    ''' class for fatigue data
 
     Mandatory keys are
         * ``load`` : float, the load level

@@ -38,7 +38,7 @@ from pylife import signal
 
 
 @pd.api.extensions.register_dataframe_accessor("meanstress_mesh")
-class MeanstressMesh(stresssignal.CyclicStressAccessor):
+class MeanstressMesh(stresssignal.CyclicStress):
 
     def FKM_goodman(self, haigh, R_goal):
         haigh.FKM_Goodman
