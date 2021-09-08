@@ -21,7 +21,7 @@ import scipy.stats as stats
 from .likelihood import Likelihood
 from .pearl_chain import PearlChainProbability
 import pylife.utils.functions as functions
-from ..accessors import FatigueDataAccessor, determine_fractures
+from . import FatigueData, determine_fractures
 
 
 class Elementary:
@@ -42,7 +42,7 @@ class Elementary:
 
         Parameters
         ----------
-        fatigue_data : pd.DataFrame or FatigueDataAccessor
+        fatigue_data : pd.DataFrame or FatigueData
            The SN-data to be analyzed.
         """
         self._fd = self._get_fatigue_data(fatigue_data)
@@ -57,7 +57,7 @@ class Elementary:
                 params = fatigue_data.fatigue_data
             else:
                 params = determine_fractures(fatigue_data).fatigue_data
-        elif isinstance(fatigue_data, FatigueDataAccessor):
+        elif isinstance(fatigue_data, FatigueData):
             params = fatigue_data
         else:
             raise ValueError("fatigue_data of type {} not understood: {}".format(type(fatigue_data), fatigue_data))

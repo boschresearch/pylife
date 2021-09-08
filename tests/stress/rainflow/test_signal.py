@@ -42,7 +42,7 @@ def rainflow_matrix_from_to():
 
 def test_rainflow_signal_fail_empty_fail():
     rainflow_matrix = pd.Series(dtype=np.float64)
-    with pytest.raises(AttributeError, match=r"RainflowAccessor needs .* index levels"):
+    with pytest.raises(AttributeError, match=r"Rainflow needs .* index levels"):
         rainflow_matrix.rainflow
 
 
@@ -56,7 +56,7 @@ def test_rainflow_signal_valid_from_to(rainflow_matrix_from_to):
 
 def test_rainflow_signal_valid_only_from(rainflow_matrix_from_to):
     rainflow_matrix_from_to.index = rainflow_matrix_from_to.index.droplevel('to')
-    with pytest.raises(AttributeError, match=r"RainflowAccessor needs .* index levels"):
+    with pytest.raises(AttributeError, match=r"Rainflow needs .* index levels"):
         rainflow_matrix_from_to.rainflow
 
 
@@ -115,7 +115,7 @@ def test_rainflow_from_to_scale_scalar(rainflow_matrix_from_to):
     expected = pd.Series(1, index=expected_index, name='frequency')
 
     scaled = rainflow_matrix_from_to.rainflow.scale(0.5)
-    assert isinstance(scaled, pylife.stress.rainflow.RainflowAccessor)
+    assert isinstance(scaled, pylife.stress.rainflow.Rainflow)
     pd.testing.assert_series_equal(scaled.to_pandas(), expected)
 
 
@@ -150,7 +150,7 @@ def test_rainflow_from_to_scale_series(rainflow_matrix_from_to):
 
     scaled = rainflow_matrix_from_to.rainflow.scale(factors)
 
-    assert isinstance(scaled, pylife.stress.rainflow.RainflowAccessor)
+    assert isinstance(scaled, pylife.stress.rainflow.Rainflow)
     pd.testing.assert_series_equal(scaled.to_pandas(), expected)
 
 
@@ -161,7 +161,7 @@ def test_rainflow_range_mean_scale(rainflow_matrix_range_mean):
     expected = pd.Series(1, index=expected_index, name='frequency')
 
     scaled = rainflow_matrix_range_mean.rainflow.scale(0.5)
-    assert isinstance(scaled, pylife.stress.rainflow.RainflowAccessor)
+    assert isinstance(scaled, pylife.stress.rainflow.Rainflow)
     pd.testing.assert_series_equal(scaled.to_pandas(), expected)
 
 
@@ -196,7 +196,7 @@ def test_rainflow_range_mean_scale_series(rainflow_matrix_range_mean):
 
     scaled = rainflow_matrix_range_mean.rainflow.scale(factors)
 
-    assert isinstance(scaled, pylife.stress.rainflow.RainflowAccessor)
+    assert isinstance(scaled, pylife.stress.rainflow.Rainflow)
     pd.testing.assert_series_equal(scaled.to_pandas(), expected)
 
 
@@ -207,7 +207,7 @@ def test_rainflow_from_to_shift_scalar(rainflow_matrix_from_to):
     expected = pd.Series(1, index=expected_index, name='frequency')
 
     shifted = rainflow_matrix_from_to.rainflow.shift(4.)
-    assert isinstance(shifted, pylife.stress.rainflow.RainflowAccessor)
+    assert isinstance(shifted, pylife.stress.rainflow.Rainflow)
     pd.testing.assert_series_equal(shifted.to_pandas(), expected)
 
 
@@ -242,7 +242,7 @@ def test_rainflow_from_to_shift_series(rainflow_matrix_from_to):
 
     shiftd = rainflow_matrix_from_to.rainflow.shift(factors)
 
-    assert isinstance(shiftd, pylife.stress.rainflow.RainflowAccessor)
+    assert isinstance(shiftd, pylife.stress.rainflow.Rainflow)
     pd.testing.assert_series_equal(shiftd.to_pandas(), expected)
 
 
@@ -253,7 +253,7 @@ def test_rainflow_range_mean_shift_scalar(rainflow_matrix_range_mean):
     expected = pd.Series(1, index=expected_index, name='frequency')
 
     shifted = rainflow_matrix_range_mean.rainflow.shift(4.)
-    assert isinstance(shifted, pylife.stress.rainflow.RainflowAccessor)
+    assert isinstance(shifted, pylife.stress.rainflow.Rainflow)
     pd.testing.assert_series_equal(shifted.to_pandas(), expected)
 
 
@@ -288,5 +288,5 @@ def test_rainflow_range_mean_shift_series(rainflow_matrix_range_mean):
 
     shiftd = rainflow_matrix_range_mean.rainflow.shift(factors)
 
-    assert isinstance(shiftd, pylife.stress.rainflow.RainflowAccessor)
+    assert isinstance(shiftd, pylife.stress.rainflow.Rainflow)
     pd.testing.assert_series_equal(shiftd.to_pandas(), expected)

@@ -20,11 +20,11 @@ __maintainer__ = "Johannes Mueller"
 import numpy as np
 import pandas as pd
 
-from .meshsignal import MeshAccessor
+from .meshsignal import Mesh
 
 
 @pd.api.extensions.register_dataframe_accessor('gradient')
-class Gradient(MeshAccessor):
+class Gradient(Mesh):
     '''Computes the gradient of a value in a 3D mesh
 
     Accesses a `mesh` registered in :mod:`meshsignal`

@@ -24,7 +24,7 @@ from pylife import signal
 
 
 @pd.api.extensions.register_dataframe_accessor("voigt")
-class StressTensorVoigtAccessor(signal.PylifeSignal):
+class StressTensorVoigt(signal.PylifeSignal):
     '''DataFrame accessor class for Voigt noted stress tensors
 
     Raises
@@ -44,14 +44,14 @@ class StressTensorVoigtAccessor(signal.PylifeSignal):
 
     Examples
     --------
-    For an example see :class:`equistress.StressTensorEquistressAccessor`.
+    For an example see :class:`equistress.StressTensorEquistress`.
     '''
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['S11', 'S22', 'S33', 'S12', 'S13', 'S23'])
+    def _validate(self):
+        self.fail_if_key_missing(['S11', 'S22', 'S33', 'S12', 'S13', 'S23'])
 
 
 @pd.api.extensions.register_dataframe_accessor("cyclic_stress")
-class CyclicStressAccessor(signal.PylifeSignal):
+class CyclicStress(signal.PylifeSignal):
     '''DataFrame accessor class for cyclic stress data
 
     Raises
@@ -71,18 +71,22 @@ class CyclicStressAccessor(signal.PylifeSignal):
     ----
     Handle also input data with lower and upper stress.
     '''
-    def _validate(self, obj, validator):
 
-        if 'sigma_a' in obj.columns and 'R' in obj.columns:
-            obj['sigma_m'] = obj['sigma_a']*(1.+obj.R)/(1.-obj.R)
-            obj.loc[obj['R'] == -np.inf, 'sigma_m'] = -obj.sigma_a
+    def __init__(self, pandas_obj):
+        self._obj = pandas_obj.copy()
+        self._validate()
+
+    def _validate(self):
+        if 'sigma_a' in self._obj.columns and 'R' in self._obj.columns:
+            self._obj['sigma_m'] = self._obj['sigma_a']*(1.+self._obj.R)/(1.-self._obj.R)
+            self._obj.loc[self._obj['R'] == -np.inf, 'sigma_m'] = -self._obj.sigma_a
             return True
-        if 'sigma_a' in obj.columns and 'sigma_m' in obj.columns:
+        if 'sigma_a' in self._obj.columns and 'sigma_m' in self._obj.columns:
             return True
-        if 'sigma_a' in obj.columns:
-            obj['sigma_m'] = np.zeros_like(obj['sigma_a'].to_numpy())
+        if 'sigma_a' in self._obj.columns:
+            self._obj['sigma_m'] = np.zeros_like(self._obj['sigma_a'].to_numpy())
         else:
-            validator.fail_if_key_missing(obj, ['sigma_m', 'sigma_a'])
+            self.fail_if_key_missing(['sigma_m', 'sigma_a'])
         return True
 
     def constant_R(self, R):

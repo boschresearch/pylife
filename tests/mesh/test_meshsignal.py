@@ -53,7 +53,7 @@ def test_plain_mesh_pseudeo_2d_dims():
 
 def test_plain_mesh_fail():
     df = pd.DataFrame({'x': [1.0], 't': [2.0], 'b': [3.0], 'a': [9.9]})
-    with pytest.raises(AttributeError, match=r'PlainMeshAccessor.*Missing y'):
+    with pytest.raises(AttributeError, match=r'PlainMesh.*Missing y'):
         df.plain_mesh.coordinates
 
 
@@ -74,7 +74,7 @@ def test_mesh_2d():
 def test_mesh_fail_coordinates():
     mi = pd.MultiIndex.from_tuples([(1, 1)], names=['element_id', 'node_id'])
     df = pd.DataFrame({'x': [1.0], 'e': [2.0], 'c': [3.0], 'a': [9.9]}).set_index(mi)
-    with pytest.raises(AttributeError, match=r'MeshAccessor.*Missing y'):
+    with pytest.raises(AttributeError, match=r'Mesh.*Missing y'):
         df.mesh.coordinates
 
 

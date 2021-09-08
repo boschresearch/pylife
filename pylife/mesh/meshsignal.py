@@ -23,9 +23,9 @@ meshes are a list of items (e.g. nodes or elements of a FEM mesh),
 each being described by the geometrical coordinates and the local data
 values, like for example the local stress tensor data.
 
-In a plain mesh (see :class:`PlainMeshAccessor`) there is no further
+In a plain mesh (see :class:`PlainMesh`) there is no further
 relation between the items is known, whereas a complete FEM mesh (see
-:class:`MeshAccessor`) there is also information on the connectivity
+:class:`Mesh`) there is also information on the connectivity
 of the nodes and elements.
 
 Examples
@@ -79,7 +79,7 @@ from pylife import signal
 
 
 @pd.api.extensions.register_dataframe_accessor("plain_mesh")
-class PlainMeshAccessor(signal.PylifeSignal):
+class PlainMesh(signal.PylifeSignal):
     '''DataFrame accessor to access plain 2D and 3D mesh data, i.e. without connectivity
 
     Raises
@@ -89,20 +89,20 @@ class PlainMeshAccessor(signal.PylifeSignal):
 
     Notes
     -----
-    The PlainMeshAccessor describes meshes whose only geometrical
+    The PlainMesh describes meshes whose only geometrical
     information is the coordinates of the nodes or elements. Unlike
-    :class:`MeshAccessor` they don't know about connectivity, not even
+    :class:`Mesh` they don't know about connectivity, not even
     about elements and nodes.
 
     See also
     --------
-    :class:`MeshAccessor`: accesses meshes with connectivity information
+    :class:`Mesh`: accesses meshes with connectivity information
     :func:`pandas.api.extensions.register_dataframe_accessor()`: concept of DataFrame accessors
     '''
-    def _validate(self, obj, validator):
+    def _validate(self):
         self._coord_keys = ['x', 'y']
-        validator.fail_if_key_missing(obj, self._coord_keys)
-        if 'z' in obj.columns:
+        self.fail_if_key_missing(self._coord_keys)
+        if 'z' in self._obj.columns:
             self._coord_keys.append('z')
         self._cached_dimensions = None
 
@@ -137,7 +137,7 @@ class PlainMeshAccessor(signal.PylifeSignal):
 
 
 @pd.api.extensions.register_dataframe_accessor("mesh")
-class MeshAccessor(PlainMeshAccessor):
+class Mesh(PlainMesh):
 
     '''DataFrame accessor to access FEM mesh data (2D and 3D)
 
@@ -151,7 +151,7 @@ class MeshAccessor(PlainMeshAccessor):
 
     Notes
     -----
-    The MeshAccessor describes how we expect FEM data to look like. It
+    The Mesh describes how we expect FEM data to look like. It
     consists of nodes identified by `node_id` and elements identified
     by `element_id`. A node playing a role in several elements and an
     element consists of several nodes. So in the DataFrame a `node_id`
@@ -165,17 +165,17 @@ class MeshAccessor(PlainMeshAccessor):
 
     See also
     --------
-    :class:`PlainMeshAccessor`: accesses meshes without connectivity information
+    :class:`PlainMesh`: accesses meshes without connectivity information
     :func:`pandas.api.extensions.register_dataframe_accessor()`: concept of DataFrame accessors
 
     Examples
     --------
     For an example see :mod:`meshplot`.
     '''
-    def _validate(self, obj, validator):
-        super(MeshAccessor, self)._validate(obj, validator)
+    def _validate(self):
+        super()._validate()
         self._cached_element_groups = None
-        if set(obj.index.names) != set(['element_id', 'node_id']):
+        if set(self._obj.index.names) != set(['element_id', 'node_id']):
             raise AttributeError("A mesh needs a pd.MultiIndex with the names `element_id` and `node_id`")
 
 

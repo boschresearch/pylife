@@ -14,12 +14,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .accessors import \
-    FatigueDataAccessor, \
-    WoehlerCurveAccessor, \
+"""A module for Wöhler curve fatigue data analysis
+
+Overview
+========
+
+:class:`FatigueData` is a signal accessor class to handle fatigue data from a
+Wöhler test.  They can be analyzed by several analyzers according to your choice
+
+* :class:`Elementary` only treats the finite zone of the fatigue data and
+  calculates the slope and the scatter in lifetime direction.  It is the base
+  class for all other analyzers
+
+* :class:`Probit` calculates parameters not calculated by :class:`Elementary`
+  using the Probit method.
+
+* :class:`MaxLikeInf` calculates parameters not calculated by :class:`Elementary`
+  using the maximum likelihood method.
+
+* :class:`MaxLikeFull` calculates all parameters using the maximum likelihood
+  method.  The result from :class:`Elementary` is used as start values.
+
+"""
+
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
+
+from .fatigue_data import \
+    FatigueData, \
     determine_fractures
 
-from .analyzers.elementary import Elementary
-from .analyzers.probit import Probit
-from .analyzers.maxlike import MaxLikeInf, MaxLikeFull
-from .analyzers.bayesian import Bayesian
+from .elementary import Elementary
+from .probit import Probit
+from .maxlike import MaxLikeInf, MaxLikeFull
+from .bayesian import Bayesian
+
+__all__ = [
+    'FatigueData',
+    'determine_fractures',
+    'Elementary',
+    'Probit',
+    'MaxLikeInf',
+    'MaxLikeFull',
+    'Bayesian'
+]

@@ -27,10 +27,10 @@ from pylife.mesh import meshsignal
 
 
 @pd.api.extensions.register_dataframe_accessor('meshplot')
-class PlotmeshAccessor(meshsignal.MeshAccessor):
+class Plotmesh(meshsignal.Mesh):
     ''' Plot a value on a 2d mesh
 
-    The accessed DataFrame must be accessible by :class:`meshsignal.MeshAccessor`.
+    The accessed DataFrame must be accessible by :class:`meshsignal.Mesh`.
     '''
     def plot(self, axis, value_key, **kwargs):
         '''Plot the accessed dataframe

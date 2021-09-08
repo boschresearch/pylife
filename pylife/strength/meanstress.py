@@ -34,11 +34,11 @@ import pandas as pd
 
 import pylife
 from pylife.stress import stresssignal
-from pylife.core import signal
+from pylife import signal
 
 
 @pd.api.extensions.register_dataframe_accessor("meanstress_mesh")
-class MeanstressMesh(stresssignal.CyclicStressAccessor):
+class MeanstressMesh(stresssignal.CyclicStress):
 
     def FKM_goodman(self, haigh, R_goal):
         haigh.FKM_Goodman
@@ -106,24 +106,16 @@ class MeanstressHist:
 
 @pd.api.extensions.register_dataframe_accessor("FKM_Goodman")
 @pd.api.extensions.register_series_accessor("FKM_Goodman")
-class FKMGoodman:
-    def __init__(self, pandas_obj):
-        self._validate(pandas_obj)
-        self._obj = pandas_obj
-
-    def _validate(self, obj):
-        signal.DataValidator().fail_if_key_missing(obj, ['M', 'M2'])
+class FKMGoodman(signal.PylifeSignal):
+    def _validate(self):
+        self.fail_if_key_missing(['M', 'M2'])
 
 
 @pd.api.extensions.register_dataframe_accessor("haigh_five_segment")
 @pd.api.extensions.register_series_accessor("haigh_five_segment")
-class FiveSegment:
-    def __init__(self, pandas_obj):
-        self._validate(pandas_obj)
-        self._obj = pandas_obj
-
-    def _validate(self, obj):
-        signal.DataValidator().fail_if_key_missing(obj, ['M0', 'M1', 'M2', 'M3', 'M4', 'R12', 'R23'])
+class FiveSegment(signal.PylifeSignal):
+    def _validate(self):
+        self.fail_if_key_missing(['M0', 'M1', 'M2', 'M3', 'M4', 'R12', 'R23'])
 
 
 

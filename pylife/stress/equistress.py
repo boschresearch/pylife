@@ -440,7 +440,7 @@ def signed_mises_abs_max_principal(s11, s22, s33, s12, s13, s23):
 
 
 @pd.api.extensions.register_dataframe_accessor("equistress")
-class StressTensorEquistressAccessor(stresssignal.StressTensorVoigtAccessor):
+class StressTensorEquistress(stresssignal.StressTensorVoigt):
     def tresca(self):
         return pd.Series(tresca(s11=self._obj['S11'].to_numpy(),
                                 s22=self._obj['S22'].to_numpy(),

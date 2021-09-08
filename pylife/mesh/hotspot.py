@@ -22,7 +22,7 @@ import pylife.mesh.meshsignal as meshsignal
 
 
 @pd.api.extensions.register_dataframe_accessor('hotspot')
-class HotSpot(meshsignal.MeshAccessor):
+class HotSpot(meshsignal.Mesh):
 
     def calc(self, value_key, limit_frac=0.9, artefact_threshold=None):
         '''Calculates hotspots on a FE mesh
