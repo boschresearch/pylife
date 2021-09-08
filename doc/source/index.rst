@@ -19,7 +19,6 @@ pyLife Documentation
    user_guide
    data_model
    signal_api
-   variable_names
 
 .. toctree::
    :maxdepth: 1
@@ -39,6 +38,8 @@ pyLife Documentation
 
    contributing
    codingstyle
+   variable_names
+
 
 Indices and tables
 ==================

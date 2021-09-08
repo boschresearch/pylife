@@ -1,6 +1,6 @@
-The ``gradient`` module
-##############################
+The ``Gradient`` class
+######################
 
-.. automodule:: pylife.mesh.gradient
+.. autoclass:: pylife.mesh.Gradient
 	:undoc-members:
 	:members:

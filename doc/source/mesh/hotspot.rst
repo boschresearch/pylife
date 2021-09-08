@@ -1,6 +1,6 @@
-The ``hotspot`` module
-##############################
+The ``HotSpot`` class
+#####################
 
-.. automodule:: pylife.mesh.hotspot
+.. autoclass:: pylife.mesh.HotSpot
 	:undoc-members:
 	:members:

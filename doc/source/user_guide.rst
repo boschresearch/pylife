@@ -5,12 +5,6 @@ pyLife User guide
 This document aims to briefly describe the overall design of pyLife and how to
 use it inside your own applications, for example Jupyter Notebooks.
 
-pyLife being a library for numerical data analysis and numerical data
-processing makes extensive use of `pandas <https://pandas.pydata.org/>`_ and
-`numpy <https://numpy.org/>`_. In this guide we suppose that you have a basic
-understanding of these libraries and the data structures and concepts they are
-using.
-
 
 Overview
 ========
@@ -68,9 +62,10 @@ Mesh operations
 
 For operations on FEM meshes
 
-* :py:class:`pylife.mesh.Hotspot` for hotspot detection
-* :py:class:`mesh.Gradient` to calculate gradients of scalar values along a mesh
-* :class:`mesh.Meshmapping` to map one mesh to another of the same geometry by
+* :mod:`pylife.mesh.meshsignal` – accessor classes for general mesh operations
+* :class:`pylife.mesh.HotSpot` for hotspot detection
+* :class:`pylife.mesh.Gradient` to calculate gradients of scalar values along a mesh
+* :class:`pylife.mesh.Meshmapper` to map one mesh to another of the same geometry by
   interpolating
 
 
@@ -78,3 +73,32 @@ VMAP interface
 --------------
 
 Import and export mesh data from/to VMAP files.
+
+
+Utilities
+---------
+
+Some mathematical helper functions, that are useful throughout the code base.
+
+
+
+General Concepts
+================
+
+pyLife aims to provide toolbox of calculation tools that can be plugged
+together in order to perform complex operations.  We try to make the use of the
+existing modules as well as writing custom ones as easy as possible while at
+the same time performing well on larger amounts of data.  Moreover we try keep
+data that belongs together in self explaining data structures, rather than in
+individual variables.
+
+In order to achieve all that we make extensive use of `pandas
+<https://pandas.pydata.org/>`_ and `numpy <https://numpy.org/>`_. In this guide
+we suppose that you have a basic understanding of these libraries and the data
+structures and concepts they are using.
+
+The page :doc:`Data Model <data_model>` describes the way how data should be stored in
+pandas objects.
+
+The page :doc:`Signal API <signal_api>` describes how mathematical operations are to be
+performed on those pandas objects.

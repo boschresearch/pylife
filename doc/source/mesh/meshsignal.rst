@@ -1,7 +1,17 @@
-The `meshsignal` module
-=============================
+The ``mesh`` module
+###################
+
+Overview
+========
 
 .. automodule:: pylife.mesh.meshsignal
-	:undoc-members:
-	:members:
-	:inherited-members:
+
+
+The signal classes
+==================
+
+.. toctree::
+   :maxdepth: 2
+
+   plainmesh
+   mesh

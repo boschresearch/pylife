@@ -13,9 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-'''
-Helper to process mesh based data
-=================================
+'''Helper to process mesh based data
 
 Data that is distributed over a geometrical body, e.g. a stress tensor
 distribution on a component, is usually transported via a mesh. The

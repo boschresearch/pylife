@@ -48,16 +48,16 @@ Materialdata
 
    materialdata/woehler
 
+
 Mesh utilities
 --------------
 .. toctree::
    :maxdepth: 2
 
    mesh/meshsignal
-   mesh/meshplot
-   mesh/meshmapping
    mesh/hotspot
    mesh/gradient
+   mesh/meshmapping
 
 VMAP Interface
 --------------
