@@ -180,7 +180,7 @@ def butter_bandpass(df, lowcut, highcut, order=5):
     TSout : DataFrame
 
     """
-    fs = fs_calc(df) 
+    fs = fs_calc(df)
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
@@ -293,7 +293,7 @@ def _extract_feature_df(df_rolled, feature="maximum"):
     Returns
     -------
     extracted_features : pandas DataFrame
-        Dataframe of extraced features
+        Dataframe of extracted features
 
     """
     # extract features
@@ -314,7 +314,7 @@ def _extract_feature_df(df_rolled, feature="maximum"):
 
 
 def _select_relevant_windows(prep_roll, extracted_features, comparison_column_ex, fraction_max=0.25,
-                             window_size=1000, overlap=200, n_gridpoints=3):
+                             window_size=1000, overlap=200, n_gridpoints=3, method="keep"):
     """ Writes n_gridpoints NaN's into the window_sizes with extracted features
     lower than fraction_max
 
@@ -324,7 +324,7 @@ def _select_relevant_windows(prep_roll, extracted_features, comparison_column_ex
         input data - normally output from perpare_rolling(df)
     extracted_features : pandas Dataframe
         DataFrame of features
-    comparison_column_ex: string - name of the extraced feature column 
+    comparison_column_ex: string - name of the extraced feature column
         it is build: comparison_column + '__' + feauture
     fraction_max : float
         percentage of the maximum of the extraced feature.
@@ -373,8 +373,10 @@ def _select_relevant_windows(prep_roll, extracted_features, comparison_column_ex
     liste = list(set(liste))
     for i in range(len(liste)):
         index_liste.append(relevant_windows.index[liste[i]])
-
-    relevant_windows = relevant_windows.drop(index_liste, axis=0)
+    if method == "keep":
+        relevant_windows = relevant_windows.drop(index_liste, axis=0)
+    elif method == "remove":
+        relevant_windows = relevant_windows.loc[index_liste]
     return relevant_windows
 
 
@@ -420,7 +422,7 @@ def _polyfit_gridpoints(grid_points, prep_roll, order=3,
 
 
 def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
-                     feature="abs_energy", n_gridpoints=3,
+                     feature="abs_energy", method="keep", n_gridpoints=3,
                      percentage_max=0.05, order=3):
     """ Removes segments of the data in which the extracted feature value is lower as
     percentage_max and fills the gaps with polynomial regression
@@ -428,7 +430,7 @@ def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
     Parameters
     ----------
     df : input pandas DataFrame that shall be cleaned
-    comparison_column: column that is used for the feature 
+    comparison_column: str, column that is used for the feature
         comparison with percentage max
     window_size : int, optional
         window size of the rolled segments - The default is 1000.
@@ -438,6 +440,9 @@ def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
         extracted feature - only supports one at a time -
         and only features form tsfresh that dont need extra parameters.
         The default is "maximum".
+    method: string, optional
+        * 'keep': keeps the windows which are extracted,
+        * 'remove': removes the windows which are extracted
     n_gridpoints : TYPE, optional
         number of gridpoints. The default is 3.
     percentage_max : float, optional
@@ -468,7 +473,8 @@ def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
                               overlap=overlap)
     extracted_features = _extract_feature_df(df_rolled, feature)
     grid_points = _select_relevant_windows(df_prep, extracted_features, comparison_column_ex,
-                                           percentage_max, window_size, overlap)
+                                           percentage_max, window_size, overlap,
+                                           method=method)
 
     poly_gridpoints = _polyfit_gridpoints(grid_points, ts_time, order=order, verbose=False,
                                           n_gridpoints=n_gridpoints)
