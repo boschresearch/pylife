@@ -21,7 +21,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-import pylife.materialdata.woehler.accessors
+import pylife.materialdata.woehler
 
 
 wc_data = pd.Series({

@@ -53,6 +53,12 @@ By naming conventions the programmer can give some indications to the reader of
 the program, what an identifier is supposed to be or what it is referring
 to. Therefore some consistency guidelines.
 
+
+### Mandatory names throughout the pyLife code base
+
+For variables representing physical quantities, we have a dedicated document in
+the documentation.  Please follow the points discussed there.
+
 ### Module names
 
 For module names, try to find one word names like `rainflow`, `gradient`. If
