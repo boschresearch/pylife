@@ -32,20 +32,6 @@ def test_norm_load():
     pf = FP.FailureProbability(100., 5.)
     r = pf.pf_norm_load(100., 1e-32)
     testing.assert_almost_equal(r, 0.5)
-    
-def test_norm_load_array():
-    strength_median = 100. * np.ones(2)
-    strength_std = 5.* np.ones(2)
-    
-    pf = FP.FailureProbability(strength_median, strength_std)
-    
-    load_median = 100.* np.ones(2)
-    load_std = 1e-32* np.ones(2)
-
-    r = pf.pf_norm_load(load_median, load_std)
-    expected = 0.5 * np.ones(2)
-
-    testing.assert_almost_equal(r, expected, decimal=3)
 
 def test_arbitrary_load():
     strength_median = 100.
