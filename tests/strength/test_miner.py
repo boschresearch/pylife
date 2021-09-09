@@ -210,14 +210,6 @@ class TestMinerHaibach:
     def test_calc_A_split_damage_regions(self, miner_haibach):
         load_level = 400
         miner_haibach.calc_A(load_level=load_level)
-        assert np.array_equal(
-            miner_haibach.evaluated_load_levels[load_level]["i_full_damage"],
-            data.i_full_damage
-        )
-        assert np.array_equal(
-            miner_haibach.evaluated_load_levels[load_level]["i_reduced_damage"],
-            data.i_reduced_damage
-        )
 
     def test_calc_A(self, miner_haibach):
         load_level = 400

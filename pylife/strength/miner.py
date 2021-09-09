@@ -45,9 +45,8 @@ from pylife.strength.helpers import solidity_haibach
 import pylife.materialdata.woehler
 
 
-
 def get_accumulated_from_relative_collective(collective):
-    """Get collective with accumulated frequencies
+    """Get collective with accumulated frequencies.
 
     This function can be used to transform a collective with
     relative frequencies.
@@ -61,9 +60,10 @@ def get_accumulated_from_relative_collective(collective):
         * column: class values in ascending order
         * column: relative number of cycles for each load class
     """
-    accumulated = np.stack([collective[:, 0],
-                            np.flipud(np.cumsum(np.flipud(collective[:, 1])))],
-                           axis=1)
+    accumulated = np.stack([
+        collective[:, 0],
+        np.flipud(np.cumsum(np.flipud(collective[:, 1])))
+    ], axis=1)
     return accumulated
 
 
@@ -112,15 +112,12 @@ class MinerBase:
             number of cycles of the highest stress class
         """
         self._parse_collective(collective)
-        self.zeitfestigkeitsfaktor_collective = self.calc_zeitfestigkeitsfaktor(
-            self.H0,
-            total_lifetime=False,
-        )
+        self.zeitfestigkeitsfaktor_collective = self.calc_zeitfestigkeitsfaktor(self.H0)
 
     def _parse_collective(self, collective):
         """Parse collective and structure frequently used features"""
         # first, only select values of the collective with number of cycles >0
-        self.original_collective = collective.copy()
+
         if isinstance(collective, pd.Series) \
                 and isinstance(collective.index, pd.IntervalIndex):
             collective = self._transform_pylife_collective(collective)
@@ -138,7 +135,6 @@ class MinerBase:
 
         hi = get_relative_from_accumulated(N_collective_accumulated)
         self.collective = collective[hi > 0]
-        self._skipped_collective_values = collective[hi == 0]
 
         # normalize collective to S_a_max = 1
         self.collective = self.collective / np.array([self.collective[:, 0].max(), 1])
@@ -177,15 +173,9 @@ class MinerBase:
 
         return np.stack([load_classes, accumulated_frequencies], axis=1)
 
-    def calc_zeitfestigkeitsfaktor(self, N, total_lifetime=True):
+    def calc_zeitfestigkeitsfaktor(self, N):
         """Calculate "Zeitfestigkeitsfaktor" according to Waechter2017 (p. 96)"""
-
-        z = (self._woehler_curve.ND / N)**(1. / self._woehler_curve.k_1)
-
-        if total_lifetime:
-            self.zeitfestigkeitsfaktor = z
-
-        return z
+        return np.power(self._woehler_curve.ND/N, 1./self._woehler_curve.k_1)
 
     def calc_A(self, collective):
         """Compute multiple of the lifetime"""
@@ -217,17 +207,15 @@ class MinerBase:
         d_min = 0.3  # minimum as suggested by FKM
         d_max = 1.0
 
-        d_m_no_limits = float(2. / (A**(1./4)))
+        d_m_no_limits = 2. / (A**(1./4.))
         d_m = min(
             max(d_min, d_m_no_limits),
             d_max
         )
-        self.d_m_no_limits = d_m_no_limits
-        self.d_m = d_m
 
-        return self.d_m
+        return d_m
 
-    def N_predict(self, load_level, A=None,):
+    def N_predict(self, load_level, A=None):
         """The predicted lifetime according to damage sum of the collective
 
         Parameters
@@ -257,13 +245,8 @@ class MinerElementar(MinerBase):
     # Solidity (Völligkeit) according to FKM guideline
     V_FKM = None
 
-    def __init__(self, ND, k_1, SD):
-        super(MinerElementar, self).__init__(
-            ND, k_1, SD,
-        )
-
     def setup(self, collective):
-        super(MinerElementar, self).setup(collective)
+        super().setup(collective)
         A = self.calc_A(self.collective)
         # at this point N_expected is equal to H0
         # i.e. the number of cycles for the collective (not N for sample failure)
@@ -286,7 +269,7 @@ class MinerElementar(MinerBase):
             then in a descending manner till the
             number of cycles of the highest stress class
         """
-        super(MinerElementar, self).calc_A(collective)
+        super().calc_A(collective)
         V = solidity_haibach(self.collective, self._woehler_curve.k_1)
         self.V_haibach = V
         self.V_FKM = V**(1/self._woehler_curve.k_1)
@@ -313,16 +296,6 @@ class MinerHaibach(MinerBase):
         Since A is different for each load level, the
         load level is taken as dict key (values are rounded to 0 decimals)
     """
-    evaluated_load_levels = None
-
-    def __init__(self, ND, k_1, SD):
-        super(MinerHaibach, self).__init__(
-            ND, k_1, SD,
-        )
-        self.evaluated_load_levels = {}
-
-    def setup(self, collective):
-        super(MinerHaibach, self).setup(collective)
 
     def calc_A(self, load_level, collective=None, ignore_inf_rule=False):
         """Compute the lifetime multiple for Miner-modified according to Haibach
@@ -352,23 +325,25 @@ class MinerHaibach(MinerBase):
             lifetime multiple
             return value is 'inf' if load_level < SD
         """
-        super(MinerHaibach, self).calc_A(collective)
-        self.evaluated_load_levels[round(load_level)] = {}
+        super().calc_A(collective)
+
         # this parameter makes each evaluation of A unique
-        self._last_load_level_evaluated = load_level
+
         if load_level < self._woehler_curve.SD:
             return np.inf
+
         assert self.S_collective.max() == 1
+
         s_a = self.S_collective * load_level
+
         i_full_damage = (s_a >= self._woehler_curve.SD)
         i_reduced_damage = (s_a < self._woehler_curve.SD)
-        self.evaluated_load_levels[round(load_level)]["i_full_damage"] = i_full_damage
-        self.evaluated_load_levels[round(load_level)]["i_reduced_damage"] = i_reduced_damage
+
         x_D = self._woehler_curve.SD / s_a.max()
-        self.evaluated_load_levels[round(load_level)]["x_D"] = x_D
 
         s_full_damage = s_a[i_full_damage]
         s_reduced_damage = s_a[i_reduced_damage]
+
         n_full_damage = self.N_collective_relative[i_full_damage]
         n_reduced_damage = self.N_collective_relative[i_reduced_damage]
 
@@ -377,15 +352,12 @@ class MinerHaibach(MinerBase):
             n_full_damage,
             ((s_full_damage / s_a.max())**self._woehler_curve.k_1),
         )
-        self.evaluated_load_levels[round(load_level)]["sum_1_denominator"] = sum_1
         sum_2 = (x_D**(1 - self._woehler_curve.k_1)) * np.dot(
             n_reduced_damage,
             ((s_reduced_damage / s_a.max())**(2 * self._woehler_curve.k_1 - 1))
         )
-        self.evaluated_load_levels[round(load_level)]["sum_2_denominator"] = sum_2
 
         A = self.H0 / (sum_1 + sum_2)
-        self.evaluated_load_levels[round(load_level)]["A"] = A
 
         return A
 
@@ -407,5 +379,5 @@ class MinerHaibach(MinerBase):
         if A is None:
             A = self.calc_A(load_level, ignore_inf_rule=ignore_inf_rule)
 
-        N_pred = super(MinerHaibach, self).N_predict(load_level, A)
+        N_pred = super().N_predict(load_level, A)
         return N_pred

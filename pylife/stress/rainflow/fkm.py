@@ -46,7 +46,7 @@ class FKMDetector(AbstractDetector):
         recorder : subclass of :class:`.AbstractRecorder`
             The recorder that the detector will report to.
         """
-        super(FKMDetector, self).__init__(recorder)
+        super().__init__(recorder)
         self._ir = 1
         self._residuals = []
         self._max_turn = 0.0

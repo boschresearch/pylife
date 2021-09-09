@@ -3,11 +3,10 @@ The pyLife Signal API
 =====================
 
 The signal api is the higher level API of pyLife. It is the API that you
-probably should be using. Most of the domain specific functions are also
-available as pure numpy functions, if your application for some reason makes
-the use of pandas harder. However, in such a case we highly recommend you to
-take a closer look at pandas and consider to adapt your application to the
-pandas way of doing things.
+probably should be using. Some of the domain specific functions are also
+available as pure numpy functions.  However, we highly recommend you to take a
+closer look at pandas and consider to adapt your application to the pandas way
+of doing things.
 
 
 The basic concept
@@ -22,24 +21,23 @@ Signals can be for example
 
 * stress tensors like from an FEM-solver
 
-* load collectives
+* load collectives, like time signals or a rainflow matrix
 
-* cyclic load information over a component's geometry
+* material data like Wöhler curve parameters
 
 * ...
 
-Signals are usually kept in a :class:`pandas.DataFrame`. In cases, the
-signal is only a small record of parameters, it is kept in a
-:class:`pandas.Series`.
 
-To implement signal processors we implement accessor classes using
-:func:`pandas.api.extensions.register_dataframe_accessor()` resp.
-:func:`pandas.api.extensions.register_series_accessor()`.
+From a programmer's point of view, signals are objects of either
+:class:`pandas.Series` or :class:`pandas.DataFrame`, depending if they are one
+or two dimensional (see here about :ref:`dimensionality<data_model>`).
 
-For predefined accessors that can be subclassed from see
+Functions that operate on a signal are usually written as methods of an
+instance of as class derived from :class:`PylifeSignal`.  These classes are
+usually decorated as Series or DataFrame accessor using
+:func:`pandas.api.extensions.register_series_accessor()` resp.
+:func:`pandas.api.extensions.register_dataframe_accessor()`.
 
-* :mod:`meshsignal`
-* :mod:`stresssignal`
 
 
 How to use predefined signal accessors
@@ -67,7 +65,7 @@ the columns `x` and `y`.
 
 >>> df = pd.DataFrame({'x': [1.0], 'y': [1.0]})
 >>> df.plain_mesh
-<pylife.mesh.meshsignal.PlainMeshAccessor object at 0x7f66da8d4d10>
+<pylife.mesh.meshsignal.PlainMesh object at 0x7f66da8d4d10>
 
 Now create a DataFrame which is not a valid plain mesh and try to have it
 validated:
@@ -86,7 +84,7 @@ Traceback (most recent call last):
     signal.fail_if_key_missing(obj, self._coord_keys)
   File "/home/jmu3si/Devel/pylife/pylife/core/signal.py", line 88, in fail_if_key_missing
     raise AttributeError(msg % (', '.join(keys_to_check), ', '.join(missing_keys)))
-AttributeError: PlainMeshAccessor must have the items x, y. Missing y.
+AttributeError: PlainMesh must have the items x, y. Missing y.
 
 
 Example for accessing a property
@@ -114,7 +112,7 @@ Defining your own signal accessors
 
 If you want to write a processor for signals you need to put the processing
 functionality in an accessor class that is derived from the signal accessor
-base class like for example :class:`~.meshsignal.MeshAccessor`. This class you
+base class like for example :class:`~.meshsignal.Mesh`. This class you
 register as a pandas DataFrame accessor using a decorator
 
 .. code-block:: python
@@ -123,7 +121,7 @@ register as a pandas DataFrame accessor using a decorator
     import pylife.mesh.meshsignal
 
     @pd.api.extensions.register_dataframe_accessor('my_mesh_processor')
-    class MyMeshAccessor(meshsignal.MeshAccessor):
+    class MyMesh(meshsignal.Mesh):
         def do_something(self):
 	    # ... your code here
 	    # the DataFrame is accessible by self._obj
@@ -133,8 +131,8 @@ register as a pandas DataFrame accessor using a decorator
 	    # DataFrame.
 	    return df.set_index(self._obj.index)
 
-As `MyMeshAccessor` is derived from :class:`~.meshsignal.MeshAccessor` the
-validation of `MeshAccessor` is performed. So in the method `do_something()`
+As `MyMesh` is derived from :class:`~.meshsignal.Mesh` the
+validation of `Mesh` is performed. So in the method `do_something()`
 you can rely on that `self._obj` is a valid mesh DataFrame.
 
 You then can use the class in the following way when the module is imported.
@@ -159,9 +157,9 @@ deriving from like in the following example.
     from pylife import signal
 
     @pd.api.extensions.register_dataframe_accessor('my_only_for_3D_mesh_processor')
-    class MyOnlyFor3DMeshAccessor(meshsignal.PlainMeshAccessor):
+    class MyOnlyFor3DMesh(meshsignal.PlainMesh):
 	def _validate(self, obj):
-	    super(MyOnlyFor3DMeshAccessor, obj) # call PlainMeshAccessor._validate()
+	    super(MyOnlyFor3DMesh, obj) # call PlainMesh._validate()
 	    signal.fail_if_key_missing(['z'])
 
 
@@ -181,7 +179,7 @@ You would put the signal class into a module file `my_signal_mod.py`
     from pylife import signal
 
     @pd.api.extensions.register_dataframe_accessor('my_signal')
-    class MySignalAccessor(signal.PylifeSignal):
+    class MySignal(signal.PylifeSignal):
         def _validate(self, obj):
             signal.fail_if_key_missing(obj, ['alpha', 'beta', 'gamma'])
             for k in ['alpha', 'beta', 'gamma']:
@@ -211,7 +209,7 @@ Traceback (most recent call last):
     signal.fail_if_key_missing(obj, ['alpha', 'beta', 'gamma'])
   File "/home/jmu3si/Devel/pylife/pylife/core/signal.py", line 88, in fail_if_key_missing
     raise AttributeError(msg % (', '.join(keys_to_check), ', '.join(missing_keys)))
-AttributeError: MySignalAccessor must have the items alpha, beta, gamma. Missing gamma.
+AttributeError: MySignal must have the items alpha, beta, gamma. Missing gamma.
 
 Validation fail because one `beta` is negative.
 
@@ -231,7 +229,7 @@ Validation success.
 
 >>> df = pd.DataFrame({'alpha': [1.0, 2.0], 'beta': [1.0, 0.0], 'gamma': [1.0, 2.0]})
 >>> df.my_signal
-<signal_test.MySignalAccessor object at 0x7fb3268c4f50>
+<signal_test.MySignal object at 0x7fb3268c4f50>
 
 Call `some_method()`
 
@@ -252,9 +250,9 @@ set these attributes with setter methods.
     from pylife import signal
 
     @pd.api.extensions.register_dataframe_accessor('my_signal')
-    class MySignalAccessor(signal.PylifeSignal):
+    class MySignal(signal.PylifeSignal):
 	def __init__(self, pandas_obj):
-	    super(MySignalAccessor, self).__init__(pandas_obj)
+	    super(MySignal, self).__init__(pandas_obj)
 	    self._my_attribute = 'the default value'
 
         def set_my_attribute(self, my_attribute):
@@ -274,7 +272,7 @@ Registering a method to an existing accessor class
 
 One drawback of the accessor class API is that you cannot extend accessors by
 deriving from them. For example if you need a custom equivalent stress function
-you cannot add it by deriving from :class:`~.equistress.StressTensorEquistressAccessor`,
+you cannot add it by deriving from :class:`~.equistress.StressTensorEquistress`,
 and register it by the same accessor `equistress`.
 
 The solution for that is :func:`register_method()` that lets you monkey patch a
@@ -284,7 +282,7 @@ new method to any class deriving from :class:`~.pylife.core.signal.PylifeSignal`
 
     from pylife import equistress
 
-    @pl.signal_register_method(equistress.StressTensorEquistressAccessor, 'my_equistress')
+    @pl.signal_register_method(equistress.StressTensorEquistress, 'my_equistress')
     def my_equistress_method(df)
 	# your code here
 	return ...
@@ -301,7 +299,7 @@ You can also have additional arguments in the registered method:
 
     from pylife import equistress
 
-    @pl.signal_register_method(equistress.StressTensorEquistressAccessor, 'my_equistress_with_arg')
+    @pl.signal_register_method(equistress.StressTensorEquistress, 'my_equistress_with_arg')
     def my_equistress_method_with_arg(df, additional_arg)
 	# your code here
 	return ...

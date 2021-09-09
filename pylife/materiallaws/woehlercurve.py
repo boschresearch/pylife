@@ -20,14 +20,12 @@ import scipy.stats as stats
 
 from pylife.utils.functions import scatteringRange2std
 
-
 from pylife import signal
-from pylife import DataValidator
 
 
 @pd.api.extensions.register_series_accessor('woehler')
 @pd.api.extensions.register_dataframe_accessor('woehler')
-class WoehlerCurveAccessor(signal.PylifeSignal):
+class WoehlerCurve(signal.PylifeSignal):
     """A PylifeSignal accessor for Wöhler Curve data.
 
     Wöhler Curve (aka SN-curve) determines after how many load cycles at a
@@ -55,32 +53,30 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
     """
 
     def __init__(self, pandas_obj):
-        self._validator = signal.DataValidator()
-        pandas_obj = pandas_obj.copy()
-        self._validate(pandas_obj, self._validator)
-        self._obj = pandas_obj
+        self._obj = pandas_obj.copy()
+        self._validate()
 
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['k_1', 'ND', 'SD'])
-        self._k_2 = obj.get('k_2', np.inf)
+    def _validate(self):
+        self.fail_if_key_missing(['k_1', 'ND', 'SD'])
+        self._k_2 = self._obj.get('k_2', np.inf)
 
-        self._TN = obj.get('TN', None)
-        self._TS = obj.get('TS', None)
+        self._TN = self._obj.get('TN', None)
+        self._TS = self._obj.get('TS', None)
 
         if self._TN is None and self._TS is None:
             self._TN = 1.0
             self._TS = 1.0
         elif self._TS is None:
-            self._TS = np.power(self._TN, 1./obj.k_1)
+            self._TS = np.power(self._TN, 1./self._obj.k_1)
         elif self._TN is None:
-            self._TN = np.power(self._TS, obj.k_1)
+            self._TN = np.power(self._TS, self._obj.k_1)
 
-        self._failure_probability = obj.get('failure_probability', 0.5)
+        self._failure_probability = self._obj.get('failure_probability', 0.5)
 
-        obj['k_2'] = self._k_2
-        obj['TN'] = self._TN
-        obj['TS'] = self._TS
-        obj['failure_probability'] = self._failure_probability
+        self._obj['k_2'] = self._k_2
+        self._obj['TN'] = self._TN
+        self._obj['TS'] = self._TS
+        self._obj['failure_probability'] = self._failure_probability
 
     @property
     def SD(self):
@@ -131,7 +127,7 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         transformed['ND'] = ND
         transformed['failure_probability'] = failure_probability
 
-        return WoehlerCurveAccessor(transformed)
+        return WoehlerCurve(transformed)
 
     def miner_elementary(self):
         """Set k_2 to k_1 according Miner Elementary method (k_2 = k_1).
@@ -221,175 +217,3 @@ class WoehlerCurveAccessor(signal.PylifeSignal):
         k[src < ref] = k_2[src < ref]
 
         return k
-
-
-@pd.api.extensions.register_dataframe_accessor('fatigue_data')
-class FatigueDataAccessor(signal.PylifeSignal):
-    '''Accessor class for fatigue data
-
-    Mandatory keys are
-        * ``load`` : float, the load level
-        * ``cycles`` : float, the cycles of failure or runout
-        * ``fracture``: bool, ``True`` iff the test is a runout
-     '''
-
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['load', 'cycles', 'fracture'])
-        self._fatigue_limit = None
-
-    @property
-    def num_tests(self):
-        '''The number of tests'''
-        return self._obj.shape[0]
-
-    @property
-    def num_fractures(self):
-        '''The number of fractures'''
-        return self.fractures.shape[0]
-
-    @property
-    def num_runouts(self):
-        '''The number of runouts'''
-        return self.runouts.shape[0]
-
-    @property
-    def fractures(self):
-        '''Only the fracture tests'''
-        return self._obj[self._obj.fracture]
-
-    @property
-    def runouts(self):
-        '''Only the runout tests'''
-        return self._obj[~self._obj.fracture]
-
-    @property
-    def load(self):
-        '''The load levels'''
-        return self._obj.load
-
-    @property
-    def cycles(self):
-        '''the cycle numbers'''
-        return self._obj.cycles
-
-    @property
-    def fatigue_limit(self):
-        '''The start value of the load endurance limit.
-
-        It is determined by searching for the lowest load level before the
-        appearance of a runout data point, and the first load level where a
-        runout appears.  Then the median of the two load levels is the start
-        value.
-        '''
-        if self._fatigue_limit is None:
-            self._calc_fatigue_limit()
-        return self._fatigue_limit
-
-    @property
-    def finite_zone(self):
-        '''All the tests with load levels above ``fatigue_limit``, i.e. the finite zone'''
-        if self._fatigue_limit is None:
-            self._calc_fatigue_limit()
-        return self._finite_zone
-
-    @property
-    def infinite_zone(self):
-        '''All the tests with load levels below ``fatigue_limit``, i.e. the infinite zone'''
-        if self._fatigue_limit is None:
-            self._calc_fatigue_limit()
-        return self._infinite_zone
-
-    @property
-    def fractured_loads(self):
-        return np.unique(self.fractures.load.values)
-
-    @property
-    def runout_loads(self):
-        return np.unique(self.runouts.load.values)
-
-    @property
-    def non_fractured_loads(self):
-        return np.setdiff1d(self.runout_loads, self.fractured_loads)
-
-    @property
-    def mixed_loads(self):
-        return np.intersect1d(self.runout_loads, self.fractured_loads)
-
-    def conservative_fatigue_limit(self):
-        """
-        Sets a lower fatigue limit that what is expected from the algorithm given by Mustafa Kassem.
-        For calculating the fatigue limit, all amplitudes where runouts and fractures are present are collected.
-        To this group, the maximum amplitude with only runouts present is added.
-        Then, the fatigue limit is the mean of all these amplitudes.
-
-        Returns
-        -------
-        self
-
-        See also
-        --------
-        Kassem, Mustafa - "Open Source Software Development for Reliability and Lifetime Calculation" pp. 34
-        """
-        amps_to_consider = self.mixed_loads
-
-        if len(self.non_fractured_loads ) > 0:
-            amps_to_consider = np.concatenate((amps_to_consider, [self.non_fractured_loads.max()]))
-
-        if len(amps_to_consider) > 0:
-            self._fatigue_limit = amps_to_consider.mean()
-            self._calc_finite_zone()
-
-        return self
-
-    @property
-    def max_runout_load(self):
-        return self.runouts.load.max()
-
-    def _calc_fatigue_limit(self):
-        self._calc_finite_zone()
-        self._fatigue_limit = 0.0 if len(self.runouts) == 0 else self._half_level_above_highest_runout()
-
-    def _half_level_above_highest_runout(self):
-        if len(self._finite_zone) > 0:
-            return (self._finite_zone.load.min() + self.max_runout_load) / 2.
-
-        return self._guess_from_second_highest_runout()
-
-    def _guess_from_second_highest_runout(self):
-        max_loads = np.sort(self._obj.load.unique())[-2:]
-        return max_loads[1] + (max_loads[1]-max_loads[0]) / 2.
-
-    def _calc_finite_zone(self):
-        if len(self.runouts) == 0:
-            self._infinite_zone = self._obj[:0]
-            self._finite_zone = self._obj
-            return
-
-        self._finite_zone = self.fractures[self.fractures.load > self.max_runout_load]
-        self._infinite_zone = self._obj[self._obj.load <= self.max_runout_load]
-
-
-def determine_fractures(df, load_cycle_limit=None):
-    '''Adds a fracture column according to defined load cycle limit
-
-    Parameters
-    ----------
-    df : DataFrame
-        A ``DataFrame`` containing ``fatigue_data`` without ``fractures`` column
-    load_cycle_limit : float, optional
-        If given, all the tests of ``df`` with ``cycles`` equal od above
-        ``load_cycle_limit`` are considered as runouts. Others as fractures.
-        If not given the maximum cycle number in ``df`` is used as load cycle
-        limit.
-
-    Returns
-    -------
-    df : DataFrame
-        A ``DataFrame`` with the column ``fracture`` added
-    '''
-    DataValidator().fail_if_key_missing(df, ['load', 'cycles'])
-    if load_cycle_limit is None:
-        load_cycle_limit = df.cycles.max()
-    ret = df.copy()
-    ret['fracture'] = df.cycles < load_cycle_limit
-    return ret

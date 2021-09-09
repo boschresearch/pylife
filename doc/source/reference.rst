@@ -38,6 +38,7 @@ Materiallaws
    :maxdepth: 2
 
    materiallaws/rambgood
+   materiallaws/woehlercurve
    materiallaws/true_stress_strain
 
 Materialdata
@@ -45,13 +46,7 @@ Materialdata
 .. toctree::
    :maxdepth: 2
 
-   materialdata/woehler/accessors
-   materialdata/woehler/analyzers/bayesian
-   materialdata/woehler/analyzers/elementary
-   materialdata/woehler/analyzers/likelihood
-   materialdata/woehler/analyzers/maxlike
-   materialdata/woehler/analyzers/pearl_chain
-   materialdata/woehler/analyzers/probit
+   materialdata/woehler
 
 Mesh utilities
 --------------

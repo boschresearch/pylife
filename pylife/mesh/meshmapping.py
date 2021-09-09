@@ -28,22 +28,22 @@ __maintainer__ = __author__
 import scipy.interpolate as interp
 import numpy as np
 import pandas as pd
-from pylife.mesh.meshsignal import PlainMeshAccessor
+from pylife.mesh.meshsignal import PlainMesh
 
 @pd.api.extensions.register_dataframe_accessor('meshmapper')
-class MeshmapperAccessor(PlainMeshAccessor):
+class Meshmapper(PlainMesh):
     '''Mapper to map points of one mesh to another
 
     Notes
     -----
-    The accessed DataFrame needs to be accessible by a :class:`PlainMeshAccessor`.
+    The accessed DataFrame needs to be accessible by a :class:`PlainMesh`.
     '''
     def process(self, from_df, value_key, method='linear'):
         '''Performs the mapping
 
         Parameters
         ----------
-        from_df : pandas.DataFrame accessible by a :class:`PlainMeshAccessor`.
+        from_df : pandas.DataFrame accessible by a :class:`PlainMesh`.
             The DataFrame that is to be mapped to the accessed one.
             Needs to have the same dimensions (2D or 3D) as the accessed one
         '''
