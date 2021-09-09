@@ -13,6 +13,21 @@ classes](https://pandas.pydata.org/pandas-docs/stable/development/extending.html
 will be used more extensively.
 
 
+## New features
+
+### Rainflow counting
+
+The rainflow counting module has been vastly redesigned in order to get more
+flexibility.  New possibilities are:
+
+* Four point rainflow counting
+
+* Recording of the hysteresis loop information is in a separate class to allow
+  the recording in a customized way.
+
+See docs of the rainflow counting module for details.
+
+
 ## Restructuring the code
 
 We are now using [PyScaffold](https://pyscaffold.org) to handle the packaging
