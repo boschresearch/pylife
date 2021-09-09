@@ -13,6 +13,15 @@ classes](https://pandas.pydata.org/pandas-docs/stable/development/extending.html
 will be used more extensively.
 
 
+## Restructuring the code
+
+We are now using [PyScaffold](https://pyscaffold.org) to handle the packaging
+files.  That's why we have restructured the code base.  Basically the only
+notable things that have changed is that all the code has been moved from
+`pylife` to `src/pylife` and the documentation has been moved from `doc/source`
+to `docs`.  Both are the common locations for Python 3.x packages.
+
+
 ## Changes that affect your code
 
 * Strength scattering is now stored as `TS` and `TN`, no longer by `1/TS` and

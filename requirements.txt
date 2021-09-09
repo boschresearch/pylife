@@ -1,8 +1,5 @@
-numpy
-scipy
-pandas
-cython
-mystic
-pymc3
+.
+jupyter
 matplotlib
-h5py
+plotly
+pyvista
