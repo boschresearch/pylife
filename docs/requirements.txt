@@ -2,7 +2,6 @@ numpy
 pytest
 scipy
 pandas
-tables
 cython
 mystic
 pymc3
@@ -19,3 +18,4 @@ panel
 ipyvtklink
 ipygany
 xvfbwrapper
+plotly
