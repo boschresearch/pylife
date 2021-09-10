@@ -33,6 +33,12 @@ pyLife Documentation
    reference
 
 .. toctree::
+   :maxdepth: 2
+   :caption: News
+
+   news
+
+.. toctree::
    :maxdepth: 1
    :caption: Hack pyLife
 
