@@ -46,7 +46,7 @@ things as rainflow counting.
 * :mod:`pylife.stress.rainflow` – a versatile module for rainflow counting
 * :mod:`pylife.stress.equistress` for equivalent stress calculations from
   stress tensors
-* :mod:`pylife.stress.timesignal` for operations on timesignals
+* :mod:`pylife.stress.timesignal` for operations on time signals
 
 
 

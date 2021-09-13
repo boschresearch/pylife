@@ -30,13 +30,25 @@ Signals can be for example
 
 From a programmer's point of view, signals are objects of either
 :class:`pandas.Series` or :class:`pandas.DataFrame`, depending if they are one
-or two dimensional (see here about :ref:`dimensionality<data_model>`).
+or two dimensional (see here about :doc:`dimensionality <data_model>`).
 
 Functions that operate on a signal are usually written as methods of an
 instance of as class derived from :class:`PylifeSignal`.  These classes are
 usually decorated as Series or DataFrame accessor using
 :func:`pandas.api.extensions.register_series_accessor()` resp.
 :func:`pandas.api.extensions.register_dataframe_accessor()`.
+
+Due to the decorators, signal accessor classes can be instantiated also as an
+attribute of a :class:`pandas.Series` or :class:`pandas.DataFrame`. The
+following two lines are equivalent.
+
+Usual class instantiation:
+
+>>> PlainMesh(df).coordinates
+
+Or more convenient using the accessor decorator attribute:
+
+>>> df.plain_mesh.coordinates
 
 
 
@@ -159,7 +171,7 @@ deriving from like in the following example.
     @pd.api.extensions.register_dataframe_accessor('my_only_for_3D_mesh_processor')
     class MyOnlyFor3DMesh(meshsignal.PlainMesh):
 	def _validate(self, obj):
-	    super(MyOnlyFor3DMesh, obj) # call PlainMesh._validate()
+	    super()._validate() # call PlainMesh._validate()
 	    signal.fail_if_key_missing(['z'])
 
 
@@ -269,6 +281,10 @@ set these attributes with setter methods.
 
 Registering a method to an existing accessor class
 --------------------------------------------------
+
+.. note::
+   This functionality might be dropped on the way to `pyLife-2.0` as it turns
+   out that it is not that much used.
 
 One drawback of the accessor class API is that you cannot extend accessors by
 deriving from them. For example if you need a custom equivalent stress function

@@ -17,15 +17,15 @@ will be used more extensively.
 
 ### Rainflow counting
 
-The rainflow counting module has been vastly redesigned in order to get more
-flexibility.  New possibilities are:
+The [rainflow counting module](stress/rainflow.html) has been vastly redesigned
+in order to get more flexibility.  New possibilities are:
 
-* Four point rainflow counting
+* [Four point rainflow counting](stress/rainflow/fourpointdetector.html)
 
 * Recording of the hysteresis loop information is in a separate class to allow
   the recording in a customized way.
 
-See docs of the rainflow counting module for details.
+See docs of the [rainflow counting module](stress/rainflow.html) for details.
 
 
 ## Restructuring the code
