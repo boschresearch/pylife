@@ -17,7 +17,7 @@ Fitting material data
 ---------------------
 
 This is about extracting material parameters from experimental data.  As of now
-this is a versatile set of classes to fit Wöhler corve (aka SN-curve)
+this is a versatile set of classes to fit Wöhler curve (aka SN-curve)
 parameters from experimental fatigue data.  Mid term we would like to see there
 a module to fit tensile test data and things like that.
 
