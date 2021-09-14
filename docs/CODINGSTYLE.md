@@ -1,0 +1,2 @@
+```{include} ../CODINGSTYLE.md
+```

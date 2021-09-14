@@ -9,6 +9,7 @@ jupyter
 matplotlib
 sphinx
 m2r2
+myst_parser
 nbsphinx
 nbsphinx-link
 ipykernel

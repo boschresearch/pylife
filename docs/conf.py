@@ -95,7 +95,7 @@ extensions = [
     "sphinx.ext.ifconfig",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
-    'm2r2',
+    "myst_parser",
     'nbsphinx',
     'nbsphinx_link'
 ]
@@ -104,7 +104,7 @@ extensions = [
 templates_path = ["_templates"]
 
 # The suffix of source filenames.
-source_suffix = ".rst"
+source_suffix = [".rst", ".md", ".txt"]
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
