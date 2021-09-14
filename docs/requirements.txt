@@ -12,6 +12,7 @@ m2r2
 myst_parser
 nbsphinx
 nbsphinx-link
+jupyter_sphinx
 ipykernel
 pyvista
 itkwidgets
