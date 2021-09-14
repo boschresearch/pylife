@@ -1,7 +1,7 @@
-The ``AbstractValueRecorder`` class
+The ``AbstractRecorder`` class
 ###################################
 
-.. autoclass:: pylife.stress.rainflow.AbstractValueRecorder
+.. autoclass:: pylife.stress.rainflow.AbstractRecorder
                :members:
                :undoc-members:
                :special-members: __init__
