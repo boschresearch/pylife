@@ -1,5 +1,5 @@
 # Authors
 
 ```{literalinclude} ../NOTICE
-:language: txt
+:language: text
 ```

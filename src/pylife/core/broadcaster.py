@@ -26,6 +26,7 @@ class Broadcaster:
     """ The Broadcaster to align pyLife signals to operands
 
     ::
+
         Series           Scalar     Series           Scalar
         |------|-----|              |------|-----|
         | idx  |     |              | idx  |     |

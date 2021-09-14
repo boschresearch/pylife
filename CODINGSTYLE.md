@@ -20,12 +20,9 @@ The notion of code quality that keeps software maintainable, makes it easier to
 find and fix bugs and so on is nowadays referred to by the expression *Clean
 Code*.
 
-The iconic figure behind that notion is [Robert C. Martin]
-(https://en.wikipedia.org/wiki/Robert_C._Martin) aka Uncle Bob. For
+The iconic figure behind that notion is [Robert C. Martin][] aka Uncle Bob. For
 the full story about clean code you can read his books *Clean Code* and *Clean
-Coders*. Some of his lectures about Clean Code are available on Youtube. You
-might want to take the time and watch [these two]
-(https://www.youtube.com/watch?v=7EmboKQH8lM), they are fun to watch.
+Coders*. Some of his lectures about Clean Code are available on Youtube.
 
 
 ## Use a linter and let your editor help you
@@ -300,6 +297,5 @@ def hypot(triangle):
     return np.sqrt(a*a + b*b - 2*a*b*np.cos(gamma))
 ```
 
-___
-
-[1]: https://www.python.org/dev/peps/pep-0008/
+[pep8]: https://www.python.org/dev/peps/pep-0008/
+[Robert C. Martin]: https://en.wikipedia.org/wiki/Robert_C._Martin
