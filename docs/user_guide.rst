@@ -102,3 +102,10 @@ pandas objects.
 
 The page :doc:`Signal API <signal_api>` describes how mathematical operations are to be
 performed on those pandas objects.
+
+.. toctree::
+   :maxdepth: 2
+
+   data_model
+   signal_api
+   broadcaster

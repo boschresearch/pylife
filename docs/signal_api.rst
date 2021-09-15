@@ -1,4 +1,3 @@
-
 The pyLife Signal API
 =====================
 
@@ -7,6 +6,34 @@ probably should be using. Some of the domain specific functions are also
 available as pure numpy functions.  However, we highly recommend you to take a
 closer look at pandas and consider to adapt your application to the pandas way
 of doing things.
+
+
+Motivation
+----------
+
+In pyLife's domain, we often deal with data structures that consist multiple
+numerical values.  For example a Wöhler curve (see
+:class:`~pylife.materiallaws.WoehlerCurve`) consists at least of the parameters
+``k_1``, ``ND`` and ``SD``.  Optionally it can have the additional parameters
+``k_2``, ``TN`` and ``TS``.  As experience teaches us, it is advisable to put
+these kinds of values into one variable to avoid confusion.  For example a
+function with more than five positional arguments often leads to hard to
+debugable bugs due to wrong positioning.
+
+Moreover some of these data structures can come in different dimensionalities.
+For example data structures describing material behavior can come as one
+dataset, describing one material.  They can also come as a map to a FEM mesh,
+for example when you are dealing with case hardened components.  Then every
+element of your FEM mesh can have a different associated Wöhler curve
+dataset.  In pyLife we want to deal with these kinds of mappings easily without
+much coding overhead for the programmer.
+
+The pyLife signal API provides the class :class:`pylife.PylifeSignal` to
+facilitate handling these kinds of data structures and broadcasting them to
+another signal instance.
+
+This page describes the basic concept of the pyLife signal API.  The next page
+describes the broadcasting mechanism of a :class:`pylife.PylifeSignal`.
 
 
 The basic concept
@@ -21,7 +48,7 @@ Signals can be for example
 
 * stress tensors like from an FEM-solver
 
-* load collectives, like time signals or a rainflow matrix
+* load collectives like time signals or a rainflow matrix
 
 * material data like Wöhler curve parameters
 
@@ -53,6 +80,40 @@ Or more convenient using the accessor decorator attribute:
 ::
 
    df.plain_mesh.coordinates
+
+
+There is also the convenience function
+:func:`~pylife.signal.PylifeSignal.from_parameters` to instantiate the signal
+class from individual parameters.  So a
+:class:`pylife.materialdata.WoehlerCurve` can be instantiated in three ways.
+
+* directly with the class constructor
+
+  .. code-block:: python
+
+      data = pd.Series({
+          'k_1': 7.0,
+          'ND': 2e6,
+          'SD': 320.
+      })
+      wc = WoehlerCurve(data)
+
+* using the pandas accessor
+
+  .. code-block:: python
+
+      data = pd.Series({
+          'k_1': 7.0,
+          'ND': 2e6,
+          'SD': 320.
+      })
+      wc = data.woehler
+
+* from individual parameters
+
+  .. code-block:: python
+
+      wc = WoehlerCurve.from_parameters(k_1=7.0, ND=2e6, SD= 320.)
 
 
 
