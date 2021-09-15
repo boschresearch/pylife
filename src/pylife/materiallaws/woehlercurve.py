@@ -20,12 +20,12 @@ import scipy.stats as stats
 
 from pylife.utils.functions import scatteringRange2std
 
-from pylife import signal
+from pylife import PylifeSignal
 
 
 @pd.api.extensions.register_series_accessor('woehler')
 @pd.api.extensions.register_dataframe_accessor('woehler')
-class WoehlerCurve(signal.PylifeSignal):
+class WoehlerCurve(PylifeSignal):
     """A PylifeSignal accessor for Wöhler Curve data.
 
     Wöhler Curve (aka SN-curve) determines after how many load cycles at a

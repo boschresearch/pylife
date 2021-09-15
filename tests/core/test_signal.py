@@ -21,7 +21,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-import pylife.core.signal as signal
+from pylife.core import *
 
 foo_bar_baz = pd.DataFrame({'foo': [1.0, 1.0], 'bar': [1.0, 1.0], 'baz': [1.0, 1.0]})
 
@@ -83,7 +83,7 @@ def test_from_parameters_missing_keys():
 
 
 @pd.api.extensions.register_series_accessor('test_accessor_one_dim')
-class AccessorOneDim(signal.PylifeSignal):
+class AccessorOneDim(PylifeSignal):
     def _validate(self):
         if not isinstance(self._obj, pd.Series):
             raise TypeError("This accessor takes only pd.Series")
@@ -94,7 +94,7 @@ class AccessorOneDim(signal.PylifeSignal):
 
 @pd.api.extensions.register_series_accessor('test_accessor_none')
 @pd.api.extensions.register_dataframe_accessor('test_accessor_none')
-class AccessorNone(signal.PylifeSignal):
+class AccessorNone(PylifeSignal):
     def _validate(self):
         self.fail_if_key_missing(['foo', 'bar'])
 
@@ -112,23 +112,23 @@ class AccessorNone(signal.PylifeSignal):
 
 @pd.api.extensions.register_series_accessor('test_accessor_one')
 @pd.api.extensions.register_dataframe_accessor('test_accessor_one')
-class AccessorOne(signal.PylifeSignal):
+class AccessorOne(PylifeSignal):
     def _validate(self):
         self.fail_if_key_missing(['foo', 'foobar'])
 
 
 @pd.api.extensions.register_dataframe_accessor('test_accessor_two')
-class AccessorTwo(signal.PylifeSignal):
+class AccessorTwo(PylifeSignal):
     def _validate(self):
         self.fail_if_key_missing(['foo', 'foobar', 'barfoo'])
 
 
 def test_signal_broadcast_inheritance_series():
-    assert isinstance(foo_bar_baz.loc[0].test_accessor_none, signal.Broadcaster)
+    assert isinstance(foo_bar_baz.loc[0].test_accessor_none, Broadcaster)
 
 
 def test_signal_broadcast_inheritance_frame():
-    assert isinstance(foo_bar_baz.test_accessor_none, signal.Broadcaster)
+    assert isinstance(foo_bar_baz.test_accessor_none, Broadcaster)
 
 
 def test_fail_if_missing_keys_none():
@@ -151,7 +151,7 @@ def test_fail_if_missing_keys_two():
 
 
 def test_register_method():
-    @signal.register_method(AccessorNone, 'foo_method')
+    @register_method(AccessorNone, 'foo_method')
     def foo(df):
         return pd.DataFrame({'baz': df['foo'] + df['bar']})
 
@@ -166,7 +166,7 @@ def test_getattr_no_method():
 
 
 def test_register_method_missing_attribute():
-    @signal.register_method(AccessorNone, 'another_method')
+    @register_method(AccessorNone, 'another_method')
     def foo(df):
         return pd.DataFrame({'baz': df['foo'] + df['bar']})
 
@@ -177,18 +177,18 @@ def test_register_method_missing_attribute():
 
 def test_register_method_fail_duplicate():
     with pytest.raises(ValueError, match=r'^Method \'bar_method\' already registered in AccessorNone'):
-        @signal.register_method(AccessorNone, 'bar_method')
+        @register_method(AccessorNone, 'bar_method')
         def bar1(df):
             return pd.DataFrame({'baz': df['foo'] + df['bar']})
 
-        @signal.register_method(AccessorNone, 'bar_method')
+        @register_method(AccessorNone, 'bar_method')
         def bar2(df):
             return pd.DataFrame({'baz': df['foo'] - df['bar']})
 
 
 def test_register_method_fail_already():
     with pytest.raises(ValueError, match=r'^AccessorNone already has an attribute \'already_here\''):
-        @signal.register_method(AccessorNone, 'already_here')
+        @register_method(AccessorNone, 'already_here')
         def already_here_method(df):
             return pd.DataFrame({'baz': df['foo'] + df['bar']})
 

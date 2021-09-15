@@ -20,12 +20,12 @@ import scipy.stats as stats
 
 from pylife.utils.functions import scatteringRange2std
 
-from pylife import signal
+from pylife import PylifeSignal
 from pylife import DataValidator
 
 
 @pd.api.extensions.register_dataframe_accessor('fatigue_data')
-class FatigueData(signal.PylifeSignal):
+class FatigueData(PylifeSignal):
     ''' class for fatigue data
 
     Mandatory keys are

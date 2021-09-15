@@ -161,7 +161,6 @@ deriving from like in the following example.
 
    import pandas as pd
    import pylife.mesh
-   from pylife import signal
 
    @pd.api.extensions.register_dataframe_accessor('my_only_for_3D_mesh_processor')
    class MyOnlyFor3DMesh(pylife.mesh.PlainMesh):
@@ -185,10 +184,10 @@ You would put the signal class into a module file `my_signal_mod.py`
 .. jupyter-execute::
 
     import pandas as pd
-    from pylife import signal
+    from pylife import PylifeSignal
 
     @pd.api.extensions.register_dataframe_accessor('my_signal')
-    class MySignal(signal.PylifeSignal):
+    class MySignal(PylifeSignal):
         def _validate(self):
             self.fail_if_key_missing(['alpha', 'beta', 'gamma'])
             for k in ['alpha', 'beta', 'gamma']:
@@ -237,10 +236,10 @@ set these attributes with setter methods.
 .. code-block:: python
 
     import pandas as pd
-    from pylife import signal
+    from pylife import PylifeSignal
 
     @pd.api.extensions.register_dataframe_accessor('my_signal')
-    class MySignal(signal.PylifeSignal):
+    class MySignal(PylifeSignal):
 	def __init__(self, pandas_obj):
 	    super(MySignal, self).__init__(pandas_obj)
 	    self._my_attribute = 'the default value'
@@ -270,7 +269,7 @@ you cannot add it by deriving from :class:`~.equistress.StressTensorEquistress`,
 and register it by the same accessor `equistress`.
 
 The solution for that is :func:`register_method()` that lets you monkey patch a
-new method to any class deriving from :class:`~.pylife.core.signal.PylifeSignal`.
+new method to any class deriving from :class:`~.pylife.PylifeSignal`.
 
 .. code-block:: python
 

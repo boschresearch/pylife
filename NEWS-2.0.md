@@ -51,6 +51,31 @@ to `docs`.  Both are the common locations for Python 3.x packages.
 
 * Signal accessor class names are no longer suffixed with `Accessor`
 
+* The `PyLifeSignal` is promoted to the toplevel of the `pylife` package.  That
+  means that you have to change
+
+  ```python
+
+  from pylife import signal
+
+  ...
+
+  class Foo(signal.PylifeSignal):
+      ...
+  ```
+
+  to
+
+  ```python
+
+  from pylife import PylifeSignal
+
+  ...
+
+  class Foo(PylifeSignal):
+      ...
+  ```
+
 
 ## Variable names
 

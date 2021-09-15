@@ -34,7 +34,7 @@ import pandas as pd
 
 import pylife
 from pylife.stress import stresssignal
-from pylife import signal
+from pylife.core import *
 
 
 @pd.api.extensions.register_dataframe_accessor("meanstress_mesh")
@@ -106,14 +106,14 @@ class MeanstressHist:
 
 @pd.api.extensions.register_dataframe_accessor("FKM_Goodman")
 @pd.api.extensions.register_series_accessor("FKM_Goodman")
-class FKMGoodman(signal.PylifeSignal):
+class FKMGoodman(PylifeSignal):
     def _validate(self):
         self.fail_if_key_missing(['M', 'M2'])
 
 
 @pd.api.extensions.register_dataframe_accessor("haigh_five_segment")
 @pd.api.extensions.register_series_accessor("haigh_five_segment")
-class FiveSegment(signal.PylifeSignal):
+class FiveSegment(PylifeSignal):
     def _validate(self):
         self.fail_if_key_missing(['M0', 'M1', 'M2', 'M3', 'M4', 'R12', 'R23'])
 
