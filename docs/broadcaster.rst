@@ -1,11 +1,23 @@
 The Signal Broadcaster
 ======================
 
-pyLife tries to provide a flexible API for its functionality with respect to
-sizes of the datasets involved.  Take for example the function
-:func:`~pylife.materiallaws.WoehlerCurve.basquin_cycles`.
+Motivation
+----------
 
-Imagine you have a single Wöhler curve dataset like
+pyLife tries to provide a flexible API for its functionality with respect to
+sizes of the datasets involved.  No matter if you want to perform some
+calculation on just a single value or on a whole FEM-mesh.  No matter if you
+want to calculate the damage that a certain load amplitude does on a certain
+material, or if you have a FEM-mesh with different materials associated with
+to element and every node has its own rainflow matrix.
+
+
+Example
+~~~~~~~
+
+Take for example the function
+:func:`~pylife.materiallaws.WoehlerCurve.basquin_cycles`.  Imagine you have a
+single Wöhler curve dataset like
 
 .. jupyter-execute::
 
@@ -29,7 +41,7 @@ value:
 
 .. jupyter-execute::
 
-    woehler_curve_data.woehler.basquin_cycles(load=350., failure_probability=1e-6)
+    woehler_curve_data.woehler.basquin_cycles(load=350.)
 
 
 Now let's say, you have different loads for each `element_id` if your FEM-mesh:
@@ -109,3 +121,32 @@ Now the broadcaster still aligns the `element_id`:
 .. jupyter-execute::
 
     woehler_curve_data.woehler.basquin_cycles(load=amplitude_scenarios)
+
+Note that in the above examples the call was always identical
+
+.. code_block:: python
+
+    woehler_curve_data.woehler.basquin_cycles(load=...)
+
+That means that when you write a module for a certain functionality **you don't
+need to know if your code later on receives a single value parameter or a whole
+FEM-mesh**.  Your code will take both and handle them.
+
+
+Usage
+-----
+
+As you might have seen, we did not call the :class:`pylife.Broadcaster` in the
+above code snippets directly.  And that's the way it's meant to be.  When you
+are on the level that you simply want to use pyLife's functionality to perform
+calculations, you should not be required to think about how to broadcast your
+datasets to one another.  It should simply happen automatically.  In our
+example the the calls to the :class:`pylife.Broadcaster` are done inside
+:func:`~pylife.materiallaws.WoehlerCurve.basquin_cycles`.
+
+You do need to deal with the :class:`pylife.Broadcaster` when you implement new
+calculation methods.  Let's go through an example.
+
+.. todo::
+
+   **Sorry**, this is still to be written.
