@@ -21,7 +21,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-import pylife.materialdata.woehler
+from pylife.materiallaws import WoehlerCurve
 
 
 wc_data = pd.Series({
@@ -175,6 +175,41 @@ def test_woehler_basquin_cycles_50_multiple_load_multiple_wc():
     np.testing.assert_allclose(cycles, expected_cycles, rtol=1e-4)
 
 
+def test_woehler_basquin_cycles_50_multiple_load_multiple_wc_aligned_index():
+    index = pd.Index([1, 2, 3], name='element_id')
+    load = pd.Series([3000., 400., 500.], index=index)
+
+    wc_data = pd.DataFrame({
+        'k_1': [1., 2., 2.],
+        'SD': [300., 400., 500.],
+        'ND': [1e6, 1e6, 1e6]
+    }, index=index)
+
+    cycles = wc_data.woehler.basquin_cycles(load)
+    expected_cycles = pd.Series([1e5, 1e6, 1e6], index=index)
+
+    pd.testing.assert_series_equal(cycles, expected_cycles, rtol=1e-4)
+
+
+def test_woehler_basquin_cycles_50_multiple_load_multiple_wc_cross_index():
+    load = pd.Series([3000., 400., 500.], index=pd.Index([1, 2, 3], name='scenario'))
+
+    wc_data = pd.DataFrame({
+        'k_1': [1., 2., 2.],
+        'SD': [300., 400., 500.],
+        'ND': [1e6, 1e6, 1e6]
+    }, pd.Index([1, 2, 3], name='element_id'))
+
+    cycles = wc_data.woehler.basquin_cycles(load)
+    expected_index = pd.MultiIndex.from_tuples([
+        (1, 1), (1, 2), (1, 3),
+        (2, 1), (2, 2), (2, 3),
+        (3, 1), (3, 2), (3, 3),
+    ], names=['element_id', 'scenario'])
+
+    pd.testing.assert_index_equal(cycles.index, expected_index)
+
+
 def test_woehler_basquin_cycles_50_same_k():
     load = [200., 300., 400., 500.]
 
@@ -240,6 +275,42 @@ def test_woehler_basquin_load_multiple_cycles_multiple_wc():
     np.testing.assert_allclose(load, expected_load)
 
 
+def test_woehler_basquin_load_multiple_cycles_multiple_wc_aligned_index():
+    index = pd.Index([1, 2, 3], name='element_id')
+    cycles = pd.Series([1e5, 1e6, 1e7], index=index)
+
+    wc_data = pd.DataFrame({
+        'k_1': [1., 2., 2.],
+        'SD': [300., 400., 500.],
+        'ND': [1e6, 1e6, 1e6],
+    }, index=index)
+
+    expected_load = pd.Series([3000., 400., 500.], index=cycles.index)
+    load = wc_data.woehler.basquin_load(cycles)
+
+    pd.testing.assert_series_equal(load, expected_load)
+
+
+def test_woehler_basquin_load_multiple_cycles_multiple_wc_cross_index():
+    cycles = pd.Series([1e5, 1e6, 1e7], index=pd.Index([1, 2, 3], name='scenario'))
+
+    wc_data = pd.DataFrame({
+        'k_1': [1., 2., 2.],
+        'SD': [300., 400., 500.],
+        'ND': [1e6, 1e6, 1e6],
+    }, index=pd.Index([1, 2, 3], name='element_id'))
+
+    expected_index = pd.MultiIndex.from_tuples([
+        (1, 1), (1, 2), (1, 3),
+        (2, 1), (2, 2), (2, 3),
+        (3, 1), (3, 2), (3, 3),
+    ], names=['element_id', 'scenario'])
+
+    load = wc_data.woehler.basquin_load(cycles)
+
+    pd.testing.assert_index_equal(load.index, expected_index)
+
+
 def test_woehler_basquin_load_50_same_k():
     cycles = [1e7, 1e6, 1e5, 1e4]
 
@@ -276,11 +347,14 @@ wc_int_overflow = pd.Series({
     'ND': 1e6
 })
 
+
 def test_woehler_integer_overflow_scalar():
     assert wc_int_overflow.woehler.basquin_cycles(50) > 0.0
 
+
 def test_woehler_integer_overflow_list():
     assert (wc_int_overflow.woehler.basquin_cycles([50, 50]) > 0.0).all()
+
 
 def test_woehler_integer_overflow_series():
     load = pd.Series([50, 50], index=pd.Index(['foo', 'bar']))
