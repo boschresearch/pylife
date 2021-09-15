@@ -1,36 +1,58 @@
-*.pyc
-.cache
-*.log
-.pylife-py*
-build
-.pytest_cache
-__pycache__
-_venv*
-.venv*
-.python-version
-.spyproject
+# Temporary and binary files
+*~
+*.py[cod]
 *.so
-*.pyd
-.eggs
-pylife.egg-info
-.ipynb_checkpoints
-__pycache__
-.mutmut-cache
-htmlcov
-.mypy_cache
-coverage_report*
+*.cfg
+!.isort.cfg
+!setup.cfg
+*.orig
+*.log
+*.pot
+__pycache__/*
+.cache/*
+.*.swp
+*/.ipynb_checkpoints/*
+.DS_Store
+
+# Project files
+.ropeproject
+.project
+.pydevproject
+.settings
+.idea
+.vscode
+tags
+
+# Package files
+*.egg
+*.eggs/
+.installed.cfg
+*.egg-info
+
+# Unittest and coverage
+htmlcov/*
 .coverage
-junit.xml
+.coverage.*
+.tox
+junit*.xml
+coverage.xml
+.pytest_cache/
 
-src/pip-delete-this-directory.txt
-.vscode/settings.json
+# Build and docs folder/files
+_build/*
+build/*
+dist/*
+sdist/*
+docs/api/*
+docs/_rst/*
+docs/_build/*
+cover/*
+MANIFEST
 
-doc/source/demos/*ipynb
-doc/source/demos/*.py
-doc/source/demos/*.h5
-doc/source/demos/*csv
-doc/source/demos/*.vmap
-doc/source/demos/pic
-/doc/source/demos/data/
-.idea*
-prof/*
+docs/demos/*
+!docs/demos/*.nblink
+
+# Per-project virtualenvs
+.venv*/
+_venv*/
+.conda*/

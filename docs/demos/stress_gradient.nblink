@@ -1,0 +1,4 @@
+{
+    "path": "../../demos/stress_gradient.ipynb",
+    "extra-media": ["../../demos/plate_with_hole.vmap"]
+}

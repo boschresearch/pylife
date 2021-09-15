@@ -13,6 +13,30 @@ classes](https://pandas.pydata.org/pandas-docs/stable/development/extending.html
 will be used more extensively.
 
 
+## New features
+
+### Rainflow counting
+
+The [rainflow counting module](docs/stress/rainflow.rst) has been vastly redesigned
+in order to get more flexibility.  New possibilities are:
+
+* [Four point rainflow counting](docs/stress/rainflow/fourpointdetector.rst)
+
+* Recording of the hysteresis loop information is in a separate class to allow
+  the recording in a customized way.
+
+See docs of the [rainflow counting module](docs/stress/rainflow.rst) for details.
+
+
+## Restructuring the code
+
+We are now using [PyScaffold](https://pyscaffold.org) to handle the packaging
+files.  That's why we have restructured the code base.  Basically the only
+notable things that have changed is that all the code has been moved from
+`pylife` to `src/pylife` and the documentation has been moved from `doc/source`
+to `docs`.  Both are the common locations for Python 3.x packages.
+
+
 ## Changes that affect your code
 
 * Strength scattering is now stored as `TS` and `TN`, no longer by `1/TS` and
