@@ -50,3 +50,10 @@ to `docs`.  Both are the common locations for Python 3.x packages.
   `PylifeSignal` directly.
 
 * Signal accessor class names are no longer suffixed with `Accessor`
+
+
+## Variable names
+
+Currently we are brainstorming on guidelines about variable names.  See the
+article [in the docs](docs/variable_names.rst) about it.  It will be
+continuously updated.
