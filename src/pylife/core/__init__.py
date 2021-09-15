@@ -17,7 +17,7 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
-from .signal import PylifeSignal, register_method
+from .pylifesignal import PylifeSignal, register_method
 from .broadcaster import Broadcaster
 from .data_validator import DataValidator
 
