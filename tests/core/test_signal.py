@@ -44,6 +44,54 @@ def test_missing_keys_two():
     assert set(foo_bar_baz.test_accessor_none.get_missing_keys(['foo', 'foobar', 'barfoo'])) == set(['foobar', 'barfoo'])
 
 
+def test_from_parameters_frame():
+    foo = [1.0, 2.0, 3.0]
+    bar = [10.0, 20.0, 30.0]
+    baz = [11.0, 12.0, 13.0]
+    accessor = AccessorNone.from_parameters(foo=foo, bar=bar, baz=baz)
+    pd.testing.assert_index_equal(accessor.keys(), pd.Index(['foo', 'bar', 'baz']))
+    expected_obj = pd.DataFrame({'foo': foo, 'bar': bar, 'baz': baz})
+    pd.testing.assert_frame_equal(accessor._obj, expected_obj)
+    assert accessor.some_property == 42
+
+
+def test_from_parameters_series_columns():
+    foo = 1.0
+    bar = 10.0
+    baz = 11.0
+    accessor = AccessorNone.from_parameters(foo=foo, bar=bar, baz=baz)
+    pd.testing.assert_index_equal(accessor.keys(), pd.Index(['foo', 'bar', 'baz']))
+    expected_obj = pd.Series({'foo': foo, 'bar': bar, 'baz': baz})
+    pd.testing.assert_series_equal(accessor._obj, expected_obj)
+    assert accessor.some_property == 42
+
+
+def test_from_parameters_series_index():
+    foo = [1.0, 2.0, 3.0]
+    accessor = AccessorOneDim.from_parameters(foo=foo)
+    pd.testing.assert_index_equal(accessor.keys(), pd.Index(['foo']))
+    expected_obj = pd.Series({'foo': foo})
+    pd.testing.assert_series_equal(accessor._obj, expected_obj)
+    assert accessor.some_property == 42
+
+
+def test_from_parameters_missing_keys():
+    foo = 1.0
+    baz = 10.0
+    with pytest.raises(AttributeError, match=r'^AccessorNone.*bar'):
+        AccessorNone.from_parameters(foo=foo, baz=baz)
+
+
+@pd.api.extensions.register_series_accessor('test_accessor_one_dim')
+class AccessorOneDim(signal.PylifeSignal):
+    def _validate(self):
+        if not isinstance(self._obj, pd.Series):
+            raise TypeError("This accessor takes only pd.Series")
+
+    @property
+    def some_property(self):
+        return 42
+
 @pd.api.extensions.register_series_accessor('test_accessor_none')
 @pd.api.extensions.register_dataframe_accessor('test_accessor_none')
 class AccessorNone(signal.PylifeSignal):
