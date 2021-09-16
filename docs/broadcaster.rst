@@ -124,7 +124,7 @@ Now the broadcaster still aligns the `element_id`:
 
 Note that in the above examples the call was always identical
 
-.. code_block:: python
+.. code-block:: python
 
     woehler_curve_data.woehler.basquin_cycles(load=...)
 

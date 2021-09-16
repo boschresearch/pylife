@@ -23,64 +23,179 @@ import pandas as pd
 
 
 class Broadcaster:
-    """ The Broadcaster to align pyLife signals to operands
+    """The Broadcaster to align pyLife signals to operands.
+
+    Parameters
+    ----------
+    pandas_obj : :class:`pandas.Series` or :class:`pandas.DataFrame`
+       the object of the ``Broadcaster``
+
+    In most cases the ``Broadcaster`` class is not used directly.  The
+    functionality is in most cases used by the derived class
+    :class:`pylife.PylifeSignal`.
+
+    The purpose of the ``Broadcaster`` is to take two numerical objects and
+    return two objects of the same numerical data with an aligned index.  That
+    means that mathematical operations using the two objects as operands can be
+    implemented using numpy's broadcasting functionality.
+
+    See method :method:`pylife.Broadcaster.broadcast` documentation for details.
+
+    The broadcasting is done in the following ways:
+
 
     ::
 
-        Series           Scalar     Series           Scalar
-        |------|-----|              |------|-----|
-        | idx  |     |              | idx  |     |
-        |------|-----| + 5.0   ->   |------|-----| + 5.0
-        | foo  | 1.0 |              | foo  | 1.0 |
-        | bar  | 2.0 |              | bar  | 2.0 |
-        |------|-----|              |------|-----|
+        object                 parameter              returned object         returned parameter
+
+        Series                 Scalar                 Series                  Scalar
+        |------|-----|                                |------|-----|
+        | idx  |     |                                | idx  |     |
+        |------|-----|         5.0               ->   |------|-----|          5.0
+        | foo  | 1.0 |                                | foo  | 1.0 |
+        | bar  | 2.0 |                                | bar  | 2.0 |
+        |------|-----|                                |------|-----|
 
 
-        DataFrame              Scalar     DataFrame              Series
-        |------|-----|-----|              |------|-----|-----|   |------|-----|
-        | idx  | foo | bar |              | idx  | foo | bar |   | idx  |     |
-        |------|-----|-----|              |------|-----|-----|   |------|-----|
-        | 0    | 1.0 | 2.0 | + 5.0   ->   | 0    | 1.0 | 2.0 | + | 0    | 5.0 |
-        | 1    | 1.0 | 2.0 |              | 1    | 1.0 | 2.0 |   | 1    | 5.0 |
-        | ...  | ... | ... |              | ...  | ... | ... |   | ...  | ... |
-        |------|-----|-----|              |------|-----|-----|   |------|-----|
+        DataFrame              Scalar                 DataFrame               Series
+        |------|-----|-----|                          |------|-----|-----|    |------|-----|
+        | idx  | foo | bar |                          | idx  | foo | bar |    | idx  |     |
+        |------|-----|-----|                          |------|-----|-----|    |------|-----|
+        | 0    | 1.0 | 2.0 |   5.0               ->   | 0    | 1.0 | 2.0 |    | 0    | 5.0 |
+        | 1    | 1.0 | 2.0 |                          | 1    | 1.0 | 2.0 |    | 1    | 5.0 |
+        | ...  | ... | ... |                          | ...  | ... | ... |    | ...  | ... |
+        |------|-----|-----|                          |------|-----|-----|    |------|-----|
 
 
-        Series           Series/DataFrame        DataFrame              Series/DataFrame
-        |------|-----|   |------|-----|          |------|-----|-----|   |------|-----|
-        | None |     |   | idx  |     |          | idx  | foo | bar |   | idx  |     |
-        |------|-----| + |------|-----|    ->    |------|-----|-----| + |------|-----|
-        | foo  | 1.0 |   | 0    | 5.0 |          | 0    | 1.0 | 2.0 |   | 0    | 5.0 |
-        | bar  | 2.0 |   | 1    | 6.0 |          | 1    | 1.0 | 2.0 |   | 1    | 6.0 |
-        |------|-----|   | ...  | ... |          | ...  | ... | ... |   | ...  | ... |
-                         |------|-----|          |------|-----|-----|   |------|-----|
+        Series                 Series/DataFrame       DataFrame               Series/DataFrame
+        |------|-----|         |------|-----|         |------|-----|-----|    |------|-----|
+        | None |     |         | idx  |     |         | idx  | foo | bar |    | idx  |     |
+        |------|-----|         |------|-----|    ->   |------|-----|-----|    |------|-----|
+        | foo  | 1.0 |         | 0    | 5.0 |         | 0    | 1.0 | 2.0 |    | 0    | 5.0 |
+        | bar  | 2.0 |         | 1    | 6.0 |         | 1    | 1.0 | 2.0 |    | 1    | 6.0 |
+        |------|-----|         | ...  | ... |         | ...  | ... | ... |    | ...  | ... |
+                               |------|-----|         |------|-----|-----|    |------|-----|
 
 
-        Series/DataFrame Series/DataFrame      Series/DataFrame Series/DataFrame
-        |------|-----|   |------|-----|        |------|-----|   |------|-----|
-        | xidx |     |   | xidx |     |        | xidx |     |   | xidx |     |
-        |------|-----| + |------|-----|   ->   |------|-----| + |------|-----|
-        | foo  | 1.0 |   | tau  | 5.0 |        | foo  | 1.0 |   | foo  | nan |
-        | bar  | 2.0 |   | bar  | 6.0 |        | bar  | 2.0 |   | bar  | 6.0 |
-        |------|-----|   |------|-----|        | tau  | nan |   | tau  | 5.0 |
-                                               |------|-----|   |------|-----|
+        Series/DataFrame       Series/DataFrame       Series/DataFrame        Series/DataFrame
+        |------|-----|         |------|-----|         |------|-----|          |------|-----|
+        | xidx |     |         | xidx |     |         | xidx |     |          | xidx |     |
+        |------|-----|         |------|-----|    ->   |------|-----|          |------|-----|
+        | foo  | 1.0 |         | tau  | 5.0 |         | foo  | 1.0 |          | foo  | nan |
+        | bar  | 2.0 |         | bar  | 6.0 |         | bar  | 2.0 |          | bar  | 6.0 |
+        |------|-----|         |------|-----|         | tau  | nan |          | tau  | 5.0 |
+                                                      |------|-----|          |------|-----|
 
 
-        Series/DataFrame Series/DataFrame      Series/DataFrame        Series/DataFrame
-        |------|-----|   |------|-----|        |------|------|-----|   |------|------|-----|
-        | xidx |     |   | yidx |     |        | xidx | yidx |     |   | xidx | yidx |     |
-        |------|-----| + |------|-----|   ->   |------|------|-----| + |------|------|-----|
-        | foo  | 1.0 |   | tau  | 5.0 |        | foo  | tau  | 1.0 |   | foo  | tau  | 5.0 |
-        | bar  | 2.0 |   | chi  | 6.0 |        |      | chi  | 1.0 |   |      | chi  | 6.0 |
-        |------|-----|   |------|-----|        | bar  | tau  | 2.0 |   | bar  | tau  | 5.0 |
-                                               |      | chi  | 2.0 |   |      | chi  | 6.0 |
-                                               |------|------|-----|   |------|------|-----|
+        Series/DataFrame       Series/DataFrame       Series/DataFrame        Series/DataFrame
+        |------|-----|         |------|-----|         |------|------|-----|   |------|------|-----|
+        | xidx |     |         | yidx |     |         | xidx | yidx |     |   | xidx | yidx |     |
+        |------|-----|         |------|-----|   ->    |------|------|-----|   |------|------|-----|
+        | foo  | 1.0 |         | tau  | 5.0 |         | foo  | tau  | 1.0 |   | foo  | tau  | 5.0 |
+        | bar  | 2.0 |         | chi  | 6.0 |         |      | chi  | 1.0 |   |      | chi  | 6.0 |
+        |------|-----|         |------|-----|         | bar  | tau  | 2.0 |   | bar  | tau  | 5.0 |
+                                                      |      | chi  | 2.0 |   |      | chi  | 6.0 |
+                                                      |------|------|-----|   |------|------|-----|
 
     """
+
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
 
     def broadcast(self, parameter):
+        """Broadcast the parameter to the object of ``self``.
+
+        Parameters
+        ----------
+
+        parameters : scalar, numpy array or pandas object
+            The parameter to broadcast to
+
+        Returns
+        -------
+        parameter, object : index aligned numerical objects
+
+
+        The
+
+
+        Examples
+        --------
+
+        The behavior of the Broadcaster is best illustrated by examples:
+
+        .. jupyter-execute::
+           :hide-code:
+
+           import pandas as pd
+           from pylife import Broadcaster
+
+        * Broadcasting :class:`pandas.Series` to a scalar results in a scalar
+          and a :class:`pandas.Series`.
+
+          .. jupyter-execute::
+
+              obj = pd.Series([1.0, 2.0], index=pd.Index(['foo', 'bar'], name='idx'))
+              obj
+
+          .. jupyter-execute::
+
+              parameter, obj = Broadcaster(obj).broadcast(5.0)
+
+              parameter
+
+          .. jupyter-execute::
+
+              obj
+
+
+        * Broadcasting :class:`pandas.DataFrame` to a scalar results in a
+          :class:`pandas.DataFrame` and a :class:`pandas.Series`.
+
+          .. jupyter-execute::
+
+              obj = pd.DataFrame({
+                  'foo': [1.0, 2.0],
+                  'bar': [3.0, 4.0]
+              }, index=pd.Index([1, 2], name='idx'))
+              obj
+
+          .. jupyter-execute::
+
+              parameter, obj = Broadcaster(obj).broadcast(5.0)
+
+              parameter
+
+          .. jupyter-execute::
+
+              obj
+
+
+        * Broadcasting :class:`pandas.DataFrame` to a a :class:`pandas.Series`
+          results in a :class:`pandas.DataFrame` and a :class:`pandas.Series`,
+          **if and only if** the index name of the object is ``None``.
+
+          .. jupyter-execute::
+
+              obj = pd.Series([1.0, 2.0], index=pd.Index(['tau', 'chi']))
+              obj
+
+          .. jupyter-execute::
+
+              parameter = pd.Series([3.0, 4.0], index=pd.Index(['foo', 'bar'], name='idx'))
+              parameter
+
+          .. jupyter-execute::
+
+              parameter, obj = Broadcaster(obj).broadcast(parameter)
+
+              parameter
+
+          .. jupyter-execute::
+
+              obj
+
+        """
         if not isinstance(parameter, pd.Series) and not isinstance(parameter, pd.DataFrame):
             if isinstance(self._obj, pd.Series):
                 return self._broadcast_series(parameter)
