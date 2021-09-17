@@ -26,7 +26,7 @@ from pylife.materiallaws import WoehlerCurve
 
 wc_data = pd.Series({
     'k_1': 7.,
-    'TN': 1. / 1.75,
+    'TN': 1.75,
     'ND': 1e6,
     'SD': 300.0
 })
@@ -45,8 +45,8 @@ def test_woehler_transform_probability():
     wc_50 = pd.Series({
         'k_1': 2,
         'k_2': np.inf,
-        'TS': 1. / 2.,
-        'TN': 1. / 9.,
+        'TS': 2.,
+        'TN': 9.,
         'ND': 3e6,
         'SD': 300 * np.sqrt(2.),
         'failure_probability': 0.5
@@ -69,8 +69,8 @@ def test_woehler_transform_probability_multiple():
     wc_50 = pd.Series({
         'k_1': 2,
         'k_2': np.inf,
-        'TS': 1. / 2.,
-        'TN': 1. / 9.,
+        'TS': 2.,
+        'TN': 9.,
         'ND': 3e6,
         'SD': 300 * np.sqrt(2.),
         'failure_probability': 0.5
@@ -80,8 +80,8 @@ def test_woehler_transform_probability_multiple():
     expected = pd.DataFrame({
         'k_1': [2., 2.],
         'k_2': [np.inf, np.inf],
-        'TS': [1. / 2., 1. / 2.],
-        'TN': [1. / 9., 1. / 9.],
+        'TS': [2., 2.],
+        'TN': [9., 9.],
         'ND': [2e6, 4.5e6],
         'SD': [300., 600.],
         'failure_probability': [0.1, 0.9]
@@ -93,8 +93,8 @@ def test_woehler_transform_probability_multiple():
     expected = pd.DataFrame({
         'k_1': [2., 2.],
         'k_2': [np.inf, np.inf],
-        'TS': [1. / 2., 1. / 2.],
-        'TN': [1. / 9., 1. / 9.],
+        'TS': [2., 2.],
+        'TN': [9., 9.],
         'ND': [3e6, 3e6],
         'SD': [300. * np.sqrt(2.), 300. * np.sqrt(2.)],
         'failure_probability': [0.5, 0.5]
@@ -107,8 +107,8 @@ def test_woehler_transform_probability_SD_0():
     wc_50 = pd.Series({
         'k_1': 2,
         'k_2': np.inf,
-        'TS': 1. / 2.,
-        'TN': 1. / 9.,
+        'TS': 2.,
+        'TN': 9.,
         'ND': 3e6,
         'SD': 0.0,
         'failure_probability': 0.5
@@ -388,9 +388,9 @@ def test_woehler_TS_and_TN_guessed():
 def test_woehler_TS_guessed():
     wc = wc_data.copy()
     wc['k_1'] = 0.5
-    wc['TN'] = 1. / 1.5
+    wc['TN'] = 1.5
 
-    assert wc.woehler.TS == 1. / (1.5 * 1.5)
+    assert wc.woehler.TS == (1.5 * 1.5)
 
 
 def test_woehler_TN_guessed():
@@ -398,23 +398,22 @@ def test_woehler_TN_guessed():
         'k_1': 0.5,
         'SD': 300,
         'ND': 1e6,
-        'TS': 1. / 5.,
-        'TN': 1. / 2.
+        'TS': 1.5 * 1.5
     })
 
-    assert wc.woehler.TN == 1. / 2
+    assert wc.woehler.TN == 1.5
 
 
 def test_woehler_TS_given():
     wc_full = wc_data.copy()
-    wc_full['TS'] = 1. / 1.25
-    assert wc_full.woehler.TS == 1. / 1.25
+    wc_full['TS'] = 1.25
+    assert wc_full.woehler.TS == 1.25
 
 
 def test_woehler_TN_given():
     wc_full = wc_data.copy()
-    wc_full['TS'] = 1. / 1.25
-    assert wc_full.woehler.TN == 1. / 1.75
+    wc_full['TN'] = 1.75
+    assert wc_full.woehler.TN == 1.75
 
 
 def test_woehler_pf_guessed():
@@ -445,8 +444,8 @@ def test_woehler_to_pandas():
     expected = pd.Series({
         'k_1': 0.5,
         'k_2': np.inf,
-        'TN': 1. / 1.75,
-        'TS': 1. / 1.75 / 1.75,
+        'TN': 1.75,
+        'TS': 1.75 * 1.75,
         'ND': 1e6,
         'SD': 300.0,
         'failure_probability': 0.5,

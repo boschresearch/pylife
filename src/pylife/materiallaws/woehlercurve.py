@@ -44,10 +44,10 @@ class WoehlerCurve(PylifeSignal):
 
     * ``k_2`` : The slope of the Wöhler Curve below the endurance limit
                 If the key is missing it is assumed to be infinity, i.e. perfect endurance
-    * ``TN`` : The scatter in cycle direction, (N_10/N_90)
+    * ``TN`` : The scatter in cycle direction, (N_90/N_10)
                If the key is missing it is assumed to be 1.0 or calculated from ``TS``
                if given.
-    * ``TS`` : The scatter in cycle direction, (S_10/S_90)
+    * ``TS`` : The scatter in cycle direction, (S_90/S_10)
                If the key is missing it is assumed to be 1.0 or calculated from ``TN``
                if given.
     """
@@ -219,6 +219,7 @@ class WoehlerCurve(PylifeSignal):
     def _make_k(self, src, ref, wc):
         k = np.asarray(wc.k_1)
         k_2 = np.asarray(wc.k_2)
+
         if k.shape == ():
             k = np.full_like(src, k, dtype=np.double)
             k_2 = np.full_like(src, k_2, dtype=np.double)

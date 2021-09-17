@@ -38,7 +38,7 @@ class MaxLikeInf(Elementary):
         line of slope k_1
         '''
         SD_start = self._fd.fatigue_limit
-        TS_start = 1. / 1.2
+        TS_start = 1.2
 
         var_opt = optimize.fmin(lambda p: -self._lh.likelihood_infinite(p[0], p[1]),
                                 [SD_start, TS_start], disp=False, full_output=True)

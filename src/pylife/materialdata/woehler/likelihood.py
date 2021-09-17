@@ -66,8 +66,8 @@ class Likelihood:
         fractures = self._fd.fractures
         x = np.log10(fractures.cycles * ((fractures.load/SD)**k_1))
         mu = np.log10(ND)
-        sigma = scatteringRange2std(TN)
-        log_likelihood = np.log(stats.norm.pdf(x, mu, abs(sigma)))
+        std_log = scatteringRange2std(TN)
+        log_likelihood = np.log(stats.norm.pdf(x, mu, std_log))
 
         return log_likelihood.sum()
 

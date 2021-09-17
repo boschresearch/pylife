@@ -40,9 +40,9 @@ to `docs`.  Both are the common locations for Python 3.x packages.
 ## Changes that affect your code
 
 * Strength scattering is now stored as `TS` and `TN`, no longer by `1/TS` and
-  `1/TN`.
-  That means you will have to adjust your code where you deal with those kinds
-  of scatters.
+  `1/TN`.  This only concerns the naming, the underlying values are still the
+  same.  With this we are following the newer conventions in DIN 50100:2016-12.
+
 
 * `self._validate()` is no longer called with arguments.  The arguments `obj`
   and `validator` are no longer needed.  `obj` is now accessible by

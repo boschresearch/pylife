@@ -28,8 +28,8 @@ single Wöhler curve dataset like
         'k_1': 7.0,
         'ND': 2e5,
         'SD': 320.0,
-        'TN': 1./2.3,
-        'TS': 1./1.25
+        'TN': 2.3,
+        'TS': 1.25
     })
 
     woehler_curve_data
@@ -69,8 +69,8 @@ like for example for a hardness gradient in your component:
         'k_1': 7.0,
         'ND': 2e5,
         'SD': [370., 320., 280, 280],
-        'TN': 1./2.3,
-        'TS': 1./1.25
+        'TN': 2.3,
+        'TS': 1.25
     }, index=pd.Index([1, 2, 3, 4], name='element_id'))
 
     woehler_curve_data
