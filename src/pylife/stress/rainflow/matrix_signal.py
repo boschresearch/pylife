@@ -23,7 +23,7 @@ import numpy as np
 from pylife import PylifeSignal
 
 @pd.api.extensions.register_series_accessor('rainflow')
-class Rainflow(PylifeSignal):
+class RainflowMatrix(PylifeSignal):
 
     def _validate(self):
         self._class_location = 'mid'
