@@ -118,6 +118,35 @@ def test_full_rainflow_recorder_record_two_values():
     np.testing.assert_array_equal(fr.index_to, [it1, it2])
 
 
+def test_full_rainflow_recorder_empty_collective_default():
+    fr = RFR.FullRecorder()
+    expected = pd.DataFrame({
+        'from': [],
+        'to': [],
+        'index_from': [],
+        'index_to': []
+    })
+    pd.testing.assert_frame_equal(fr.collective, expected)
+
+
+def test_full_rainflow_recorder_two_non_zero_collective():
+    vf1, vt1, if1, it1, vf2, vt2, if2, it2 = 23., 42., 11, 17, 46., 84., 22, 34
+    fr = RFR.FullRecorder()
+    fr.record_values(vf1, vt1)
+    fr.record_index(if1, it1)
+    fr.record_values(vf2, vt2)
+    fr.record_index(if2, it2)
+
+    expected = pd.DataFrame({
+        'from': [vf1, vf2],
+        'to': [vt1, vt2],
+        'index_from': [if1, if2],
+        'index_to': [it1, it2]
+    })
+
+    pd.testing.assert_frame_equal(fr.collective, expected)
+
+
 def test_full_rainflow_recorder_empty_matrix_default():
     fr = RFR.FullRecorder()
     matrix, _, _ = fr.matrix()
@@ -171,6 +200,26 @@ def test_full_rainflow_recorder_two_non_zero():
     np.testing.assert_array_equal(expected_to, vto)
     np.testing.assert_array_equal(expected_matrix, matrix)
 
+
+def test_loopvalue_rainflow_recorder_empty_collective_default():
+    lvr = RFR.LoopValueRecorder()
+    expected = pd.DataFrame({'from': [], 'to': []})
+    pd.testing.assert_frame_equal(lvr.collective, expected)
+
+
+def test_loop_value_rainflow_recorder_record_two_values_collective():
+    vf1, vt1, vf2, vt2 = 23., 42., 46., 84.
+    lvr = RFR.LoopValueRecorder()
+
+    lvr.record_values(vf1, vt1)
+    lvr.record_values(vf2, vt2)
+
+    expected = pd.DataFrame({
+        'from': [vf1, vf2],
+        'to': [vt1, vt2]
+    })
+
+    pd.testing.assert_frame_equal(lvr.collective, expected)
 
 def test_lopvalue_rainflow_recorder_empty_matrix_series_default():
     fr = RFR.LoopValueRecorder()
