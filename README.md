@@ -44,15 +44,21 @@ There are/will be the following subpackages:
 * `materialdata` analysis of material testing data
     * Wöhler (SN-curve) data analysis
 
+* `materiallaws` modeling material behavior
+    * Ramberg Osgood
+    * Wöhler curves
+
+* `vmap` a interface to [VMAP](https://www.vmap.eu.com/)
+
 
 ## Disclaimer
 
-*pyLife is in continuous development.* We hope to keep the interfaces more or
-less stable. However depending on the practical use of pyLife in the future
-interface changes might occur. If that happens, we probably won't be able to
-put too much effort into backwards compatibility. So be prepared to react to
-deprecations.
-
+The `develop` branch is at the moment undergoing heavy development for the
+`pylide-2.0` release.  Check out [NEWS-2.0.md][NEWS-2.0] for details.  That
+means that breaking changes are likely to occur.  If you are new to pyLife, it
+is nevertheless worthwhile following the `develop` branch, as it stabilizes in
+the upcoming months.  The way things are done are and will be a huge
+improvement over pylife-1.x
 
 ## License
 
