@@ -8,10 +8,10 @@ dependencies:
 - matplotlib
 - jupyter
 - pandoc
+- pytables
 - pip = 20.2
 - pip:
   - -e .
   - pyvista
   - mystic
-  - tables
   - tsfresh
