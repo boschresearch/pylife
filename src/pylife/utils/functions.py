@@ -14,13 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''
+"""
 Utility Functions
 =================
 
 A collection of functions frequently used in lifetime estimation
 business.
-'''
+"""
 
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
@@ -29,11 +29,11 @@ import numpy as np
 
 
 def scatteringRange2std(T):
-    ''' Converts a inverted scattering range (TS or TN) into standard deviation
+    """Convert a scattering range (`TS` or `TN` in DIN 50100:2016-12) into standard deviation.
 
     Parameters
     ----------
-    T_inv : float
+    T : float
         inverted scattering range
 
     Returns
@@ -43,15 +43,15 @@ def scatteringRange2std(T):
 
     Notes
     -----
-    Actually `1/(2*norm.ppf(0.9))*np.log10(1/T)`
+    Actually `1/(2*norm.ppf(0.9))*np.log10(T)`
 
     Inverse of `std2scatteringRange()`
-    '''
-    return -0.39015207303618954*np.log10(T)
+    """
+    return 0.39015207303618954*np.log10(T)
 
 
 def std2scatteringRange(std):
-    ''' Converts a standard deviation into inverted scattering range (TS or TN)
+    """Convert a standard deviation into scattering range (`TS` or `TN` in DIN 50100:2016-12).
 
     Parameters
     ----------
@@ -65,15 +65,15 @@ def std2scatteringRange(std):
 
     Notes
     -----
-    Actually `10**(-2*norm.ppf(0.9)*std`
+    Actually `10**(2*norm.ppf(0.9)*std`
 
     Inverse of `scatteringRange2std()`
-    '''
-    return 10**(-2.5631031310892007*(std))
+    """
+    return 10**(2.5631031310892007*std)
 
 
 def rossow_cumfreqs(N):
-    """Cumulative frequency estimator according to Rossow
+    """Cumulative frequency estimator according to Rossow.
 
     Parameters
     ----------

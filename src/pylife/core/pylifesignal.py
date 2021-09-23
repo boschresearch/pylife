@@ -18,18 +18,14 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 
-import numpy as np
 import pandas as pd
 
 from .broadcaster import Broadcaster
 from .data_validator import DataValidator
 
-class PylifeSignal(Broadcaster):
-    '''Base class for signal accessor classes
 
-    Parameters
-    ----------
-    pandas_obj : pandas.DataFrame or pandas.Series
+class PylifeSignal(Broadcaster):
+    """Base class for signal accessor classes.
 
     Notes
     -----
@@ -50,13 +46,54 @@ class PylifeSignal(Broadcaster):
     :func:`fail_if_key_missing()`
     :func:`get_missing_keys()`
     :func:`register_method()`
-    '''
+    """
+
     _method_dict = {}
 
     def __init__(self, pandas_obj):
+        """Instantiate a :class:`signal.PyLifeSignal`.
+
+        Parameters
+        ----------
+        pandas_obj : pandas.DataFrame or pandas.Series
+
+        """
         self._obj = pandas_obj
         self._validate()
 
+    @classmethod
+    def from_parameters(cls, **kwargs):
+        """Make a signal instance from a parameter set.
+
+        This is a convenience function to instantiate a signal from individual
+        parameters rather than pandas objects.
+
+        A signal class like
+
+        .. code-block:: python
+
+            @pd.api.extensions.register_dataframe_accessor('foo_signal')
+            class FooSignal(PylifeSignal):
+                pass
+
+        The following two blocks are equivalent:
+
+        .. code-block:: python
+
+            pd.Series({'foo': 1.0, 'bar': 2.0}).foo_signal
+
+        .. code-block:: python
+
+            FooSignal.from_parameters(foo=1.0, bar=1.0)
+
+        """
+        # TODO: better error handling
+        if len(kwargs) > 1 and hasattr(next(iter(kwargs.values())), '__iter__'):
+            obj = pd.DataFrame(kwargs)
+        else:
+            obj = pd.Series(kwargs)
+
+        return cls(obj)
 
     def keys(self):
         """Get a list of missing keys that are needed for a signal object.
@@ -192,7 +229,7 @@ class PylifeSignal(Broadcaster):
 
 
 def register_method(cls, method_name):
-    '''Registers a method to a class derived from :class:`PyifeSignal`
+    """Registers a method to a class derived from :class:`PyifeSignal`
 
     Parameters
     ----------
@@ -238,5 +275,5 @@ def register_method(cls, method_name):
        baz
     0  0.0
     1  0.0
-    '''
+    """
     return cls._register_method(method_name)

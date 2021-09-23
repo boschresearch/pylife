@@ -16,7 +16,7 @@ tested by [pytest][pytest] testing routines.
 
 In order to achieve maintainable code we ask contributors to use test driven
 development, i. e. follow the [Three Rules of Test Driven
-Development](https://medium.com/@rrugamba/3-laws-of-tdd-58b5ec46a998):
+Development][rrugamba]:
 
 1. Do not change production code without writing a failing unit test
    first. Cleanups and refactorings a not changes in that sense.
@@ -179,6 +179,8 @@ contribution was provided directly to me by some other person who certified
 holder(s) to the [NOTICE](NOTICE) file as part of your contribution.
 
 [pytest]: https://pytest.org
+
+[rrugamba]: https://medium.com/@rrugamba/3-laws-of-tdd-58b5ec46a998
 
 [CGL]: https://www.git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project#_commit_guidelines
 

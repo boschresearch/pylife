@@ -48,6 +48,9 @@ sample chunk.
 As of now, pyLife comes with the following detectors:
 
 * :class:`.ThreePointDetector`, classic three point algorithm, reports sample index
+
+* :class:`.FourPointDetector`, recent four point algorithm, reports sample index
+
 * :class:`.FKMDetector`, algorithm described by Clormann & Seeger, recommended by FKM,
   does not report sample index.
 
@@ -57,6 +60,17 @@ Recorders
 
 Recorders are notified by detectors about loops and will process the loop
 information as they wish.
+
+As of now, pyLife comes with the following recorders:
+
+* :class:`.LoopValueRecorder`, only records the `from` and `to` values of all
+  the closed hysteresis loops.`
+
+* :class:`.FullRecorder`, records additionally to the `from` and `to` values
+  also the indices of the loop turning points in the original time series, so
+  that additional data like temperature during the loop or dwell times can be
+  looked up in the original time series data.
+
 """
 
 __author__ = "Johannes Mueller"
@@ -70,7 +84,8 @@ from .recorders import LoopValueRecorder, FullRecorder
 
 from .compat import RainflowCounterThreePoint, RainflowCounterFKM
 
-from .signal import Rainflow
+from .matrix_signal import RainflowMatrix
+from .collective_signal import RainflowCollective
 
 __all__ = [
     'find_turns',
@@ -83,5 +98,6 @@ __all__ = [
     'FullRecorder',
     'RainflowCounterThreePoint',
     'RainflowCounterFKM',
-    'Rainflow'
+    'RainflowMatrix',
+    'RainflowCollective'
 ]

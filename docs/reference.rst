@@ -25,7 +25,6 @@ Strength
 .. toctree::
    :maxdepth: 2
 
-   strength/infinite
    strength/meanstress
    strength/failure_probability
    strength/miner

@@ -20,11 +20,10 @@ __maintainer__ = __author__
 import pandas as pd
 import numpy as np
 
-from pylife import signal
-
+from pylife import PylifeSignal
 
 @pd.api.extensions.register_series_accessor('rainflow')
-class Rainflow(signal.PylifeSignal):
+class RainflowMatrix(PylifeSignal):
 
     def _validate(self):
         self._class_location = 'mid'

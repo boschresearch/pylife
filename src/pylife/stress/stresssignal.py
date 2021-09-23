@@ -20,11 +20,11 @@ __maintainer__ = __author__
 import pandas as pd
 import numpy as np
 
-from pylife import signal
+from pylife import PylifeSignal
 
 
 @pd.api.extensions.register_dataframe_accessor("voigt")
-class StressTensorVoigt(signal.PylifeSignal):
+class StressTensorVoigt(PylifeSignal):
     '''DataFrame accessor class for Voigt noted stress tensors
 
     Raises
@@ -51,7 +51,7 @@ class StressTensorVoigt(signal.PylifeSignal):
 
 
 @pd.api.extensions.register_dataframe_accessor("cyclic_stress")
-class CyclicStress(signal.PylifeSignal):
+class CyclicStress(PylifeSignal):
     '''DataFrame accessor class for cyclic stress data
 
     Raises

@@ -86,10 +86,10 @@ class Bayesian(Elementary):
 
         return pd.Series({
             'SD': SD,
-            'TS': 1./SD_TS_trace.get_values('TS')[nburn:].mean(),
+            'TS': SD_TS_trace.get_values('TS')[nburn:].mean(),
             'ND': ND,
             'k_1': -slope,
-            'TN': 1./TN_trace.get_values('mu')[nburn:].mean(),
+            'TN': TN_trace.get_values('mu')[nburn:].mean(),
         })
 
     def _slope_trace(self, chains=2, random_seed=None, tune=1000, **kw):
@@ -131,10 +131,10 @@ class Bayesian(Elementary):
         with pm.Model():
             inf_load = self._fd.infinite_zone.load
             SD = pm.Normal('SD', mu=inf_load.mean(), sigma=inf_load.std()*5)
-            TS = pm.Lognormal('TS', mu=np.log10(1. / 1.1), sigma=np.log10(0.5))
+            TS_inv = pm.Lognormal('TS', mu=np.log10(1. / 1.1), sigma=np.log10(0.5))
 
             # convert m and c to a tensor vector
-            var = tt.as_tensor_variable([SD, TS])
+            var = tt.as_tensor_variable([SD, TS_inv])
 
             pm.Potential('likelihood', loglike(var))
 
