@@ -73,11 +73,11 @@ __maintainer__ = __author__
 
 import numpy as np
 import pandas as pd
-from pylife import signal
+from pylife import PylifeSignal
 
 
 @pd.api.extensions.register_dataframe_accessor("plain_mesh")
-class PlainMesh(signal.PylifeSignal):
+class PlainMesh(PylifeSignal):
     '''DataFrame accessor to access plain 2D and 3D mesh data, i.e. without connectivity
 
     Raises

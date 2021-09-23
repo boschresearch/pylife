@@ -198,9 +198,9 @@ def test_damage_fatigue_original(load_hist, expected):
 
 
 @pytest.mark.parametrize('TS, allowed_pf, expected', [
-    (1./2., 0.5, 5.0),
-    (1./1.0000001, 0.1, 5.0),
-    (1./1.25, 1e-6, 3.3055576111)
+    (2., 0.5, 5.0),
+    (1.0000001, 0.1, 5.0),
+    (1.25, 1e-6, 3.3055576111)
 ])
 def test_security_load_single(TS, allowed_pf, expected):
     wc = pd.Series({
@@ -218,7 +218,7 @@ def test_security_load_multiple():
     wc = pd.DataFrame({
         'SD': [500., 500., 300.],
         'k_1': [6., 6., 6.],
-        'TS': [1./2., 1./1.0000001, 1./1.25],
+        'TS': [2., 1.0000001, 1.25],
         'ND': [1e6, 1e6, 1e6]
     })
     load_signal = pd.DataFrame({
@@ -234,11 +234,11 @@ def test_security_load_multiple():
 
 
 @pytest.mark.parametrize('TN, allowed_pf, cycles, expected', [
-    (1./4., 0.5, 1e5, 10.0),
-    (1./4., 0.5, 1e4, 100.0),
-    (1./4., 0.1, 1e4, 50.0),
-    (1./4., 1e-6, 1e4, 7.65),
-    (1./4., 1e-6, 1e3, 76.5),
+    (4., 0.5, 1e5, 10.0),
+    (4., 0.5, 1e4, 100.0),
+    (4., 0.1, 1e4, 50.0),
+    (4., 1e-6, 1e4, 7.65),
+    (4., 1e-6, 1e3, 76.5),
 ])
 def test_security_cycles(TN, allowed_pf, cycles, expected):
     wc = pd.Series({

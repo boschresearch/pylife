@@ -60,7 +60,7 @@ perform statistical operations to it.
     SD     3.000000e+02
     ND     2.300000e+06
     k_1    7.000000e+00
-    TS     8.130081e-01
+    TS     1.234363e+00
     TN     3.420000e+00
     dtype: float64
 

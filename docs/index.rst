@@ -13,12 +13,10 @@ pyLife Documentation
    INSTALLATION
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: User Guide
 
    user_guide
-   data_model
-   signal_api
 
 .. toctree::
    :maxdepth: 1

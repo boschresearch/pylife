@@ -43,6 +43,14 @@ class LoopValueRecorder(AbstractRecorder):
         """1-D float array containing the values the loops go to before turning back."""
         return self._values_to
 
+    @property
+    def collective(self):
+        """The overall collective recorded as :class:`pandas.DataFrame`.
+
+        The columns are named ``from``, ``to``.
+        """
+        return pd.DataFrame({'from': self._values_from, 'to': self._values_to})
+
     def record_values(self, value_from, value_to):
         """Record the loop values."""
         self._values_from.append(value_from)
@@ -113,6 +121,19 @@ class FullRecorder(LoopValueRecorder):
     def index_to(self):
         """1-D int array containing the index to the samples the loops go to before turning back."""
         return self._index_to
+
+    @property
+    def collective(self):
+        """The overall collective recorded as :class:`pandas.DataFrame`.
+
+        The columns are named ``from``, ``to``, ``index_from``, ``index_to``.
+        """
+        return pd.DataFrame({
+            'from': self._values_from,
+            'to': self._values_to,
+            'index_from': self._index_from,
+            'index_to': self._index_to
+        })
 
     def record_index(self, index_from, index_to):
         """Record the index."""

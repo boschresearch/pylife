@@ -84,7 +84,8 @@ from .recorders import LoopValueRecorder, FullRecorder
 
 from .compat import RainflowCounterThreePoint, RainflowCounterFKM
 
-from .signal import Rainflow
+from .matrix_signal import RainflowMatrix
+from .collective_signal import RainflowCollective
 
 __all__ = [
     'find_turns',
@@ -97,5 +98,6 @@ __all__ = [
     'FullRecorder',
     'RainflowCounterThreePoint',
     'RainflowCounterFKM',
-    'Rainflow'
+    'RainflowMatrix',
+    'RainflowCollective'
 ]
