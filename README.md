@@ -12,14 +12,27 @@ lifetime assessment of mechanical components subject to fatigue load.
 
 ## Purpose of the project
 
-This library was originally compiled at Bosch Research to collect algorithms
-needed by different in house software projects, that deal with lifetime
-prediction and material fatigue on a component level. In order to further
-extent and scrutinize it we decided to release it as Open Source.
+This library was originally compiled at [Bosch
+Research](https://www.bosch.com/research/) to collect algorithms needed by
+different in house software projects, that deal with lifetime prediction and
+material fatigue on a component level. In order to further extent and
+scrutinize it we decided to release it as Open Source.  Read [this
+article](https://www.bosch.com/stories/bringing-open-source-to-mechanical-engineering/)
+about pyLife's origin.
 
 So we are welcoming collaboration not only from science and education but also
 from other commercial companies dealing with the topic. We commend this library
 to university teachers to use it for education purposes.
+
+
+## Disclaimer
+
+The `develop` branch is at the moment undergoing heavy development for the
+`pylife-2.0` release.  Check out [NEWS-2.0.md](NEWS-2.0) for details.  That
+means that breaking changes are likely to occur.  If you are new to pyLife, it
+is nevertheless worthwhile following the `develop` branch, as it stabilizes in
+the upcoming months.  The way things are done are and will be a huge
+improvement over `pylife-1.x`.
 
 
 ## Contents
@@ -50,15 +63,6 @@ There are/will be the following subpackages:
 
 * `vmap` a interface to [VMAP](https://www.vmap.eu.com/)
 
-
-## Disclaimer
-
-The `develop` branch is at the moment undergoing heavy development for the
-`pylide-2.0` release.  Check out [NEWS-2.0.md][NEWS-2.0] for details.  That
-means that breaking changes are likely to occur.  If you are new to pyLife, it
-is nevertheless worthwhile following the `develop` branch, as it stabilizes in
-the upcoming months.  The way things are done are and will be a huge
-improvement over pylife-1.x
 
 ## License
 
