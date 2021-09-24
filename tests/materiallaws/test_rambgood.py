@@ -38,9 +38,9 @@ def test_rambgood_strain_scalar(ramberg_osgood_monotone, stress, expected):
     np.testing.assert_approx_equal(ramberg_osgood_monotone.strain(stress), expected, significant=5)
 
 
-@pytest.mark.parametrize('strain, expected', map(tuple, parametrization_data_monotone))
+@pytest.mark.parametrize('expected, strain', map(tuple, parametrization_data_monotone))
 def test_rambgood_stress_scalar(ramberg_osgood_monotone, expected, strain):
-    np.testing.assert_approx_equal(ramberg_osgood_monotone.strain(strain), expected, significant=5)
+    np.testing.assert_approx_equal(ramberg_osgood_monotone.stress(strain), expected, significant=5)
 
 
 @pytest.mark.parametrize('stress, expected', [
