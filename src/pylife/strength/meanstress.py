@@ -328,3 +328,58 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
     if not 0 <= M_sigma <= 1:
         raise ValueError("M_sigma: %.2f exceeds the interval [0, 1] which is not plausible." % M_sigma)
     return M_sigma
+
+
+import pylife.stress.rainflow as RF
+
+@pd.api.extensions.register_dataframe_accessor('meanstress_transform')
+class MeanstressTransformCollective(RF.RainflowCollective):
+
+    def FKM_goodman(self, ms_sens, R_goal):
+        obj, ms_sens = Broadcaster(ms_sens).broadcast(self._obj)
+        rfc = obj.rainflow
+        amplitude = FKM_goodman(rfc.amplitude.values, rfc.meanstress.values, ms_sens.M.values, ms_sens.M2.values, R_goal)
+        res = pd.DataFrame({
+            'from': amplitude * (2. * R_goal) / (1. - R_goal),
+            'to': amplitude * 2. / (1. - R_goal)
+        }, index = obj.index)
+        return res.rainflow
+
+
+@pd.api.extensions.register_series_accessor('meanstress_transform')
+class MeanstressTransformMatrix(RF.RainflowMatrix):
+
+    def _validate(self):
+        super()._validate()
+        if self._obj.index.names == ['from', 'to']:
+            f = self._obj.index.get_level_values('from').mid
+            t = self._obj.index.get_level_values('to').mid
+            self._Sa = np.abs(f-t)/2.
+            self._Sm = (f+t)/2.
+            self._binsize_x = self._obj.index.get_level_values('from').length.min()
+            self._binsize_y = self._obj.index.get_level_values('to').length.min()
+        elif self._obj.index.names == ['range', 'mean']:
+            self._Sa = self._obj.index.get_level_values('range').mid / 2.
+            self._Sm = self._obj.index.get_level_values('mean').mid
+            self._binsize_x = self._obj.index.get_level_values('range').length.min()
+            self._binsize_y = self._obj.index.get_level_values('mean').length.min()
+
+
+    def FKM_goodman(self, haigh, R_goal):
+        ranges = FKM_goodman(self.amplitude.values, self.meanstress.values, haigh.M, haigh.M2, R_goal) * 2.
+        return self._rebin_results(ranges).rainflow
+
+    def _rebin_results(self, ranges):
+        if ranges.shape[0] == 0:
+            new_idx = pd.IntervalIndex(pd.interval_range(0.,  0., 0), name='range')
+            return pd.Series([], index=new_idx, name='frequency', dtype=np.float64)
+        ranges_max = ranges.max()
+        binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
+        bincount = int(np.ceil(ranges_max / binsize))
+        new_idx = pd.IntervalIndex.from_breaks(np.linspace(0, ranges_max, bincount), name="range")
+        result = pd.Series(data=np.zeros(bincount-1), index=new_idx, name='frequency', dtype=np.int32)
+        for i, intv in enumerate(new_idx):
+            cond = np.logical_and(ranges >= intv.left, ranges < intv.right)
+            result.loc[intv] = np.int32(np.sum(self._obj.values[cond]))
+        result.iloc[-1] += np.int32(np.sum(self._obj.values[ranges == ranges_max]))
+        return result
