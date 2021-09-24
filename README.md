@@ -28,7 +28,7 @@ to university teachers to use it for education purposes.
 ## Disclaimer
 
 The `develop` branch is at the moment undergoing heavy development for the
-`pylife-2.0` release.  Check out [NEWS-2.0.md](NEWS-2.0) for details.  That
+`pylife-2.0` release.  Check out [NEWS-2.0.md](NEWS-2.0.md) for details.  That
 means that breaking changes are likely to occur.  If you are new to pyLife, it
 is nevertheless worthwhile following the `develop` branch, as it stabilizes in
 the upcoming months.  The way things are done are and will be a huge
