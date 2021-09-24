@@ -42,8 +42,9 @@ def test_rainflow_collective_signal_amplitude_from_to(df, expected):
     df.columns = ['from', 'to']
     expected.name = 'amplitude'
     pd.testing.assert_series_equal(df.rainflow.amplitude, expected)
-    assert df.rainflow.frequency == 1.0
 
+    expected_frequency = pd.Series(1.0, name='frequency', index=df.index)
+    pd.testing.assert_series_equal(df.rainflow.frequency, expected_frequency)
 
 @pytest.mark.parametrize('df, expected', [
     (
@@ -61,9 +62,12 @@ def test_rainflow_collective_signal_amplitude_from_to(df, expected):
 ])
 def test_rainflow_collective_signal_mean_from_to(df, expected):
     df.columns = ['from', 'to']
-    expected.name = 'mean'
-    pd.testing.assert_series_equal(df.rainflow.mean, expected)
-    assert df.rainflow.frequency == 1.0
+    expected.name = 'meanstress'
+    pd.testing.assert_series_equal(df.rainflow.meanstress, expected)
+
+    expected_frequency = pd.Series(1.0, name='frequency', index=df.index)
+    pd.testing.assert_series_equal(df.rainflow.frequency, expected_frequency)
+
 
 
 @pytest.mark.parametrize('df, expected_upper, expected_lower', [
@@ -172,8 +176,6 @@ def test_rainflow_collective_from_to_shift_series():
         [7., 1.]
     ], columns=['from', 'to'], index=expected_index)
 
-    print(expected)
-    print(df.rainflow.shift(shift_operand).to_pandas())
     pd.testing.assert_frame_equal(df.rainflow.shift(shift_operand).to_pandas(), expected)
 
 
@@ -195,7 +197,9 @@ def test_rainflow_collective_signal_amplitude_range_mean(df, expected):
     df.columns = ['range', 'mean']
     expected.name = 'amplitude'
     pd.testing.assert_series_equal(df.rainflow.amplitude, expected)
-    assert df.rainflow.frequency == 1.0
+
+    expected_frequency = pd.Series(1.0, name='frequency', index=df.index)
+    pd.testing.assert_series_equal(df.rainflow.frequency, expected_frequency)
 
 
 @pytest.mark.parametrize('df, expected_upper, expected_lower', [
@@ -237,8 +241,8 @@ def test_rainflow_collective_signal_upper_lower_range_mean(df, expected_upper, e
 ])
 def test_rainflow_collective_signal_mean_range_mean(df, expected):
     df.columns = ['range', 'mean']
-    expected.name = 'mean'
-    pd.testing.assert_series_equal(df.rainflow.mean, expected)
+    expected.name = 'meanstress'
+    pd.testing.assert_series_equal(df.rainflow.meanstress, expected)
 
 
 @pytest.mark.parametrize('df, expected_amplitude, expected_mean', [
@@ -259,10 +263,10 @@ def test_rainflow_collective_signal_mean_range_mean(df, expected):
 def test_rainflow_collective_signal_mean_range_scale_scalar(df, expected_amplitude, expected_mean):
     df.columns = ['range', 'mean']
     expected_amplitude.name = 'amplitude'
-    expected_mean.name = 'mean'
+    expected_mean.name = 'meanstress'
     scaled = df.rainflow.scale(2.0)
     pd.testing.assert_series_equal(scaled.amplitude, expected_amplitude)
-    pd.testing.assert_series_equal(scaled.mean, expected_mean)
+    pd.testing.assert_series_equal(scaled.meanstress, expected_mean)
 
 
 @pytest.mark.parametrize('df, expected_amplitude, expected_mean', [
@@ -283,7 +287,7 @@ def test_rainflow_collective_signal_mean_range_scale_scalar(df, expected_amplitu
 def test_rainflow_collective_signal_mean_range_shift_scalar(df, expected_amplitude, expected_mean):
     df.columns = ['range', 'mean']
     expected_amplitude.name = 'amplitude'
-    expected_mean.name = 'mean'
+    expected_mean.name = 'meanstress'
     scaled = df.rainflow.shift(2.0)
     pd.testing.assert_series_equal(scaled.amplitude, expected_amplitude)
-    pd.testing.assert_series_equal(scaled.mean, expected_mean)
+    pd.testing.assert_series_equal(scaled.meanstress, expected_mean)

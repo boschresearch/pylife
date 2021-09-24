@@ -28,10 +28,20 @@ class RainflowMatrix(PylifeSignal):
     def _validate(self):
         self._class_location = 'mid'
         if 'range' in self._obj.index.names:
+            self._fail_if_not_multiindex(['range', 'mean'])
             return
         if 'from' in self._obj.index.names and 'to' in self._obj.index.names:
+            self._fail_if_not_multiindex(['from', 'to'])
             return
+
         raise AttributeError("Rainflow needs either 'range'/('mean') or 'from'/'to' in index levels.")
+
+    def _fail_if_not_multiindex(self, index_names):
+        for name in index_names:
+            if name not in self._obj.index.names:
+                continue
+            if not isinstance(self._obj.index.get_level_values(name), pd.IntervalIndex):
+                raise AttributeError("Index of a rainflow matrix must be pandas.IntervalIndex.")
 
     @property
     def amplitude(self):
@@ -43,6 +53,32 @@ class RainflowMatrix(PylifeSignal):
             rng = np.abs(fr-to)
 
         return pd.Series(rng/2., name='amplitude', index=self._obj.index)
+
+    @property
+    def meanstress(self):
+        if 'range' in self._obj.index.names:
+            if 'mean' not in self._obj.index.names:
+                mean = np.zeros_like(self._obj)
+            else:
+                mean = getattr(self._obj.index.get_level_values('mean'), self._class_location)
+        else:
+            fr = getattr(self._obj.index.get_level_values('from'), self._class_location).values
+            to = getattr(self._obj.index.get_level_values('to'), self._class_location).values
+            mean = (fr+to) / 2.
+
+        return pd.Series(mean, name='meanstress', index=self._obj.index)
+
+    @property
+    def upper(self):
+        res = self.meanstress + self.amplitude
+        res.name = 'upper'
+        return res
+
+    @property
+    def lower(self):
+        res = self.meanstress - self.amplitude
+        res.name = 'lower'
+        return res
 
     @property
     def frequency(self):

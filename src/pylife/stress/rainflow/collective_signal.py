@@ -62,7 +62,7 @@ class RainflowCollective(PylifeSignal):
         return pd.Series(rng/2., name='amplitude', index=self._obj.index)
 
     @property
-    def mean(self):
+    def meanstress(self):
         """Calculate the mean load values of the load collective.
 
         Returns
@@ -72,7 +72,7 @@ class RainflowCollective(PylifeSignal):
         """
         fr = self._obj['from']
         to = self._obj['to']
-        return pd.Series((fr+to)/2., name='mean')
+        return pd.Series((fr+to)/2., name='meanstress')
 
     @property
     def upper(self):
@@ -106,7 +106,7 @@ class RainflowCollective(PylifeSignal):
 
         This is for compatibility with :class:`pylife.stress.rainflow.RainflowMatrix`
         """
-        return 1.0
+        return pd.Series(1.0, name='frequency', index=self._obj.index)
 
     def scale(self, factors):
         """Scale the collective.
