@@ -160,7 +160,7 @@ def test_rambgood_char_init(ramberg_osgood):
     assert ramberg_osgood._n == 0.133
 
 
-def test_rambgood_properties(ramberg_osgood):
+def test_rambgood_properties_real(ramberg_osgood):
     assert ramberg_osgood.E == ramberg_osgood._E
     assert ramberg_osgood.K == ramberg_osgood._K
     assert ramberg_osgood.n == ramberg_osgood._n
