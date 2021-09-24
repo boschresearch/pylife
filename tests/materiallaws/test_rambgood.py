@@ -144,7 +144,7 @@ def test_rambgood_delta_strain_array(ramberg_osgood_cyclic, delta_stress, expect
     np.testing.assert_allclose(ramberg_osgood_cyclic.delta_strain(delta_stress), expected, rtol=1e-5)
 
 
-@pytest.mark.parametrize('expected, delta_strain', [(parametrization_data_delta[:, 0],parametrization_data_delta[:, 1])])
+@pytest.mark.parametrize('expected, delta_strain', [(parametrization_data_delta[:, 0], parametrization_data_delta[:, 1])])
 def test_rambgood_delta_stress_array(ramberg_osgood_cyclic, expected, delta_strain):
     np.testing.assert_allclose(ramberg_osgood_cyclic.delta_stress(delta_strain), expected, rtol=1e-5)
 
