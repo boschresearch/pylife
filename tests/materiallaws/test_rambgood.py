@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 
 from pylife.materiallaws import RambergOsgood
+from pylife.materiallaws import HookesLaw1D
 
 
 @pytest.fixture
@@ -17,9 +18,18 @@ def test_rambgood_init(ramberg_osgood_monotone):
 
 
 def test_rambgood_properties(ramberg_osgood_monotone):
-    assert ramberg_osgood_monotone.E == ramberg_osgood_monotone._E
+    assert ramberg_osgood_monotone.hookeslaw == HookesLaw1D(ramberg_osgood_monotone._E)
     assert ramberg_osgood_monotone.K == ramberg_osgood_monotone._K
     assert ramberg_osgood_monotone.n == ramberg_osgood_monotone._n
+
+
+def test_rambgood_eq(ramberg_osgood_monotone):
+    assert ramberg_osgood_monotone == RambergOsgood(E=2., K=6., n=0.5)
+    assert not ramberg_osgood_monotone == RambergOsgood(E=1., K=6., n=0.5)
+    assert not ramberg_osgood_monotone == RambergOsgood(E=2., K=5., n=0.5)
+    assert not ramberg_osgood_monotone == RambergOsgood(E=2., K=6., n=0.6)
+    assert not ramberg_osgood_monotone == 0.
+    assert ramberg_osgood_monotone != RambergOsgood(E=2., K=6., n=0.6)
 
 
 parametrization_data_monotone = np.array([
@@ -161,9 +171,18 @@ def test_rambgood_char_init(ramberg_osgood):
 
 
 def test_rambgood_properties_real(ramberg_osgood):
-    assert ramberg_osgood.E == ramberg_osgood._E
+    assert ramberg_osgood.hookeslaw == HookesLaw1D(ramberg_osgood._E)
     assert ramberg_osgood.K == ramberg_osgood._K
     assert ramberg_osgood.n == ramberg_osgood._n
+
+
+def test_rambgood_eq_real(ramberg_osgood):
+    assert ramberg_osgood == RambergOsgood(210.5e9, 1078e6, 0.133)
+    assert not ramberg_osgood == RambergOsgood(210.5e8, 1078e6, 0.133)
+    assert not ramberg_osgood == RambergOsgood(210.5e9, 1077e6, 0.133)
+    assert not ramberg_osgood == RambergOsgood(210.5e9, 1078e6, 0.134)
+    assert not ramberg_osgood == 0.
+    assert ramberg_osgood != RambergOsgood(210.5e9, 1078e6, 0.134)
 
 
 parametrization_data_monotone_real = np.array([
