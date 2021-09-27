@@ -22,6 +22,7 @@ import numpy as np
 
 from pylife import PylifeSignal
 
+
 @pd.api.extensions.register_series_accessor('rainflow')
 class RainflowMatrix(PylifeSignal):
 
@@ -29,9 +30,11 @@ class RainflowMatrix(PylifeSignal):
         self._class_location = 'mid'
         if 'range' in self._obj.index.names:
             self._fail_if_not_multiindex(['range', 'mean'])
+            self._impl = _RangeMeanMatrix(self._obj)
             return
         if 'from' in self._obj.index.names and 'to' in self._obj.index.names:
             self._fail_if_not_multiindex(['from', 'to'])
+            self._impl = _FromToMatrix(self._obj)
             return
 
         raise AttributeError("Rainflow needs either 'range'/('mean') or 'from'/'to' in index levels.")
@@ -45,27 +48,12 @@ class RainflowMatrix(PylifeSignal):
 
     @property
     def amplitude(self):
-        if 'range' in self._obj.index.names:
-            rng = getattr(self._obj.index.get_level_values('range'), self._class_location)
-        else:
-            fr = getattr(self._obj.index.get_level_values('from'), self._class_location).values
-            to = getattr(self._obj.index.get_level_values('to'), self._class_location).values
-            rng = np.abs(fr-to)
-
+        rng = self._impl.amplitude()
         return pd.Series(rng/2., name='amplitude', index=self._obj.index)
 
     @property
     def meanstress(self):
-        if 'range' in self._obj.index.names:
-            if 'mean' not in self._obj.index.names:
-                mean = np.zeros_like(self._obj)
-            else:
-                mean = getattr(self._obj.index.get_level_values('mean'), self._class_location)
-        else:
-            fr = getattr(self._obj.index.get_level_values('from'), self._class_location).values
-            to = getattr(self._obj.index.get_level_values('to'), self._class_location).values
-            mean = (fr+to) / 2.
-
+        mean = self._impl.meanstress()
         return pd.Series(mean, name='meanstress', index=self._obj.index)
 
     @property
@@ -87,11 +75,11 @@ class RainflowMatrix(PylifeSignal):
         return freq
 
     def use_class_right(self):
-        self._class_location = 'right'
+        self._impl._class_location = 'right'
         return self
 
     def use_class_left(self):
-        self._class_location = 'left'
+        self._impl._class_location = 'left'
         return self
 
     def scale(self, factors):
@@ -118,3 +106,37 @@ class RainflowMatrix(PylifeSignal):
 
         new_index = pd.MultiIndex.from_arrays(levels, names=obj.index.names)
         return pd.Series(obj.values, index=new_index, name='frequency')
+
+
+class _RainflowMatrixImpl:
+    def __init__(self, obj):
+        self._obj = obj
+        self._class_location = 'mid'
+
+
+class _FromToMatrix(_RainflowMatrixImpl):
+
+    def _from_tos(self):
+        fr = getattr(self._obj.index.get_level_values('from'), self._class_location).values
+        to = getattr(self._obj.index.get_level_values('to'), self._class_location).values
+        return fr, to
+
+    def amplitude(self):
+        fr, to = self._from_tos()
+        return np.abs(fr-to)
+
+    def meanstress(self):
+        fr, to = self._from_tos()
+        return (fr+to) / 2.
+
+
+class _RangeMeanMatrix(_RainflowMatrixImpl):
+
+    def amplitude(self):
+        return getattr(self._obj.index.get_level_values('range'), self._class_location)
+
+    def meanstress(self):
+        if 'mean' not in self._obj.index.names:
+            return np.zeros_like(self._obj)
+
+        return getattr(self._obj.index.get_level_values('mean'), self._class_location)
