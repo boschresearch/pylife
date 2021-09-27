@@ -142,7 +142,7 @@ load_hist_1 = pd.Series([
     8.0,
     0.0,
     0.0,
-], name='frequency', index=load_index())
+], name='cycles', index=load_index())
 
 load_hist_2 = pd.Series([
     1.114E5,
@@ -153,7 +153,7 @@ load_hist_2 = pd.Series([
     63.0,
     24.0,
     1.0,
-], name='frequency', index=load_index())
+], name='cycles', index=load_index())
 
 load_hist_3 = pd.Series([
     1.829E5,
@@ -164,7 +164,7 @@ load_hist_3 = pd.Series([
     0.0,
     0.0,
     0.0
-], name='frequency', index=load_index())
+], name='cycles', index=load_index())
 
 
 @pytest.mark.parametrize('load_hist, expected', [

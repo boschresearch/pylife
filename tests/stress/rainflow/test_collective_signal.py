@@ -43,8 +43,8 @@ def test_rainflow_collective_signal_amplitude_from_to(df, expected):
     expected.name = 'amplitude'
     pd.testing.assert_series_equal(df.rainflow.amplitude, expected)
 
-    expected_frequency = pd.Series(1.0, name='frequency', index=df.index)
-    pd.testing.assert_series_equal(df.rainflow.frequency, expected_frequency)
+    expected_cycles = pd.Series(1.0, name='cycles', index=df.index)
+    pd.testing.assert_series_equal(df.rainflow.cycles, expected_cycles)
 
 @pytest.mark.parametrize('df, expected', [
     (
@@ -65,8 +65,8 @@ def test_rainflow_collective_signal_mean_from_to(df, expected):
     expected.name = 'meanstress'
     pd.testing.assert_series_equal(df.rainflow.meanstress, expected)
 
-    expected_frequency = pd.Series(1.0, name='frequency', index=df.index)
-    pd.testing.assert_series_equal(df.rainflow.frequency, expected_frequency)
+    expected_cycles = pd.Series(1.0, name='cycles', index=df.index)
+    pd.testing.assert_series_equal(df.rainflow.cycles, expected_cycles)
 
 
 
@@ -198,8 +198,8 @@ def test_rainflow_collective_signal_amplitude_range_mean(df, expected):
     expected.name = 'amplitude'
     pd.testing.assert_series_equal(df.rainflow.amplitude, expected)
 
-    expected_frequency = pd.Series(1.0, name='frequency', index=df.index)
-    pd.testing.assert_series_equal(df.rainflow.frequency, expected_frequency)
+    expected_cycles = pd.Series(1.0, name='cycles', index=df.index)
+    pd.testing.assert_series_equal(df.rainflow.cycles, expected_cycles)
 
 
 @pytest.mark.parametrize('df, expected_upper, expected_lower', [

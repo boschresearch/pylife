@@ -69,9 +69,9 @@ class RainflowMatrix(PylifeSignal):
         return res
 
     @property
-    def frequency(self):
+    def cycles(self):
         freq = self._obj.copy()
-        freq.name = 'frequency'
+        freq.name = 'cycles'
         return freq
 
     def use_class_right(self):
@@ -105,7 +105,7 @@ class RainflowMatrix(PylifeSignal):
         levels = [do_transform_interval_index(lv) for lv in obj.index.names]
 
         new_index = pd.MultiIndex.from_arrays(levels, names=obj.index.names)
-        return pd.Series(obj.values, index=new_index, name='frequency')
+        return pd.Series(obj.values, index=new_index, name='cycles')
 
 
 class _RainflowMatrixImpl:

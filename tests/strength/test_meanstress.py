@@ -244,7 +244,7 @@ def test_FKM_goodman_hist_range_mean(R_goal, expected):
     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
     mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
 
-    df = pd.Series(np.zeros(24*24), name='frequency',
+    df = pd.Series(np.zeros(24*24), name='cycles',
                    index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']))
     df.loc[(7./6. - 1./24., 7./6.)] = 1.
     df.loc[(4./3. - 1./24., 2./3.)] = 3.
@@ -268,7 +268,7 @@ def test_FKM_goodman_hist_from_to(R_goal, expected):
     fr = pd.IntervalIndex.from_breaks(np.linspace(-1., 1., 49), closed='left')
     to = pd.IntervalIndex.from_breaks(np.linspace(0, 2., 49), closed='left')
 
-    df = pd.Series(np.zeros(48*48), name='frequency',
+    df = pd.Series(np.zeros(48*48), name='cycles',
                    index=pd.MultiIndex.from_product([fr, to], names=['from', 'to']))
     df.loc[(14./24., 21./12.)] = 1
     df.loc[(0., 4./3.)] = 3
@@ -292,7 +292,7 @@ def test_FKM_goodman_hist_range_mean_nonzero(R_goal, expected):
     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
     mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
 
-    df = pd.Series(np.zeros(24*24), name='frequency',
+    df = pd.Series(np.zeros(24*24), name='cycles',
                    index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']))
     df.loc[(7./6., 7./6.)] = 1.
     df.loc[(4./3., 2./3.)] = 3.
@@ -314,7 +314,7 @@ def test_null_histogram():
     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
     mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
 
-    df = pd.Series(np.zeros(24*24, dtype=np.int32), name='frequency',
+    df = pd.Series(np.zeros(24*24, dtype=np.int32), name='cycles',
                    index=pd.MultiIndex.from_product([rg, mn], names=['from', 'to']))
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
     res = df.meanstress_hist.FKM_goodman(haigh, -1)
@@ -326,7 +326,7 @@ def test_full_histogram():
     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
     mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
 
-    series = pd.Series(np.linspace(1, 576, 576, dtype=np.int32), name='frequency', index=pd.MultiIndex.from_product([rg,mn], names=['from', 'to']))
+    series = pd.Series(np.linspace(1, 576, 576, dtype=np.int32), name='cycles', index=pd.MultiIndex.from_product([rg,mn], names=['from', 'to']))
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
     res = series.meanstress_hist.FKM_goodman(haigh, -1)
 

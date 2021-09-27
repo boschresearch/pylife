@@ -76,6 +76,8 @@ to `docs`.  Both are the common locations for Python 3.x packages.
       ...
   ```
 
+* The name of a rainflow matrix series is no longer `frequency` but `cycles`.
+
 
 ## Variable names
 

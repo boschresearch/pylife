@@ -97,7 +97,7 @@ class MeanstressHist:
         binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
         bincount = int(np.ceil(Dsig_max / binsize))
         new_idx = pd.IntervalIndex.from_breaks(np.linspace(0, Dsig_max, bincount), name="range")
-        result = pd.Series(data=np.zeros(bincount-1), index=new_idx, name='frequency', dtype=np.int32)
+        result = pd.Series(data=np.zeros(bincount-1), index=new_idx, name='cycles', dtype=np.int32)
         for i, intv in enumerate(new_idx):
             cond = np.logical_and(Dsig >= intv.left, Dsig < intv.right)
             result.loc[intv] = np.int32(np.sum(self._df.values[cond]))
@@ -372,12 +372,12 @@ class MeanstressTransformMatrix(RF.RainflowMatrix):
     def _rebin_results(self, ranges):
         if ranges.shape[0] == 0:
             new_idx = pd.IntervalIndex(pd.interval_range(0.,  0., 0), name='range')
-            return pd.Series([], index=new_idx, name='frequency', dtype=np.float64)
+            return pd.Series([], index=new_idx, name='cycles', dtype=np.float64)
         ranges_max = ranges.max()
         binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
         bincount = int(np.ceil(ranges_max / binsize))
         new_idx = pd.IntervalIndex.from_breaks(np.linspace(0, ranges_max, bincount), name="range")
-        result = pd.Series(data=np.zeros(bincount-1), index=new_idx, name='frequency', dtype=np.int32)
+        result = pd.Series(data=np.zeros(bincount-1), index=new_idx, name='cycles', dtype=np.int32)
         for i, intv in enumerate(new_idx):
             cond = np.logical_and(ranges >= intv.left, ranges < intv.right)
             result.loc[intv] = np.int32(np.sum(self._obj.values[cond]))

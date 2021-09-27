@@ -31,7 +31,7 @@ class Fatigue(WoehlerCurve):
     def damage(self, load_hist):
         cycles = self.basquin_cycles(load_hist.amplitude)
 
-        result = load_hist.frequency.divide(cycles, axis=0)
+        result = load_hist.cycles.divide(cycles, axis=0)
         result.name = 'damage'
         return result
 

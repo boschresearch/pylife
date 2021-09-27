@@ -186,9 +186,9 @@ def test_rainflow_from_to_lower_right(rainflow_matrix_from_to):
     pd.testing.assert_series_equal(rainflow_matrix_from_to.rainflow.use_class_right().lower, expected)
 
 
-def test_rainflow_frequency_from_to(rainflow_matrix_from_to):
-    expected = pd.Series(1, index=rainflow_matrix_from_to.index, name='frequency')
-    freq = rainflow_matrix_from_to.rainflow.frequency
+def test_rainflow_cycles_from_to(rainflow_matrix_from_to):
+    expected = pd.Series(1, index=rainflow_matrix_from_to.index, name='cycles')
+    freq = rainflow_matrix_from_to.rainflow.cycles
     pd.testing.assert_series_equal(freq, expected)
 
 
@@ -196,7 +196,7 @@ def test_rainflow_from_to_scale_scalar(rainflow_matrix_from_to):
     from_intervals = pd.interval_range(-2., 4., 3)
     to_intervals = pd.interval_range(-1., 2., 3)
     expected_index = pd.MultiIndex.from_product([from_intervals, to_intervals], names=['from', 'to'])
-    expected = pd.Series(1, index=expected_index, name='frequency')
+    expected = pd.Series(1, index=expected_index, name='cycles')
 
     scaled = rainflow_matrix_from_to.rainflow.scale(0.5)
     assert isinstance(scaled, pylife.stress.rainflow.RainflowMatrix)
@@ -228,7 +228,7 @@ def test_rainflow_from_to_scale_series(rainflow_matrix_from_to):
     )
     foo_index = pd.Index(['x', 'y']*9, name='foo')
     expected_index = pd.MultiIndex.from_arrays([from_intervals, to_intervals, foo_index], names=['from', 'to', 'foo'])
-    expected = pd.Series(1, index=expected_index, name='frequency')
+    expected = pd.Series(1, index=expected_index, name='cycles')
 
     factors = pd.Series([0.5, 2.0], index=pd.Index(['x', 'y'], name='foo'), name='scale_factors')
 
@@ -242,7 +242,7 @@ def test_rainflow_from_to_shift_scalar(rainflow_matrix_from_to):
     from_intervals = pd.interval_range(-0., 12., 3)
     to_intervals = pd.interval_range(2., 8., 3)
     expected_index = pd.MultiIndex.from_product([from_intervals, to_intervals], names=['from', 'to'])
-    expected = pd.Series(1, index=expected_index, name='frequency')
+    expected = pd.Series(1, index=expected_index, name='cycles')
 
     shifted = rainflow_matrix_from_to.rainflow.shift(4.)
     assert isinstance(shifted, pylife.stress.rainflow.RainflowMatrix)
@@ -274,7 +274,7 @@ def test_rainflow_from_to_shift_series(rainflow_matrix_from_to):
     )
     foo_index = pd.Index(['x', 'y']*9, name='foo')
     expected_index = pd.MultiIndex.from_arrays([from_intervals, to_intervals, foo_index], names=['from', 'to', 'foo'])
-    expected = pd.Series(1, index=expected_index, name='frequency')
+    expected = pd.Series(1, index=expected_index, name='cycles')
 
     factors = pd.Series([2., 4.], index=pd.Index(['x', 'y'], name='foo'), name='shift_factors')
 
@@ -385,7 +385,7 @@ def test_rainflow_range_mean_scale_scalar(rainflow_matrix_range_mean):
     range_intervals = pd.interval_range(0., 6., 3)
     mean_intervals = pd.interval_range(-1., 2., 3)
     expected_index = pd.MultiIndex.from_product([range_intervals, mean_intervals], names=['range', 'mean'])
-    expected = pd.Series(1, index=expected_index, name='frequency')
+    expected = pd.Series(1, index=expected_index, name='cycles')
 
     scaled = rainflow_matrix_range_mean.rainflow.scale(0.5)
     assert isinstance(scaled, pylife.stress.rainflow.RainflowMatrix)
@@ -417,7 +417,7 @@ def test_rainflow_range_mean_scale_series(rainflow_matrix_range_mean):
     )
     foo_index = pd.Index(['x', 'y']*9, name='foo')
     expected_index = pd.MultiIndex.from_arrays([range_intervals, mean_intervals, foo_index], names=['range', 'mean', 'foo'])
-    expected = pd.Series(1, index=expected_index, name='frequency')
+    expected = pd.Series(1, index=expected_index, name='cycles')
 
     factors = pd.Series([0.5, 2.0], index=pd.Index(['x', 'y'], name='foo'), name='scale_factors')
 
@@ -431,7 +431,7 @@ def test_rainflow_range_mean_shift_scalar(rainflow_matrix_range_mean):
     range_intervals = pd.interval_range(0., 12., 3)
     mean_intervals = pd.interval_range(2., 8., 3)
     expected_index = pd.MultiIndex.from_product([range_intervals, mean_intervals], names=['range', 'mean'])
-    expected = pd.Series(1, index=expected_index, name='frequency')
+    expected = pd.Series(1, index=expected_index, name='cycles')
 
     shifted = rainflow_matrix_range_mean.rainflow.shift(4.)
     assert isinstance(shifted, pylife.stress.rainflow.RainflowMatrix)
@@ -463,7 +463,7 @@ def test_rainflow_range_mean_shift_series(rainflow_matrix_range_mean):
     )
     foo_index = pd.Index(['x', 'y']*9, name='foo')
     expected_index = pd.MultiIndex.from_arrays([range_intervals, mean_intervals, foo_index], names=['range', 'mean', 'foo'])
-    expected = pd.Series(1, index=expected_index, name='frequency')
+    expected = pd.Series(1, index=expected_index, name='cycles')
 
     factors = pd.Series([2., 4.], index=pd.Index(['x', 'y'], name='foo'), name='shift_factors')
 

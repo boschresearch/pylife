@@ -46,7 +46,7 @@ def test_meanstress_collective_empty_FKM_goodman(ms_sens):
 
     expected = pd.Series([],
                          index=pd.IntervalIndex(to_intervals, name='range'),
-                         name='frequency', dtype=np.float64)
+                         name='cycles', dtype=np.float64)
     res = ser.meanstress_transform.FKM_goodman(ms_sens, -1.).to_pandas()
     pd.testing.assert_series_equal(res, expected)
 
@@ -56,7 +56,7 @@ def test_meanstress_collective_FKM_goodman_single_ms_sens(ms_sens):
     to = pd.IntervalIndex.from_breaks(np.linspace(0, 2., 49), closed='left')
     index = pd.MultiIndex.from_product([fr, to], names=['from', 'to'])
 
-    rf = pd.Series(0.0, name='frequency', index=index)
+    rf = pd.Series(0.0, name='cycles', index=index)
 
     rf.loc[(14./24., 21./12.)] = 1
     rf.loc[(0., 4./3.)] = 3

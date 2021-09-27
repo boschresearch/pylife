@@ -101,12 +101,12 @@ class RainflowCollective(PylifeSignal):
         return res
 
     @property
-    def frequency(self):
-        """The frequency of each member of the collective is 1.0.
+    def cycles(self):
+        """The cycles of each member of the collective is 1.0.
 
         This is for compatibility with :class:`pylife.stress.rainflow.RainflowMatrix`
         """
-        return pd.Series(1.0, name='frequency', index=self._obj.index)
+        return pd.Series(1.0, name='cycles', index=self._obj.index)
 
     def scale(self, factors):
         """Scale the collective.
