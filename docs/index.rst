@@ -4,21 +4,19 @@ pyLife Documentation
 .. toctree::
    :caption: About
 
-   about
+   README
 
 .. toctree::
    :maxdepth: 1
    :caption: Installation / Getting started
 
-   installation
+   INSTALLATION
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: User Guide
 
    user_guide
-   data_model
-   signal_api
 
 .. toctree::
    :maxdepth: 1
@@ -33,12 +31,26 @@ pyLife Documentation
    reference
 
 .. toctree::
+   :maxdepth: 2
+   :caption: News
+
+   NEWS-2.0
+
+.. toctree::
    :maxdepth: 1
    :caption: Hack pyLife
 
-   contributing
-   codingstyle
+   CONTRIBUTING
+   CODINGSTYLE
    variable_names
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Licenses
+
+   NOTICE
+   LICENSE
+   3rd-party-licenses
 
 
 Indices and tables

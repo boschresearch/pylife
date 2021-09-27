@@ -17,7 +17,7 @@ Fitting material data
 ---------------------
 
 This is about extracting material parameters from experimental data.  As of now
-this is a versatile set of classes to fit Wöhler corve (aka SN-curve)
+this is a versatile set of classes to fit Wöhler curve (aka SN-curve)
 parameters from experimental fatigue data.  Mid term we would like to see there
 a module to fit tensile test data and things like that.
 
@@ -46,7 +46,7 @@ things as rainflow counting.
 * :mod:`pylife.stress.rainflow` – a versatile module for rainflow counting
 * :mod:`pylife.stress.equistress` for equivalent stress calculations from
   stress tensors
-* :mod:`pylife.stress.timesignal` for operations on timesignals
+* :mod:`pylife.stress.timesignal` for operations on time signals
 
 
 
@@ -102,3 +102,10 @@ pandas objects.
 
 The page :doc:`Signal API <signal_api>` describes how mathematical operations are to be
 performed on those pandas objects.
+
+.. toctree::
+   :maxdepth: 2
+
+   data_model
+   signal_api
+   broadcaster
