@@ -20,8 +20,6 @@ __maintainer__ = __author__
 import numpy as np
 from scipy import optimize
 
-from .hookeslaw import HookesLaw1D
-
 
 class RambergOsgood:
     '''Simple implementation of the Ramberg-Osgood relation
@@ -46,10 +44,14 @@ class RambergOsgood:
     '''
 
     def __init__(self, E, K, n):
-        self._hookes_law = HookesLaw1D(E)
+        self._E = E
         self._K = K
         self._n = n
-        self._E = E
+
+    @property
+    def E(self):
+        '''Get Young's Modulus'''
+        return self._E
 
     @property
     def K(self):
@@ -60,10 +62,6 @@ class RambergOsgood:
     def n(self):
         '''Get the strain hardening coefficient'''
         return self._n
-
-    @property
-    def hookeslaw(self):
-        return self._hookes_law
 
     def strain(self, stress):
         '''Calculate the elastic plastic strain for a given stress
@@ -80,8 +78,22 @@ class RambergOsgood:
 
         '''
         stress = np.asarray(stress)
-        elaststrain = self._hookes_law.strain(stress)
-        return elaststrain + self.plastic_strain(stress)
+        return self.elastic_strain(stress) + self.plastic_strain(stress)
+
+    def elastic_strain(self, stress):
+        '''Calculate the elastic strain for a given stress
+
+        Parameters
+        ----------
+        stress : array-like float
+            The stress
+
+        Returns
+        -------
+        strain : array-like float
+            The resulting elastic strain
+        '''
+        return stress/self._E
 
     def plastic_strain(self, stress):
         '''Calculate the plastic strain for a given stress
@@ -101,7 +113,7 @@ class RambergOsgood:
 
     def _get_abs_sign(self, x):
         '''Calculate the absolute value and the sign for a given input
-
+        
         Parameters
         ----------
         x : array-like float
@@ -125,9 +137,7 @@ class RambergOsgood:
         ----------
         strain : array-like float
             The strain
-        elasticstrain (optional): bool
-            If false (default), the given strain is the total strain. If true, the given strain is the elastic strain.
-
+            
         Returns
         -------
         stress : array-like float
@@ -142,7 +152,7 @@ class RambergOsgood:
 
         strain = np.asarray(strain)
         abs_strain, sign_strain = self._get_abs_sign(strain)
-        stress0 = self._hookes_law.stress(abs_strain)
+        stress0 = self._E * abs_strain
         abs_stress = optimize.newton(func=residuum, x0=stress0, fprime=dresiduum, rtol=rtol, tol=tol)
         return abs_stress * sign_strain
 
@@ -241,10 +251,3 @@ class RambergOsgood:
             raise ValueError("Value for 'stress' must not be higher than 'max_stress'.")
         return self.strain(max_stress) - self.delta_strain(max_stress-stress)
 
-    def __eq__(self, other):
-        if (isinstance(other, RambergOsgood)):
-            return self._E == other._E and self._K == other._K and self._n == other._n and self._hookes_law == other._hookes_law
-        return False
-
-    def __ne__(self, other):
-        return not self == other
