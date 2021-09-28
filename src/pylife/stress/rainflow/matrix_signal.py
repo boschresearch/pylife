@@ -62,6 +62,24 @@ class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
         return pd.Series(mean, name='meanstress', index=self._obj.index)
 
     @property
+    def R(self):
+        res = (self.lower / self.upper).fillna(0.0)
+        res.name = 'R'
+        return res
+
+    @property
+    def upper(self):
+        res = self.meanstress + self.amplitude
+        res.name = 'upper'
+        return res
+
+    @property
+    def lower(self):
+        res = self.meanstress - self.amplitude
+        res.name = 'lower'
+        return res
+
+    @property
     def cycles(self):
         cycles = self._obj.copy()
         cycles.name = 'cycles'

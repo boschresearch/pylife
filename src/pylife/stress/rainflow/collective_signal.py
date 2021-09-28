@@ -78,6 +78,45 @@ class RainflowCollective(PylifeSignal, AbstractLoadCollective):
         return pd.Series((fr+to)/2., name='meanstress')
 
     @property
+    def R(self):
+        """Calculate the R values of the load collective.
+
+        Returns
+        -------
+        R : pd.Series
+            The R values of the load collective
+        """
+        res = (self.lower / self.upper).fillna(0.0)
+        res.name = 'R'
+        return res
+
+    @property
+    def upper(self):
+        """Calculate the upper load values of the load collective.
+
+        Returns
+        -------
+        upper : pd.Series
+            The upper load values of the load collective
+        """
+        res = self._obj.max(axis=1)
+        res.name = 'upper'
+        return res
+
+    @property
+    def lower(self):
+        """Calculate the lower load values of the load collective.
+
+        Returns
+        -------
+        lower : pd.Series
+            The lower load values of the load collective
+        """
+        res = self._obj.min(axis=1)
+        res.name = 'lower'
+        return res
+
+    @property
     def cycles(self):
         """The cycles of each member of the collective is 1.0.
 

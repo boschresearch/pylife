@@ -186,6 +186,14 @@ def test_rainflow_from_to_lower_right(rainflow_matrix_from_to):
     pd.testing.assert_series_equal(rainflow_matrix_from_to.rainflow.use_class_right().lower, expected)
 
 
+def test_rainflow_R(rainflow_matrix_from_to):
+    print(rainflow_matrix_from_to)
+    expected = pd.Series([2., -np.inf, -2., -np.inf, 0., 0., -0.5, 0., 0.5],
+                         name='R',
+                         index=rainflow_matrix_from_to.index)
+    pd.testing.assert_series_equal(rainflow_matrix_from_to.rainflow.use_class_left().R, expected)
+
+
 def test_rainflow_cycles_from_to(rainflow_matrix_from_to):
     expected = pd.Series(1, index=rainflow_matrix_from_to.index, name='cycles')
     freq = rainflow_matrix_from_to.rainflow.cycles
