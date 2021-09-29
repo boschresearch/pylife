@@ -50,8 +50,8 @@ class StressTensorVoigt(PylifeSignal):
         self.fail_if_key_missing(['S11', 'S22', 'S33', 'S12', 'S13', 'S23'])
 
 
-@pd.api.extensions.register_dataframe_accessor("cyclic_stress")
-class CyclicStress(PylifeSignal):
+#@pd.api.extensions.register_dataframe_accessor("cyclic_stress")
+class _CyclicStress(PylifeSignal):
     '''DataFrame accessor class for cyclic stress data
 
     Raises

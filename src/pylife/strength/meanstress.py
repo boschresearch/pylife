@@ -32,77 +32,75 @@ __maintainer__ = "Johannes Mueller"
 import numpy as np
 import pandas as pd
 
-import pylife
-from pylife.stress import stresssignal
-from pylife.core import *
+from pylife import PylifeSignal, Broadcaster
+import pylife.stress.rainflow as RF
 
+# @pd.api.extensions.register_dataframe_accessor("meanstress_mesh")
+# class MeanstressMesh(stresssignal.CyclicStress):
 
-@pd.api.extensions.register_dataframe_accessor("meanstress_mesh")
-class MeanstressMesh(stresssignal.CyclicStress):
+#     def FKM_goodman(self, haigh, R_goal):
+#         haigh.FKM_Goodman
+#         Sa = self._obj.sigma_a.to_numpy()
+#         Sm = self._obj.sigma_m.to_numpy()
+#         Sa_transformed = FKM_goodman(Sa, Sm, haigh.M, haigh.M2, R_goal)
+#         return pd.DataFrame({'sigma_a': Sa_transformed, 'R': np.ones_like(Sa_transformed) * R_goal},
+#                             index=self._obj.index)
 
-    def FKM_goodman(self, haigh, R_goal):
-        haigh.FKM_Goodman
-        Sa = self._obj.sigma_a.to_numpy()
-        Sm = self._obj.sigma_m.to_numpy()
-        Sa_transformed = FKM_goodman(Sa, Sm, haigh.M, haigh.M2, R_goal)
-        return pd.DataFrame({'sigma_a': Sa_transformed, 'R': np.ones_like(Sa_transformed) * R_goal},
-                            index=self._obj.index)
+#     def five_segment(self, haigh, R_goal):
+#         haigh.haigh_five_segment
+#         Sa = self._obj.sigma_a.to_numpy()
+#         Sm = self._obj.sigma_m.to_numpy()
+#         Sa_transformed = five_segment_correction(Sa, Sm,
+#                                                  haigh.M0, haigh.M1, haigh.M2, haigh.M3, haigh.M4,
+#                                                  haigh.R12, haigh.R23,
+#                                                  R_goal)
+#         return pd.DataFrame({'sigma_a': Sa_transformed, 'R': np.ones_like(Sa_transformed) * R_goal},
+#                             index=self._obj.index)
 
-    def five_segment(self, haigh, R_goal):
-        haigh.haigh_five_segment
-        Sa = self._obj.sigma_a.to_numpy()
-        Sm = self._obj.sigma_m.to_numpy()
-        Sa_transformed = five_segment_correction(Sa, Sm,
-                                                 haigh.M0, haigh.M1, haigh.M2, haigh.M3, haigh.M4,
-                                                 haigh.R12, haigh.R23,
-                                                 R_goal)
-        return pd.DataFrame({'sigma_a': Sa_transformed, 'R': np.ones_like(Sa_transformed) * R_goal},
-                            index=self._obj.index)
+# @pd.api.extensions.register_series_accessor("meanstress_hist")
+# class MeanstressHist:
 
-@pd.api.extensions.register_series_accessor("meanstress_hist")
-class MeanstressHist:
+#     def __init__(self, df):
+#         if df.index.names == ['from', 'to']:
+#             f = df.index.get_level_values('from').mid
+#             t = df.index.get_level_values('to').mid
+#             self._Sa = np.abs(f-t)/2.
+#             self._Sm = (f+t)/2.
+#             self._binsize_x = df.index.get_level_values('from').length.min()
+#             self._binsize_y = df.index.get_level_values('to').length.min()
+#         elif df.index.names == ['range', 'mean']:
+#             self._Sa = df.index.get_level_values('range').mid / 2.
+#             self._Sm = df.index.get_level_values('mean').mid
+#             self._binsize_x = df.index.get_level_values('range').length.min()
+#             self._binsize_y = df.index.get_level_values('mean').length.min()
+#         else:
+#             raise AttributeError("MeanstressHist needs index names either ['from', 'to'] or ['range', 'mean']")
 
-    def __init__(self, df):
-        if df.index.names == ['from', 'to']:
-            f = df.index.get_level_values('from').mid
-            t = df.index.get_level_values('to').mid
-            self._Sa = np.abs(f-t)/2.
-            self._Sm = (f+t)/2.
-            self._binsize_x = df.index.get_level_values('from').length.min()
-            self._binsize_y = df.index.get_level_values('to').length.min()
-        elif df.index.names == ['range', 'mean']:
-            self._Sa = df.index.get_level_values('range').mid / 2.
-            self._Sm = df.index.get_level_values('mean').mid
-            self._binsize_x = df.index.get_level_values('range').length.min()
-            self._binsize_y = df.index.get_level_values('mean').length.min()
-        else:
-            raise AttributeError("MeanstressHist needs index names either ['from', 'to'] or ['range', 'mean']")
+#         self._df = df
 
-        self._df = df
+#     def FKM_goodman(self, haigh, R_goal):
+#         haigh.FKM_Goodman
+#         Dsig = FKM_goodman(self._Sa, self._Sm, haigh.M, haigh.M2, R_goal) * 2.
+#         return self._rebin_results(Dsig)
 
-    def FKM_goodman(self, haigh, R_goal):
-        haigh.FKM_Goodman
-        Dsig = FKM_goodman(self._Sa, self._Sm, haigh.M, haigh.M2, R_goal) * 2.
-        return self._rebin_results(Dsig)
+#     def five_segment(self, haigh, R_goal):
+#         haigh.haigh_five_segment
+#         Dsig = five_segment_correction(self._Sa, self._Sm,
+#                                        haigh.M0, haigh.M1, haigh.M2, haigh.M3, haigh.M4, haigh.R12,
+#                                        haigh.R23, R_goal) * 2.
+#         return self._rebin_results(Dsig)
 
-    def five_segment(self, haigh, R_goal):
-        haigh.haigh_five_segment
-        Dsig = five_segment_correction(self._Sa, self._Sm,
-                                       haigh.M0, haigh.M1, haigh.M2, haigh.M3, haigh.M4, haigh.R12,
-                                       haigh.R23, R_goal) * 2.
-        return self._rebin_results(Dsig)
-
-    def _rebin_results(self, Dsig):
-        Dsig_max = Dsig.max()
-        binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
-        bincount = int(np.ceil(Dsig_max / binsize))
-        new_idx = pd.IntervalIndex.from_breaks(np.linspace(0, Dsig_max, bincount), name="range")
-        result = pd.Series(data=np.zeros(bincount-1), index=new_idx, name='cycles', dtype=np.int32)
-        for i, intv in enumerate(new_idx):
-            cond = np.logical_and(Dsig >= intv.left, Dsig < intv.right)
-            result.loc[intv] = np.int32(np.sum(self._df.values[cond]))
-        result.iloc[-1] += np.int32(np.sum(self._df.values[Dsig == Dsig_max]))
-        return result
+#     def _rebin_results(self, Dsig):
+#         Dsig_max = Dsig.max()
+#         binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
+#         bincount = int(np.ceil(Dsig_max / binsize))
+#         new_idx = pd.IntervalIndex.from_breaks(np.linspace(0, Dsig_max, bincount), name="range")
+#         result = pd.Series(data=np.zeros(bincount-1), index=new_idx, name='cycles', dtype=np.int32)
+#         for i, intv in enumerate(new_idx):
+#             cond = np.logical_and(Dsig >= intv.left, Dsig < intv.right)
+#             result.loc[intv] = np.int32(np.sum(self._df.values[cond]))
+#         result.iloc[-1] += np.int32(np.sum(self._df.values[Dsig == Dsig_max]))
+#         return result
 
 @pd.api.extensions.register_dataframe_accessor("FKM_Goodman")
 @pd.api.extensions.register_series_accessor("FKM_Goodman")
@@ -119,7 +117,7 @@ class FiveSegment(PylifeSignal):
 
 
 
-def FKM_goodman(Sa, Sm, M, M2, R_goal):
+def _FKM_goodman(Sa, Sm, M, M2, R_goal):
     ''' Performs a mean stress transformation to R_goal according to the FKM-Goodman model
 
     :param Sa: the stress amplitude
@@ -180,7 +178,23 @@ def FKM_goodman(Sa, Sm, M, M2, R_goal):
     return S0*(1.+Mf)*(1.-Mf/(Mf+(1.-R_goal)/(1.+R_goal)))
 
 
-def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
+def FKM_goodman(amplitude, meanstress, M, M2, R_goal):
+    cycles = pd.DataFrame({
+        'range': 2.*amplitude,
+        'mean': meanstress
+    })
+
+    haigh_FKM_goodman = pd.Series({
+        'M': M,
+        'M2': M2
+    })
+    hd = HaighDiagram.FKMGoodman(haigh_FKM_goodman)
+
+    res = hd.transform(cycles, R_goal)
+    return res.rainflow.amplitude.to_numpy()
+
+
+def five_segment_correction(amplitude, meanstress, M0, M1, M2, M3, M4, R12, R23, R_goal):
     ''' Performs a mean stress transformation to R_goal according to the
         Five Segment Mean Stress Correction
 
@@ -197,6 +211,142 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
 
     :returns: the transformed stress range
     '''
+
+    cycles = pd.DataFrame({
+        'range': 2.*amplitude,
+        'mean': meanstress
+    })
+
+    haigh_five_segment = pd.Series({
+        'M0': M0,
+        'M1': M1,
+        'M2': M2,
+        'M3': M3,
+        'M4': M4,
+        'R12': R12,
+        'R23': R23
+    })
+
+    hd = HaighDiagram.five_segment(haigh_five_segment)
+    res = hd.transform(cycles, R_goal)
+    return res.rainflow.amplitude.to_numpy()
+
+
+
+@pd.api.extensions.register_series_accessor('haigh_diagram')
+class HaighDiagram(PylifeSignal):
+
+    @classmethod
+    def FKMGoodman(cls, haigh_FKM_goodman):
+        M = haigh_FKM_goodman.M
+        M2 = haigh_FKM_goodman.M2
+        interval_index = pd.IntervalIndex.from_tuples([(1.0, np.inf), (-np.inf, 0), (0, 1.)], name='R')
+
+        haigh, full_frame = Broadcaster(interval_index.to_frame()).broadcast(haigh_FKM_goodman)
+        print(haigh.index)
+        print(haigh.index.get_level_values('R'))
+        return cls(pd.Series([0.0, M, M2], index=interval_index))
+        return cls(haigh)
+
+    @classmethod
+    def five_segment(cls, h):
+        idx = pd.IntervalIndex.from_tuples([
+            (1.0, np.inf),
+            (-np.inf, 0.),
+            (0., h.R12),
+            (h.R12, h.R23),
+            (h.R23, 1.)
+        ], name='R')
+        return cls(pd.Series([h.M4, h.M0, h.M1, h.M2, h.M3], index=idx))
+
+    def _validate(self):
+        self._R_index = self._find_R_index()
+        # if self._R_index.left.min() != -np.inf or self._R_index.right.max() != 1.0:
+        #     raise AttributeError("The 'R' IntervalIndex must cover the exact range (-inf, 1.0].")
+        # if self._R_index.is_overlapping:
+        #     raise AttributeError("The intervals of the 'R' IntervalIndex must not overlap.")
+        # if not self._R_index.is_monotonic_increasing:
+        #     raise AttributeError("The 'R' IntervalIndex must be monotonic increasing.")
+
+        # self._check_for_gaps()
+
+    def _find_R_index(self):
+        if 'R' not in self._obj.index.names:
+            raise AttributeError("A Haigh Diagram needs an index level 'R'.")
+        if isinstance(self._obj.index, pd.MultiIndex):
+            R_index = self._obj.index.unique('R')
+        else:
+            R_index = self._obj.index
+        if not isinstance(R_index, pd.IntervalIndex):
+            raise AttributeError("The 'R' index must be an IntervalIndex.")
+        return R_index
+
+    def _check_for_gaps(self):
+        if len(self._R_index) == 1:
+            return
+        left = self._R_index.left[1:]
+        right = self._R_index.right[:-1]
+        if pd.DataFrame({'l': left, 'r': right}).apply(lambda r: r.l != r.r, axis=1).any():
+            raise AttributeError("The intervals of the 'R' IntervalIndex must not have gaps.")
+
+    def transform(self, cycles, R_goal):
+
+        print(self._R_index)
+
+        def transform(interval, R_g):
+            R = new_cycles.R.apply(lambda R: 1.0 if R == -np.inf and R_g > 1. else R)
+            test_interval = pd.Interval(interval.left, interval.right, closed='both')
+            to_shift = R.apply(lambda i: i in test_interval)
+            if not to_shift.any():
+                return
+
+            rf = new_cycles.loc[to_shift]
+            amp = rf.amplitude
+            mean = amp * (1.+rf.R)/(1.-rf.R)
+            mean[rf.R == -np.inf] = -amp[rf.R == -np.inf]
+
+            M = self._obj.loc[interval]
+
+            if R_g == -np.inf:
+                trans_amp = (amp + M * mean) / (1. - M)
+            else:
+                trans_amp = (1 - R_g) * (amp + M*mean) / (1 - R_g + M*(1+R_g))
+
+            new_cycles.loc[to_shift, 'amplitude'] = trans_amp.fillna(0.0)
+            new_cycles.loc[to_shift, 'R'] = R_g
+
+        rf = cycles.rainflow
+        new_cycles = pd.DataFrame({
+            'amplitude': rf.amplitude,
+            'R': rf.R
+        }, index=cycles.index)
+
+        try:
+            R_goal_segment = self._R_index.get_loc(R_goal)
+        except KeyError:
+            R_goal_segment = self._R_index.copy().set_closed('left').get_loc(R_goal)
+
+        print(R_goal_segment)
+
+        for interval in self._R_index[:R_goal_segment]:
+            tmp_R_goal = interval.right if interval.right < 1.0 else interval.left
+            if tmp_R_goal == 1.0:
+                tmp_R_goal = -np.inf
+            transform(interval, tmp_R_goal)
+
+        for interval in self._R_index[:R_goal_segment:-1]:
+            transform(interval, interval.left)
+
+        transform(self._R_index[R_goal_segment], R_goal)
+
+        res = pd.DataFrame({
+            'range': 2. * new_cycles.amplitude,
+            'mean': new_cycles.amplitude * ((1.+new_cycles.R)/(1.-new_cycles.R)).fillna(-1.0)
+        }, index=cycles.index)
+
+        return res
+
+def _five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
 
     if R_goal == 1:
         raise ValueError('R_goal = 1 is invalid input')
@@ -238,10 +388,15 @@ def five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal):
     r = np.append(c0, c1)
     r23 = np.append(c2, c3)
 
+    print(Sa[r4], Sm[r4], Ma[r4])
     S_inf[r4] = (Sa[r4]+Sm[r4]*Ma[r4])/(1.-Ma[r4])
+    print(S_inf)
     S_0[r4] = S_inf[r4]*(1.-M0[r4])/(1.+M0[r4])
+    print(S_0)
     S_12[r4] = S_0[r4]*(1.+M1[r4])/(1.+M1[r4]*B_12[r4])
+    print(S_12)
     S_23[r4] = S_12[r4]*(1.+M2[r4]*B_12[r4])/(1.+M2[r4]*B_23[r4])
+    print(S_23)
 
     S_0[r] = (Sa[r]+Sm[r]*Ma[r])/(1.+Ma[r])
     S_inf[r] = S_0[r]*(1.+M0[r])/(1.-M0[r])
@@ -336,13 +491,13 @@ import pylife.stress.rainflow as RF
 class MeanstressTransformCollective(RF.RainflowCollective):
 
     def FKM_goodman(self, ms_sens, R_goal):
-        obj, ms_sens = Broadcaster(ms_sens).broadcast(self._obj)
-        rfc = obj.rainflow
-        amplitude = FKM_goodman(rfc.amplitude.values, rfc.meanstress.values, ms_sens.M.values, ms_sens.M2.values, R_goal)
-        res = pd.DataFrame({
-            'from': amplitude * (2. * R_goal) / (1. - R_goal),
-            'to': amplitude * 2. / (1. - R_goal)
-        }, index = obj.index)
+        hd = HaighDiagram.FKMGoodman(ms_sens)
+        res = hd.transform(self._obj, R_goal)
+        return res.rainflow
+
+    def five_segment(self, haigh, R_goal):
+        hd = HaighDiagram.five_segment(haigh)
+        res = hd.transform(self._obj, R_goal)
         return res.rainflow
 
 
@@ -366,7 +521,12 @@ class MeanstressTransformMatrix(RF.RainflowMatrix):
 
 
     def FKM_goodman(self, haigh, R_goal):
-        ranges = FKM_goodman(self.amplitude.values, self.meanstress.values, haigh.M, haigh.M2, R_goal) * 2.
+        collective = pd.DataFrame({
+            'range': self.amplitude / 2.,
+            'mean': self.meanstress
+        })
+
+        ranges = HaighDiagram.FKMGoodman(haigh).transform(self._obj, R_goal)['range']
         return self._rebin_results(ranges).rainflow
 
     def _rebin_results(self, ranges):
