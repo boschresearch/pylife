@@ -1,10 +1,14 @@
 pyLife core
 ###########
 
-.. automodule:: pylife.core.signal
+.. autoclass:: pylife.PylifeSignal
 	:undoc-members:
 	:members:
 
-.. automodule:: pylife.core.data_validator
+.. autoclass:: pylife.Broadcaster
+	:undoc-members:
+	:members:
+
+.. autoclass:: pylife.DataValidator
 	:undoc-members:
 	:members:

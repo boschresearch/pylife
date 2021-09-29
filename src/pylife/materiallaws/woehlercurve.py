@@ -20,12 +20,12 @@ import scipy.stats as stats
 
 from pylife.utils.functions import scatteringRange2std
 
-from pylife import signal
+from pylife import PylifeSignal
 
 
 @pd.api.extensions.register_series_accessor('woehler')
 @pd.api.extensions.register_dataframe_accessor('woehler')
-class WoehlerCurve(signal.PylifeSignal):
+class WoehlerCurve(PylifeSignal):
     """A PylifeSignal accessor for Wöhler Curve data.
 
     Wöhler Curve (aka SN-curve) determines after how many load cycles at a
@@ -44,10 +44,10 @@ class WoehlerCurve(signal.PylifeSignal):
 
     * ``k_2`` : The slope of the Wöhler Curve below the endurance limit
                 If the key is missing it is assumed to be infinity, i.e. perfect endurance
-    * ``TN`` : The scatter in cycle direction, (N_10/N_90)
+    * ``TN`` : The scatter in cycle direction, (N_90/N_10)
                If the key is missing it is assumed to be 1.0 or calculated from ``TS``
                if given.
-    * ``TS`` : The scatter in cycle direction, (S_10/S_90)
+    * ``TS`` : The scatter in cycle direction, (S_90/S_10)
                If the key is missing it is assumed to be 1.0 or calculated from ``TN``
                if given.
     """
@@ -168,18 +168,24 @@ class WoehlerCurve(signal.PylifeSignal):
 
         transformed = self.transform_to_failure_probability(failure_probability)
 
-        load_index = None if not isinstance(load, pd.Series) else load.index
-        load = np.asfarray(load)
-        load, wc = transformed.broadcast(load)
-        cycles = np.full_like(load, np.inf)
+        if hasattr(load, '__iter__'):
+            if hasattr(load, 'astype'):
+                load = load.astype('float64')
+            else:
+                load = np.array(load).astype('float64')
+        else:
+            load = float(load)
 
-        k = self._make_k(load, wc.SD)
+        ld, wc = transformed.broadcast(load)
+        cycles = np.full_like(ld, np.inf)
+
+        k = self._make_k(ld, wc.SD, wc)
         in_limit = np.isfinite(k)
-        cycles[in_limit] = wc.ND[in_limit] * np.power(load[in_limit]/wc.SD[in_limit], -k[in_limit])
+        cycles[in_limit] = wc.ND[in_limit] * np.power(ld[in_limit]/wc.SD[in_limit], -k[in_limit])
 
-        if load_index is None:
+        if not isinstance(load, pd.Series):
             return cycles
-        return pd.Series(cycles, index=load_index)
+        return pd.Series(cycles, index=ld.index)
 
     def basquin_load(self, cycles, failure_probability=0.5):
         """Calculate the load values from loads according to the Basquin equation.
@@ -199,18 +205,21 @@ class WoehlerCurve(signal.PylifeSignal):
         """
         transformed = self.transform_to_failure_probability(failure_probability)
 
-        cycles, wc = transformed.broadcast(cycles)
+        cyc, wc = transformed.broadcast(cycles)
         load = np.asarray(wc.SD.copy())
-        cycles = np.asarray(cycles)
 
-        k = self._make_k(-cycles, -wc.ND)
+        k = self._make_k(-cyc, -wc.ND, wc)
         in_limit = np.isfinite(k)
-        load[in_limit] = wc.SD[in_limit] * np.power(cycles[in_limit]/wc.ND[in_limit], -1./k[in_limit])
-        return load
+        load[in_limit] = wc.SD[in_limit] * np.power(cyc[in_limit]/wc.ND[in_limit], -1./k[in_limit])
 
-    def _make_k(self, src, ref):
-        k = np.asfarray(self._obj.k_1)
-        k_2 = np.asfarray(self._obj.k_2)
+        if not isinstance(cycles, pd.Series):
+            return load
+        return pd.Series(load, index=cyc.index)
+
+    def _make_k(self, src, ref, wc):
+        k = np.asarray(wc.k_1)
+        k_2 = np.asarray(wc.k_2)
+
         if k.shape == ():
             k = np.full_like(src, k, dtype=np.double)
             k_2 = np.full_like(src, k_2, dtype=np.double)

@@ -1,4 +1,4 @@
 {
     "path": "../../demos/woehler_analyzer.ipynb",
-    "extra-media": ["../../demos/"]
+    "extra-media": ["../../demos/data"]
 }

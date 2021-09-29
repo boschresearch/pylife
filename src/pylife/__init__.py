@@ -1,6 +1,6 @@
 import sys
 
-if sys.version_info[:2] >= (3, 7):
+if sys.version_info[:2] >= (3, 8):
     # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
     from importlib.metadata import PackageNotFoundError, version  # pragma: no cover
 else:
@@ -15,7 +15,11 @@ except PackageNotFoundError:  # pragma: no cover
 finally:
     del version, PackageNotFoundError
 
-from pylife.core import signal
-from pylife.core.data_validator import DataValidator
 
-__all__ = [ 'stress', 'strength', 'utils' , 'mesh', 'vmap']
+from .core import PylifeSignal, Broadcaster, DataValidator
+
+__all__ = [
+    'PylifeSignal',
+    'Broadcaster',
+    'DataValidator'
+]

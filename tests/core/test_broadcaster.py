@@ -123,6 +123,19 @@ def test_broadcast_series_index_none_to_series_index_none():
     pd.testing.assert_frame_equal(expected, obj)
 
 
+def test_broadcast_series_index_none_to_series_index_none_no_string_index():
+    series = pd.Series([1.0, 2.0], index=pd.Index([3, 4]))
+    obj = foo_bar_series.copy()
+    obj.index = pd.Index([1, 2])
+    param, obj = Broadcaster(obj).broadcast(series)
+
+    expected = pd.DataFrame([foo_bar_series, foo_bar_series],
+                            index=series.index)
+    expected.columns = [1, 2]
+    pd.testing.assert_series_equal(series, param)
+    pd.testing.assert_frame_equal(expected, obj)
+
+
 def test_broadcast_series_index_none_to_series_index_named():
     series = pd.Series([1.0, 2.0], index=pd.Index([3, 4], name='idx2'))
     foo_bar = foo_bar_series.copy()

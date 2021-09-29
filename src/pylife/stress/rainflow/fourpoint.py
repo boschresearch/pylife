@@ -28,13 +28,14 @@ class FourPointDetector(AbstractDetector):
 
     We take four turning points into account to detect closed hysteresis loops.
 
-    Consider four consecutive peak/valley points say, A, B, C, and D  If B and C are 
-    contained within A and B, then a cycle is counted from B to C; otherwise no cycle is 
-    counted. 
+    Consider four consecutive peak/valley points say, A, B, C, and D  If B and C are
+    contained within A and B, then a cycle is counted from B to C; otherwise no cycle is
+    counted.
 
     i.e, If X ≥ Y AND Z ≥ Y then a cycle exsist FROM = B and TO = C
     where, ranges X = |D–C|, Y = |C–B|, and Z = |B–A|
 
+    ::
 
         Load -----------------------------
         |        x B               F x
@@ -49,9 +50,9 @@ class FourPointDetector(AbstractDetector):
         ----------------------------------
         |              Time
 
-    So, if a cycle exsist from B to C then delete these peaks from the turns array 
+    So, if a cycle exsist from B to C then delete these peaks from the turns array
     and perform next iteration by joining A&D else if no cylce exsists, then B would
-    be the next strarting point. 
+    be the next strarting point.
     """
 
     def __init__(self, recorder):
@@ -88,7 +89,7 @@ class FourPointDetector(AbstractDetector):
 
         turns_np = np.concatenate((residuals,turns_values, samples[-1:]))
         turns_index = np.concatenate((self._residual_index, turns_index))
-        
+
         turns = turns_np
         i = 0
 
