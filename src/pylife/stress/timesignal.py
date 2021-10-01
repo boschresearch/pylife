@@ -271,7 +271,7 @@ def _roll_dataset(prep_roll_df, window_size=1000, overlap=200):
         df = pd.DataFrame({'id': np.int64(np.zeros(len(shift), dtype=int)),
                            'max_time': shift.iloc[-1, -1]})
 
-        shift.loc[:, "id"] = pd.MultiIndex.from_frame(df)
+        shift.loc[:, "id"] = pd.MultiIndex.from_frame(df).to_numpy()
 
         df_rolled = df_rolled.append(shift, ignore_index=True)
 
