@@ -353,6 +353,41 @@ def test_broadcast_frame_to_frame_different_multi_index_name():
     pd.testing.assert_frame_equal(obj, expected_obj)
 
 
+def test_broadcast_frame_to_frame_different_multi_index_name_drop_level():
+    df = pd.DataFrame({
+        'a': [1, 3, 5, 7],
+        'b': [2, 4, 6, 8]
+    }, index=pd.MultiIndex.from_tuples([('x', 1), ('x', 2), ('y', 1), ('y', 2)], names=['iname1', 'iname2']))
+
+    foo_bar = pd.DataFrame({
+        'foo': [1, 2, 3, 4],
+        'bar': [3, 4, 5, 6]
+    }, index=pd.MultiIndex.from_tuples([('a', 10), ('a', 20), ('b', 10), ('b', 20)], names=['srcname1', 'srcname2']))
+
+    param, obj = Broadcaster(foo_bar).broadcast(df, droplevel=['srcname2'])
+
+    expected_obj = pd.DataFrame({
+        'foo': [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4],
+        'bar': [3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6]
+    }, index=pd.MultiIndex.from_tuples([
+        ('a', 10, 'x', 1), ('a', 10, 'x', 2), ('a', 10, 'y', 1), ('a', 10, 'y', 2),
+        ('a', 20, 'x', 1), ('a', 20, 'x', 2), ('a', 20, 'y', 1), ('a', 20, 'y', 2),
+        ('b', 10, 'x', 1), ('b', 10, 'x', 2), ('b', 10, 'y', 1), ('b', 10, 'y', 2),
+        ('b', 20, 'x', 1), ('b', 20, 'x', 2), ('b', 20, 'y', 1), ('b', 20, 'y', 2)
+    ], names=['srcname1', 'srcname2', 'iname1', 'iname2']))
+
+    expected_param = pd.DataFrame({
+        'a': [1, 3, 5, 7, 1, 3, 5, 7],
+        'b': [2, 4, 6, 8, 2, 4, 6, 8]
+    }, index=pd.MultiIndex.from_tuples([
+        ('a', 'x', 1), ('a', 'x', 2), ('a', 'y', 1), ('a', 'y', 2),
+        ('b', 'x', 1), ('b', 'x', 2), ('b', 'y', 1), ('b', 'y', 2)
+    ], names=['srcname1', 'iname1', 'iname2']))
+
+    pd.testing.assert_frame_equal(param, expected_param)
+    pd.testing.assert_frame_equal(obj, expected_obj)
+
+
 def test_broadcast_frame_to_frame_mixed_multi_index_name():
     df = pd.DataFrame({
         'a': [1, 3, 5, 7],
@@ -385,6 +420,41 @@ def test_broadcast_frame_to_frame_mixed_multi_index_name():
         ('a', 2, 'x'), ('a', 2, 'y'),
         ('b', 2, 'x'), ('b', 2, 'y')
     ], names=['srcname1', 'srcname2', 'iname1']))
+
+    pd.testing.assert_frame_equal(param, expected_prm)
+    pd.testing.assert_frame_equal(obj, expected_obj)
+
+
+def test_broadcast_frame_to_frame_mixed_multi_index_name_drop_level():
+    df = pd.DataFrame({
+        'a': [1, 3, 5, 7],
+        'b': [2, 4, 6, 8]
+    }, index=pd.MultiIndex.from_tuples([('x', 1), ('x', 2), ('y', 1), ('y', 2)], names=['iname1', 'srcname2']))
+
+    foo_bar = pd.DataFrame({
+        'foo': [1, 2, 3, 4],
+        'bar': [3, 4, 5, 6]
+    }, index=pd.MultiIndex.from_tuples([('a', 1), ('b', 1), ('a', 2), ('b', 2)], names=['srcname1', 'srcname2']))
+
+    param, obj = Broadcaster(foo_bar).broadcast(df, droplevel=['srcname1'])
+
+    expected_obj = pd.DataFrame({
+        'foo': [1, 1, 2, 2, 3, 3, 4, 4],
+        'bar': [3, 3, 4, 4, 5, 5, 6, 6]
+    }, index=pd.MultiIndex.from_tuples([
+        ('a', 1, 'x'), ('a', 1, 'y'),
+        ('b', 1, 'x'), ('b', 1, 'y'),
+        ('a', 2, 'x'), ('a', 2, 'y'),
+        ('b', 2, 'x'), ('b', 2, 'y')
+    ], names=['srcname1', 'srcname2', 'iname1']))
+
+    expected_prm = pd.DataFrame({
+        'a': [1, 5, 3, 7],
+        'b': [2, 6, 4, 8]
+    }, index=pd.MultiIndex.from_tuples([
+        (1, 'x'), (1, 'y'),
+        (2, 'x'), (2, 'y')
+    ], names=['srcname2', 'iname1']))
 
     pd.testing.assert_frame_equal(param, expected_prm)
     pd.testing.assert_frame_equal(obj, expected_obj)

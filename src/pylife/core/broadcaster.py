@@ -102,7 +102,7 @@ class Broadcaster:
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
 
-    def broadcast(self, parameter):
+    def broadcast(self, parameter, droplevel=[]):
         """Broadcast the parameter to the object of ``self``.
 
         Parameters
@@ -207,7 +207,7 @@ class Broadcaster:
                 df.loc[:, c] = self._obj[c]
             return parameter, df
 
-        return self._broadcast_frame_to_frame(parameter)
+        return self._broadcast_frame_to_frame(parameter, droplevel)
 
     def _broadcast_series(self, parameter):
         prm = np.asarray(parameter)
@@ -223,11 +223,18 @@ class Broadcaster:
     def _broadcast_series_to_frame(self, parameter):
         return parameter, self._broadcasted_dataframe(parameter).set_index(parameter.index)
 
-    def _broadcast_frame_to_frame(self, parameter):
+    def _broadcast_frame_to_frame(self, parameter, droplevel):
         def align_and_reorder():
             obj, prm = self._obj.align(parameter, axis=0)
+
+            if len(droplevel) > 0:
+                prm_columns = list(filter(lambda level: level not in droplevel, total_columns))
+                prm = prm.groupby(prm_columns).first()
+            else:
+                prm_columns = total_columns
+
             if obj.index.nlevels > 2:
-                prm = prm.reorder_levels(total_columns)
+                prm = prm.reorder_levels(prm_columns)
                 obj = obj.reorder_levels(total_columns)
             return prm, obj
 
@@ -242,7 +249,13 @@ class Broadcaster:
             obj = _broadcast_to(self._obj, new_index)
             prm = _broadcast_to(parameter, new_index)
 
-            return obj.align(prm, axis=0)
+            obj, prm = obj.align(prm, axis=0)
+
+            if len(droplevel) > 0:
+                prm_columns = list(filter(lambda level: level not in droplevel, total_columns))
+                prm = prm.groupby(prm_columns).first()
+
+            return obj, prm
 
         uuids = _replace_none_index_names_with_unique_string([parameter, self._obj])
 
