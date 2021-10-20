@@ -98,10 +98,12 @@ def test_FKM_goodman_single_M_R():
 
 def test_FKM_goodman_multiple_M_sm():
     cyclic_signal = goodman_signal_sm()
+    cyclic_signal.index.name = 'element_id'
     M = 0.5
 
     R_goal = -1.
-    res = cyclic_signal.meanstress_transform.FKM_goodman(pd.DataFrame({ 'M':[M]*7, 'M2':[M/3]*7, }), R_goal).amplitude
+    haigh = pd.DataFrame({'M':[M]*7, 'M2':[M/3]*7})
+    res = cyclic_signal.meanstress_transform.FKM_goodman(haigh, R_goal).amplitude
     np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
 
@@ -120,7 +122,7 @@ def test_five_segment_plain_sm():
     Sa = cyclic_signal['range'].to_numpy()/2.
     Sm = cyclic_signal['mean'].to_numpy()
 
-    M0= 0.5
+    M0 = 0.5
     M1 = M0/3.
     M2 = M0/6.
     M3 = 1.
@@ -134,7 +136,7 @@ def test_five_segment_plain_sm():
 
     res = MST.five_segment_correction(Sa, Sm, M0=M0, M1=M1, M2=M2, M3=M3, M4=M4, R12=R12, R23=R23, R_goal=-1)
     np.testing.assert_allclose(res, np.ones_like(res))
-    pd.set_option('precision', 16)
+
     R_goal = -1.
     res = MST.five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal)
     np.testing.assert_array_almost_equal(res, np.ones_like(res))
@@ -148,7 +150,7 @@ def test_five_segment_plain_sm():
     Sa = np.array([0, 0])
     R_goal = 0.1
     res = MST.five_segment_correction(Sa, Sm, M0, M1, M2, M3, M4, R12, R23, R_goal)
-    assert np.array_equal(res,np.array([0., 0.]))
+    assert np.array_equal(res, np.array([0., 0.]))
 
 
 def test_five_segment_single_M_sm():
@@ -185,28 +187,20 @@ def test_five_segment_single_M_backwards(Sm, Sa):
     R12 = 2./5.
     R23 = 4./5.
 
-    warnings.simplefilter('ignore', RuntimeWarning)
-
     R_goal = ((Sm-Sa)/(Sm+Sa))[0]
-
-    print(Sa, Sm, R_goal)
-
-    warnings.simplefilter('default', RuntimeWarning)
 
     res = cyclic_signal.meanstress_transform.five_segment(pd.Series({
         'M0': M0, 'M1': M1, 'M2': M2, 'M3': M3, 'M4': M4,
         'R12': R12, 'R23': R23
     }), R_goal)
-    print(cyclic_signal.rainflow.amplitude)
-    print(res.amplitude)
-    np.testing.assert_array_almost_equal(res.amplitude, Sa)
 
+    np.testing.assert_array_almost_equal(res.amplitude, Sa)
 
 
 @pytest.mark.skip(reason="cyclic signal gone")
 def test_five_segment_single_M_R():
     cyclic_signal = five_segment_signal_r()
-    M0= 0.5
+    M0 = 0.5
     M1 = M0/3.
     M2 = M0/6.
     M3 = 1.
@@ -226,7 +220,7 @@ def test_five_segment_single_M_R():
 
 def test_five_segment_multiple_M_sm():
     cyclic_signal = five_segment_signal_sm()
-    M0= 0.5
+    M0 = 0.5
     M1 = M0/3.
     M2 = M0/6.
     M3 = 1.
@@ -236,14 +230,18 @@ def test_five_segment_multiple_M_sm():
     R23 = 4./5.
 
     R_goal = -1.
+    index = pd.MultiIndex.from_tuples([
+        (1, 1), (1, 2), (1, 3),
+        (2, 1), (2, 2), (2, 3)
+    ], names=['element_id', 'node_id'])
     res = cyclic_signal.meanstress_transform.five_segment(pd.DataFrame({
-        'M0': [M0]*11, 'M1': [M1]*11, 'M2': [M2]*11, 'M3': [M3]*11, 'M4': [M4]*11,
-        'R12': [R12]*11, 'R23': [R23]*11
-    }), R_goal)
+        'M0': [M0]*6, 'M1': [M1]*6, 'M2': [M2]*6, 'M3': [M3]*6, 'M4': [M4]*6,
+        'R12': [R12]*6, 'R23': [R23]*6
+    }, index=index), R_goal)
     np.testing.assert_array_almost_equal(res.amplitude, np.ones_like(res))
 
 
-@pytest.mark.parametrize("R_goal, expected", [ # all calculated by pencil on paper
+@pytest.mark.parametrize("R_goal, expected", [  # all calculated by pencil on paper
     (-1., 2.0),
     (0., 4./3.),
     (-1./3., 8./5.),
@@ -267,7 +265,7 @@ def test_FKM_goodman_hist_range_mean(R_goal, expected):
     assert res.loc[np.logical_not(res.index.overlaps(test_interval))].sum() == 0
 
 
-@pytest.mark.parametrize("R_goal, expected", [ # all calculated by pencil on paper
+@pytest.mark.parametrize("R_goal, expected", [  # all calculated by pencil on paper
     (-1., 2.0),
     (0., 4./3.),
     (-1./3., 8./5.),
@@ -291,7 +289,7 @@ def test_FKM_goodman_hist_from_to(R_goal, expected):
     assert res.loc[np.logical_not(res.index.overlaps(test_interval))].sum() == 0
 
 
-@pytest.mark.parametrize("R_goal, expected", [ # all calculated by pencil on paper
+@pytest.mark.parametrize("R_goal, expected", [  # all calculated by pencil on paper
     (-1., 2.0),
     (0., 4./3.),
     (-1./3., 8./5.),
@@ -336,7 +334,7 @@ def test_full_histogram():
     mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
 
     series = pd.Series(np.linspace(1, 576, 576, dtype=np.int32), name='cycles',
-                       index=pd.MultiIndex.from_product([rg,mn], names=['from', 'to']))
+                       index=pd.MultiIndex.from_product([rg, mn], names=['from', 'to']))
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
     res = series.meanstress_transform.FKM_goodman(haigh, -1).to_pandas()
 

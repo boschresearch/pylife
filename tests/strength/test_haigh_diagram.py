@@ -43,6 +43,76 @@ def test_haigh_diagram_multi_index_fail_no_interval_index():
         hd.haigh_diagram
 
 
+def test_haigh_diagram_from_dict_empty():
+    hd = MST.HaighDiagram.from_dict({})
+    expected = pd.Series([], index=pd.IntervalIndex([], name='R'), dtype=np.float64)
+    pd.testing.assert_series_equal(hd.to_pandas(), expected)
+
+
+def test_haigh_diagram_from_dict_filled():
+    hd = MST.HaighDiagram.from_dict({
+        (1.0, np.inf): 0.0,
+        (-np.inf, 0.0): 0.5,
+        (0.0, 1.0): 0.167
+    })
+
+    expected_index = pd.IntervalIndex.from_tuples([(1.0, np.inf), (-np.inf, 0.0), (0.0, 1.0)], name='R')
+    expected = pd.Series([0.0, 0.5, 0.167], index=expected_index)
+    pd.testing.assert_series_equal(hd.to_pandas(), expected)
+
+
+def test_haigh_diagram_fkm_goodman_single_M():
+    hd = MST.HaighDiagram.fkm_goodman(pd.Series({'M': 0.5}))
+
+    expected_index = pd.IntervalIndex.from_tuples([(1.0, np.inf), (-np.inf, 0.0), (0.0, 1.0)], name='R')
+    expected = pd.Series([0.0, 0.5, 0.166667], index=expected_index)
+    pd.testing.assert_series_equal(hd.to_pandas(), expected, rtol=1e-4)
+
+
+def test_haigh_diagram_fkm_goodman_single_M_M2():
+    hd = MST.HaighDiagram.fkm_goodman(pd.Series({'M': 0.4, 'M2': 0.15}))
+
+    expected_index = pd.IntervalIndex.from_tuples([(1.0, np.inf), (-np.inf, 0.0), (0.0, 1.0)], name='R')
+    expected = pd.Series([0.0, 0.4, 0.15], index=expected_index)
+    pd.testing.assert_series_equal(hd.to_pandas(), expected, rtol=1e-4)
+
+
+def test_haigh_diagram_fkm_goodman_multiple_M():
+    hd = MST.HaighDiagram.fkm_goodman(pd.DataFrame({
+        'M': [0.5, 0.4]
+    }, index=pd.Index([1, 2], name='element_id')))
+
+    expected_index = pd.MultiIndex.from_tuples([
+        (1, pd.Interval(1.0, np.inf)),
+        (1, pd.Interval(-np.inf, 0.0)),
+        (1, pd.Interval(0.0, 1.0)),
+        (2, pd.Interval(1.0, np.inf)),
+        (2, pd.Interval(-np.inf, 0.0)),
+        (2, pd.Interval(0.0, 1.0)),
+    ], names=['element_id', 'R'])
+    expected = pd.Series([0.0, 0.5, 0.166667, 0.0, 0.4, 0.13333], index=expected_index)
+    pd.testing.assert_series_equal(hd.to_pandas(), expected, rtol=1e-4)
+
+
+def test_haigh_diagram_fkm_goodman_multiple_M_M2():
+    hd = MST.HaighDiagram.fkm_goodman(pd.DataFrame({
+        'M': [0.5, 0.4],
+        'M2': [0.2, 0.15]
+    }, index=pd.Index([1, 2], name='element_id')))
+
+    expected_index = pd.MultiIndex.from_tuples([
+        (1, pd.Interval(1.0, np.inf)),
+        (1, pd.Interval(-np.inf, 0.0)),
+        (1, pd.Interval(0.0, 1.0)),
+        (2, pd.Interval(1.0, np.inf)),
+        (2, pd.Interval(-np.inf, 0.0)),
+        (2, pd.Interval(0.0, 1.0)),
+    ], names=['element_id', 'R'])
+    expected = pd.Series([0.0, 0.5, 0.2, 0.0, 0.4, 0.15], index=expected_index)
+    pd.testing.assert_series_equal(hd.to_pandas(), expected, rtol=1e-4)
+
+
+
 ## TODO
 ##
 ## * left closed intervals?
@@ -175,6 +245,74 @@ def test_haigh_diagram_transform_to_R_gt_1():
     })
 
     res = hd.haigh_diagram.transform(cycle, R_goal=5.0)
-    print(res)
+
     expected = pd.DataFrame({'range': [8.], 'mean': [-6.]})
+    pd.testing.assert_frame_equal(res, expected)
+
+
+def test_haigh_diagram_broadcast_constant_intervals():
+    R_intervals = pd.IntervalIndex.from_tuples([
+        (1.0, np.inf),
+        (-np.inf, 0.0),
+    ], name='R')
+
+    elements = pd.Index([1, 2], name='element_id')
+
+    idx = pd.MultiIndex.from_product([elements, R_intervals])
+
+    hd = pd.Series([0.0, 0.5, 0.0, 1./3.], index=idx)
+
+    cycles = pd.DataFrame({
+        'from': [-1., -2.],
+        'to': [1., 2.]
+    }, index=pd.Index([10, 11], name='cycle_number'))
+
+    expected = pd.DataFrame({
+        'range': [4.0, 8.0, 3.0, 6.0],
+        'mean': [-2.0, -4.0, -1.5, -3.0]
+    }, index=pd.MultiIndex.from_tuples([
+        (1, 10), (1, 11),
+        (2, 10), (2, 11)
+    ], names=['element_id', 'cycle_number']))
+
+    res = hd.haigh_diagram.transform(cycles, R_goal=-np.inf)
+
+    pd.testing.assert_frame_equal(res, expected)
+
+
+def test_haigh_diagram_broadcast_variable_intervals():
+    R_intervals = pd.IntervalIndex.from_tuples([
+        (1.0, np.inf),
+        (-np.inf, 0.0),
+    ], name='R')
+
+    elements = pd.Index([1, 2], name='element_id')
+
+    idx = pd.MultiIndex.from_product([elements, R_intervals])
+
+    idx = pd.MultiIndex.from_tuples([
+        (1, pd.Interval(1.0, np.inf)),
+        (1, pd.Interval(-np.inf, -1.0)),
+        (1, pd.Interval(-1.0, 0.0)),
+        (2, pd.Interval(1.0, np.inf)),
+        (2, pd.Interval(-np.inf, -0.5)),
+        (2, pd.Interval(-0.5, 0.0)),
+    ], names=['element_id', 'R'])
+
+    hd = pd.Series([0.0, 0.5, 0.5, 0.0, 1./3., 1./3.], index=idx)
+
+    cycles = pd.DataFrame({
+        'from': [-1., -2.],
+        'to': [1., 2.]
+    }, index=pd.Index([10, 11], name='cycle_number'))
+
+    expected = pd.DataFrame({
+        'range': [4.0, 8.0, 3.0, 6.0],
+        'mean': [-2.0, -4.0, -1.5, -3.0]
+    }, index=pd.MultiIndex.from_tuples([
+        (1, 10), (1, 11),
+        (2, 10), (2, 11)
+    ], names=['element_id', 'cycle_number']))
+
+    res = hd.haigh_diagram.transform(cycles, R_goal=-np.inf)
     pd.testing.assert_frame_equal(res, expected)
