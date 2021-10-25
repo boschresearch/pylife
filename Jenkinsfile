@@ -1,5 +1,15 @@
 import hudson.tasks.junit.TestResultSummary
 
+// SonarQube related variable - FEEL FREE TO MODIFY
+BASE_BRANCH_NAME = "develop"
+
+// SonarQube related variables
+SONAR_PROPERTY_FILE = "sonar-project.properties"
+CURRENT_BRANCH_NAME = env.BRANCH_NAME
+PR_KEY = env.CHANGE_ID
+SONARQUBE_SERVER_ID = "SonarqubeMSO"
+
+@Library('create-jenkins-library') _
 pipeline {
     // Which Build Node?
     agent any
@@ -93,6 +103,17 @@ pipeline {
                 ]
             }
         }
+		stage ('SonarQube analysis') {
+			steps {
+				sonarScanner (
+					sonarqubeServerID: SONARQUBE_SERVER_ID, 
+					currentBranchName: CURRENT_BRANCH_NAME,
+					sonarBaseBranchName: BASE_BRANCH_NAME,
+					prKey: PR_KEY,
+					workSpacePath: env.WORKSPACE
+				)
+			}
+		}
     }
     // Post-build actions
     post {
