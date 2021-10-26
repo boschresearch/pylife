@@ -18,6 +18,7 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 from .rambgood import RambergOsgood
+from .hookeslaw import *
 from .true_stress_strain import *
 from .woehlercurve import WoehlerCurve
 
@@ -27,5 +28,9 @@ __all__ = [
     'true_strain',
     'true_fracture_stress',
     'true_fracture_strain',
-    'WoehlerCurve'
+    'WoehlerCurve',
+    'Hookeslaw1D',
+    'Hookeslaw2Dstrain',
+    'Hookeslaw2Dstress',
+    'Hookeslaw3D'
 ]
