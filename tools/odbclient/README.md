@@ -27,14 +27,10 @@ process is stopped automatically.
 
 ## Installation
 
-As of now there is no released version of `pylife-odbclient`, same for
-`pylife-odbserver`. Therefore there are some manual steps required.
-
-* Clone the pyLife repository.
-
-* Change to the directory `tools/odbclient`
-
-* run `pip install -e .`
+* Install the odbclient using `pip` with the command
+```
+pip install pylife-odbclient
+```
 
 * See the [instructions in `pylife-odbserver`](../odbserver/README.md) on how
   to install the server.
