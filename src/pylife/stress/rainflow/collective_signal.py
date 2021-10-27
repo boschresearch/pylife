@@ -21,9 +21,10 @@ import pandas as pd
 import numpy as np
 
 from pylife import PylifeSignal
+from .abstract_load_collective import AbstractLoadCollective
 
 @pd.api.extensions.register_dataframe_accessor('rainflow')
-class RainflowCollective(PylifeSignal):
+class RainflowCollective(PylifeSignal, AbstractLoadCollective):
     """A Rainflow collective.
 
     The usual use of this signal is to process hysteresis loop data from a
@@ -73,32 +74,6 @@ class RainflowCollective(PylifeSignal):
         fr = self._obj['from']
         to = self._obj['to']
         return pd.Series((fr+to)/2., name='meanstress')
-
-    @property
-    def upper(self):
-        """Calculate the upper load values of the load collective.
-
-        Returns
-        -------
-        upper : pd.Series
-            The upper load values of the load collective
-        """
-        res = self._obj.max(axis=1)
-        res.name = 'upper'
-        return res
-
-    @property
-    def lower(self):
-        """Calculate the lower load values of the load collective.
-
-        Returns
-        -------
-        lower : pd.Series
-            The lower load values of the load collective
-        """
-        res = self._obj.min(axis=1)
-        res.name = 'lower'
-        return res
 
     @property
     def cycles(self):

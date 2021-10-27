@@ -22,9 +22,11 @@ import numpy as np
 
 from pylife import PylifeSignal
 
+from .abstract_load_collective import AbstractLoadCollective
+
 
 @pd.api.extensions.register_series_accessor('rainflow')
-class RainflowMatrix(PylifeSignal):
+class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
 
     def _validate(self):
         self._class_location = 'mid'
@@ -57,22 +59,10 @@ class RainflowMatrix(PylifeSignal):
         return pd.Series(mean, name='meanstress', index=self._obj.index)
 
     @property
-    def upper(self):
-        res = self.meanstress + self.amplitude
-        res.name = 'upper'
-        return res
-
-    @property
-    def lower(self):
-        res = self.meanstress - self.amplitude
-        res.name = 'lower'
-        return res
-
-    @property
     def cycles(self):
-        freq = self._obj.copy()
-        freq.name = 'cycles'
-        return freq
+        cycles = self._obj.copy()
+        cycles.name = 'cycles'
+        return cycles
 
     def use_class_right(self):
         self._impl._class_location = 'right'
