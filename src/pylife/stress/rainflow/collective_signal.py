@@ -17,11 +17,13 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
+from .abstract_load_collective import AbstractLoadCollective
+
 import pandas as pd
 import numpy as np
 
 from pylife import PylifeSignal
-from .abstract_load_collective import AbstractLoadCollective
+from pylife.stress.rainflow import RainflowMatrix
 
 @pd.api.extensions.register_dataframe_accessor('rainflow')
 class RainflowCollective(PylifeSignal, AbstractLoadCollective):
@@ -104,3 +106,36 @@ class RainflowCollective(PylifeSignal, AbstractLoadCollective):
         """
         diffs, obj = self.broadcast(diffs)
         return obj.add(diffs, axis=0).rainflow
+
+    def range_histogram(self, bins, axis=None):
+        """Calculate the histogram of range values along a given axis.
+
+        Parameters
+        ----------
+        bins : int, sequence of scalars or pd.IntervalIndex
+            The bins of the histogram to be calculated
+
+        Returns
+        -------
+        range histogram : :class:`pylife.rainflow.RainflowMatrix`
+
+        axis : str, optional
+            The index axis along which the histogram is calculated. If missing
+            the histogram is calculated over the whole collective.
+        """
+        def make_histogram(group):
+            cycles, intervals = np.histogram(group * 2., bins)
+            idx = pd.IntervalIndex.from_breaks(intervals, name='range')
+            return pd.Series(cycles, index=idx, name='cycles')
+
+        if isinstance(bins, pd.IntervalIndex):
+            bins = np.append(bins.left[0], bins.right)
+
+        if axis is None:
+            return RainflowMatrix(make_histogram(self.amplitude))
+
+        result = pd.Series(self.amplitude
+                           .groupby(self._obj.index.droplevel(axis).names)
+                           .apply(make_histogram), name='cycles')
+
+        return RainflowMatrix(result)
