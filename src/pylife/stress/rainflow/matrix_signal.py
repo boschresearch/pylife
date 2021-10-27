@@ -97,6 +97,9 @@ class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
         new_index = pd.MultiIndex.from_arrays(levels, names=obj.index.names)
         return pd.Series(obj.values, index=new_index, name='cycles')
 
+    def cumulated_range(self):
+        return pd.Series(self._obj.groupby('range').transform(lambda g: np.cumsum(g)),
+                         name='cumulated_cycles')
 
 class _RainflowMatrixImpl:
     def __init__(self, obj):
