@@ -41,29 +41,11 @@ __maintainer__ = "Johannes Mueller"
 import numpy as np
 import pandas as pd
 
+from pylife.strength.fatigue import Fatigue
+from pylife.materiallaws.woehlercurve import WoehlerCurve
+
 import pylife.strength.solidity
 
-
-def get_accumulated_from_relative_collective(collective):
-    """Get collective with accumulated frequencies.
-
-    This function can be used to transform a collective with
-    relative frequencies.
-
-    Parameters
-    ----------
-    collective : np.ndarray
-        numpy array of shape (:, 2)
-        where ":" depends on the number of classes defined
-        for the rainflow counting
-        * column: class values in ascending order
-        * column: relative number of cycles for each load class
-    """
-    accumulated = np.stack([
-        collective[:, 0],
-        np.flipud(np.cumsum(np.flipud(collective[:, 1])))
-    ], axis=1)
-    return accumulated
 
 
 class MinerBase:
@@ -83,24 +65,9 @@ class MinerBase:
         fatigue strength of the S/N curve [MPa]
     """
 
-    collective = None
-
-    def __init__(self, ND, k_1, SD):
-        self._woehler_curve = pd.Series({
-            'k_1': k_1,
-            'SD': SD,
-            'ND': ND
-        }).woehler
-
     def calc_zeitfestigkeitsfaktor(self, N):
         """Calculate "Zeitfestigkeitsfaktor" according to Waechter2017 (p. 96)"""
-        return np.power(self._woehler_curve.ND/N, 1./self._woehler_curve.k_1)
-
-    def calc_A(self, load_collective):
-        if self.__class__.__name__ == "MinerBase":
-            raise NotImplementedError(
-                "Method should be used only by deriving classes."
-            )
+        return np.power(self.ND/N, 1./self.k_1)
 
     def effective_damage_sum(self, collective):
         """Compute 'effective damage sum' D_m
@@ -113,27 +80,13 @@ class MinerBase:
             the multiple of the lifetime
         """
 
-        A = self.calc_A(collective)
+        A = self.lifetime_multiple(collective)
         return effective_damage_sum(A)
 
-    def N_predict(self, collective, load_level):
-        """The predicted lifetime according to damage sum of the collective
-
-        Parameters
-        ----------
-        load_level : float
-            the maximum (stress) amplitude of the collective
-        A : float
-            the lifetime multiple A
-            BEWARE: this relation is only valid in a specific
-            representation of the predicted (Miner) lifetime
-            where the sn-curve is expressed via the point
-            of the maximum amplitude of the collective:
-            N_predicted = N(S = S_max) * A
-        """
-        n_woehler_load_level = self._woehler_curve.basquin_cycles(load_level)
-        A = self.calc_A(collective)
-        return n_woehler_load_level * A
+    def gassner(self, collective, load_level=None):
+        gassner = self.to_pandas().copy()
+        gassner['ND'] = self.ND * self.lifetime_multiple(collective, load_level)
+        return Fatigue(gassner)
 
 
 def effective_damage_sum(lifetime_multiple):
@@ -159,17 +112,13 @@ def effective_damage_sum(lifetime_multiple):
     return d_m
 
 
-class MinerElementar(MinerBase):
+@pd.api.extensions.register_series_accessor('miner_elementar')
+class MinerElementar(WoehlerCurve, MinerBase):
     """Implementation of Miner-elementar according to Waechter2017
 
     """
-    # Solidity (Völligkeit) according to Haibach
-    V_haibach = None
-    # Solidity (Völligkeit) according to FKM guideline
-    V_FKM = None
 
-
-    def calc_A(self, collective):
+    def lifetime_multiple(self, collective, load_level=None):
         """Compute the lifetime multiple according to miner-elementar
 
         Described in Waechter2017 as "Lebensdauervielfaches, A_ele".
@@ -186,19 +135,11 @@ class MinerElementar(MinerBase):
             then in a descending manner till the
             number of cycles of the highest stress class
         """
-        super().calc_A(collective)
-
-        V = collective.solidity.haibach(self._woehler_curve.k_1)
-
-        self.V_haibach = V
-        self.V_FKM = V**(1./self._woehler_curve.k_1)
-        A = 1. / V
-        self.A = A
-
-        return A
+        return 1. / collective.solidity.haibach(self.k_1)
 
 
-class MinerHaibach(MinerBase):
+@pd.api.extensions.register_series_accessor('miner_haibach')
+class MinerHaibach(WoehlerCurve, MinerBase):
     """Miner-modified according to Haibach (2006)
 
     WARNING: Contrary to Miner-elementar, the lifetime multiple A
@@ -216,7 +157,7 @@ class MinerHaibach(MinerBase):
         load level is taken as dict key (values are rounded to 0 decimals)
     """
 
-    def calc_A(self, collective, load_level=None, ignore_inf_rule=False):
+    def lifetime_multiple(self, collective, load_level=None):
         """Compute the lifetime multiple for Miner-modified according to Haibach
 
         Refer to Haibach (2006), p. 291 (3.21-61). The lifetime multiple can be
@@ -225,42 +166,30 @@ class MinerHaibach(MinerBase):
 
         Parameters
         ----------
-        load_level : float > 0
-            load level in [MPa]
         collective : np.ndarray (optional)
             the collective can optionally be input to this function
             if it is not specified, then the attribute is used.
             If no collective exists as attribute (is set during setup)
             then an error is thrown
-        ignore_inf_rule : boolean
-            By default, the lifetime is returned as inf when the given load level
-            is smaller than the lifetime (see Haibach eq. 3.2-62).
-            This rule can be ignored if an estimate for the lifetime in the
-            region below the fatigue strength is required for investigation.
+        load_level : float > 0, optional
+            load level in [MPa]; If not given the maximum load level of `collective`
+            is assumed.
 
         Returns
         -------
-        A : float > 0
+        lifetime_multiple  : float > 0
             lifetime multiple
             return value is 'inf' if load_level < SD
         """
-        super().calc_A(collective)
 
-        # this parameter makes each evaluation of A unique
+        s_a = collective.rainflow.amplitude
+        if load_level is not None:
+            s_a = s_a/s_a.max() * load_level
 
-        if load_level is None:
-            load_level = 'ooooo'
+        i_full_damage = (s_a >= self.SD)
+        i_reduced_damage = (s_a < self.SD)
 
-        if load_level < self._woehler_curve.SD:
-            return np.inf
-
-        ampl = collective.rainflow.amplitude
-        s_a = ampl/ampl.max() * load_level
-
-        i_full_damage = (s_a >= self._woehler_curve.SD)
-        i_reduced_damage = (s_a < self._woehler_curve.SD)
-
-        x_D = self._woehler_curve.SD / s_a.max()
+        x_D = self.SD / s_a.max()
 
         s_full_damage = s_a[i_full_damage]
         s_reduced_damage = s_a[i_reduced_damage]
@@ -271,33 +200,13 @@ class MinerHaibach(MinerBase):
         # first expression of the summation term in the denominator
         sum_1 = np.dot(
             n_full_damage,
-            ((s_full_damage / s_a.max())**self._woehler_curve.k_1),
+            ((s_full_damage / s_a.max())**self.k_1),
         )
-        sum_2 = (x_D**(1 - self._woehler_curve.k_1)) * np.dot(
+        sum_2 = (x_D**(1 - self.k_1)) * np.dot(
             n_reduced_damage,
-            ((s_reduced_damage / s_a.max())**(2 * self._woehler_curve.k_1 - 1))
+            ((s_reduced_damage / s_a.max())**(2 * self.k_1 - 1))
         )
 
         A = collective.rainflow.cycles.sum() / (sum_1 + sum_2)
 
         return A
-
-    def N_predict(self, collective, load_level, ignore_inf_rule=False):
-        """The predicted lifetime according to damage sum of the collective
-
-        Parameters
-        ----------
-        load_level : float
-            the maximum (stress) amplitude of the collective
-        A : float
-            the lifetime multiple A
-            BEWARE: this relation is only valid in a specific
-            representation of the predicted (Miner) lifetime
-            where the sn-curve is expressed via the point
-            of the maximum amplitude of the collective:
-            N_predicted = N(S = S_max) * A
-        """
-        n_woehler_load_level = self._woehler_curve.basquin_cycles(load_level)
-        A = self.calc_A(collective, load_level, ignore_inf_rule=ignore_inf_rule)
-
-        return n_woehler_load_level * A

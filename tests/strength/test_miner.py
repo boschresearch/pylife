@@ -21,12 +21,9 @@ import pytest
 import os
 import sys
 
-
 import pylife.strength.miner as miner
-import pylife.strength.meanstress
 from pylife.strength import miner
 from pylife.stress.rainflow import *
-from pylife.stress.timesignal import TimeSignalGenerator
 
 
 from . import data
@@ -49,66 +46,26 @@ def collective(request):
 
 
 # parameters for the example given in Haibach2006
-sn_curve_parameters_haibach = {
+sn_curve_parameters_haibach = pd.Series({
     "ND": 1E6,
     "k_1": 4,
     "SD": 100
-}
+})
 # parameters for the example given in Haibach2006
-sn_curve_parameters_elementar = {
+sn_curve_parameters_elementar = pd.Series({
     "ND": 2E6,
     "k_1": 7,
     "SD": 125
-}
+})
 
 
-@pytest.fixture(scope="module")
-def miner_base():
-    return miner.MinerBase(ND=10**6, k_1=5, SD=200)
-
-
-@pytest.fixture(scope="module")
+@pytest.fixture
 def miner_elementar():
-    return miner.MinerElementar(ND=10**6, k_1=6, SD=200)
+    return miner.MinerElementar.from_parameters(ND=1e6, k_1=6, SD=200.)
 
-
-@pytest.fixture(scope="function")
+@pytest.fixture
 def miner_haibach():
-    m = miner.MinerHaibach(ND=10**6, k_1=6, SD=200)
-    #m.setup(collective)
-    return m
-
-
-def generate_transformed_pylife_collective():
-    tsgen = TimeSignalGenerator(10, {'number': 50,
-                                     'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
-                                     'frequency_median': 4, 'frequency_std_dev': 3,
-                                     'offset_median': 0, 'offset_std_dev': 0.4},
-                                None, None)
-
-    y = tsgen.query(2000000)
-
-    rfc = ThreePointDetector(LoopValueRecorder()).process(y)
-    rfm = rfc.recorder.matrix_series(128)
-
-    transformed = rfm.meanstress_hist.FKM_goodman(pd.Series({'M': 0.3, 'M2': 0.1}), R_goal=-1)
-
-    return transformed
-
-
-@pytest.fixture(scope="module")
-def transformed_pylife_collective():
-    return generate_transformed_pylife_collective()
-
-
-def test_get_accumulated_from_relative_collective():
-    coll_acc = miner.get_accumulated_from_relative_collective(
-        data.coll_haibach_mod_rel
-    )
-    assert np.allclose(data.coll_haibach_mod_acc,
-                       coll_acc
-                       )
-
+    return miner.MinerHaibach.from_parameters(ND=10**6, k_1=6, SD=200)
 
 
 def test_effective_damage_sum_limitations():
@@ -125,10 +82,10 @@ class TestMinerElementar():
         z = 1.3180413239445 # = (ND / H0)**(1. / k)
         np.testing.assert_almost_equal(miner_elementar.calc_zeitfestigkeitsfaktor(190733.0), z)
 
-    def test_A(self, miner_elementar):
+    def test_lifetime_multiple(self, miner_elementar):
         # test requires k = 6
 
-        A = miner_elementar.calc_A(self.coll)
+        A = miner_elementar.lifetime_multiple(self.coll)
         np.testing.assert_almost_equal(A, 862.99608075)
 
     def test_d_m(self, miner_elementar):
@@ -138,8 +95,16 @@ class TestMinerElementar():
 
     def test_N_predict(self, miner_elementar):
         load_level = 400
-        expected = 13484313.761758052
-        np.testing.assert_almost_equal(miner_elementar.N_predict(self.coll, load_level), expected)
+        expected_cycles = 13484313.761758052
+        gassner = miner_elementar.gassner(self.coll)
+        np.testing.assert_almost_equal(gassner.basquin_cycles(load_level), expected_cycles)
+
+        foo_collective = pd.Series({
+            'amplitude': load_level,
+            'cycles': expected_cycles
+        })
+        expected_damage = pd.Series(1.0, name='damage')
+        pd.testing.assert_series_equal(gassner.damage(foo_collective), expected_damage)
 
     def test_damage_accumulation_validation(self):
         """The test uses data from the book Haibach2006
@@ -150,39 +115,40 @@ class TestMinerElementar():
         coll = make_collective_from_raw_data(data.coll_elementar_acc)
         load_level = coll.rainflow.amplitude.max()
         expected_N = 2167330
-        sn_curve_parameters = sn_curve_parameters_elementar
-        miner_elementar = miner.MinerElementar(**sn_curve_parameters)
+        miner_elementar = sn_curve_parameters_elementar.miner_elementar
         # some rounding is assumed in the example from the book
         # so in respect to millions of cycles a small neglectable tolerance is accepted
-        np.testing.assert_approx_equal(expected_N, miner_elementar.N_predict(coll, load_level), significant=6)
+        gassner = miner_elementar.gassner(coll)
+        np.testing.assert_approx_equal(expected_N, gassner.basquin_cycles(load_level), significant=6)
 
 
 @pytest.mark.usefixtures('collective')
 class TestMinerHaibach:
 
-    def test_calc_A_load_level_smaller_ND(self, miner_haibach):
-        A = miner_haibach.calc_A(self.coll, load_level=(miner_haibach._woehler_curve.SD / 2.))
-        assert A == np.inf
-
-    def test_calc_A_split_damage_regions(self, miner_haibach):
+    def test_lifetime_multiple_split_damage_regions(self, miner_haibach):
         load_level = 400
-        miner_haibach.calc_A(self.coll, load_level)
+        miner_haibach.lifetime_multiple(self.coll, load_level)
 
-    def test_calc_A(self, miner_haibach):
+    def test_lifetime_multiple(self, miner_haibach):
         load_level = 400
-        A = miner_haibach.calc_A(self.coll, load_level)
+        A = miner_haibach.lifetime_multiple(self.coll, load_level)
         np.testing.assert_almost_equal(A, 1000.342377197)
+
+    def test_lifetime_multiple_no_load_level(self, miner_haibach):
+        A = miner_haibach.lifetime_multiple(self.coll.rainflow.scale(200.).to_pandas())
+        np.testing.assert_almost_equal(A, 1061.21644181784)
 
     def test_N_predict(self, miner_haibach):
         load_level = 400
         N_woehler_load_level = (
-            miner_haibach._woehler_curve.ND * (load_level / miner_haibach._woehler_curve.SD)**(-miner_haibach._woehler_curve.k_1)
+            miner_haibach.ND * (load_level / miner_haibach.SD)**(-miner_haibach.k_1)
         )
-        A = miner_haibach.calc_A(self.coll, load_level)
+        A = miner_haibach.lifetime_multiple(self.coll, load_level)
         N_predict = N_woehler_load_level * A
 
-        np.testing.assert_almost_equal(miner_haibach.N_predict(self.coll, load_level), N_predict)
+        gassner = miner_haibach.gassner(self.coll, load_level)
 
+        np.testing.assert_almost_equal(gassner.basquin_cycles(load_level), N_predict)
 
     @pytest.mark.parametrize("load_level, predicted_N", [
         (100, 935519000),
@@ -200,19 +166,9 @@ class TestMinerHaibach:
         The examples can be found on page 292.
         """
         coll = make_collective_from_raw_data(data.coll_haibach_mod_acc)
-        sn_curve_parameters = sn_curve_parameters_haibach
-        miner_haibach = miner.MinerHaibach(**sn_curve_parameters)
+
+        miner_haibach = sn_curve_parameters_haibach.miner_haibach
         # some rounding is assumed in the example from the book
         # so in respect to millions of cycles a small neglectable tolerance is accepted
-        np.testing.assert_approx_equal(predicted_N, miner_haibach.N_predict(coll, load_level), significant=5)
-
-    def test_N_predict_inf_rule(self):
-        coll = make_collective_from_raw_data(data.coll_haibach_mod_acc)
-        sn_curve_parameters = sn_curve_parameters_haibach
-        miner_haibach = miner.MinerHaibach(**sn_curve_parameters)
-        load_level = 50
-        expected_N_100MPa = 935519000
-        N_pred_ignored = miner_haibach.N_predict(coll, load_level, ignore_inf_rule=True)
-        N_pred_not_ignored = miner_haibach.N_predict(coll, load_level,  ignore_inf_rule=False)
-        assert N_pred_not_ignored == np.inf
-        assert N_pred_ignored > expected_N_100MPa
+        gassner = miner_haibach.gassner(coll, load_level)
+        np.testing.assert_approx_equal(predicted_N, gassner.basquin_cycles(load_level), significant=5)
