@@ -116,7 +116,7 @@ class MinerBase:
         A = self.calc_A(collective)
         return effective_damage_sum(A)
 
-    def N_predict(self, load_level, collective):
+    def N_predict(self, collective, load_level):
         """The predicted lifetime according to damage sum of the collective
 
         Parameters
@@ -216,7 +216,7 @@ class MinerHaibach(MinerBase):
         load level is taken as dict key (values are rounded to 0 decimals)
     """
 
-    def calc_A(self, load_level, collective, ignore_inf_rule=False):
+    def calc_A(self, collective, load_level=None, ignore_inf_rule=False):
         """Compute the lifetime multiple for Miner-modified according to Haibach
 
         Refer to Haibach (2006), p. 291 (3.21-61). The lifetime multiple can be
@@ -247,6 +247,9 @@ class MinerHaibach(MinerBase):
         super().calc_A(collective)
 
         # this parameter makes each evaluation of A unique
+
+        if load_level is None:
+            load_level = 'ooooo'
 
         if load_level < self._woehler_curve.SD:
             return np.inf
@@ -279,7 +282,7 @@ class MinerHaibach(MinerBase):
 
         return A
 
-    def N_predict(self, load_level, collective, ignore_inf_rule=False):
+    def N_predict(self, collective, load_level, ignore_inf_rule=False):
         """The predicted lifetime according to damage sum of the collective
 
         Parameters
@@ -295,6 +298,6 @@ class MinerHaibach(MinerBase):
             N_predicted = N(S = S_max) * A
         """
         n_woehler_load_level = self._woehler_curve.basquin_cycles(load_level)
-        A = self.calc_A(load_level, collective, ignore_inf_rule=ignore_inf_rule)
+        A = self.calc_A(collective, load_level, ignore_inf_rule=ignore_inf_rule)
 
         return n_woehler_load_level * A

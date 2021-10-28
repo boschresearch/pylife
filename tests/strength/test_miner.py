@@ -139,7 +139,7 @@ class TestMinerElementar():
     def test_N_predict(self, miner_elementar):
         load_level = 400
         expected = 13484313.761758052
-        np.testing.assert_almost_equal(miner_elementar.N_predict(load_level, self.coll), expected)
+        np.testing.assert_almost_equal(miner_elementar.N_predict(self.coll, load_level), expected)
 
     def test_damage_accumulation_validation(self):
         """The test uses data from the book Haibach2006
@@ -154,23 +154,23 @@ class TestMinerElementar():
         miner_elementar = miner.MinerElementar(**sn_curve_parameters)
         # some rounding is assumed in the example from the book
         # so in respect to millions of cycles a small neglectable tolerance is accepted
-        np.testing.assert_approx_equal(expected_N, miner_elementar.N_predict(load_level, coll), significant=6)
+        np.testing.assert_approx_equal(expected_N, miner_elementar.N_predict(coll, load_level), significant=6)
 
 
 @pytest.mark.usefixtures('collective')
 class TestMinerHaibach:
 
     def test_calc_A_load_level_smaller_ND(self, miner_haibach):
-        A = miner_haibach.calc_A((miner_haibach._woehler_curve.SD / 2.), self.coll)
+        A = miner_haibach.calc_A(self.coll, load_level=(miner_haibach._woehler_curve.SD / 2.))
         assert A == np.inf
 
     def test_calc_A_split_damage_regions(self, miner_haibach):
         load_level = 400
-        miner_haibach.calc_A(load_level, self.coll)
+        miner_haibach.calc_A(self.coll, load_level)
 
     def test_calc_A(self, miner_haibach):
         load_level = 400
-        A = miner_haibach.calc_A(load_level, self.coll)
+        A = miner_haibach.calc_A(self.coll, load_level)
         np.testing.assert_almost_equal(A, 1000.342377197)
 
     def test_N_predict(self, miner_haibach):
@@ -178,9 +178,10 @@ class TestMinerHaibach:
         N_woehler_load_level = (
             miner_haibach._woehler_curve.ND * (load_level / miner_haibach._woehler_curve.SD)**(-miner_haibach._woehler_curve.k_1)
         )
-        A = miner_haibach.calc_A(load_level, self.coll)
+        A = miner_haibach.calc_A(self.coll, load_level)
         N_predict = N_woehler_load_level * A
-        np.testing.assert_almost_equal(miner_haibach.N_predict(load_level, self.coll), N_predict)
+
+        np.testing.assert_almost_equal(miner_haibach.N_predict(self.coll, load_level), N_predict)
 
 
     @pytest.mark.parametrize("load_level, predicted_N", [
@@ -203,7 +204,7 @@ class TestMinerHaibach:
         miner_haibach = miner.MinerHaibach(**sn_curve_parameters)
         # some rounding is assumed in the example from the book
         # so in respect to millions of cycles a small neglectable tolerance is accepted
-        np.testing.assert_approx_equal(predicted_N, miner_haibach.N_predict(load_level, coll), significant=5)
+        np.testing.assert_approx_equal(predicted_N, miner_haibach.N_predict(coll, load_level), significant=5)
 
     def test_N_predict_inf_rule(self):
         coll = make_collective_from_raw_data(data.coll_haibach_mod_acc)
@@ -211,7 +212,7 @@ class TestMinerHaibach:
         miner_haibach = miner.MinerHaibach(**sn_curve_parameters)
         load_level = 50
         expected_N_100MPa = 935519000
-        N_pred_ignored = miner_haibach.N_predict(load_level, coll, ignore_inf_rule=True)
-        N_pred_not_ignored = miner_haibach.N_predict(load_level, coll, ignore_inf_rule=False)
+        N_pred_ignored = miner_haibach.N_predict(coll, load_level, ignore_inf_rule=True)
+        N_pred_not_ignored = miner_haibach.N_predict(coll, load_level,  ignore_inf_rule=False)
         assert N_pred_not_ignored == np.inf
         assert N_pred_ignored > expected_N_100MPa
