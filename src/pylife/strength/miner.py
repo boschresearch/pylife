@@ -182,31 +182,30 @@ class MinerHaibach(WoehlerCurve, MinerBase):
             return value is 'inf' if load_level < SD
         """
 
-        s_a = collective.rainflow.amplitude
-        if load_level is not None:
-            s_a = s_a/s_a.max() * load_level
+        rf = collective.rainflow
+        s_a = rf.amplitude
+        max_amp = s_a.max()
 
-        i_full_damage = (s_a >= self.SD)
-        i_reduced_damage = (s_a < self.SD)
+        cycles = rf.cycles
 
-        x_D = self.SD / s_a.max()
+        if load_level is None:
+            load_level = max_amp
+
+        s_a = s_a / max_amp
+
+        x_D = self.SD / load_level
+
+        i_full_damage = (s_a >= x_D)
+        i_reduced_damage = (s_a < x_D)
 
         s_full_damage = s_a[i_full_damage]
         s_reduced_damage = s_a[i_reduced_damage]
 
-        n_full_damage = collective.rainflow.cycles[i_full_damage]
-        n_reduced_damage = collective.rainflow.cycles[i_reduced_damage]
+        n_full_damage = cycles[i_full_damage]
+        n_reduced_damage = cycles[i_reduced_damage]
 
         # first expression of the summation term in the denominator
-        sum_1 = np.dot(
-            n_full_damage,
-            ((s_full_damage / s_a.max())**self.k_1),
-        )
-        sum_2 = (x_D**(1 - self.k_1)) * np.dot(
-            n_reduced_damage,
-            ((s_reduced_damage / s_a.max())**(2 * self.k_1 - 1))
-        )
+        sum_1 = np.dot(n_full_damage, (s_full_damage**self.k_1))
+        sum_2 = x_D**(1 - self.k_1) * np.dot(n_reduced_damage, (s_reduced_damage**(2 * self.k_1 - 1)))
 
-        A = collective.rainflow.cycles.sum() / (sum_1 + sum_2)
-
-        return A
+        return cycles.sum() / (sum_1 + sum_2)
