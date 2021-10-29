@@ -19,7 +19,7 @@ development, i. e. follow the [Three Rules of Test Driven
 Development][rrugamba]:
 
 1. Do not change production code without writing a failing unit test
-   first. Cleanups and refactorings a not changes in that sense.
+   first. Cleanups and refactorings are not changes in that sense.
 2. Write only enough test code as is sufficient to fail.
 3. Only write or change minimal production code as is sufficient to make the
    failing test pass.
