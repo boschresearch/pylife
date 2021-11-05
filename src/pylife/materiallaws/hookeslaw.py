@@ -47,43 +47,19 @@ class _Hookeslawcore:
         if nu < - 1 or nu > 1./2:
             raise ValueError('Poisson\'s ratio nu is %.2f but must be -1 <= nu <= 1./2.' % nu)
 
-    def _inputasarray(self, *args):
-        '''Transforms the inputs into numpy arrays
 
-        Parameters
-        ----------
 
-        *args : tuple
-            The inputs to be transformed
-
-        Returns
-        ------
-        transformed : tuple of array-like
-            The transformed inputs
-
+    def _as_consistant_arrays(self, *args):
+        '''Transforms the inputs into numpy arrays and checks the shape of the given inputs. If the shapes are note equal, a ValueError is raised
         '''
         transformed = tuple(np.asarray(arg) for arg in args)
-        return transformed
-
-    def _validateshape(self, *args):
-        '''Validates the shape of the given inputs and raises a ValueError if the shapes are not equal
-
-        Parameters
-        ----------
-
-        *args : tuple of array-like
-            The arrays to be checked
-
-        Raises
-        ------
-        ValueError:
-            Components' shape is not consistent.
-
-        '''
-        shape0 = args[0].shape
-        shape = [shape0 == arg.shape for arg in args]
+        shape0 = transformed[0].shape
+        shape = [shape0 == arg.shape for arg in transformed]
         if not all(shape):
             raise ValueError('Components\' shape is not consistent.')
+
+        return transformed
+
 
     @property
     def E(self):
@@ -211,8 +187,7 @@ class Hookeslaw2Dstress(_Hookeslawcore):
             The resulting elastic shear strain component with basis 1-2, 
             (1. / 2 * e12 is the tensor component)
         '''
-        s11, s22, s12 = self._inputasarray(s11, s22, s12)
-        self._validateshape(s11, s22, s12)
+        s11, s22, s12 = self._as_consistant_arrays(s11, s22, s12)
         e11 = 1. / self._Et * (s11 - self._nut * s22)
         e22 = 1. / self._Et * (s22 - self._nut * s11)
         e33 = - self._nu / self._E * (s11 + s22)
@@ -241,8 +216,7 @@ class Hookeslaw2Dstress(_Hookeslawcore):
         s12 : array-like float
             The resulting shear stress component with basis 1-2
         '''
-        e11, e22, e12 = self._inputasarray(e11, e22, e12)
-        self._validateshape(e11, e22, e12)
+        e11, e22, e12 = self._as_consistant_arrays(e11, e22, e12)
         factor = self._Et / (1 - np.power(self._nut, 2.))
         s11 = factor * (e11 + self._nut * e22)
         s22 = factor * (e22 + self._nut * e11)
@@ -385,8 +359,7 @@ class Hookeslaw3D(_Hookeslawcore):
             The resulting elastic shear strain component with basis 2-3, 
             (1. / 2 * e23 is the tensor component)
         '''
-        s11, s22, s33, s12, s13, s23 = self._inputasarray(s11, s22, s33, s12, s13, s23)
-        self._validateshape(s11, s22, s33, s12, s13, s23)
+        s11, s22, s33, s12, s13, s23 = self._as_consistant_arrays(s11, s22, s33, s12, s13, s23)
         e11 = 1 / self._E * (s11 - self._nu * (s22 + s33))
         e22 = 1 / self._E * (s22 - self._nu * (s11 + s33))
         e33 = 1 / self._E * (s33 - self._nu * (s11 + s22))
@@ -431,8 +404,7 @@ class Hookeslaw3D(_Hookeslawcore):
         s23 : array-like float
             The resulting shear stress component with basis 2-3
         '''
-        e11, e22, e33, e12, e13, e23 = self._inputasarray(e11, e22, e33, e12, e13, e23)
-        self._validateshape(e11, e22, e33, e12, e13, e23)
+        e11, e22, e33, e12, e13, e23 = self._as_consistant_arrays(e11, e22, e33, e12, e13, e23)
         factor1 = self._E / ((1 + self._nu) * (1 - 2 * self._nu))
         factor2 = 1 - self._nu
         s11 = factor1 * (factor2 * e11 + self._nu * (e22 + e33))
