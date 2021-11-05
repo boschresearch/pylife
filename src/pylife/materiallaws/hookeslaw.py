@@ -47,8 +47,6 @@ class _Hookeslawcore:
         if nu < - 1 or nu > 1./2:
             raise ValueError('Poisson\'s ratio nu is %.2f but must be -1 <= nu <= 1./2.' % nu)
 
-
-
     def _as_consistant_arrays(self, *args):
         '''Transforms the inputs into numpy arrays and checks the shape of the given inputs. If the shapes are note equal, a ValueError is raised
         '''
@@ -59,7 +57,6 @@ class _Hookeslawcore:
             raise ValueError('Components\' shape is not consistent.')
 
         return transformed
-
 
     @property
     def E(self):
@@ -82,7 +79,7 @@ class _Hookeslawcore:
         return self._K
 
 
-class Hookeslaw1D:
+class HookesLaw1d:
     '''Implementation of the one dimensional Hooke's Law
 
     Parameters
@@ -140,7 +137,7 @@ class Hookeslaw1D:
         return np.asarray(stress) / self._E
 
 
-class Hookeslaw2Dstress(_Hookeslawcore):
+class HookesLaw2dPlaneStress(_Hookeslawcore):
     '''Implementation of the Hooke's Law under plane stress conditions.
 
     Parameters
@@ -151,7 +148,7 @@ class Hookeslaw2Dstress(_Hookeslawcore):
 
     nu : float
         Poisson's ratio. Must be between -1 and 1./2.
-    
+
     Notes
     -----
 
@@ -224,9 +221,9 @@ class Hookeslaw2Dstress(_Hookeslawcore):
         return s11, s22, s12
 
 
-class Hookeslaw2Dstrain(Hookeslaw2Dstress):
+class HookesLaw2dPlaneStrain(HookesLaw2dPlaneStress):
     '''Implementation of the Hooke's Law under plane strain conditions. 
-    
+
     Parameters
     ----------
 
@@ -235,10 +232,10 @@ class Hookeslaw2Dstrain(Hookeslaw2Dstress):
 
     nu : float
         Poisson's ratio. Must be between -1 and 1./2.
-    
+
     Notes
     -----
-    
+
     A cartesian coordinate system is assumed. The strain components in 3 direction are assumed to be zero, e33 = e13 = e23 = 0.
     '''
 
@@ -302,9 +299,9 @@ class Hookeslaw2Dstrain(Hookeslaw2Dstress):
         return s11, s22, s33, s12
 
 
-class Hookeslaw3D(_Hookeslawcore):
+class HookesLaw3d(_Hookeslawcore):
     '''Implementation of the Hooke's Law in three dimensions.
-    
+
     Parameters
     ----------
 
@@ -313,10 +310,10 @@ class Hookeslaw3D(_Hookeslawcore):
 
     nu : float
         Poisson's ratio. Must be between -1 and 1./2
-    
+
     Notes
     -----
-    
+
     A cartesian coordinate system is assumed.
     '''
 

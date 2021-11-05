@@ -2,24 +2,24 @@ import pytest
 import numpy as np
 import re
 
-from pylife.materiallaws import Hookeslaw1D
-from pylife.materiallaws import Hookeslaw2Dstrain
-from pylife.materiallaws import Hookeslaw2Dstress
-from pylife.materiallaws import Hookeslaw3D
+from pylife.materiallaws import HookesLaw1d
+from pylife.materiallaws import HookesLaw2dPlaneStrain
+from pylife.materiallaws import HookesLaw2dPlaneStress
+from pylife.materiallaws import HookesLaw3d
 
 
-# Hookeslaw1D
+# HookesLaw1d
 @pytest.fixture
-def hookeslaw1D():
-    return Hookeslaw1D(E=2.)
+def hookeslaw1d():
+    return HookesLaw1d(E=2.)
 
 
-def test_hookeslaw1D_init(hookeslaw1D):
-    assert hookeslaw1D._E == 2.
+def test_hookeslaw1d_init(hookeslaw1d):
+    assert hookeslaw1d._E == 2.
 
 
-def test_hookeslaw1D_properties(hookeslaw1D):
-    assert hookeslaw1D.E == hookeslaw1D._E
+def test_hookeslaw1d_properties(hookeslaw1d):
+    assert hookeslaw1d.E == hookeslaw1d._E
 
 
 data1D = np.array([
@@ -34,36 +34,36 @@ data1D = np.array([
 
 
 @pytest.mark.parametrize('stress, expected', map(tuple, data1D))
-def test_hookeslaw1D_strain_scalar(hookeslaw1D, stress, expected):
-    np.testing.assert_approx_equal(hookeslaw1D.strain(stress), expected, significant=5)
+def test_hookeslaw1d_strain_scalar(hookeslaw1d, stress, expected):
+    np.testing.assert_approx_equal(hookeslaw1d.strain(stress), expected, significant=5)
 
 
 @pytest.mark.parametrize('expected, strain', map(tuple, data1D))
-def test_hookeslaw1D_stress_scalar(hookeslaw1D, expected, strain):
-    np.testing.assert_approx_equal(hookeslaw1D.stress(strain), expected, significant=5)
+def test_hookeslaw1d_stress_scalar(hookeslaw1d, expected, strain):
+    np.testing.assert_approx_equal(hookeslaw1d.stress(strain), expected, significant=5)
 
 
 @pytest.mark.parametrize('stress, expected', [(data1D[:, 0], data1D[:, 1])])
-def test_hookeslaw1D_strain_array(hookeslaw1D, stress, expected):
-    np.testing.assert_allclose(hookeslaw1D.strain(stress), expected, rtol=1e-5)
+def test_hookeslaw1d_strain_array(hookeslaw1d, stress, expected):
+    np.testing.assert_allclose(hookeslaw1d.strain(stress), expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', [(data1D[:, 0], data1D[:, 1])])
-def test_hookeslaw1D_stress_array(hookeslaw1D, expected, strain):
-    np.testing.assert_allclose(hookeslaw1D.stress(strain), expected, rtol=1e-5)
+def test_hookeslaw1d_stress_array(hookeslaw1d, expected, strain):
+    np.testing.assert_allclose(hookeslaw1d.stress(strain), expected, rtol=1e-5)
 
 
 @pytest.fixture
-def hookeslaw1D_real():
-    return Hookeslaw1D(E=210.5e9)
+def hookeslaw1d_real():
+    return HookesLaw1d(E=210.5e9)
 
 
-def test_hookeslaw1D_real_init(hookeslaw1D_real):
-    assert hookeslaw1D_real._E == 210.5e9
+def test_hookeslaw1d_real_init(hookeslaw1d_real):
+    assert hookeslaw1d_real._E == 210.5e9
 
 
-def test_hookeslaw1D_real_properties(hookeslaw1D_real):
-    assert hookeslaw1D_real.E == hookeslaw1D_real._E
+def test_hookeslaw1d_real_properties(hookeslaw1d_real):
+    assert hookeslaw1d_real.E == hookeslaw1d_real._E
 
 
 data1D_real = np.array([
@@ -78,60 +78,60 @@ data1D_real = np.array([
 
 
 @pytest.mark.parametrize('stress, expected', map(tuple, data1D_real))
-def test_hookeslaw1D_real_strain_scalar(hookeslaw1D_real, stress, expected):
-    np.testing.assert_approx_equal(hookeslaw1D_real.strain(stress), expected, significant=5)
+def test_hookeslaw1d_real_strain_scalar(hookeslaw1d_real, stress, expected):
+    np.testing.assert_approx_equal(hookeslaw1d_real.strain(stress), expected, significant=5)
 
 
 @pytest.mark.parametrize('expected, strain', map(tuple, data1D_real))
-def test_hookeslaw1D_real_stress_scalar(hookeslaw1D_real, expected, strain):
-    np.testing.assert_approx_equal(hookeslaw1D_real.stress(strain), expected, significant=5)
+def test_hookeslaw1d_real_stress_scalar(hookeslaw1d_real, expected, strain):
+    np.testing.assert_approx_equal(hookeslaw1d_real.stress(strain), expected, significant=5)
 
 
 @pytest.mark.parametrize('stress, expected', [(data1D_real[:, 0], data1D_real[:, 1])])
-def test_hookeslaw1D_real_strain_array(hookeslaw1D_real, stress, expected):
-    np.testing.assert_allclose(hookeslaw1D_real.strain(stress), expected, rtol=1e-5)
+def test_hookeslaw1d_real_strain_array(hookeslaw1d_real, stress, expected):
+    np.testing.assert_allclose(hookeslaw1d_real.strain(stress), expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', [(data1D_real[:, 0], data1D_real[:, 1])])
-def test_hookeslaw1D_real_stress_array(hookeslaw1D_real, expected, strain):
-    np.testing.assert_allclose(hookeslaw1D_real.stress(strain), expected, rtol=1e-5)
+def test_hookeslaw1d_real_stress_array(hookeslaw1d_real, expected, strain):
+    np.testing.assert_allclose(hookeslaw1d_real.stress(strain), expected, rtol=1e-5)
 
 
-# Hookeslaw2Dstress
+# HookesLaw2dPlaneStress
 @pytest.fixture
-def hookeslaw2Dstress():
-    return Hookeslaw2Dstress(E=2., nu=0.1)
+def hookeslaw2dplainstress():
+    return HookesLaw2dPlaneStress(E=2., nu=0.1)
 
 
 @pytest.mark.parametrize('nu', [-1.1, 0.6])
-def test_hookeslaw2Dstress_init(nu):
+def test_hookeslaw2dplainstress_init(nu):
     with pytest.raises(ValueError,
                        match=re.escape('Possion\'s ratio nu is %.2f but must be -1 <= nu <= 1./2.' % nu)):
-        Hookeslaw2Dstress(E=2., nu=nu)
+        HookesLaw2dPlaneStress(E=2., nu=nu)
 
 
-def test_hookeslaw2Dstress_wrongshapestress(hookeslaw2Dstress):
+def test_hookeslaw2dplainstress_wrongshapestress(hookeslaw2dplainstress):
     with pytest.raises(ValueError,
                        match=re.escape('Components\' shape is not consistent.')):
-        hookeslaw2Dstress.stress(e11=np.zeros((1, 2)), e22=np.zeros((1, 2)), e12=np.zeros((2, 1)))
+        hookeslaw2dplainstress.stress(e11=np.zeros((1, 2)), e22=np.zeros((1, 2)), e12=np.zeros((2, 1)))
 
 
-def test_hookeslaw2Dstress_wrongshapestrain(hookeslaw2Dstress):
+def test_hookeslaw2dplainstress_wrongshapestrain(hookeslaw2dplainstress):
     with pytest.raises(ValueError,
                        match=re.escape('Components\' shape is not consistent.')):
-        hookeslaw2Dstress.strain(s11=np.zeros((1, 2)), s22=np.zeros((1, 2)), s12=np.zeros((2, 1)))
+        hookeslaw2dplainstress.strain(s11=np.zeros((1, 2)), s22=np.zeros((1, 2)), s12=np.zeros((2, 1)))
 
 
-def test_hookeslaw2Dstress_init(hookeslaw2Dstress):
-    assert hookeslaw2Dstress._E == 2.
-    assert hookeslaw2Dstress._nu == 0.1
+def test_hookeslaw2dplainstress_init(hookeslaw2dplainstress):
+    assert hookeslaw2dplainstress._E == 2.
+    assert hookeslaw2dplainstress._nu == 0.1
 
 
-def test_hookeslaw2Dstress_properties(hookeslaw2Dstress):
-    assert hookeslaw2Dstress.E == hookeslaw2Dstress._E
-    assert hookeslaw2Dstress.nu == hookeslaw2Dstress._nu
-    np.testing.assert_approx_equal(hookeslaw2Dstress.G, 0.9090909, significant=5)
-    np.testing.assert_approx_equal(hookeslaw2Dstress.K, 0.8333333, significant=5)
+def test_hookeslaw2dplainstress_properties(hookeslaw2dplainstress):
+    assert hookeslaw2dplainstress.E == hookeslaw2dplainstress._E
+    assert hookeslaw2dplainstress.nu == hookeslaw2dplainstress._nu
+    np.testing.assert_approx_equal(hookeslaw2dplainstress.G, 0.9090909, significant=5)
+    np.testing.assert_approx_equal(hookeslaw2dplainstress.K, 0.8333333, significant=5)
 
 
 # (s11, s22, s33, s12), (e11, e22, e33, e12)
@@ -147,44 +147,44 @@ data2Dstress = np.array([
 
 
 @pytest.mark.parametrize('stress, expected', map(tuple, data2Dstress))
-def test_hookeslaw2Dstress_strain_scalar(hookeslaw2Dstress, stress, expected):
+def test_hookeslaw2dplainstress_strain_scalar(hookeslaw2dplainstress, stress, expected):
     stress = dict(s11=stress[0], s22=stress[1], s12=stress[3])
-    np.testing.assert_allclose(hookeslaw2Dstress.strain(**stress), expected, rtol=1e-5)
+    np.testing.assert_allclose(hookeslaw2dplainstress.strain(**stress), expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', map(tuple, data2Dstress))
-def test_hookeslaw2Dstress_stress_scalar(hookeslaw2Dstress, expected, strain):
+def test_hookeslaw2dplainstress_stress_scalar(hookeslaw2dplainstress, expected, strain):
     strain = dict(e11=strain[0], e22=strain[1], e12=strain[3])
-    np.testing.assert_allclose(hookeslaw2Dstress.stress(**strain), expected[[0, 1, 3]], rtol=1e-5)
+    np.testing.assert_allclose(hookeslaw2dplainstress.stress(**strain), expected[[0, 1, 3]], rtol=1e-5)
 
 
 @pytest.mark.parametrize('stress, expected', [(data2Dstress[:, 0], data2Dstress[:, 1])])
-def test_hookeslaw2Dstress_strain_array(hookeslaw2Dstress, stress, expected):
+def test_hookeslaw2dplainstress_strain_array(hookeslaw2dplainstress, stress, expected):
     stress = dict(s11=stress[:, 0], s22=stress[:, 1], s12=stress[:, 3])
-    np.testing.assert_allclose(np.array(hookeslaw2Dstress.strain(**stress)).T, expected, rtol=1e-5)
+    np.testing.assert_allclose(np.array(hookeslaw2dplainstress.strain(**stress)).T, expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', [(data2Dstress[:, 0], data2Dstress[:, 1])])
-def test_hookeslaw2Dstress_stress_array(hookeslaw2Dstress, expected, strain):
+def test_hookeslaw2dplainstress_stress_array(hookeslaw2dplainstress, expected, strain):
     strain = dict(e11=strain[:, 0], e22=strain[:, 1], e12=strain[:, 3])
-    np.testing.assert_allclose(np.array(hookeslaw2Dstress.stress(**strain)).T, expected[:, (0, 1, 3)], rtol=1e-5)
+    np.testing.assert_allclose(np.array(hookeslaw2dplainstress.stress(**strain)).T, expected[:, (0, 1, 3)], rtol=1e-5)
 
 
 @pytest.fixture
-def hookeslaw2Dstress_real():
-    return Hookeslaw2Dstress(E=205e9, nu=0.3)
+def hookeslaw2dplainstress_real():
+    return HookesLaw2dPlaneStress(E=205e9, nu=0.3)
 
 
-def test_hookeslaw2Dstress_real_init(hookeslaw2Dstress_real):
-    assert hookeslaw2Dstress_real._E == 205e9
-    assert hookeslaw2Dstress_real._nu == 0.3
+def test_hookeslaw2dplainstress_real_init(hookeslaw2dplainstress_real):
+    assert hookeslaw2dplainstress_real._E == 205e9
+    assert hookeslaw2dplainstress_real._nu == 0.3
 
 
-def test_hookeslaw2Dstress_real_properties(hookeslaw2Dstress_real):
-    assert hookeslaw2Dstress_real.E == hookeslaw2Dstress_real._E
-    assert hookeslaw2Dstress_real.nu == hookeslaw2Dstress_real._nu
-    np.testing.assert_approx_equal(hookeslaw2Dstress_real.G, 78846153e3, significant=5)
-    np.testing.assert_approx_equal(hookeslaw2Dstress_real.K, 170838383e3, significant=5)
+def test_hookeslaw2dplainstress_real_properties(hookeslaw2dplainstress_real):
+    assert hookeslaw2dplainstress_real.E == hookeslaw2dplainstress_real._E
+    assert hookeslaw2dplainstress_real.nu == hookeslaw2dplainstress_real._nu
+    np.testing.assert_approx_equal(hookeslaw2dplainstress_real.G, 78846153e3, significant=5)
+    np.testing.assert_approx_equal(hookeslaw2dplainstress_real.K, 170838383e3, significant=5)
 
 
 # (s11, s22, s33, s12), (e11, e22, e33, e12)
@@ -199,64 +199,65 @@ data2Dstress_real = np.array([
 
 
 @pytest.mark.parametrize('stress, expected', map(tuple, data2Dstress_real))
-def test_hookeslaw2Dstress_real_strain_scalar(hookeslaw2Dstress_real, stress, expected):
+def test_hookeslaw2dplainstress_real_strain_scalar(hookeslaw2dplainstress_real, stress, expected):
     stress = dict(s11=stress[0], s22=stress[1], s12=stress[3])
-    np.testing.assert_allclose(hookeslaw2Dstress_real.strain(**stress), expected, rtol=1e-5)
+    np.testing.assert_allclose(hookeslaw2dplainstress_real.strain(**stress), expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', map(tuple, data2Dstress_real))
-def test_hookeslaw2Dstress_real_stress_scalar(hookeslaw2Dstress_real, expected, strain):
+def test_hookeslaw2dplainstress_real_stress_scalar(hookeslaw2dplainstress_real, expected, strain):
     strain = dict(e11=strain[0], e22=strain[1], e12=strain[3])
-    np.testing.assert_allclose(hookeslaw2Dstress_real.stress(**strain), expected[[0, 1, 3]], rtol=1e-5)
+    np.testing.assert_allclose(hookeslaw2dplainstress_real.stress(**strain), expected[[0, 1, 3]], rtol=1e-5)
 
 
 @pytest.mark.parametrize('stress, expected', [(data2Dstress_real[:, 0], data2Dstress_real[:, 1])])
-def test_hookeslaw2Dstress_real_strain_array(hookeslaw2Dstress_real, stress, expected):
+def test_hookeslaw2dplainstress_real_strain_array(hookeslaw2dplainstress_real, stress, expected):
     stress = dict(s11=stress[:, 0], s22=stress[:, 1], s12=stress[:, 3])
-    np.testing.assert_allclose(np.array(hookeslaw2Dstress_real.strain(**stress)).T, expected, rtol=1e-5)
+    np.testing.assert_allclose(np.array(hookeslaw2dplainstress_real.strain(**stress)).T, expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', [(data2Dstress_real[:, 0], data2Dstress_real[:, 1])])
-def test_hookeslaw2Dstress_real_stress_array(hookeslaw2Dstress_real, expected, strain):
+def test_hookeslaw2dplainstress_real_stress_array(hookeslaw2dplainstress_real, expected, strain):
     strain = dict(e11=strain[:, 0], e22=strain[:, 1], e12=strain[:, 3])
-    np.testing.assert_allclose(np.array(hookeslaw2Dstress_real.stress(**strain)).T, expected[:, (0, 1, 3)], rtol=1e-5)
+    np.testing.assert_allclose(np.array(hookeslaw2dplainstress_real.stress(**strain)).T,
+                               expected[:, (0, 1, 3)], rtol=1e-5)
 
 
-# Hookeslaw2Dstrain
+# HookesLaw2dPlaneStrain
 @pytest.fixture
-def hookeslaw2Dstrain():
-    return Hookeslaw2Dstrain(E=2., nu=0.1)
+def hookeslaw2dplainstrain():
+    return HookesLaw2dPlaneStrain(E=2., nu=0.1)
 
 
 @pytest.mark.parametrize('nu', [-1.1, 0.6])
-def test_hookeslaw2Dstrain_init(nu):
+def test_hookeslaw2dplainstrain_init(nu):
     with pytest.raises(ValueError,
                        match=re.escape('Possion\'s ratio nu is %.2f but must be -1 <= nu <= 1./2.' % nu)):
-        Hookeslaw2Dstrain(E=2., nu=nu)
+        HookesLaw2dPlaneStrain(E=2., nu=nu)
 
 
-def test_hookeslaw2Dstrain_wrongshapestress(hookeslaw2Dstrain):
+def test_hookeslaw2dplainstrain_wrongshapestress(hookeslaw2dplainstrain):
     with pytest.raises(ValueError,
                        match=re.escape('Components\' shape is not consistent.')):
-        hookeslaw2Dstrain.stress(e11=np.zeros((1, 2)), e22=np.zeros((1, 2)), e12=np.zeros((2, 1)))
+        hookeslaw2dplainstrain.stress(e11=np.zeros((1, 2)), e22=np.zeros((1, 2)), e12=np.zeros((2, 1)))
 
 
-def test_hookeslaw2Dstrain_wrongshapestrain(hookeslaw2Dstrain):
+def test_hookeslaw2dplainstrain_wrongshapestrain(hookeslaw2dplainstrain):
     with pytest.raises(ValueError,
                        match=re.escape('Components\' shape is not consistent.')):
-        hookeslaw2Dstrain.strain(s11=np.zeros((1, 2)), s22=np.zeros((1, 2)), s12=np.zeros((2, 1)))
+        hookeslaw2dplainstrain.strain(s11=np.zeros((1, 2)), s22=np.zeros((1, 2)), s12=np.zeros((2, 1)))
 
 
-def test_hookeslaw2Dstrain_init(hookeslaw2Dstrain):
-    assert hookeslaw2Dstrain._E == 2.
-    assert hookeslaw2Dstrain._nu == 0.1
+def test_hookeslaw2dplainstrain_init(hookeslaw2dplainstrain):
+    assert hookeslaw2dplainstrain._E == 2.
+    assert hookeslaw2dplainstrain._nu == 0.1
 
 
-def test_hookeslaw2Dstrain_properties(hookeslaw2Dstrain):
-    assert hookeslaw2Dstrain.E == hookeslaw2Dstrain._E
-    assert hookeslaw2Dstrain.nu == hookeslaw2Dstrain._nu
-    np.testing.assert_approx_equal(hookeslaw2Dstrain.G, 0.9090909, significant=5)
-    np.testing.assert_approx_equal(hookeslaw2Dstrain.K, 0.8333333, significant=5)
+def test_hookeslaw2dplainstrain_properties(hookeslaw2dplainstrain):
+    assert hookeslaw2dplainstrain.E == hookeslaw2dplainstrain._E
+    assert hookeslaw2dplainstrain.nu == hookeslaw2dplainstrain._nu
+    np.testing.assert_approx_equal(hookeslaw2dplainstrain.G, 0.9090909, significant=5)
+    np.testing.assert_approx_equal(hookeslaw2dplainstrain.K, 0.8333333, significant=5)
 
 
 # (s11, s22, s33, s12), (e11, e22, e33, e12)
@@ -272,44 +273,44 @@ data2Dstrain = np.array([
 
 
 @pytest.mark.parametrize('stress, expected', map(tuple, data2Dstrain))
-def test_hookeslaw2Dstrain_strain_scalar(hookeslaw2Dstrain, stress, expected):
+def test_hookeslaw2dplainstrain_strain_scalar(hookeslaw2dplainstrain, stress, expected):
     stress = dict(s11=stress[0], s22=stress[1], s12=stress[3])
-    np.testing.assert_allclose(hookeslaw2Dstrain.strain(**stress), expected[[0, 1, 3]], rtol=1e-5)
+    np.testing.assert_allclose(hookeslaw2dplainstrain.strain(**stress), expected[[0, 1, 3]], rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', map(tuple, data2Dstrain))
-def test_hookeslaw2Dstrain_stress_scalar(hookeslaw2Dstrain, expected, strain):
+def test_hookeslaw2dplainstrain_stress_scalar(hookeslaw2dplainstrain, expected, strain):
     strain = dict(e11=strain[0], e22=strain[1], e12=strain[3])
-    np.testing.assert_allclose(hookeslaw2Dstrain.stress(**strain), expected, rtol=1e-5)
+    np.testing.assert_allclose(hookeslaw2dplainstrain.stress(**strain), expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('stress, expected', [(data2Dstrain[:, 0], data2Dstrain[:, 1])])
-def test_hookeslaw2Dstrain_strain_array(hookeslaw2Dstrain, stress, expected):
+def test_hookeslaw2dplainstrain_strain_array(hookeslaw2dplainstrain, stress, expected):
     stress = dict(s11=stress[:, 0], s22=stress[:, 1], s12=stress[:, 3])
-    np.testing.assert_allclose(np.array(hookeslaw2Dstrain.strain(**stress)).T, expected[:, (0, 1, 3)], rtol=1e-5)
+    np.testing.assert_allclose(np.array(hookeslaw2dplainstrain.strain(**stress)).T, expected[:, (0, 1, 3)], rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', [(data2Dstrain[:, 0], data2Dstrain[:, 1])])
-def test_hookeslaw2Dstrain_stress_array(hookeslaw2Dstrain, expected, strain):
+def test_hookeslaw2dplainstrain_stress_array(hookeslaw2dplainstrain, expected, strain):
     strain = dict(e11=strain[:, 0], e22=strain[:, 1], e12=strain[:, 3])
-    np.testing.assert_allclose(np.array(hookeslaw2Dstrain.stress(**strain)).T, expected, rtol=1e-5)
+    np.testing.assert_allclose(np.array(hookeslaw2dplainstrain.stress(**strain)).T, expected, rtol=1e-5)
 
 
 @pytest.fixture
-def hookeslaw2Dstrain_real():
-    return Hookeslaw2Dstrain(E=205e9, nu=0.3)
+def hookeslaw2dplainstrain_real():
+    return HookesLaw2dPlaneStrain(E=205e9, nu=0.3)
 
 
-def test_hookeslaw2Dstrain_real_init(hookeslaw2Dstrain_real):
-    assert hookeslaw2Dstrain_real._E == 205e9
-    assert hookeslaw2Dstrain_real._nu == 0.3
+def test_hookeslaw2dplainstrain_real_init(hookeslaw2dplainstrain_real):
+    assert hookeslaw2dplainstrain_real._E == 205e9
+    assert hookeslaw2dplainstrain_real._nu == 0.3
 
 
-def test_hookeslaw2Dstrain_real_properties(hookeslaw2Dstrain_real):
-    assert hookeslaw2Dstrain_real.E == hookeslaw2Dstrain_real._E
-    assert hookeslaw2Dstrain_real.nu == hookeslaw2Dstrain_real._nu
-    np.testing.assert_approx_equal(hookeslaw2Dstrain_real.G, 78846153e3, significant=5)
-    np.testing.assert_approx_equal(hookeslaw2Dstrain_real.K, 170838383e3, significant=5)
+def test_hookeslaw2dplainstrain_real_properties(hookeslaw2dplainstrain_real):
+    assert hookeslaw2dplainstrain_real.E == hookeslaw2dplainstrain_real._E
+    assert hookeslaw2dplainstrain_real.nu == hookeslaw2dplainstrain_real._nu
+    np.testing.assert_approx_equal(hookeslaw2dplainstrain_real.G, 78846153e3, significant=5)
+    np.testing.assert_approx_equal(hookeslaw2dplainstrain_real.K, 170838383e3, significant=5)
 
 
 # (s11, s22, s33, s12), (e11, e22, e33, e12)
@@ -324,68 +325,69 @@ data2Dstrain_real = np.array([
 
 
 @pytest.mark.parametrize('stress, expected', map(tuple, data2Dstrain_real))
-def test_hookeslaw2Dstrain_real_strain_scalar(hookeslaw2Dstrain_real, stress, expected):
+def test_hookeslaw2dplainstrain_real_strain_scalar(hookeslaw2dplainstrain_real, stress, expected):
     stress = dict(s11=stress[0], s22=stress[1], s12=stress[3])
-    np.testing.assert_allclose(hookeslaw2Dstrain_real.strain(**stress), expected[[0, 1, 3]], rtol=1e-5)
+    np.testing.assert_allclose(hookeslaw2dplainstrain_real.strain(**stress), expected[[0, 1, 3]], rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', map(tuple, data2Dstrain_real))
-def test_hookeslaw2Dstrain_real_stress_scalar(hookeslaw2Dstrain_real, expected, strain):
+def test_hookeslaw2dplainstrain_real_stress_scalar(hookeslaw2dplainstrain_real, expected, strain):
     strain = dict(e11=strain[0], e22=strain[1], e12=strain[3])
-    np.testing.assert_allclose(hookeslaw2Dstrain_real.stress(**strain), expected, rtol=1e-5)
+    np.testing.assert_allclose(hookeslaw2dplainstrain_real.stress(**strain), expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('stress, expected', [(data2Dstrain_real[:, 0], data2Dstrain_real[:, 1])])
-def test_hookeslaw2Dstrain_real_strain_array(hookeslaw2Dstrain_real, stress, expected):
+def test_hookeslaw2dplainstrain_real_strain_array(hookeslaw2dplainstrain_real, stress, expected):
     stress = dict(s11=stress[:, 0], s22=stress[:, 1], s12=stress[:, 3])
-    np.testing.assert_allclose(np.array(hookeslaw2Dstrain_real.strain(**stress)).T, expected[:, (0, 1, 3)], rtol=1e-5)
+    np.testing.assert_allclose(np.array(hookeslaw2dplainstrain_real.strain(**stress)).T,
+                               expected[:, (0, 1, 3)], rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', [(data2Dstrain_real[:, 0], data2Dstrain_real[:, 1])])
-def test_hookeslaw2Dstrain_real_stress_array(hookeslaw2Dstrain_real, expected, strain):
+def test_hookeslaw2dplainstrain_real_stress_array(hookeslaw2dplainstrain_real, expected, strain):
     strain = dict(e11=strain[:, 0], e22=strain[:, 1], e12=strain[:, 3])
-    np.testing.assert_allclose(np.array(hookeslaw2Dstrain_real.stress(**strain)).T, expected, rtol=1e-5)
+    np.testing.assert_allclose(np.array(hookeslaw2dplainstrain_real.stress(**strain)).T, expected, rtol=1e-5)
 
 
-# Hookeslaw3D
+# HookesLaw3d
 @pytest.fixture
-def hookeslaw3D():
-    return Hookeslaw3D(E=2., nu=0.1)
+def hookeslaw3d():
+    return HookesLaw3d(E=2., nu=0.1)
 
 
 @pytest.mark.parametrize('nu', [-1.1, 0.6])
-def test_hookeslaw3D_init(nu):
+def test_hookeslaw3d_init(nu):
     with pytest.raises(ValueError,
                        match=re.escape('Possion\'s ratio nu is %.2f but must be -1 <= nu <= 1./2.' % nu)):
-        Hookeslaw2Dstrain(E=2., nu=nu)
+        HookesLaw2dPlaneStrain(E=2., nu=nu)
 
 
-def test_hookeslaw3D_wrongshapestress(hookeslaw3D):
+def test_hookeslaw3d_wrongshapestress(hookeslaw3d):
     with pytest.raises(ValueError,
                        match=re.escape('Components\' shape is not consistent.')):
-        hookeslaw3D.stress(
+        hookeslaw3d.stress(
             e11=np.zeros((1, 2)), e22=np.zeros((1, 2)), e33=np.zeros((2, 1)),
             e12=np.zeros((1, 2)), e13=np.zeros((1, 2)), e23=np.zeros((1, 1)))
 
 
-def test_hookeslaw3D_wrongshapestrain(hookeslaw3D):
+def test_hookeslaw3d_wrongshapestrain(hookeslaw3d):
     with pytest.raises(ValueError,
                        match=re.escape('Components\' shape is not consistent.')):
-        hookeslaw3D.strain(
+        hookeslaw3d.strain(
             s11=np.zeros((1, 2)), s22=np.zeros((1, 2)), s33=np.zeros((2, 1)),
             s12=np.zeros((1, 2)), s23=np.zeros((1, 1)), s13=np.zeros((2, 1)))
 
 
-def test_hookeslaw3D_init(hookeslaw3D):
-    assert hookeslaw3D._E == 2.
-    assert hookeslaw3D._nu == 0.1
+def test_hookeslaw3d_init(hookeslaw3d):
+    assert hookeslaw3d._E == 2.
+    assert hookeslaw3d._nu == 0.1
 
 
-def test_hookeslaw3D_properties(hookeslaw3D):
-    assert hookeslaw3D.E == hookeslaw3D._E
-    assert hookeslaw3D.nu == hookeslaw3D._nu
-    np.testing.assert_approx_equal(hookeslaw3D.G, 0.9090909, significant=5)
-    np.testing.assert_approx_equal(hookeslaw3D.K, 0.8333333, significant=5)
+def test_hookeslaw3d_properties(hookeslaw3d):
+    assert hookeslaw3d.E == hookeslaw3d._E
+    assert hookeslaw3d.nu == hookeslaw3d._nu
+    np.testing.assert_approx_equal(hookeslaw3d.G, 0.9090909, significant=5)
+    np.testing.assert_approx_equal(hookeslaw3d.K, 0.8333333, significant=5)
 
 
 # (s11, s22, s33, s12, s13, s23), (e11, e22, e33, e12, e13, e23)
@@ -405,46 +407,46 @@ data3D = np.array([
 
 
 @pytest.mark.parametrize('stress, expected', map(tuple, data3D))
-def test_hookeslaw3D_strain_scalar(hookeslaw3D, stress, expected):
+def test_hookeslaw3d_strain_scalar(hookeslaw3d, stress, expected):
     stress = dict(s11=stress[0], s22=stress[1], s33=stress[2], s12=stress[3], s13=stress[4], s23=stress[5])
-    np.testing.assert_allclose(hookeslaw3D.strain(**stress), expected, rtol=1e-5)
+    np.testing.assert_allclose(hookeslaw3d.strain(**stress), expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', map(tuple, data3D))
-def test_hookeslaw3D_stress_scalar(hookeslaw3D, expected, strain):
+def test_hookeslaw3d_stress_scalar(hookeslaw3d, expected, strain):
     strain = dict(e11=strain[0], e22=strain[1], e33=strain[2], e12=strain[3], e13=strain[4], e23=strain[5])
-    np.testing.assert_allclose(hookeslaw3D.stress(**strain), expected, rtol=1e-5)
+    np.testing.assert_allclose(hookeslaw3d.stress(**strain), expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('stress, expected', [(data3D[:, 0], data3D[:, 1])])
-def test_hookeslaw3D_strain_array(hookeslaw3D, stress, expected):
+def test_hookeslaw3d_strain_array(hookeslaw3d, stress, expected):
     stress = dict(s11=stress[:, 0], s22=stress[:, 1], s33=stress[:, 2],
                   s12=stress[:, 3], s13=stress[:, 4], s23=stress[:, 5])
-    np.testing.assert_allclose(np.array(hookeslaw3D.strain(**stress)).T, expected, rtol=1e-5)
+    np.testing.assert_allclose(np.array(hookeslaw3d.strain(**stress)).T, expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', [(data3D[:, 0], data3D[:, 1])])
-def test_hookeslaw3D_stress_array(hookeslaw3D, expected, strain):
+def test_hookeslaw3d_stress_array(hookeslaw3d, expected, strain):
     strain = dict(e11=strain[:, 0], e22=strain[:, 1], e33=strain[:, 2],
                   e12=strain[:, 3], e13=strain[:, 4], e23=strain[:, 5])
-    np.testing.assert_allclose(np.array(hookeslaw3D.stress(**strain)).T, expected, rtol=1e-5)
+    np.testing.assert_allclose(np.array(hookeslaw3d.stress(**strain)).T, expected, rtol=1e-5)
 
 
 @pytest.fixture
-def hookeslaw3D_real():
-    return Hookeslaw3D(E=205e9, nu=0.3)
+def hookeslaw3d_real():
+    return HookesLaw3d(E=205e9, nu=0.3)
 
 
-def test_hookeslaw3D_real_init(hookeslaw3D_real):
-    assert hookeslaw3D_real._E == 205e9
-    assert hookeslaw3D_real._nu == 0.3
+def test_hookeslaw3d_real_init(hookeslaw3d_real):
+    assert hookeslaw3d_real._E == 205e9
+    assert hookeslaw3d_real._nu == 0.3
 
 
-def test_hookeslaw3D_real_properties(hookeslaw3D_real):
-    assert hookeslaw3D_real.E == hookeslaw3D_real._E
-    assert hookeslaw3D_real.nu == hookeslaw3D_real._nu
-    np.testing.assert_approx_equal(hookeslaw3D_real.G, 78846153e3, significant=5)
-    np.testing.assert_approx_equal(hookeslaw3D_real.K, 170838383e3, significant=5)
+def test_hookeslaw3d_real_properties(hookeslaw3d_real):
+    assert hookeslaw3d_real.E == hookeslaw3d_real._E
+    assert hookeslaw3d_real.nu == hookeslaw3d_real._nu
+    np.testing.assert_approx_equal(hookeslaw3d_real.G, 78846153e3, significant=5)
+    np.testing.assert_approx_equal(hookeslaw3d_real.K, 170838383e3, significant=5)
 
 
 # (s11, s22, s33, s12, s13, s23), (e11, e22, e33, e12, e13, e23)
@@ -463,26 +465,26 @@ data3D_real = np.array([
 
 
 @pytest.mark.parametrize('stress, expected', map(tuple, data3D_real))
-def test_hookeslaw3D_real_strain_scalar(hookeslaw3D_real, stress, expected):
+def test_hookeslaw3d_real_strain_scalar(hookeslaw3d_real, stress, expected):
     stress = dict(s11=stress[0], s22=stress[1], s33=stress[2], s12=stress[3], s13=stress[4], s23=stress[5])
-    np.testing.assert_allclose(hookeslaw3D_real.strain(**stress), expected, rtol=1e-5)
+    np.testing.assert_allclose(hookeslaw3d_real.strain(**stress), expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', map(tuple, data3D_real))
-def test_hookeslaw3D_real_stress_scalar(hookeslaw3D_real, expected, strain):
+def test_hookeslaw3d_real_stress_scalar(hookeslaw3d_real, expected, strain):
     strain = dict(e11=strain[0], e22=strain[1], e33=strain[2], e12=strain[3], e13=strain[4], e23=strain[5])
-    np.testing.assert_allclose(hookeslaw3D_real.stress(**strain), expected, rtol=1e-5)
+    np.testing.assert_allclose(hookeslaw3d_real.stress(**strain), expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('stress, expected', [(data3D_real[:, 0], data3D_real[:, 1])])
-def test_hookeslaw3D_real_strain_array(hookeslaw3D_real, stress, expected):
+def test_hookeslaw3d_real_strain_array(hookeslaw3d_real, stress, expected):
     stress = dict(s11=stress[:, 0], s22=stress[:, 1], s33=stress[:, 2],
                   s12=stress[:, 3], s13=stress[:, 4], s23=stress[:, 5])
-    np.testing.assert_allclose(np.array(hookeslaw3D_real.strain(**stress)).T, expected, rtol=1e-5)
+    np.testing.assert_allclose(np.array(hookeslaw3d_real.strain(**stress)).T, expected, rtol=1e-5)
 
 
 @pytest.mark.parametrize('expected, strain', [(data3D_real[:, 0], data3D_real[:, 1])])
-def test_hookeslaw3D_real_stress_array(hookeslaw3D_real, expected, strain):
+def test_hookeslaw3d_real_stress_array(hookeslaw3d_real, expected, strain):
     strain = dict(e11=strain[:, 0], e22=strain[:, 1], e33=strain[:, 2],
                   e12=strain[:, 3], e13=strain[:, 4], e23=strain[:, 5])
-    np.testing.assert_allclose(np.array(hookeslaw3D_real.stress(**strain)).T, expected, rtol=1e-5)
+    np.testing.assert_allclose(np.array(hookeslaw3d_real.stress(**strain)).T, expected, rtol=1e-5)

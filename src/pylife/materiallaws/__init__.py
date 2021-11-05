@@ -29,8 +29,8 @@ __all__ = [
     'true_fracture_stress',
     'true_fracture_strain',
     'WoehlerCurve',
-    'Hookeslaw1D',
-    'Hookeslaw2Dstrain',
-    'Hookeslaw2Dstress',
-    'Hookeslaw3D'
+    'HookesLaw1d',
+    'HookesLaw2dPlaneStrain',
+    'HookesLaw2dPlaneStress',
+    'HookesLaw3d'
 ]
