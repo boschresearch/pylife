@@ -158,7 +158,7 @@ class Hookeslaw2Dstress(_Hookeslawcore):
     A cartesian coordinate system is assumed. The stress components in 3 direction are assumed to be zero, s33 = s13 = s23 = 0.'''
 
     def __init__(self, E, nu):
-        super(Hookeslaw2Dstress, self).__init__(E, nu)
+        super().__init__(E, nu)
         self._Et = E
         self._nut = self._nu
 
@@ -243,7 +243,7 @@ class Hookeslaw2Dstrain(Hookeslaw2Dstress):
     '''
 
     def __init__(self, E, nu):
-        super(Hookeslaw2Dstrain, self).__init__(E, nu)
+        super().__init__(E, nu)
         self._Et = self._E / (1 - np.power(self._nu, 2))
         self._nut = self._nu / (1 - self._nu)
 
@@ -270,7 +270,7 @@ class Hookeslaw2Dstrain(Hookeslaw2Dstress):
             The resulting elastic shear strain component with basis 1-2, 
             (1. / 2 * e12 is the tensor component)
         '''
-        e11, e22, _, e12 = super(Hookeslaw2Dstrain, self).strain(s11, s22, s12)
+        e11, e22, _, e12 = super().strain(s11, s22, s12)
         return e11, e22, e12
 
     def stress(self, e11, e22, e12):
@@ -297,7 +297,7 @@ class Hookeslaw2Dstrain(Hookeslaw2Dstress):
         s12 : array-like float
             The resulting shear stress component with basis 1-2
         '''
-        s11, s22, s12 = super(Hookeslaw2Dstrain, self).stress(e11, e22, e12)
+        s11, s22, s12 = super().stress(e11, e22, e12)
         s33 = self.nu * (s11 + s22)
         return s11, s22, s33, s12
 
@@ -321,7 +321,7 @@ class Hookeslaw3D(_Hookeslawcore):
     '''
 
     def __init__(self, E, nu):
-        super(Hookeslaw3D, self).__init__(E, nu)
+        super().__init__(E, nu)
 
     def strain(self, s11, s22, s33, s12, s13, s23):
         '''Get the elastic strain components for given stress components
