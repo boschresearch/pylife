@@ -64,6 +64,7 @@ class FourPointDetector(AbstractDetector):
             The recorder that the detector will report to.
         """
         super().__init__(recorder)
+
     def process(self, samples):
         """Process a sample chunk.
 
@@ -77,7 +78,6 @@ class FourPointDetector(AbstractDetector):
         self : FourPointDetector
             The ``self`` object so that processing can be chained
         """
-
         if len(self._residuals) == 0:
             residuals = samples[:1]
             residual_index = [0, 1]
@@ -87,26 +87,39 @@ class FourPointDetector(AbstractDetector):
 
         turns_index, turns_values = self._new_turns(samples)
 
-        turns_np = np.concatenate((residuals,turns_values, samples[-1:]))
+        turns_np = np.concatenate((residuals, turns_values, samples[-1:]))
         turns_index = np.concatenate((self._residual_index, turns_index))
 
         turns = turns_np
-        i = 0
 
-        while i+3 < len(turns):
-            ds = np.abs(np.diff(turns)[i:i+3])
-            if ds.min() == ds[1]:
-                self._recorder.record_values(turns[i+1],turns[i+2])
-                self._recorder.record_index(turns_index[i+1], turns_index[i+2])
-                turns = np.delete(turns, i+1, 0)
-                turns = np.delete(turns, i+1, 0)
-                turns_index = np.delete(turns_index, i+1, 0)
-                turns_index = np.delete(turns_index, i+1, 0)
-                i = max(0, i-4)
-            else:
+        residual_index = [0, 1]
+        i = 2
+        while i < len(turns):
+            if len(residual_index) < 3:
+                residual_index.append(i)
                 i += 1
-        self._residuals = turns
-        self._residual_index = turns_index
+                continue
+
+            a = turns_np[residual_index[-3]]
+            b = turns_np[residual_index[-2]]
+            c = turns_np[residual_index[-1]]
+            d = turns_np[i]
+
+            ab = np.abs(a - b)
+            bc = np.abs(b - c)
+            cd = np.abs(c - d)
+            if bc <= ab and bc <= cd:
+                self._recorder.record_values(b, c)
+                idx_2 = turns_index[residual_index.pop()]
+                idx_1 = turns_index[residual_index.pop()]
+                self._recorder.record_index(idx_1, idx_2)
+                continue
+
+            residual_index.append(i)
+            i += 1
+
+        self._residuals = turns_np[residual_index]
+        self._residual_index = turns_index[residual_index[:-1]]
         self._recorder.report_chunk(len(samples))
 
         return self
