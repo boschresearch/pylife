@@ -132,6 +132,7 @@ class OdbClient:
         return pd.DataFrame(values, index=index, columns=column_names)
 
     def _query(self, command, args=None):
+        args = self._to_bstring(args)
         self._send_command(command, args)
         self._check_if_process_still_alive()
         array_num, pickle_data = self._parse_response()
@@ -145,6 +146,21 @@ class OdbClient:
         numpy_arrays = [np.lib.format.read_array(self.proc.stdout) for _ in range(array_num)]
 
         return pickle_data, numpy_arrays
+
+    def _to_bstring(self, args):
+        # recursion for lists and tuples -------------------------
+        if isinstance(args, list):
+            return [self._to_bstring(arg) for arg in args]
+
+        elif isinstance(args, tuple):
+            return tuple(self._to_bstring(arg) for arg in args)
+
+        # convert ------------------------------------------------
+        elif isinstance(args, str):
+            return args.encode('ascii')
+
+        else:
+            return args
 
     def _send_command(self, command, args=None):
         self._check_if_process_still_alive()
