@@ -82,44 +82,44 @@ class OdbClient:
                     raise OdbServerError("Expected ready sign from server, received %s" % sign)
                 return
 
-    def instances(self):
+    def instance_names(self):
         return _decode_ascii_list(self._query('get_instances'))
 
-    def nodes(self, instance_name, node_set_name=b''):
-        index, node_data = self._query('get_nodes', (instance_name, node_set_name))
+    def node_coordinates(self, instance_name, nset_name=''):
+        index, node_data = self._query('get_nodes', (instance_name, nset_name))
         return pd.DataFrame(data=node_data, columns=['x', 'y', 'z'],
                             index=pd.Int64Index(index, name='node_id'))
 
-    def connectivity(self, instance_name, element_set_name=b''):
-        index, connectivity = self._query('get_connectivity', (instance_name, element_set_name))
+    def element_connectivity(self, instance_name, elset_name=''):
+        index, connectivity = self._query('get_connectivity', (instance_name, elset_name))
         return pd.DataFrame({'connectivity': connectivity},
                             index=pd.Int64Index(index, name='element_id'))
 
-    def node_sets(self, instance_name=b''):
+    def nset_names(self, instance_name=''):
         return _decode_ascii_list(self._query('get_node_sets', instance_name))
 
-    def node_set(self, node_set_name, instance_name=b''):
-        node_set = self._query('get_node_set', (instance_name, node_set_name))
-        return pd.Int64Index(node_set, name='node_id')
+    def node_ids(self, nset_name, instance_name=''):
+        node_ids = self._query('get_node_set', (instance_name, nset_name))
+        return pd.Int64Index(node_ids, name='node_id')
 
-    def element_sets(self, instance_name=b''):
+    def elset_names(self, instance_name=''):
         return _decode_ascii_list(self._query('get_element_sets', instance_name))
 
-    def element_set(self, element_set_name, instance_name=b''):
-        element_set = self._query('get_element_set', (instance_name, element_set_name))
-        return pd.Int64Index(element_set, name='element_id')
+    def element_ids(self, elset_name, instance_name=''):
+        element_ids = self._query('get_element_set', (instance_name, elset_name))
+        return pd.Int64Index(element_ids, name='element_id')
 
-    def steps(self):
+    def step_names(self):
         return self._query('get_steps')
 
-    def frames(self, step_name):
+    def frame_ids(self, step_name):
         return self._query('get_frames', step_name)
 
     def variable_names(self, step, frame):
         return _decode_ascii_list(self._query('get_variable_names', (step, frame)))
 
-    def variable(self, instance, step, frame, var_name, node_set_name=b'', element_set_name=b''):
-        response = self._query('get_variable', (instance, step, frame, var_name, node_set_name, element_set_name))
+    def variable(self, variable_name, instance_name, step_name, frame_id, nset_name='', elset_name=''):
+        response = self._query('get_variable', (instance_name, step_name, frame_id, variable_name, nset_name, elset_name))
         (labels, index_labels, index_data, values) = response
 
         index_labels = _decode_ascii_list(index_labels)
