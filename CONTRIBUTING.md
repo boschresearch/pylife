@@ -6,9 +6,6 @@ the GitHub issues tracking system prior to any code development to coordinate
 with the pyLife development team early in the process. Coordinating up
 front helps to avoid frustration later on.
 
-Your contribution must be licensed under the Apache-2.0 license, the license
-used by this project.
-
 ## Test driven development
 
 The functionality of your contribution (functions, class methods) need to be
@@ -34,10 +31,12 @@ lines. In order to have your contribution merged to main line following guide
 lines should be met.
 
 ### Docstrings
+
 Document your public API classes, methods, functions and attributes using numpy
 style docstings unless the naming is *really* self-explanatory.
 
 ### Comments
+
 Use as little comments as possible. The code along with docstrings should be
 expressive enough. Remove any commented code lines before issuing your pull
 request.
@@ -48,7 +47,8 @@ request.
 
 Please configure your identity in your git client appropriately. From the git
 command line you can do that using
-```
+
+```sh
 git config user.name <Your Name>
 git config user.email <your-email@...>
 ```
@@ -76,6 +76,11 @@ the following prefixes.
 If your branch does not fit any of those, you can also come up with another
 appropriate prefix.
 
+## License
+
+Your contribution must be licensed under the Apache-2.0 license, the license
+used by this project.
+
 ## Add / retain copyright notices
 
 Include a copyright notice and license in each new file to be contributed,
@@ -85,19 +90,30 @@ copyright holders.
 
 ## Sign your work
 
-This project tracks patch provenance and licensing using a modified Developer
-Certificate of Origin (DCO; from [OSDL][DCO]) and Signed-off-by tags initially
-developed by the Linux kernel project.
+This project tracks patch provenance and licensing using the Developer
+Certificate of Origin 1.1 (DCO) from [developercertificate.org][DCO] and
+Signed-off-by tags initially developed by the Linux kernel project.
 
-```
+```text
+Developer Certificate of Origin
+Version 1.1
 
-pyLife Developer's Certificate of Origin.  Version 1.1
+Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
+1 Letterman Drive
+Suite D4700
+San Francisco, CA, 94129
+
+Everyone is permitted to copy and distribute verbatim copies of this
+license document, but changing it is not allowed.
+
+
+Developer's Certificate of Origin 1.1
 
 By making a contribution to this project, I certify that:
 
 (a) The contribution was created in whole or in part by me and I
-    have the right to submit it under the "Apache License, Version 2.0"
-    ("Apache-2.0"); or
+    have the right to submit it under the open source license
+    indicated in the file; or
 
 (b) The contribution is based upon previous work that, to the best
     of my knowledge, is covered under an appropriate open source
@@ -116,19 +132,16 @@ By making a contribution to this project, I certify that:
     personal information I submit with it, including my sign-off) is
     maintained indefinitely and may be redistributed consistent with
     this project or the open source license(s) involved.
-
-(e) I am granting the contribution to this project under the terms of
-    Apache-2.0.
-
-    http://www.apache.org/licenses/LICENSE-2.0
 ```
 
 With the sign-off in a commit message you certify that you authored the patch
 or otherwise have the right to submit it under an open source license. The
-procedure is simple: To certify above pyLife Developer's Certificate of
+procedure is simple: To certify above Developer's Certificate of
 Origin 1.1 for your contribution just append a line
 
-    Signed-off-by: Random J Developer <random@developer.example.org>
+```text
+Signed-off-by: Random J Developer <random@developer.example.org>
+```
 
 to every commit message using your real name or your pseudonym and a valid
 email address.
@@ -140,9 +153,11 @@ involved in authoring the contribution.
 
 Another option to automatically add the `Signed-off-by:` is to once use the
 command
-```
+
+```sh
 git config core.hooksPath .githooks
 ```
+
 in your pyLife working directory. This will then add the `Signed-off-by:` line
 automatically.
 
@@ -186,6 +201,6 @@ holder(s) to the [NOTICE](NOTICE) file as part of your contribution.
 
 [git-commit]: https://chris.beams.io/posts/git-commit/
 
-[DCO]: http://web.archive.org/web/20070306195036/http://osdlab.org/newsroom/press_releases/2004/2004_05_24_dco.html
+[DCO]: https://developercertificate.org/
 
 [SubmittingPatches]: https://github.com/wking/signed-off-by/blob/7d71be37194df05c349157a2161c7534feaf86a4/Documentation/SubmittingPatches
