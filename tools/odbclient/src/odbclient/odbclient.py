@@ -83,7 +83,7 @@ class OdbClient:
                 return
 
     def instance_names(self):
-        return _decode_ascii_list(self._query('get_instances'))
+        return _ascii(_decode, self._query('get_instances'))
 
     def node_coordinates(self, instance_name, nset_name=''):
         index, node_data = self._query('get_nodes', (instance_name, nset_name))
@@ -96,43 +96,43 @@ class OdbClient:
                             index=pd.Int64Index(index, name='element_id'))
 
     def nset_names(self, instance_name=''):
-        return _decode_ascii_list(self._query('get_node_sets', instance_name))
+        return _ascii(_decode, self._query('get_node_sets', instance_name))
 
     def node_ids(self, nset_name, instance_name=''):
         node_ids = self._query('get_node_set', (instance_name, nset_name))
         return pd.Int64Index(node_ids, name='node_id')
 
     def elset_names(self, instance_name=''):
-        return _decode_ascii_list(self._query('get_element_sets', instance_name))
+        return _ascii(_decode, self._query('get_element_sets', instance_name))
 
     def element_ids(self, elset_name, instance_name=''):
         element_ids = self._query('get_element_set', (instance_name, elset_name))
         return pd.Int64Index(element_ids, name='element_id')
 
     def step_names(self):
-        return self._query('get_steps')
+        return _ascii(_decode, self._query('get_steps'))
 
     def frame_ids(self, step_name):
         return self._query('get_frames', step_name)
 
-    def variable_names(self, step, frame):
-        return _decode_ascii_list(self._query('get_variable_names', (step, frame)))
+    def variable_names(self, step_name, frame_id):
+        return _ascii(_decode, self._query('get_variable_names', (step_name, frame_id)))
 
     def variable(self, variable_name, instance_name, step_name, frame_id, nset_name='', elset_name=''):
         response = self._query('get_variable', (instance_name, step_name, frame_id, variable_name, nset_name, elset_name))
         (labels, index_labels, index_data, values) = response
 
-        index_labels = _decode_ascii_list(index_labels)
+        index_labels = _ascii(_decode, index_labels)
         if len(index_labels) == 2:
             index = pd.DataFrame(index_data, columns=index_labels).set_index(index_labels).index
         else:
             index = pd.Int64Index(index_data[:, 0], name=index_labels[0])
 
-        column_names = _decode_ascii_list(labels)
+        column_names = _ascii(_decode, labels)
         return pd.DataFrame(values, index=index, columns=column_names)
 
     def _query(self, command, args=None):
-        args = self._to_bstring(args)
+        args = _ascii(_encode, args)
         self._send_command(command, args)
         self._check_if_process_still_alive()
         array_num, pickle_data = self._parse_response()
@@ -141,26 +141,11 @@ class OdbClient:
             raise pickle_data
 
         if array_num == 0:
-            return pickle_data
+            return _ascii(_decode, pickle_data)
 
         numpy_arrays = [np.lib.format.read_array(self.proc.stdout) for _ in range(array_num)]
 
-        return pickle_data, numpy_arrays
-
-    def _to_bstring(self, args):
-        # recursion for lists and tuples -------------------------
-        if isinstance(args, list):
-            return [self._to_bstring(arg) for arg in args]
-
-        elif isinstance(args, tuple):
-            return tuple(self._to_bstring(arg) for arg in args)
-
-        # convert ------------------------------------------------
-        elif isinstance(args, str):
-            return args.encode('ascii')
-
-        else:
-            return args
+        return _ascii(_decode, pickle_data), numpy_arrays
 
     def _send_command(self, command, args=None):
         self._check_if_process_still_alive()
@@ -187,5 +172,18 @@ class OdbClient:
 
             raise OdbServerError(error_message.decode('ascii'))
 
-def _decode_ascii_list(ascii_list):
-    return [item.decode('ascii') for item in ascii_list]
+
+def _ascii(fcn, args):
+    if isinstance(args, list):
+        return [_ascii(fcn, arg) for arg in args]
+
+    if isinstance(args, tuple):
+        return tuple(_ascii(fcn, arg) for arg in args)
+
+    return fcn(args)
+
+def _encode(arg):
+    return arg.encode('ascii') if isinstance(arg, str) else arg
+
+def _decode(arg):
+    return arg.decode('ascii') if isinstance(arg, bytes) else arg
