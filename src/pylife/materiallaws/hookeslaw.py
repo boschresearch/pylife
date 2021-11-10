@@ -180,18 +180,18 @@ class HookesLaw2dPlaneStress(_Hookeslawcore):
             The resulting elastic normal strain component with basis 2-2
         e33 : array-like float
             The resulting elastic normal strain component with basis 3-3
-        e12 : array-like float
-            The resulting elastic shear strain component with basis 1-2, 
-            (1. / 2 * e12 is the tensor component)
+        g12 : array-like float
+            The resulting elastic engineering shear strain component with basis 1-2, 
+            (1. / 2 * g12 is the tensor component)
         '''
         s11, s22, s12 = self._as_consistant_arrays(s11, s22, s12)
         e11 = 1. / self._Et * (s11 - self._nut * s22)
         e22 = 1. / self._Et * (s22 - self._nut * s11)
         e33 = - self._nu / self._E * (s11 + s22)
-        e12 = 1. / self._G * s12
-        return e11, e22, e33, e12
+        g12 = 1. / self._G * s12
+        return e11, e22, e33, g12
 
-    def stress(self, e11, e22, e12):
+    def stress(self, e11, e22, g12):
         '''Get the stress components for given elastic strain components
 
         Parameters
@@ -200,9 +200,9 @@ class HookesLaw2dPlaneStress(_Hookeslawcore):
             The elastic normal strain component with basis 1-1
         e22 : array-like float
             The elastic normal strain component with basis 2-2
-        e12 : array-like float
-            The elastic shear strain component with basis 1-2, 
-            (1. / 2 * e12 is the tensor component)
+        g12 : array-like float
+            The elastic engineering shear strain component with basis 1-2, 
+            (1. / 2 * g12 is the tensor component)
 
         Returns
         -------
@@ -213,11 +213,11 @@ class HookesLaw2dPlaneStress(_Hookeslawcore):
         s12 : array-like float
             The resulting shear stress component with basis 1-2
         '''
-        e11, e22, e12 = self._as_consistant_arrays(e11, e22, e12)
+        e11, e22, g12 = self._as_consistant_arrays(e11, e22, g12)
         factor = self._Et / (1 - np.power(self._nut, 2.))
         s11 = factor * (e11 + self._nut * e22)
         s22 = factor * (e22 + self._nut * e11)
-        s12 = self._G * e12
+        s12 = self._G * g12
         return s11, s22, s12
 
 
@@ -236,7 +236,7 @@ class HookesLaw2dPlaneStrain(HookesLaw2dPlaneStress):
     Notes
     -----
 
-    A cartesian coordinate system is assumed. The strain components in 3 direction are assumed to be zero, e33 = e13 = e23 = 0.
+    A cartesian coordinate system is assumed. The strain components in 3 direction are assumed to be zero, e33 = g13 = g23 = 0.
     '''
 
     def __init__(self, E, nu):
@@ -263,14 +263,14 @@ class HookesLaw2dPlaneStrain(HookesLaw2dPlaneStress):
             The resulting elastic normal strain component with basis 1-1
         e22 : array-like float
             The resulting elastic normal strain component with basis 2-2
-        e12 : array-like float
-            The resulting elastic shear strain component with basis 1-2, 
-            (1. / 2 * e12 is the tensor component)
+        g12 : array-like float
+            The resulting elastic engineering shear strain component with basis 1-2, 
+            (1. / 2 * g12 is the tensor component)
         '''
-        e11, e22, _, e12 = super().strain(s11, s22, s12)
-        return e11, e22, e12
+        e11, e22, _, g12 = super().strain(s11, s22, s12)
+        return e11, e22, g12
 
-    def stress(self, e11, e22, e12):
+    def stress(self, e11, e22, g12):
         '''Get the stress components for given elastic strain components
 
         Parameters
@@ -279,9 +279,9 @@ class HookesLaw2dPlaneStrain(HookesLaw2dPlaneStress):
             The elastic normal strain component with basis 1-1
         e22 : array-like float
             The elastic normal strain component with basis 2-2
-        e12 : array-like float
-            The elastic shear strain component with basis 1-2, 
-            (1. / 2 * e12 is the tensor component)
+        g12 : array-like float
+            The elastic engineering shear strain component with basis 1-2, 
+            (1. / 2 * g12 is the tensor component)
 
         Returns
         -------
@@ -294,7 +294,7 @@ class HookesLaw2dPlaneStrain(HookesLaw2dPlaneStress):
         s12 : array-like float
             The resulting shear stress component with basis 1-2
         '''
-        s11, s22, s12 = super().stress(e11, e22, e12)
+        s11, s22, s12 = super().stress(e11, e22, g12)
         s33 = self.nu * (s11 + s22)
         return s11, s22, s33, s12
 
@@ -346,26 +346,26 @@ class HookesLaw3d(_Hookeslawcore):
             The resulting elastic normal strain component with basis 2-2
         e33 : array-like float
             The resulting elastic normal strain component with basis 3-3
-        e12 : array-like float
-            The resulting elastic shear strain component with basis 1-2, 
-            (1. / 2 * e12 is the tensor component)
-        e13 : array-like float
-            The resulting elastic shear strain component with basis 1-3, 
-            (1. / 2 * e13 is the tensor component)
-        e23 : array-like float
-            The resulting elastic shear strain component with basis 2-3, 
-            (1. / 2 * e23 is the tensor component)
+        g12 : array-like float
+            The resulting elastic engineering shear strain component with basis 1-2, 
+            (1. / 2 * g12 is the tensor component)
+        g13 : array-like float
+            The resulting elastic engineering shear strain component with basis 1-3, 
+            (1. / 2 * g13 is the tensor component)
+        g23 : array-like float
+            The resulting elastic engineering shear strain component with basis 2-3, 
+            (1. / 2 * g23 is the tensor component)
         '''
         s11, s22, s33, s12, s13, s23 = self._as_consistant_arrays(s11, s22, s33, s12, s13, s23)
         e11 = 1 / self._E * (s11 - self._nu * (s22 + s33))
         e22 = 1 / self._E * (s22 - self._nu * (s11 + s33))
         e33 = 1 / self._E * (s33 - self._nu * (s11 + s22))
-        e12 = s12 / self._G
-        e13 = s13 / self._G
-        e23 = s23 / self._G
-        return e11, e22, e33, e12, e13, e23
+        g12 = s12 / self._G
+        g13 = s13 / self._G
+        g23 = s23 / self._G
+        return e11, e22, e33, g12, g13, g23
 
-    def stress(self, e11, e22, e33, e12, e13, e23):
+    def stress(self, e11, e22, e33, g12, g13, g23):
         '''Get the stress components for given elastic strain components
 
         Parameters
@@ -376,15 +376,15 @@ class HookesLaw3d(_Hookeslawcore):
             The elastic normal strain component with basis 2-2
         e33 : array-like float
             The elastic normal strain component with basis 3-3
-        e12 : array-like float
-            The elastic shear strain component with basis 1-2, 
-            (1. / 2 * e12 is the tensor component)
-        e13 : array-like float
-            The elastic shear strain component with basis 1-3, 
-            (1. / 2 * e13 is the tensor component)
-        e23 : array-like float
-            The elastic shear strain component with basis 2-3, 
-            (1. / 2 * e23 is the tensor component)
+        g12 : array-like float
+            The elastic engineering shear strain component with basis 1-2, 
+            (1. / 2 * g12 is the tensor component)
+        g13 : array-like float
+            The elastic engineering shear strain component with basis 1-3, 
+            (1. / 2 * g13 is the tensor component)
+        g23 : array-like float
+            The elastic engineering shear strain component with basis 2-3, 
+            (1. / 2 * g23 is the tensor component)
 
         Returns
         -------
@@ -401,13 +401,13 @@ class HookesLaw3d(_Hookeslawcore):
         s23 : array-like float
             The resulting shear stress component with basis 2-3
         '''
-        e11, e22, e33, e12, e13, e23 = self._as_consistant_arrays(e11, e22, e33, e12, e13, e23)
+        e11, e22, e33, g12, g13, g23 = self._as_consistant_arrays(e11, e22, e33, g12, g13, g23)
         factor1 = self._E / ((1 + self._nu) * (1 - 2 * self._nu))
         factor2 = 1 - self._nu
         s11 = factor1 * (factor2 * e11 + self._nu * (e22 + e33))
         s22 = factor1 * (factor2 * e22 + self._nu * (e11 + e33))
         s33 = factor1 * (factor2 * e33 + self._nu * (e11 + e22))
-        s12 = self._G * e12
-        s13 = self._G * e13
-        s23 = self._G * e23
+        s12 = self._G * g12
+        s13 = self._G * g13
+        s23 = self._G * g23
         return s11, s22, s33, s12, s13, s23
