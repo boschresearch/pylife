@@ -37,6 +37,7 @@ Materiallaws
 .. toctree::
    :maxdepth: 2
 
+   materiallaws/hookeslaw
    materiallaws/rambgood
    materiallaws/woehlercurve
    materiallaws/true_stress_strain
