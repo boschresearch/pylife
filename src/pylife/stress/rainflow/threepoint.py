@@ -26,7 +26,27 @@ from .general import AbstractDetector
 class ThreePointDetector(AbstractDetector):
     r"""Classic three point rainflow counting algorithm.
 
-    See the `here <subsection_TP_>`_ in the demo for an example.
+    .. jupyter-execute::
+
+        from pylife.stress.timesignal import TimeSignalGenerator
+        import pylife.stress.rainflow as RF
+
+        ts = TimeSignalGenerator(10, {
+            'number': 50,
+            'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
+            'frequency_median': 4, 'frequency_std_dev': 3,
+            'offset_median': 0, 'offset_std_dev': 0.4}, None, None).query(10000)
+
+        rfc = RF.ThreePointDetector(recorder=RF.LoopValueRecorder())
+        rfc.process(ts)
+
+        rfc.recorder.collective
+
+    Alternatively you can ask the recorder for a histogram matrix:
+
+    .. jupyter-execute::
+
+        rfc.recorder.matrix_series(bins=16)
 
     We take three turning points into account to detect closed hysteresis loops.
 

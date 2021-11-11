@@ -24,7 +24,29 @@ from .general import AbstractDetector
 
 
 class FourPointDetector(AbstractDetector):
-    """ Implements four point rainflow counting algorithm
+    """Implements four point rainflow counting algorithm.
+
+    .. jupyter-execute::
+
+        from pylife.stress.timesignal import TimeSignalGenerator
+        import pylife.stress.rainflow as RF
+
+        ts = TimeSignalGenerator(10, {
+            'number': 50,
+            'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
+            'frequency_median': 4, 'frequency_std_dev': 3,
+            'offset_median': 0, 'offset_std_dev': 0.4}, None, None).query(10000)
+
+        rfc = RF.FourPointDetector(recorder=RF.LoopValueRecorder())
+        rfc.process(ts)
+
+        rfc.recorder.collective
+
+    Alternatively you can ask the recorder for a histogram matrix:
+
+    .. jupyter-execute::
+
+        rfc.recorder.matrix_series(bins=16)
 
     We take four turning points into account to detect closed hysteresis loops.
 
@@ -32,7 +54,7 @@ class FourPointDetector(AbstractDetector):
     contained within A and B, then a cycle is counted from B to C; otherwise no cycle is
     counted.
 
-    i.e, If X ≥ Y AND Z ≥ Y then a cycle exsist FROM = B and TO = C
+    i.e, If X ≥ Y AND Z ≥ Y then a cycle exist FROM = B and TO = C
     where, ranges X = |D–C|, Y = |C–B|, and Z = |B–A|
 
     ::
