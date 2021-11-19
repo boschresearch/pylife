@@ -118,12 +118,22 @@ class OdbClient:
     def variable_names(self, step_name, frame_id):
         return _ascii(_decode, self._query('get_variable_names', (step_name, frame_id)))
 
-    def variable(self, variable_name, instance_name, step_name, frame_id, nset_name='', elset_name=''):
-        response = self._query('get_variable', (instance_name, step_name, frame_id, variable_name, nset_name, elset_name))
+    def variable(self, variable_name, instance_name, step_name, frame_id, nset_name='', elset_name='', position=None):
+        """Read field data.
+
+        Parameters
+        ----------
+        ...
+        position : string
+            Position within element. Terminology as in Abaqus .inp file:
+            "INTEGRATION POINTS", "CENTROIDAL", "WHOLE ELEMENT", "NODES",
+            "FACES", "AVERAGED AT NODES"
+        """
+        response = self._query('get_variable', (instance_name, step_name, frame_id, variable_name, nset_name, elset_name, position))
         (labels, index_labels, index_data, values) = response
 
         index_labels = _ascii(_decode, index_labels)
-        if len(index_labels) == 2:
+        if len(index_labels) > 1:
             index = pd.DataFrame(index_data, columns=index_labels).set_index(index_labels).index
         else:
             index = pd.Int64Index(index_data[:, 0], name=index_labels[0])

@@ -130,7 +130,7 @@ class OdbInterface:
 
         return frame.fieldOutputs.keys()
 
-    def variable(self, instance_name, step_name, frame_num, variable_name, node_set_name, element_set_name):
+    def variable(self, instance_name, step_name, frame_num, variable_name, node_set_name, element_set_name, position=None):
 
         def block_length(block):
             if block.nodeLabels is not None:
@@ -141,12 +141,25 @@ class OdbInterface:
 
         def index_block_data(block):
             stack = []
-            if block.nodeLabels is not None:
-                stack.append(block.nodeLabels)
-            if block.elementLabels is not None:
-                stack.append(block.elementLabels)
+            index_labels = []
 
-            return np.vstack(stack)
+            if getattr(block, 'nodeLabels', None) is not None:
+                stack.append(block.nodeLabels)
+                index_labels.append('node_id')
+
+            if getattr(block, 'elementLabels', None) is not None:
+                stack.append(block.elementLabels)
+                index_labels.append('element_id')
+
+            if getattr(block, 'integrationPoints', None) is not None:
+                stack.append(block.integrationPoints)
+                index_labels.append('ipoint_id')
+
+            if getattr(block, 'faces', None) is not None:
+                stack.append(block.faces)
+                index_labels.append('face_id')
+
+            return np.vstack(stack), index_labels
 
         try:
             step = self._odb.steps[step_name]
@@ -184,12 +197,10 @@ class OdbInterface:
                 raise KeyError(element_set_name)
             region = element_set
 
-        pos = field.locations[0].position
-        if pos == ODB.INTEGRATION_POINT:
-            pos = ODB.ELEMENT_NODAL
+        position_str = position
+        position = _set_position(field, user_request=position_str)
+        field = field.getSubset(position=position)
 
-        if pos != "ABQDEFAULT":
-            field = field.getSubset(position=pos)
         if region is not None:
             field = field.getSubset(region=region)
 
@@ -204,7 +215,10 @@ class OdbInterface:
 
         values = np.empty((length, len(complabels)))
 
-        index_dim = 2 if pos == ODB.ELEMENT_NODAL else 1
+        if position in [ODB.INTEGRATION_POINT, ODB.ELEMENT_NODAL, ODB.ELEMENT_FACE]:
+            index_dim = 2
+        elif position in [ODB.CENTROID, ODB.WHOLE_ELEMENT, ODB.NODAL]:
+            index_dim = 1
         index = np.empty((length, index_dim), dtype=np.int32)
 
         i = 0
@@ -215,18 +229,12 @@ class OdbInterface:
             block_array = block.data
             size = block_array.shape[0]
 
-            index_block = index_block_data(block)
+            index_block, index_labels = index_block_data(block)
 
             index[i:i+size, :] = index_block.T
             values[i:i+size, :] = block_array
             i += size
 
-        if pos == ODB.NODAL:
-            index_labels = ['node_id']
-        elif pos == ODB.WHOLE_ELEMENT or pos == ODB.CENTROID:
-            index_labels = ['element_id']
-        else:
-            index_labels = ['node_id', 'element_id']
         return (complabels, index_labels, index[:i, :], values[:i])
 
     def _instance_or_rootasm(self, instance_name):
@@ -237,6 +245,38 @@ class OdbInterface:
         except Exception as e:
             return e
 
+def _set_position(field, user_request=None):
+    """Translate string to symbolic constant and define default behavior.
+
+    Parameters
+    ----------
+    field : Abaqus field object
+        Required if ``user_request=None``.
+    user_request : string
+        Abaqus .inp file terminology (*ELEMENT OUTPUT, position=...). 
+
+    Returns
+    -------
+    position : symbolic constant
+        Abaqus Python interface terminology.
+    """
+    _position_dict = {'INTEGRATION POINTS': ODB.INTEGRATION_POINT,
+                      'CENTROIDAL':         ODB.CENTROID,
+                      'WHOLE ELEMENT':      ODB.WHOLE_ELEMENT,
+                      'NODES':              ODB.ELEMENT_NODAL,
+                      'FACES':              ODB.ELEMENT_FACE,
+                      'AVERAGED AT NODES':  ODB.NODAL}
+
+    if user_request is not None:
+        return _position_dict[user_request]
+
+    else:
+        odb_pos = field.locations[0].position
+
+        if odb_pos == ODB.INTEGRATION_POINT:
+            return ODB.ELEMENT_NODAL
+
+        return odb_pos
 
 def _get_frame(step, frame_id):
     for frame in step.frames:
