@@ -90,13 +90,13 @@ class OdbServer:
         _send_response(self._odb.variable_names(step, int(frame)))
 
     def variable(self, args):
-        instance_name, step, frame, var_name, nset, elset = args
+        instance_name, step, frame, var_name, nset, elset, elem_pos = args
         instance_name = str(instance_name)
         var_name = str(var_name)
         nset = str(nset)
         elset = str(elset)
         try:
-            variable = self._odb.variable(instance_name, step, frame, var_name, nset, elset)
+            variable = self._odb.variable(instance_name, step, frame, var_name, nset, elset, elem_pos)
         except Exception as e:
             _send_response(e)
         else:
