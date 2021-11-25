@@ -101,10 +101,11 @@ class VMAPExport:
             with h5py.File(file_name, 'w') as file:
                 self._create_fundamental_groups(file)
             self._dimension = 2
-        except:
+        except OSError as error:
             if os.path.exists(self._file_name):
                 os.remove(self._file_name)
-            raise Exception('An error occurred while creating file %s' % self._file_name)
+            raise Exception('An error occurred while creating file %s: %s'
+                            % (self._file_name, error.strerror))
 
     @property
     def file_name(self):
@@ -192,9 +193,10 @@ class VMAPExport:
                 geometry = self._create_geometry_groups(file, geometry_group, geometry_name)
                 self._create_points_datasets(geometry, mesh)
                 self._create_elements_dataset(geometry, mesh)
-            except:
+            except Exception as e:
                 del geometry_group[geometry_name]
-                raise Exception('An error occurred while creating geometry %s' % geometry_name)
+                raise Exception('An error occurred while creating geometry %s: %s' %
+                                (geometry_name, str(e)))
         return self
 
     def add_node_set(self, geometry_name, indices, mesh, name=None):
@@ -361,9 +363,10 @@ class VMAPExport:
                     raise ValueError('Unknown location')
 
                 geometry_group.attrs['MYSIZE'] = geometry_group.attrs['MYSIZE'] + 1
-            except:
+            except Exception as e:
                 del geometry_group[variable_name]
-                raise Exception('An error occurred while creating variable %s' % variable_name)
+                raise Exception('An error occurred while creating variable %s: %s'
+                                % (variable_name, str(e)))
         return self
 
     def _create_group_with_attributes(self, parent_group, group_name, *args):
@@ -417,9 +420,10 @@ class VMAPExport:
 
             try:
                 system_group.create_dataset(name, dtype=dt_type, data=d, chunks=chunked)
-            except:
+            except Exception as e:
                 del system_group[name]
-                raise Exception('An error occurred while creating dataset %s' % name)
+                raise Exception('An error occurred while creating dataset %s: %s' %
+                                (name, str(e)))
         return self
 
     def _create_geometry_groups(self, file, geometry_group, geometry_name):
@@ -495,8 +499,9 @@ class VMAPExport:
                 geometry_set.create_dataset('MYGEOMETRYSETDATA', data=pd.DataFrame(indices),
                                             dtype=np.int32, chunks=True)
                 geometry_set_group.attrs['MYSIZE'] = set_size + 1
-            except:
+            except Exception as e:
                 del geometry_set_group[geometry_set_name]
                 raise Exception(
-                    'An error occurred while creating geometry set %s in geometry %s'
-                    % (geometry_set_name, geometry_name))
+                    'An error occurred while creating geometry set %s in geometry %s: %s'
+                    % (geometry_set_name, geometry_name)
+                )
