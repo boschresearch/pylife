@@ -22,6 +22,7 @@ import sys
 import time
 import pickle
 import subprocess as sp
+import shutil
 
 import threading as THR
 import queue as QU
@@ -36,12 +37,14 @@ class OdbServerError(Exception):
 
 class OdbClient:
 
-    def __init__(self, abaqus_bin, python_env_path, odb_file):
+    def __init__(self, odb_file, abaqus_bin=None, python_env_path=None):
         self._proc = None
         env = os.environ
-        env['PYTHONPATH'] = self._guess_pythonpath(python_env_path)
+        env['PYTHONPATH'] = _guess_pythonpath(python_env_path)
 
         lock_file_exists = os.path.isfile(os.path.splitext(odb_file)[0] + '.lck')
+
+        abaqus_bin = abaqus_bin or _guess_abaqus_bin()
 
         self._proc = sp.Popen([abaqus_bin, 'python', '-m', 'odbserver', odb_file],
                               stdout=sp.PIPE, stdin=sp.PIPE, stderr=sp.PIPE,
@@ -51,11 +54,6 @@ class OdbClient:
             self._gulp_lock_file_warning()
 
         self._wait_for_server_ready_sign()
-
-    def _guess_pythonpath(self, python_env_path):
-        if sys.platform == 'win32':
-            return os.path.join(python_env_path, 'lib', 'site-packages')
-        return os.path.join(python_env_path, 'lib', 'python2.7', 'site-packages')
 
     def _gulp_lock_file_warning(self):
             self._proc.stdout.readline()
@@ -174,6 +172,7 @@ class OdbClient:
     def __del__(self):
         if self._proc is not None:
             self._send_command('QUIT')
+            time.sleep(1)
 
     def _check_if_process_still_alive(self):
         if self._proc.poll() is not None:
@@ -192,8 +191,45 @@ def _ascii(fcn, args):
 
     return fcn(args)
 
+
 def _encode(arg):
     return arg.encode('ascii') if isinstance(arg, str) else arg
 
+
 def _decode(arg):
     return arg.decode('ascii') if isinstance(arg, bytes) else arg
+
+
+def _guess_abaqus_bin():
+    if sys.platform == 'win32':
+        return _guess_abaqus_bin_windows()
+    else:
+        return shutil.which('abaqus')
+
+
+def _guess_abaqus_bin_windows():
+    guesses = [
+        r"C:/Program Files/SIMULIA/2020/EstProducts/win_b64/code/bin/ABQLauncher.exe",
+        r"C:/Program Files/SIMULIA/2020/Products/win_b64/code/bin/ABQLauncher.exe",
+    ]
+    for guess in guesses:
+        if os.path.exists(guess):
+            return guess
+    return None
+
+
+def _guess_pythonpath(python_env_path):
+    python_env_path = _guess_python_env_path(python_env_path)
+    if python_env_path is None:
+        raise OSError("No odbserver environment found.\n"
+                      "Please see https://github.com/boschresearch/pylife/blob/develop/tools/odbserver/README.md")
+    if sys.platform == 'win32':
+        return os.path.join(python_env_path, 'lib', 'site-packages')
+    return os.path.join(python_env_path, 'lib', 'python2.7', 'site-packages')
+
+
+def _guess_python_env_path(python_env_path):
+    cand = python_env_path or os.path.join(os.environ['HOME'], '.conda', 'envs', 'odbserver')
+    if os.path.exists(cand):
+        return cand
+    return None
