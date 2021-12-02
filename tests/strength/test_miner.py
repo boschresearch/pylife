@@ -97,7 +97,7 @@ class TestMinerElementar():
         load_level = 400
         expected_cycles = 13484313.761758052
         gassner = miner_elementar.gassner(self.coll)
-        np.testing.assert_almost_equal(gassner.basquin_cycles(load_level), expected_cycles)
+        np.testing.assert_almost_equal(gassner.cycles(load_level), expected_cycles)
 
         foo_collective = pd.Series({
             'amplitude': load_level,
@@ -119,7 +119,7 @@ class TestMinerElementar():
         # some rounding is assumed in the example from the book
         # so in respect to millions of cycles a small neglectable tolerance is accepted
         gassner = miner_elementar.gassner(coll)
-        np.testing.assert_approx_equal(expected_N, gassner.basquin_cycles(load_level), significant=6)
+        np.testing.assert_approx_equal(expected_N, gassner.cycles(load_level), significant=6)
 
 
 @pytest.mark.usefixtures('collective')
@@ -148,7 +148,7 @@ class TestMinerHaibach:
 
         gassner = miner_haibach.gassner(self.coll, load_level)
 
-        np.testing.assert_almost_equal(gassner.basquin_cycles(load_level), N_predict)
+        np.testing.assert_almost_equal(gassner.cycles(load_level), N_predict)
 
     @pytest.mark.parametrize("load_level, predicted_N", [
         (100, 935519000),
@@ -171,4 +171,4 @@ class TestMinerHaibach:
         # some rounding is assumed in the example from the book
         # so in respect to millions of cycles a small neglectable tolerance is accepted
         gassner = miner_haibach.gassner(coll, load_level)
-        np.testing.assert_approx_equal(predicted_N, gassner.basquin_cycles(load_level), significant=5)
+        np.testing.assert_approx_equal(predicted_N, gassner.cycles(load_level), significant=5)
