@@ -168,7 +168,7 @@ class Mesh(PlainMesh):
 
     Examples
     --------
-    For an example see :mod:`meshplot`.
+    For an example see :mod:`hotspot`.
     '''
     def _validate(self):
         super()._validate()

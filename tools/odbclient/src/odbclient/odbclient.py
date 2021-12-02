@@ -22,6 +22,7 @@ import sys
 import time
 import pickle
 import subprocess as sp
+import shutil
 
 import threading as THR
 import queue as QU
@@ -36,12 +37,14 @@ class OdbServerError(Exception):
 
 class OdbClient:
 
-    def __init__(self, abaqus_bin, python_env_path, odb_file):
+    def __init__(self, odb_file, abaqus_bin=None, python_env_path=None):
         self._proc = None
         env = os.environ
-        env['PYTHONPATH'] = self._guess_pythonpath(python_env_path)
+        env['PYTHONPATH'] = _guess_pythonpath(python_env_path)
 
         lock_file_exists = os.path.isfile(os.path.splitext(odb_file)[0] + '.lck')
+
+        abaqus_bin = abaqus_bin or _guess_abaqus_bin()
 
         self._proc = sp.Popen([abaqus_bin, 'python', '-m', 'odbserver', odb_file],
                               stdout=sp.PIPE, stdin=sp.PIPE, stderr=sp.PIPE,
@@ -51,11 +54,6 @@ class OdbClient:
             self._gulp_lock_file_warning()
 
         self._wait_for_server_ready_sign()
-
-    def _guess_pythonpath(self, python_env_path):
-        if sys.platform == 'win32':
-            return os.path.join(python_env_path, 'lib', 'site-packages')
-        return os.path.join(python_env_path, 'lib', 'python2.7', 'site-packages')
 
     def _gulp_lock_file_warning(self):
             self._proc.stdout.readline()
@@ -82,56 +80,67 @@ class OdbClient:
                     raise OdbServerError("Expected ready sign from server, received %s" % sign)
                 return
 
-    def instances(self):
-        return _decode_ascii_list(self._query('get_instances'))
+    def instance_names(self):
+        return _ascii(_decode, self._query('get_instances'))
 
-    def nodes(self, instance_name, node_set_name=b''):
-        index, node_data = self._query('get_nodes', (instance_name, node_set_name))
+    def node_coordinates(self, instance_name, nset_name=''):
+        index, node_data = self._query('get_nodes', (instance_name, nset_name))
         return pd.DataFrame(data=node_data, columns=['x', 'y', 'z'],
                             index=pd.Int64Index(index, name='node_id'))
 
-    def connectivity(self, instance_name, element_set_name=b''):
-        index, connectivity = self._query('get_connectivity', (instance_name, element_set_name))
+    def element_connectivity(self, instance_name, elset_name=''):
+        index, connectivity = self._query('get_connectivity', (instance_name, elset_name))
         return pd.DataFrame({'connectivity': connectivity},
                             index=pd.Int64Index(index, name='element_id'))
 
-    def node_sets(self, instance_name=b''):
-        return _decode_ascii_list(self._query('get_node_sets', instance_name))
+    def nset_names(self, instance_name=''):
+        return _ascii(_decode, self._query('get_node_sets', instance_name))
 
-    def node_set(self, node_set_name, instance_name=b''):
-        node_set = self._query('get_node_set', (instance_name, node_set_name))
-        return pd.Int64Index(node_set, name='node_id')
+    def node_ids(self, nset_name, instance_name=''):
+        node_ids = self._query('get_node_set', (instance_name, nset_name))
+        return pd.Int64Index(node_ids, name='node_id')
 
-    def element_sets(self, instance_name=b''):
-        return _decode_ascii_list(self._query('get_element_sets', instance_name))
+    def elset_names(self, instance_name=''):
+        return _ascii(_decode, self._query('get_element_sets', instance_name))
 
-    def element_set(self, element_set_name, instance_name=b''):
-        element_set = self._query('get_element_set', (instance_name, element_set_name))
-        return pd.Int64Index(element_set, name='element_id')
+    def element_ids(self, elset_name, instance_name=''):
+        element_ids = self._query('get_element_set', (instance_name, elset_name))
+        return pd.Int64Index(element_ids, name='element_id')
 
-    def steps(self):
-        return self._query('get_steps')
+    def step_names(self):
+        return _ascii(_decode, self._query('get_steps'))
 
-    def frames(self, step_name):
+    def frame_ids(self, step_name):
         return self._query('get_frames', step_name)
 
-    def variable_names(self, step, frame):
-        return _decode_ascii_list(self._query('get_variable_names', (step, frame)))
+    def variable_names(self, step_name, frame_id):
+        return _ascii(_decode, self._query('get_variable_names', (step_name, frame_id)))
 
-    def variable(self, instance, step, frame, var_name, node_set_name=b'', element_set_name=b''):
-        response = self._query('get_variable', (instance, step, frame, var_name, node_set_name, element_set_name))
+    def variable(self, variable_name, instance_name, step_name, frame_id, nset_name='', elset_name='', position=None):
+        """Read field data.
+
+        Parameters
+        ----------
+        ...
+        position : string
+            Position within element. Terminology as in Abaqus .inp file:
+            "INTEGRATION POINTS", "CENTROIDAL", "WHOLE ELEMENT", "NODES",
+            "FACES", "AVERAGED AT NODES"
+        """
+        response = self._query('get_variable', (instance_name, step_name, frame_id, variable_name, nset_name, elset_name, position))
         (labels, index_labels, index_data, values) = response
 
-        index_labels = _decode_ascii_list(index_labels)
-        if len(index_labels) == 2:
+        index_labels = _ascii(_decode, index_labels)
+        if len(index_labels) > 1:
             index = pd.DataFrame(index_data, columns=index_labels).set_index(index_labels).index
         else:
             index = pd.Int64Index(index_data[:, 0], name=index_labels[0])
 
-        column_names = _decode_ascii_list(labels)
+        column_names = _ascii(_decode, labels)
         return pd.DataFrame(values, index=index, columns=column_names)
 
     def _query(self, command, args=None):
+        args = _ascii(_encode, args)
         self._send_command(command, args)
         self._check_if_process_still_alive()
         array_num, pickle_data = self._parse_response()
@@ -140,11 +149,11 @@ class OdbClient:
             raise pickle_data
 
         if array_num == 0:
-            return pickle_data
+            return _ascii(_decode, pickle_data)
 
         numpy_arrays = [np.lib.format.read_array(self.proc.stdout) for _ in range(array_num)]
 
-        return pickle_data, numpy_arrays
+        return _ascii(_decode, pickle_data), numpy_arrays
 
     def _send_command(self, command, args=None):
         self._check_if_process_still_alive()
@@ -163,6 +172,7 @@ class OdbClient:
     def __del__(self):
         if self._proc is not None:
             self._send_command('QUIT')
+            time.sleep(1)
 
     def _check_if_process_still_alive(self):
         if self._proc.poll() is not None:
@@ -171,5 +181,55 @@ class OdbClient:
 
             raise OdbServerError(error_message.decode('ascii'))
 
-def _decode_ascii_list(ascii_list):
-    return [item.decode('ascii') for item in ascii_list]
+
+def _ascii(fcn, args):
+    if isinstance(args, list):
+        return [_ascii(fcn, arg) for arg in args]
+
+    if isinstance(args, tuple):
+        return tuple(_ascii(fcn, arg) for arg in args)
+
+    return fcn(args)
+
+
+def _encode(arg):
+    return arg.encode('ascii') if isinstance(arg, str) else arg
+
+
+def _decode(arg):
+    return arg.decode('ascii') if isinstance(arg, bytes) else arg
+
+
+def _guess_abaqus_bin():
+    if sys.platform == 'win32':
+        return _guess_abaqus_bin_windows()
+    else:
+        return shutil.which('abaqus')
+
+
+def _guess_abaqus_bin_windows():
+    guesses = [
+        r"C:/Program Files/SIMULIA/2020/EstProducts/win_b64/code/bin/ABQLauncher.exe",
+        r"C:/Program Files/SIMULIA/2020/Products/win_b64/code/bin/ABQLauncher.exe",
+    ]
+    for guess in guesses:
+        if os.path.exists(guess):
+            return guess
+    return None
+
+
+def _guess_pythonpath(python_env_path):
+    python_env_path = _guess_python_env_path(python_env_path)
+    if python_env_path is None:
+        raise OSError("No odbserver environment found.\n"
+                      "Please see https://github.com/boschresearch/pylife/blob/develop/tools/odbserver/README.md")
+    if sys.platform == 'win32':
+        return os.path.join(python_env_path, 'lib', 'site-packages')
+    return os.path.join(python_env_path, 'lib', 'python2.7', 'site-packages')
+
+
+def _guess_python_env_path(python_env_path):
+    cand = python_env_path or os.path.join(os.environ['HOME'], '.conda', 'envs', 'odbserver')
+    if os.path.exists(cand):
+        return cand
+    return None

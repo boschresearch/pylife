@@ -125,7 +125,6 @@ pipeline {
                 subject: "[Jenkins] ${currentBuild.result}: '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
                 recipientProviders: [
                     [$class: 'CulpritsRecipientProvider'],
-                    [$class: 'DevelopersRecipientProvider'],
                     [$class: 'RequesterRecipientProvider']
                 ]
             }
