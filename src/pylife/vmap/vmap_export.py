@@ -36,6 +36,10 @@ from .vmap_metadata import VMAPMetadata
 from .vmap_integration_type import VMAPIntegrationType
 
 
+class VMAPExportError(Exception):
+    pass
+
+
 class VMAPExport:
     """
     The interface class to export a vmap file
@@ -104,8 +108,8 @@ class VMAPExport:
         except OSError as error:
             if os.path.exists(self._file_name):
                 os.remove(self._file_name)
-            raise Exception('An error occurred while creating file %s: %s'
-                            % (self._file_name, error.strerror))
+            raise VMAPExportError('An error occurred while creating file %s: %s'
+                                  % (self._file_name, error.strerror))
 
     @property
     def file_name(self):
@@ -195,8 +199,8 @@ class VMAPExport:
                 self._create_elements_dataset(geometry, mesh)
             except Exception as e:
                 del geometry_group[geometry_name]
-                raise Exception('An error occurred while creating geometry %s: %s' %
-                                (geometry_name, str(e)))
+                raise VMAPExportError('An error occurred while creating geometry %s: %s' %
+                                      (geometry_name, str(e)))
         return self
 
     def add_node_set(self, geometry_name, indices, mesh, name=None):
@@ -365,8 +369,8 @@ class VMAPExport:
                 geometry_group.attrs['MYSIZE'] = geometry_group.attrs['MYSIZE'] + 1
             except Exception as e:
                 del geometry_group[variable_name]
-                raise Exception('An error occurred while creating variable %s: %s'
-                                % (variable_name, str(e)))
+                raise VMAPExportError('An error occurred while creating variable %s: %s'
+                                      % (variable_name, str(e)))
         return self
 
     def _create_group_with_attributes(self, parent_group, group_name, *args):
@@ -422,8 +426,8 @@ class VMAPExport:
                 system_group.create_dataset(name, dtype=dt_type, data=d, chunks=chunked)
             except Exception as e:
                 del system_group[name]
-                raise Exception('An error occurred while creating dataset %s: %s' %
-                                (name, str(e)))
+                raise VMAPExportError('An error occurred while creating dataset %s: %s' %
+                                      (name, str(e)))
         return self
 
     def _create_geometry_groups(self, file, geometry_group, geometry_name):
@@ -501,7 +505,7 @@ class VMAPExport:
                 geometry_set_group.attrs['MYSIZE'] = set_size + 1
             except Exception as e:
                 del geometry_set_group[geometry_set_name]
-                raise Exception(
+                raise VMAPExportError(
                     'An error occurred while creating geometry set %s in geometry %s: %s'
                     % (geometry_set_name, geometry_name)
                 )

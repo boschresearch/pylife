@@ -107,7 +107,7 @@ class TestExport(unittest.TestCase):
 
     def test_add_geometry_invalid(self):
         geometry_name = '2'
-        with self.assertRaises(Exception):
+        with self.assertRaises(vmap.VMAPExportError):
             self._export.add_geometry(geometry_name, 5)
 
         with vmap.VMAPImport(self._export.file_name) as import_actual:
@@ -237,7 +237,7 @@ class TestExport(unittest.TestCase):
         state_name = 'STATE-2'
         geometry_name = '1'
         variable_name = 'FORCE_REACTION'
-        with self.assertRaises(Exception):
+        with self.assertRaises(vmap.VMAPExportError):
             self._export.add_variable(state_name, geometry_name, variable_name, self._mesh,
                                       column_names=['RF1'], location=structures.VariableLocations.NODE)
         with vmap.VMAPImport(self._export.file_name) as import_actual:
@@ -249,7 +249,7 @@ class TestExport(unittest.TestCase):
         state_name = 'STATE-2'
         geometry_name = '1'
         variable_name = 'DISPLACEMENT'
-        with self.assertRaises(Exception):
+        with self.assertRaises(KeyError):
             self._export.add_variable(state_name, geometry_name, variable_name, self._mesh,
                                       column_names=['dx', 'dy', 'dz'], location=4)
         with vmap.VMAPImport(self._export.file_name) as import_actual:
