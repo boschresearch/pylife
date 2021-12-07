@@ -24,7 +24,29 @@ from .general import AbstractDetector
 
 
 class FourPointDetector(AbstractDetector):
-    """ Implements four point rainflow counting algorithm
+    """Implements four point rainflow counting algorithm.
+
+    .. jupyter-execute::
+
+        from pylife.stress.timesignal import TimeSignalGenerator
+        import pylife.stress.rainflow as RF
+
+        ts = TimeSignalGenerator(10, {
+            'number': 50,
+            'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
+            'frequency_median': 4, 'frequency_std_dev': 3,
+            'offset_median': 0, 'offset_std_dev': 0.4}, None, None).query(10000)
+
+        rfc = RF.FourPointDetector(recorder=RF.LoopValueRecorder())
+        rfc.process(ts)
+
+        rfc.recorder.collective
+
+    Alternatively you can ask the recorder for a histogram matrix:
+
+    .. jupyter-execute::
+
+        rfc.recorder.matrix_series(bins=16)
 
     We take four turning points into account to detect closed hysteresis loops.
 
@@ -32,7 +54,7 @@ class FourPointDetector(AbstractDetector):
     contained within A and B, then a cycle is counted from B to C; otherwise no cycle is
     counted.
 
-    i.e, If X ≥ Y AND Z ≥ Y then a cycle exsist FROM = B and TO = C
+    i.e, If X ≥ Y AND Z ≥ Y then a cycle exist FROM = B and TO = C
     where, ranges X = |D–C|, Y = |C–B|, and Z = |B–A|
 
     ::
@@ -64,6 +86,7 @@ class FourPointDetector(AbstractDetector):
             The recorder that the detector will report to.
         """
         super().__init__(recorder)
+
     def process(self, samples):
         """Process a sample chunk.
 
@@ -77,7 +100,6 @@ class FourPointDetector(AbstractDetector):
         self : FourPointDetector
             The ``self`` object so that processing can be chained
         """
-
         if len(self._residuals) == 0:
             residuals = samples[:1]
             residual_index = [0, 1]
@@ -87,26 +109,39 @@ class FourPointDetector(AbstractDetector):
 
         turns_index, turns_values = self._new_turns(samples)
 
-        turns_np = np.concatenate((residuals,turns_values, samples[-1:]))
+        turns_np = np.concatenate((residuals, turns_values, samples[-1:]))
         turns_index = np.concatenate((self._residual_index, turns_index))
 
         turns = turns_np
-        i = 0
 
-        while i+3 < len(turns):
-            ds = np.abs(np.diff(turns)[i:i+3])
-            if ds.min() == ds[1]:
-                self._recorder.record_values(turns[i+1],turns[i+2])
-                self._recorder.record_index(turns_index[i+1], turns_index[i+2])
-                turns = np.delete(turns, i+1, 0)
-                turns = np.delete(turns, i+1, 0)
-                turns_index = np.delete(turns_index, i+1, 0)
-                turns_index = np.delete(turns_index, i+1, 0)
-                i = max(0, i-4)
-            else:
+        residual_index = [0, 1]
+        i = 2
+        while i < len(turns):
+            if len(residual_index) < 3:
+                residual_index.append(i)
                 i += 1
-        self._residuals = turns
-        self._residual_index = turns_index
+                continue
+
+            a = turns_np[residual_index[-3]]
+            b = turns_np[residual_index[-2]]
+            c = turns_np[residual_index[-1]]
+            d = turns_np[i]
+
+            ab = np.abs(a - b)
+            bc = np.abs(b - c)
+            cd = np.abs(c - d)
+            if bc <= ab and bc <= cd:
+                self._recorder.record_values(b, c)
+                idx_2 = turns_index[residual_index.pop()]
+                idx_1 = turns_index[residual_index.pop()]
+                self._recorder.record_index(idx_1, idx_2)
+                continue
+
+            residual_index.append(i)
+            i += 1
+
+        self._residuals = turns_np[residual_index]
+        self._residual_index = turns_index[residual_index[:-1]]
         self._recorder.report_chunk(len(samples))
 
         return self

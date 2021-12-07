@@ -220,9 +220,10 @@ class WoehlerCurve(PylifeSignal):
         k = np.asarray(wc.k_1)
         k_2 = np.asarray(wc.k_2)
 
+        below_limit = np.asarray(src < ref)
         if k.shape == ():
             k = np.full_like(src, k, dtype=np.double)
             k_2 = np.full_like(src, k_2, dtype=np.double)
-        k[src < ref] = k_2[src < ref]
 
+        k[below_limit] = k_2[below_limit]
         return k

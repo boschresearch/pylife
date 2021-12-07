@@ -1,4 +1,4 @@
-name: testsuite
+name: Testsuite
 
 on: [push, pull_request]
 

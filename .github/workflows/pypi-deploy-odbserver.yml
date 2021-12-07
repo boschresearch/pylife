@@ -1,23 +1,17 @@
-name: Build and upload to PyPI
+name: Build odbserver and upload to PyPI
 
 on:
   release:
     type: [published]
 
-env:
-  CIBW_BUILD: cp37-* cp38-* cp39-*
-  CIBW_BEFORE_BUILD: pip install cython
-  CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-  CIBW_MANYLINUX_I686_IMAGE: manylinux2014
+defaults:
+  run:
+    working-directory: tools/odbserver
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-18.04, windows-latest]
-
+    name: Build wheels
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
@@ -28,17 +22,15 @@ jobs:
         with:
           python-version: '3.8'
 
-      - name: Install cibuildwheel
+      - name: Install setuptools
         run: |
-          #python -m pip install cibuildwheel
           pip install -U setuptools setuptools_scm wheel
       - name: Build wheels
         run: |
-          # python -m cibuildwheel --output-dir wheelhouse
           python setup.py bdist_wheel
       - uses: actions/upload-artifact@v2
         with:
-          path: ./dist/*.whl
+          path: tools/odbserver/dist/*.whl
 
 
   build_sdist:
@@ -63,7 +55,7 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          path: dist/*.tar.gz
+          path: tools/odbserver/dist/*.tar.gz
 
   upload_pypi:
     needs: [build_wheels, build_sdist]
