@@ -57,3 +57,4 @@ docs/demos/*
 .venv*/
 _venv*/
 .conda*/
+coverage_report*
