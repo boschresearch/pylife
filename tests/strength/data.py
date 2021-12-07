@@ -44,7 +44,7 @@ coll_haibach_mod_acc = np.array(
 )
 
 
-coll_elementar_acc = np.array(
+coll_elementary_acc = np.array(
     [[100, 1000000],
      [150,  100000],
      [200,    10000],

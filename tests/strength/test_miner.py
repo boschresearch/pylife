@@ -52,7 +52,7 @@ sn_curve_parameters_haibach = pd.Series({
     "SD": 100
 })
 # parameters for the example given in Haibach2006
-sn_curve_parameters_elementar = pd.Series({
+sn_curve_parameters_elementary = pd.Series({
     "ND": 2E6,
     "k_1": 7,
     "SD": 125
@@ -60,8 +60,9 @@ sn_curve_parameters_elementar = pd.Series({
 
 
 @pytest.fixture
-def miner_elementar():
-    return miner.MinerElementar.from_parameters(ND=1e6, k_1=6, SD=200.)
+def miner_elementary():
+    return miner.MinerElementary.from_parameters(ND=1e6, k_1=6, SD=200.)
+
 
 @pytest.fixture
 def miner_haibach():
@@ -76,27 +77,27 @@ def test_effective_damage_sum_limitations():
 
 
 @pytest.mark.usefixtures('collective')
-class TestMinerElementar():
+class TestMinerElementary():
 
-    def test_lifetime_factor(self, miner_elementar):
+    def test_lifetime_factor(self, miner_elementary):
         z = 1.3180413239445 # = (ND / H0)**(1. / k)
-        np.testing.assert_almost_equal(miner_elementar.calc_zeitfestigkeitsfaktor(190733.0), z)
+        np.testing.assert_almost_equal(miner_elementary.calc_zeitfestigkeitsfaktor(190733.0), z)
 
-    def test_lifetime_multiple(self, miner_elementar):
+    def test_lifetime_multiple(self, miner_elementary):
         # test requires k = 6
 
-        A = miner_elementar.lifetime_multiple(self.coll)
+        A = miner_elementary.lifetime_multiple(self.coll)
         np.testing.assert_almost_equal(A, 862.99608075)
 
-    def test_d_m(self, miner_elementar):
-        d_m = miner_elementar.effective_damage_sum(self.coll)
+    def test_d_m(self, miner_elementary):
+        d_m = miner_elementary.effective_damage_sum(self.coll)
         d_m_test = 0.36900120961677296
         np.testing.assert_almost_equal(d_m, d_m_test)
 
-    def test_N_predict(self, miner_elementar):
+    def test_N_predict(self, miner_elementary):
         load_level = 400
         expected_cycles = 13484313.761758052
-        gassner = miner_elementar.gassner(self.coll)
+        gassner = miner_elementary.gassner(self.coll)
         np.testing.assert_almost_equal(gassner.cycles(load_level), expected_cycles)
 
         foo_collective = pd.Series({
@@ -112,13 +113,13 @@ class TestMinerElementar():
         See miner.py for reference.
         The examples can be found on page 271.
         """
-        coll = make_collective_from_raw_data(data.coll_elementar_acc)
+        coll = make_collective_from_raw_data(data.coll_elementary_acc)
         load_level = coll.rainflow.amplitude.max()
         expected_N = 2167330
-        miner_elementar = sn_curve_parameters_elementar.miner_elementar
+        miner_elementary = sn_curve_parameters_elementary.gassner_miner_elementary
         # some rounding is assumed in the example from the book
         # so in respect to millions of cycles a small neglectable tolerance is accepted
-        gassner = miner_elementar.gassner(coll)
+        gassner = miner_elementary.gassner(coll)
         np.testing.assert_approx_equal(expected_N, gassner.cycles(load_level), significant=6)
 
 
@@ -167,7 +168,7 @@ class TestMinerHaibach:
         """
         coll = make_collective_from_raw_data(data.coll_haibach_mod_acc)
 
-        miner_haibach = sn_curve_parameters_haibach.miner_haibach
+        miner_haibach = sn_curve_parameters_haibach.gassner_miner_haibach
         # some rounding is assumed in the example from the book
         # so in respect to millions of cycles a small neglectable tolerance is accepted
         gassner = miner_haibach.gassner(coll, load_level)

@@ -21,7 +21,7 @@ Implementation of the miner rule for fatigue analysis
 
 Currently, the following implementations are part of this module:
 
-* Miner-elementar
+* Miner-elementary
 * Miner-haibach
 
 The source will be given in the function/class
@@ -112,14 +112,14 @@ def effective_damage_sum(lifetime_multiple):
     return d_m
 
 
-@pd.api.extensions.register_series_accessor('miner_elementar')
-class MinerElementar(WoehlerCurve, MinerBase):
-    """Implementation of Miner-elementar according to Waechter2017
+@pd.api.extensions.register_series_accessor('gassner_miner_elementary')
+class MinerElementary(WoehlerCurve, MinerBase):
+    """Implementation of Miner-elementary according to Waechter2017
 
     """
 
     def lifetime_multiple(self, collective, load_level=None):
-        """Compute the lifetime multiple according to miner-elementar
+        """Compute the lifetime multiple according to miner-elementary
 
         Described in Waechter2017 as "Lebensdauervielfaches, A_ele".
 
@@ -138,11 +138,11 @@ class MinerElementar(WoehlerCurve, MinerBase):
         return 1. / collective.solidity.haibach(self.k_1)
 
 
-@pd.api.extensions.register_series_accessor('miner_haibach')
+@pd.api.extensions.register_series_accessor('gassner_miner_haibach')
 class MinerHaibach(WoehlerCurve, MinerBase):
     """Miner-modified according to Haibach (2006)
 
-    WARNING: Contrary to Miner-elementar, the lifetime multiple A
+    WARNING: Contrary to Miner-elementary, the lifetime multiple A
              is not constant but dependent on the evaluated load level!
 
     Parameters
