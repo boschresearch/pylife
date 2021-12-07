@@ -134,13 +134,12 @@ class TimeSignalPrep:
         -------
         DataFrame
         """
-#        dfResample.index =  np.arange(self.df.index.min(),self.df.index.max(),1/sample_rate_new)
         index_new =  np.linspace(self.df.index.min(),
                                  self.df.index.min() + np.floor((self.df.index.max()-self.df.index.min())*sample_rate_new)/sample_rate_new,
                                  int(np.floor(self.df.index.max()-self.df.index.min())*sample_rate_new + 1))
         dfResample = pd.DataFrame(index = index_new)
         for colakt in self.df.columns:
-            dfResample[colakt] = np.interp(dfResample.index,self.df.index,self.df[colakt])
+            dfResample[colakt] = np.interp(dfResample.index, self.df.index, self.df[colakt])
         return dfResample
 
     def butter_bandpass(self, lowcut, highcut, fs, order=5):
@@ -152,7 +151,7 @@ class TimeSignalPrep:
         TSout = signal.filtfilt(b, a, self.df)
         return TSout
 
-    def running_stats_filt(self,col,window_length = 2048,buffer_overlap = 0.1,limit = 0.05, method = "rms"):
+    def running_stats_filt(self, col, window_length=2048, buffer_overlap=0.1, limit=0.05, method="rms"):
         """
         Calculates the running statistics of one DataFrame column and drops the rejected data points from the whole DataFrame.
 
@@ -199,12 +198,11 @@ class TimeSignalPrep:
             ind_act = ind_act+hop
         try:
             stats_list = pd.DataFrame({"stats": np.asarray(stats_list)})#,
-        except:
-            print(str(stats_list))
-                                  # index = np.arange(0,len(np.asarray(stats_list))-1,
-                                  #                   np.asarray(stats_list)))
+        except BaseException:
+            pass
+
         stats_list = stats_list[stats_list["stats"] < limit*stats_list["stats"].max()]
         for ind_act in stats_list.index:
-            df = df.drop(index = np.arange(ind_act*hop,ind_act*hop+window_length), errors = 'ignore')
-        df.index = np.linspace(0,delta_t*(len(df)-1), len(df))
+            df = df.drop(index = np.arange(ind_act*hop, ind_act*hop+window_length), errors = 'ignore')
+        df.index = np.linspace(0, delta_t*(len(df)-1), len(df))
         return df
