@@ -100,12 +100,8 @@ class FourPointDetector(AbstractDetector):
         self : FourPointDetector
             The ``self`` object so that processing can be chained
         """
-        if len(self._residuals) == 0:
-            residuals = samples[:1]
-            residual_index = [0, 1]
-        else:
-            residuals = self._residuals[:-1]
-            residual_index = [*range(len(residuals))]
+
+        residuals = samples[:1] if self._residuals.size == 0 else self._residuals[:-1]
 
         turns_index, turns_values = self._new_turns(samples)
 
