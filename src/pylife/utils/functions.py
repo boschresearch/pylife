@@ -28,7 +28,7 @@ __maintainer__ = __author__
 import numpy as np
 
 
-def scatteringRange2std(T):
+def scattering_range_to_std(T):
     """Convert a scattering range (`TS` or `TN` in DIN 50100:2016-12) into standard deviation.
 
     Parameters
@@ -45,12 +45,12 @@ def scatteringRange2std(T):
     -----
     Actually `1/(2*norm.ppf(0.9))*np.log10(T)`
 
-    Inverse of `std2scatteringRange()`
+    Inverse of `std_to_scattering_range()`
     """
     return 0.39015207303618954*np.log10(T)
 
 
-def std2scatteringRange(std):
+def std_to_scattering_range(std):
     """Convert a standard deviation into scattering range (`TS` or `TN` in DIN 50100:2016-12).
 
     Parameters
@@ -67,7 +67,7 @@ def std2scatteringRange(std):
     -----
     Actually `10**(2*norm.ppf(0.9)*std`
 
-    Inverse of `scatteringRange2std()`
+    Inverse of `scattering_range_to_std()`
     """
     return 10**(2.5631031310892007*std)
 

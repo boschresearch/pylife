@@ -18,7 +18,7 @@ import pandas as pd
 import numpy as np
 import scipy.stats as stats
 
-from pylife.utils.functions import scatteringRange2std
+from pylife.utils.functions import scattering_range_to_std
 
 from pylife import PylifeSignal
 
@@ -118,8 +118,8 @@ class WoehlerCurve(PylifeSignal):
         native_ppf = stats.norm.ppf(obj.failure_probability)
         goal_ppf = stats.norm.ppf(failure_probability)
 
-        SD = np.asarray(obj.SD / 10**((native_ppf-goal_ppf)*scatteringRange2std(obj.TS)))
-        ND = np.asarray(obj.ND / 10**((native_ppf-goal_ppf)*scatteringRange2std(obj.TN)))
+        SD = np.asarray(obj.SD / 10**((native_ppf-goal_ppf)*scattering_range_to_std(obj.TS)))
+        ND = np.asarray(obj.ND / 10**((native_ppf-goal_ppf)*scattering_range_to_std(obj.TN)))
         ND[SD != 0] *= np.power(SD[SD != 0]/obj.SD, -obj.k_1)
 
         transformed = obj.copy()
