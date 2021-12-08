@@ -83,10 +83,9 @@ class MinerBase:
         A = self.lifetime_multiple(collective)
         return effective_damage_sum(A)
 
-    def gassner(self, collective, load_level=None):
-        gassner = self.to_pandas().copy()
-        gassner['ND'] = self.ND * self.lifetime_multiple(collective, load_level)
-        return Fatigue(gassner)
+    def gassner_cycles(self, collective):
+        print(self.lifetime_multiple(collective))
+        return self.cycles(collective.rainflow.amplitude.max()) * self.lifetime_multiple(collective)
 
 
 def effective_damage_sum(lifetime_multiple):
@@ -118,7 +117,12 @@ class MinerElementary(WoehlerCurve, MinerBase):
 
     """
 
-    def lifetime_multiple(self, collective, load_level=None):
+    def gassner(self, collective):
+        gassner = self.to_pandas().copy()
+        gassner['ND'] = self.ND * self.lifetime_multiple(collective)
+        return Fatigue(gassner)
+
+    def lifetime_multiple(self, collective):
         """Compute the lifetime multiple according to miner-elementary
 
         Described in Waechter2017 as "Lebensdauervielfaches, A_ele".
@@ -157,7 +161,7 @@ class MinerHaibach(WoehlerCurve, MinerBase):
         load level is taken as dict key (values are rounded to 0 decimals)
     """
 
-    def lifetime_multiple(self, collective, load_level=None):
+    def lifetime_multiple(self, collective):
         """Compute the lifetime multiple for Miner-modified according to Haibach
 
         Refer to Haibach (2006), p. 291 (3.21-61). The lifetime multiple can be
@@ -171,15 +175,12 @@ class MinerHaibach(WoehlerCurve, MinerBase):
             if it is not specified, then the attribute is used.
             If no collective exists as attribute (is set during setup)
             then an error is thrown
-        load_level : float > 0, optional
-            load level in [MPa]; If not given the maximum load level of `collective`
-            is assumed.
 
         Returns
         -------
         lifetime_multiple  : float > 0
             lifetime multiple
-            return value is 'inf' if load_level < SD
+            return value is 'inf' if maximum collective amplitude < SD
         """
 
         rf = collective.rainflow
@@ -188,12 +189,8 @@ class MinerHaibach(WoehlerCurve, MinerBase):
 
         cycles = rf.cycles
 
-        if load_level is None:
-            load_level = max_amp
-
         s_a = s_a / max_amp
-
-        x_D = self.SD / load_level
+        x_D = self.SD / max_amp
 
         i_full_damage = (s_a >= x_D)
         i_reduced_damage = (s_a < x_D)

@@ -97,13 +97,19 @@ class TestMinerElementary():
     def test_N_predict(self, miner_elementary):
         load_level = 400
         expected_cycles = 13484313.761758052
-        gassner = miner_elementary.gassner(self.coll)
-        np.testing.assert_almost_equal(gassner.cycles(load_level), expected_cycles)
+        coll = self.coll.rainflow.scale(load_level/self.coll.rainflow.amplitude.max()).to_pandas()
+        result = miner_elementary.gassner_cycles(coll)
+        np.testing.assert_almost_equal(result, expected_cycles)
 
+    def test_gassner(self, miner_elementary):
+        load_level = 400
+        expected_cycles = 13484313.761758052
         foo_collective = pd.Series({
             'amplitude': load_level,
             'cycles': expected_cycles
         })
+
+        gassner = miner_elementary.gassner(self.coll)
         expected_damage = pd.Series(1.0, name='damage')
         pd.testing.assert_series_equal(gassner.damage(foo_collective), expected_damage)
 
@@ -128,11 +134,13 @@ class TestMinerHaibach:
 
     def test_lifetime_multiple_split_damage_regions(self, miner_haibach):
         load_level = 400
-        miner_haibach.lifetime_multiple(self.coll, load_level)
+        coll = self.coll.rainflow.scale(load_level/self.coll.rainflow.amplitude.max()).to_pandas()
+        miner_haibach.lifetime_multiple(coll)
 
     def test_lifetime_multiple(self, miner_haibach):
         load_level = 400
-        A = miner_haibach.lifetime_multiple(self.coll, load_level)
+        coll = self.coll.rainflow.scale(load_level/self.coll.rainflow.amplitude.max()).to_pandas()
+        A = miner_haibach.lifetime_multiple(coll)
         np.testing.assert_almost_equal(A, 1000.342377197)
 
     def test_lifetime_multiple_no_load_level(self, miner_haibach):
@@ -141,15 +149,16 @@ class TestMinerHaibach:
 
     def test_N_predict(self, miner_haibach):
         load_level = 400
+        coll = self.coll.rainflow.scale(load_level/self.coll.rainflow.amplitude.max()).to_pandas()
         N_woehler_load_level = (
             miner_haibach.ND * (load_level / miner_haibach.SD)**(-miner_haibach.k_1)
         )
-        A = miner_haibach.lifetime_multiple(self.coll, load_level)
+        A = miner_haibach.lifetime_multiple(coll)
         N_predict = N_woehler_load_level * A
 
-        gassner = miner_haibach.gassner(self.coll, load_level)
+        coll = self.coll.rainflow.scale(load_level/self.coll.rainflow.amplitude.max()).to_pandas()
 
-        np.testing.assert_almost_equal(gassner.cycles(load_level), N_predict)
+        np.testing.assert_almost_equal(miner_haibach.gassner_cycles(coll), N_predict)
 
     @pytest.mark.parametrize("load_level, predicted_N", [
         (100, 935519000),
@@ -167,9 +176,9 @@ class TestMinerHaibach:
         The examples can be found on page 292.
         """
         coll = make_collective_from_raw_data(data.coll_haibach_mod_acc)
+        coll = coll.rainflow.scale(load_level/coll.rainflow.amplitude.max()).to_pandas()
 
         miner_haibach = sn_curve_parameters_haibach.gassner_miner_haibach
         # some rounding is assumed in the example from the book
         # so in respect to millions of cycles a small neglectable tolerance is accepted
-        gassner = miner_haibach.gassner(coll, load_level)
-        np.testing.assert_approx_equal(predicted_N, gassner.cycles(load_level), significant=5)
+        np.testing.assert_approx_equal(miner_haibach.gassner_cycles(coll), predicted_N, significant=5)
