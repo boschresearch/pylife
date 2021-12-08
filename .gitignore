@@ -41,6 +41,7 @@ coverage.xml
 # Build and docs folder/files
 _build/*
 build/*
+*/build/
 dist/*
 sdist/*
 docs/api/*
@@ -54,4 +55,6 @@ docs/demos/*
 
 # Per-project virtualenvs
 .venv*/
+_venv*/
 .conda*/
+coverage_report*
