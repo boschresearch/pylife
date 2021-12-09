@@ -186,14 +186,14 @@ class HaighDiagram(PylifeSignal):
         transformer = _SegmentTransformer(cycles, obj, self._R_index, R_goal)
 
         for interval in transformer.segments_left_from_R_goal():
-            tmp_R_goal = interval.left if interval.right > 1.0 else interval.right
-            transformer.transform_to_edge_of_interval(interval, tmp_R_goal)
+            interval_boundary = interval.right if interval.right < 1.0 else interval.left
+            transformer.transform_cycles_in_interval(interval, interval_boundary)
 
         for interval in transformer.segments_right_from_R_goal():
-            transformer.transform_to_edge_of_interval(interval, interval.left)
+            transformer.transform_cycles_in_interval(interval, interval.left)
 
         for interval in transformer.segments_containing_R_goal():
-            transformer.transform_to_edge_of_interval(interval, R_goal)
+            transformer.transform_cycles_in_interval(interval, R_goal)
 
         transfomed_cycles = transformer.transformed_cycles
         res = pd.DataFrame({
@@ -236,13 +236,13 @@ class HaighDiagram(PylifeSignal):
 
 class _SegmentTransformer:
 
-    def __init__(self, cycles, obj, R_segments, R_goal):
+    def __init__(self, cycles, haigh, R_segments, R_goal):
         rf = cycles.rainflow
         self.transformed_cycles = pd.DataFrame({
             'amplitude': rf.amplitude,
             'R': rf.R
         }, index=cycles.index)
-        self._obj = obj
+        self._haigh = haigh
         self._R_index = R_segments
         self._R_goal = R_goal
 
@@ -270,18 +270,18 @@ class _SegmentTransformer:
 
         return pd.Series(meanstress.values - meanstress_goal, index=self._R_index)
 
-    def transform_to_edge_of_interval(self, interval, R_g):
+    def transform_cycles_in_interval(self, interval, R_goal):
         def push_over_flipping_point(R):
-            if R == -np.inf and R_g > 1.0:
+            if R == -np.inf and R_goal > 1.0:
                 return np.inf
-            if R == np.inf and R_g < 1.0:
+            if R == np.inf and R_goal < 1.0:
                 return -np.inf
             return R
 
         def cycles_in_current_interval():
             R = self.transformed_cycles.R.apply(push_over_flipping_point)
             test_interval = pd.Interval(interval.left, interval.right, closed='both')
-            return R.apply(lambda i: i in test_interval)
+            return R.apply(lambda R: R in test_interval)
 
         def cycles_in_current_segments(in_test_interval, segments_index):
             in_segments_index = pd.Series(False, index=self.transformed_cycles.index)
@@ -290,7 +290,7 @@ class _SegmentTransformer:
             return in_test_interval & in_segments_index
 
         def meanstress_sensitivity_segments_of_current_interval():
-            return self._obj.xs(interval, level='R')
+            return self._haigh.xs(interval, level='R')
 
         def transformed_amplitude():
             rf = self.transformed_cycles.loc[to_shift]
@@ -299,10 +299,10 @@ class _SegmentTransformer:
             mean[rf.R == -np.inf] = -amp[rf.R == -np.inf]
             mean[rf.R == 1.0] = -amp[rf.R == 1.0]
 
-            if R_g == -np.inf:
+            if R_goal == -np.inf:
                 trans_amp = (amp + M * mean) / (1. - M)
             else:
-                trans_amp = (1. - R_g) * (amp + M*mean) / (1. - R_g + M*(1.+R_g))
+                trans_amp = (1. - R_goal) * (amp + M*mean) / (1. - R_goal + M*(1.+R_goal))
 
             return trans_amp.fillna(0.0)
 
@@ -316,11 +316,11 @@ class _SegmentTransformer:
         if not to_shift.any():
             return
 
-        if R_g == 1.0:
-            R_g = -np.inf
+        if R_goal == 1.0:
+            R_goal = -np.inf
 
         self.transformed_cycles.loc[to_shift, 'amplitude'] = transformed_amplitude()
-        self.transformed_cycles.loc[to_shift, 'R'] = R_g
+        self.transformed_cycles.loc[to_shift, 'R'] = R_goal
 
 
 

@@ -14,13 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys, os, copy
-import warnings
 import pytest
 
 import numpy as np
 import pandas as pd
-import numpy.testing as testing
 
 import pylife.strength.meanstress as MST
 
