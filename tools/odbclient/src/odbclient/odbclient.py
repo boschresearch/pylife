@@ -56,8 +56,8 @@ class OdbClient:
         self._wait_for_server_ready_sign()
 
     def _gulp_lock_file_warning(self):
-            self._proc.stdout.readline()
-            self._proc.stdout.readline()
+        self._proc.stdout.readline()
+        self._proc.stdout.readline()
 
     def _wait_for_server_ready_sign(self):
         def wait_for_input(stdout, queue):
@@ -203,12 +203,12 @@ def _decode(arg):
 def _guess_abaqus_bin():
     if sys.platform == 'win32':
         return _guess_abaqus_bin_windows()
-    else:
-        return shutil.which('abaqus')
+    return shutil.which('abaqus')
 
 
 def _guess_abaqus_bin_windows():
     guesses = [
+        r"C:/Program Files/SIMULIA/2018/AbaqusCAE/win_b64/code/bin/ABQLauncher.exe"
         r"C:/Program Files/SIMULIA/2020/EstProducts/win_b64/code/bin/ABQLauncher.exe",
         r"C:/Program Files/SIMULIA/2020/Products/win_b64/code/bin/ABQLauncher.exe",
     ]
