@@ -31,8 +31,8 @@ def test_rossow():
 
 
 def test_scattering_range_2_std():
-    np.testing.assert_allclose(F.scatteringRange2std(1.25), 0.0378096, rtol=1e-5)
+    np.testing.assert_allclose(F.scattering_range_to_std(1.25), 0.0378096, rtol=1e-5)
 
 
 def test_std_2_scattering_range():
-    np.testing.assert_allclose(F.std2scatteringRange(0.0378096), 1.25, rtol=1e-5)
+    np.testing.assert_allclose(F.std_to_scattering_range(0.0378096), 1.25, rtol=1e-5)

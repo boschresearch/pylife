@@ -61,7 +61,7 @@ class Probit(Elementary):
 
         self._probability_fit = ProbabilityFit(fprobs, load)
 
-        TS = functions.std2scatteringRange(1./self._probability_fit.slope)
+        TS = functions.std_to_scattering_range(1./self._probability_fit.slope)
         SD = 10**(-self._probability_fit.intercept/self._probability_fit.slope)
         ND = self._transition_cycles(SD)
 
