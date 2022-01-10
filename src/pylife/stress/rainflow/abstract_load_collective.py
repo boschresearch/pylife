@@ -18,9 +18,9 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 import pandas as pd
-import numpy as np
 
 from abc import ABC, abstractmethod
+
 
 class AbstractLoadCollective(ABC):
 

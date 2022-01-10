@@ -81,7 +81,7 @@ class TestMinerElementary():
 
     def test_lifetime_factor(self, miner_elementary):
         z = 1.3180413239445 # = (ND / H0)**(1. / k)
-        np.testing.assert_almost_equal(miner_elementary.calc_zeitfestigkeitsfaktor(190733.0), z)
+        np.testing.assert_almost_equal(miner_elementary.finite_life_factor(190733.0), z)
 
     def test_lifetime_multiple(self, miner_elementary):
         # test requires k = 6
@@ -97,7 +97,7 @@ class TestMinerElementary():
     def test_N_predict(self, miner_elementary):
         load_level = 400
         expected_cycles = 13484313.761758052
-        coll = self.coll.rainflow.scale(load_level/self.coll.rainflow.amplitude.max()).to_pandas()
+        coll = self.coll.rainflow.scale(load_level/self.coll.rainflow.amplitude.max())
         result = miner_elementary.gassner_cycles(coll)
         np.testing.assert_almost_equal(result, expected_cycles)
 

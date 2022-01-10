@@ -48,29 +48,24 @@ import pylife.strength.solidity
 
 
 
-class MinerBase:
+class MinerBase(WoehlerCurve):
     """Basic functions related to miner-rule (original)
 
-    Definitions will be based on the given references.
-    Therefore, the original names are used so that they can
-    be looked up easily.
-
-    Parameters
-    ----------
-    ND : float
-        number of cycles of the fatigue strength of the S/N curve [number of cycles]
-    k_1 : float
-        slope of the S/N curve [unitless]
-    SD : float
-        fatigue strength of the S/N curve [MPa]
+    Uses the constructor of :class:`pylife.materiallaws.WoehlerCurve`.
     """
 
-    def calc_zeitfestigkeitsfaktor(self, N):
-        """Calculate "Zeitfestigkeitsfaktor" according to Waechter2017 (p. 96)"""
+    def finite_life_factor(self, N):
+        """Calculate *finite life factor* according to Waechter2017 (p. 96).
+
+        Parameters
+        ----------
+        N : float
+            Collective range (sum of cycle numbers) of load collective
+        """
         return np.power(self.ND/N, 1./self.k_1)
 
     def effective_damage_sum(self, collective):
-        """Compute 'effective damage sum' D_m
+        """Compute *effective damage sum* D_m.
 
         Refers to the formula given in Waechter2017, p. 99
 
@@ -79,40 +74,31 @@ class MinerBase:
         A : float or np.ndarray (with 1 element)
             the multiple of the lifetime
         """
-
         A = self.lifetime_multiple(collective)
         return effective_damage_sum(A)
 
     def gassner_cycles(self, collective):
-        print(self.lifetime_multiple(collective))
-        return self.cycles(collective.rainflow.amplitude.max()) * self.lifetime_multiple(collective)
+        """Compute the cycles of the Gassner line for a certain load collective.
 
+        Parameters
+        ----------
+        collective : :class:`pylife.stress.rainflow.RainflowCollective` or similar
+           The load collective
 
-def effective_damage_sum(lifetime_multiple):
-    """Compute 'effective damage sum' D_m
+        Returns
+        -------
+        cycles
+            The cycles for the collective
 
-    Refers to the formula given in Waechter2017, p. 99
-
-    Parameters
-    ----------
-    A : float or np.ndarray (with 1 element)
-        the multiple of the lifetime
-    """
-
-    d_min = 0.3  # minimum as suggested by FKM
-    d_max = 1.0
-
-    d_m_no_limits = 2. / (lifetime_multiple**(1./4.))
-    d_m = min(
-        max(d_min, d_m_no_limits),
-        d_max
-    )
-
-    return d_m
+        Note
+        ----
+        The absolute load levels of the collective are important.
+        """
+        return self.cycles(collective.amplitude.max()) * self.lifetime_multiple(collective)
 
 
 @pd.api.extensions.register_series_accessor('gassner_miner_elementary')
-class MinerElementary(WoehlerCurve, MinerBase):
+class MinerElementary(MinerBase):
     """Implementation of Miner-elementary according to Waechter2017
 
     """
@@ -143,7 +129,7 @@ class MinerElementary(WoehlerCurve, MinerBase):
 
 
 @pd.api.extensions.register_series_accessor('gassner_miner_haibach')
-class MinerHaibach(WoehlerCurve, MinerBase):
+class MinerHaibach(MinerBase):
     """Miner-modified according to Haibach (2006)
 
     WARNING: Contrary to Miner-elementary, the lifetime multiple A
@@ -206,3 +192,29 @@ class MinerHaibach(WoehlerCurve, MinerBase):
         sum_2 = x_D**(1 - self.k_1) * np.dot(n_reduced_damage, (s_reduced_damage**(2 * self.k_1 - 1)))
 
         return cycles.sum() / (sum_1 + sum_2)
+
+
+def effective_damage_sum(lifetime_multiple):
+    """Compute *effective damage sum*.
+
+    Refers to the formula given in Waechter2017, p. 99
+
+    Parameters
+    ----------
+    A : float or np.ndarray (with 1 element)
+        the multiple of the lifetime
+
+    Returns
+    d_m : float
+        the effective damage sum
+    """
+    d_min = 0.3  # minimum as suggested by FKM
+    d_max = 1.0
+
+    d_m_no_limits = 2. / (lifetime_multiple**(1./4.))
+    d_m = min(
+        max(d_min, d_m_no_limits),
+        d_max
+    )
+
+    return d_m
