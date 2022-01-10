@@ -143,7 +143,6 @@ class AbstractDetector:
 
         Notes
         -----
-
         This method can be called by the ``process()`` implementation of
         subclasses. The sample tail i.e. the samples after the last turning
         point of the chunk are stored and prepended to the samples of the next
@@ -224,38 +223,38 @@ class AbstractRecorder:
 
         return chunk_num, global_index - chunk_index[chunk_num]
 
-    def record_values(self, value_from, value_to):
-        """Record hysteresis loop values to the recorder.
+    def record_values(self, values_from, values_to):
+        """Report hysteresis loop values to the recorder.
 
         Parameters
         ----------
-        value_from : float
-            The sample value where the hysteresis loop starts from.
+        values_from : list of floats
+            The sample values where the hysteresis loop starts from.
 
-        value_to : float
-            The sample value where the hysteresis loop goes to and turns back from.
+        values_to : list of floats
+            The sample values where the hysteresis loop goes to and turns back from.
 
         Note
         ----
-        Default implementation does nothing. To be implemented by recorders
+        Default implementation does nothing. Can be implemented by recorders
         interested in the hysteresis loop values.
         """
         pass
 
-    def record_index(self, index_from, index_to):
+    def record_index(self, indeces_from, indeces_to):
         """Record hysteresis loop index to the recorder.
 
         Parameters
         ----------
-        index_from : float
-            The sample index where the hysteresis loop starts from.
+        indeces_from : list of ints
+            The sample indeces where the hysteresis loop starts from.
 
-        index_to : float
-            The sample index where the hysteresis loop goes to and turns back from.
+        indeces_to : list of ints
+            The sample indeces where the hysteresis loop goes to and turns back from.
 
         Note
         ----
-        Default implementation does nothing. To be implemented by recorders
+        Default implementation does nothing. Can be implemented by recorders
         interested in the hysteresis loop values.
         """
         pass

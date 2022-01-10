@@ -110,6 +110,11 @@ class FourPointDetector(AbstractDetector):
 
         turns = turns_np
 
+        from_vals = []
+        to_vals = []
+        from_index = []
+        to_index = []
+
         residual_index = [0, 1]
         i = 2
         while i < len(turns):
@@ -127,14 +132,20 @@ class FourPointDetector(AbstractDetector):
             bc = np.abs(b - c)
             cd = np.abs(c - d)
             if bc <= ab and bc <= cd:
-                self._recorder.record_values(b, c)
+                from_vals.append(b)
+                to_vals.append(c)
+
                 idx_2 = turns_index[residual_index.pop()]
                 idx_1 = turns_index[residual_index.pop()]
-                self._recorder.record_index(idx_1, idx_2)
+                from_index.append(idx_1)
+                to_index.append(idx_2)
                 continue
 
             residual_index.append(i)
             i += 1
+
+        self._recorder.record_values(from_vals, to_vals)
+        self._recorder.record_index(from_index, to_index)
 
         self._residuals = turns_np[residual_index]
         self._residual_index = turns_index[residual_index[:-1]]
