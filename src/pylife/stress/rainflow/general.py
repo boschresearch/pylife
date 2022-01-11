@@ -17,6 +17,7 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
+from abc import ABCMeta, abstractmethod
 import numpy as np
 
 
@@ -69,7 +70,7 @@ def find_turns(samples):
     return index, samples[index]
 
 
-class AbstractDetector:
+class AbstractDetector(metaclass=ABCMeta):
     """The common base class for rainflow detectors.
 
     Subclasses implementing a specific rainflow counting algorithm are supposed
@@ -116,18 +117,36 @@ class AbstractDetector:
 
     @property
     def residual_index(self):
-        """The index of the residual turning points of the time signal so far.
-        """
+        """The index of the residual turning points of the time signal so far."""
         return np.append(self._residual_index, self._head_index - 1)
 
     @property
     def recorder(self):
-        """The recorder instance the detector is reporting to.
-        """
+        """The recorder instance the detector is reporting to."""
         return self._recorder
 
+    @abstractmethod
+    def process(self, samples):
+        """Process a sample chunk.
+
+        Parameters
+        ----------
+        samples : array_like, shape (N, )
+            The samples to be processed
+
+        Returns
+        -------
+        self : ThreePointDetector
+            The ``self`` object so that processing can be chained
+
+        Notes
+        -----
+        Must be implemented by subclasses.
+        """
+        return self
+
     def _new_turns(self, samples):
-        """Provide new turning points for the next chunk
+        """Provide new turning points for the next chunk.
 
         Parameters
         ----------

@@ -25,6 +25,11 @@ from pylife.stress.timesignal import TimeSignalGenerator
 import pylife.stress.rainflow as RF
 
 
+class DummyDetector(AbstractDetector):
+    def process(self, samples):
+        return self
+
+
 def test_rainflow_partial_get_turns_general():
     tsgen = TimeSignalGenerator(10, {'number': 50,
                                      'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
@@ -33,8 +38,8 @@ def test_rainflow_partial_get_turns_general():
                                 None, None)
 
     signal_tot = tsgen.query(10000)
-    _, turns_tot = AbstractDetector(recorder=None)._new_turns(signal_tot)
-    rfc_partial = AbstractDetector(recorder=None)
+    _, turns_tot = DummyDetector(recorder=None)._new_turns(signal_tot)
+    rfc_partial = DummyDetector(recorder=None)
     turns_partial = np.concatenate((
         rfc_partial._new_turns(signal_tot[:3424])[1],
         rfc_partial._new_turns(signal_tot[3424:])[1]))
@@ -50,12 +55,12 @@ def test_rainflow_partial_signals_get_turns_splitturn():
                                 None, None)
 
     signal_tot = tsgen.query(10000)
-    _, turns_tot = AbstractDetector(recorder=None)._new_turns(signal_tot)
+    _, turns_tot = DummyDetector(recorder=None)._new_turns(signal_tot)
     turn_points, _ = RF.find_turns(signal_tot)
     turn_points = np.insert(turn_points, 0, 0)
     turn_num = turn_points.shape[0]
     split_points = [int(np.ceil(turn_num*x)) for x in [0.0, 0.137, 0.23, 0.42, 1.0]]
-    rfc_partial = AbstractDetector(recorder=None)
+    rfc_partial = DummyDetector(recorder=None)
     turns_partial = np.empty(0)
     for i in range(len(split_points)-1):
         lower = turn_points[split_points[i]]
