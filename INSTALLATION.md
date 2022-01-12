@@ -50,10 +50,7 @@ That installs pyLife with all the dependencies to use pyLife in python
 programs. You might want to install some further packages like `jupyter` in
 order to work with jupyter notebooks.
 
-There is no conda package as of now, unfortunately. The reason for that is that
-there is one package that pyLife depends on (mystic), that does not have a
-conda package. So we cannot provide a conda packages that fetches all the
-required dependencies to use all of pyLife's functionality.
+There is no conda package as of now, unfortunately.
 
 
 ## Installation to develop pyLife

@@ -18,7 +18,6 @@ from .elementary import Elementary
 import pandas as pd
 import numpy as np
 from scipy import optimize
-import mystic as my
 import warnings
 
 class MaxLikeInf(Elementary):
@@ -109,7 +108,7 @@ class MaxLikeFull(Elementary):
 
         if not p_opt:
             raise AttributeError('You need to leave at least one parameter empty!')
-        var_opt = my.scipy_optimize.fmin(
+        var_opt = optimize.fmin(
             self.__likelihood_wrapper, [*p_opt.values()],
             args=([*p_opt], fixed_prms),
             full_output=True,
