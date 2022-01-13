@@ -22,6 +22,13 @@ import pandas as pd
 import pytest
 import unittest.mock as mock
 
+try:
+    import theano
+    import pymc3
+    HAVE_PYMC3_AND_THEANO = True
+except ModuleNotFoundError:
+    HAVE_PYMC3_AND_THEANO = False
+
 from io import StringIO
 
 from pylife.materialdata import woehler
@@ -1004,6 +1011,7 @@ def test_max_likelihood_one_mixed_horizon():
     bic = ml.bayesian_information_criterion()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
+@pytest.mark.skipif(not HAVE_PYMC3_AND_THEANO, reason="Don't have pymc3")
 @mock.patch('pylife.materialdata.woehler.bayesian.pm')
 def test_bayesian_slope_trace(pm):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
@@ -1021,6 +1029,7 @@ def test_bayesian_slope_trace(pm):
     pm.sample.assert_called_with(1000, target_accept=0.99, random_seed=None, chains=2, tune=1000)
 
 
+@pytest.mark.skipif(not HAVE_PYMC3_AND_THEANO, reason="Don't have pymc3")
 @mock.patch('pylife.materialdata.woehler.bayesian.pm')
 def test_bayesian_TN_trace(pm):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
@@ -1048,6 +1057,7 @@ def test_bayesian_TN_trace(pm):
     pm.sample.assert_called_with(1000, target_accept=0.99, random_seed=None, chains=3, tune=1000)
 
 
+@pytest.mark.skipif(not HAVE_PYMC3_AND_THEANO, reason="Don't have pymc3")
 @mock.patch('pylife.materialdata.woehler.bayesian.tt')
 @mock.patch('pylife.materialdata.woehler.bayesian.pm')
 def test_bayesian_SD_TS_trace_mock(pm, tt):
@@ -1084,6 +1094,7 @@ def test_bayesian_SD_TS_trace_mock(pm, tt):
                                  tune=1000)
 
 
+@pytest.mark.skipif(not HAVE_PYMC3_AND_THEANO, reason="Don't have pymc3")
 @mock.patch('pylife.materialdata.woehler.bayesian.Bayesian._SD_TS_trace')
 @mock.patch('pylife.materialdata.woehler.bayesian.Bayesian._TN_trace')
 @mock.patch('pylife.materialdata.woehler.bayesian.Bayesian._slope_trace')
@@ -1117,6 +1128,7 @@ def test_bayesian_mock(_slope_trace, _TN_trace, _SD_TS_trace):
     pd.testing.assert_series_equal(wc, expected)
 
 
+@pytest.mark.skipif(not HAVE_PYMC3_AND_THEANO, reason="Don't have pymc3")
 @pytest.mark.slow_acceptance
 def test_bayesian_full():
     expected = pd.Series({
