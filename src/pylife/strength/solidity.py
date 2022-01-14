@@ -28,73 +28,79 @@ import numpy as np
 import pylife.stress.rainflow as RF
 
 @pd.api.extensions.register_series_accessor('solidity')
-class RainflowMatrix(RF.RainflowMatrix):
-
+class SolidityAccessor(RF.RainflowMatrix):
 
     def haibach(self, k):
-        """Compute solidity according to Haibach
-
-        Refer to:
-        Haibach - Betriebsfestigkeit - 3. Auflage (2005) - S.271
-
-        Parameters
-        ----------
-        collective : np.ndarray
-            numpy array of shape (:, 2) where ":" depends on the number of classes
-            defined for the rainflow counting
-
-                1. column: class values in ascending order
-
-                2. column: accumulated number of cycles first entry is the total
-                   number of cycles then in a descending manner till the number of
-                   cycles of the highest stress class
-
-        k : float
-            slope of the S/N curve
-
-        Returns
-        -------
-        V : np.ndarray (1,)
-            Völligkeitswert (solidity)
-
-        """
-
-        S = self.amplitude
-        hi = self.cycles
-
-        xi = S / S[hi > 0].max()
-        V = np.sum((hi * (xi**k)) / hi.sum())
-
-        return V
-
+        return haibach(self, k)
 
     def fkm(self, k):
-        """Compute solidity according to the FKM guideline (2012)
+        return fkm(self, k)
 
-        Refer to:
-        FKM-Richtlinie - 6. Auflage (2012) - S.58 - Gl. (2.4.55) +  Gl. (2.4.55)
 
-        Parameters
-        ----------
-        collective : np.ndarray
-            numpy array of shape (:, 2) where ":" depends on the number of classes
-            defined for the rainflow counting
+def haibach(collective, k):
+    """Compute solidity according to Haibach
 
-                1. column: class values in ascending order
+    Refer to:
+    Haibach - Betriebsfestigkeit - 3. Auflage (2005) - S.271
 
-                2. column: accumulated number of cycles first entry is the total
-                   number of cycles then in a descending manner till the number of
-                   cycles of the highest stress class k : float slope of the S/N
-                   curve
+    Parameters
+    ----------
+    collective : np.ndarray
+        numpy array of shape (:, 2) where ":" depends on the number of classes
+        defined for the rainflow counting
 
-        Returns
-        -------
-        V : np.ndarray
-            Völligkeitswert (solidity)
+            1. column: class values in ascending order
 
-        """
+            2. column: accumulated number of cycles first entry is the total
+               number of cycles then in a descending manner till the number of
+               cycles of the highest stress class
 
-        V_haibach = self.haibach(k)
-        V = V_haibach**(1./k)
+    k : float
+        slope of the S/N curve
 
-        return V
+    Returns
+    -------
+    V : np.ndarray (1,)
+        Völligkeitswert (solidity)
+
+    """
+
+    S = collective.amplitude
+    hi = collective.cycles
+
+    xi = S / S[hi > 0].max()
+    V = np.sum((hi * (xi**k)) / hi.sum())
+
+    return V
+
+
+def fkm(collective, k):
+    """Compute solidity according to the FKM guideline (2012)
+
+    Refer to:
+    FKM-Richtlinie - 6. Auflage (2012) - S.58 - Gl. (2.4.55) +  Gl. (2.4.55)
+
+    Parameters
+    ----------
+    collective : np.ndarray
+        numpy array of shape (:, 2) where ":" depends on the number of classes
+        defined for the rainflow counting
+
+            1. column: class values in ascending order
+
+            2. column: accumulated number of cycles first entry is the total
+               number of cycles then in a descending manner till the number of
+               cycles of the highest stress class k : float slope of the S/N
+               curve
+
+    Returns
+    -------
+    V : np.ndarray
+        Völligkeitswert (solidity)
+
+    """
+
+    V_haibach = haibach(collective, k)
+    V = V_haibach**(1./k)
+
+    return V

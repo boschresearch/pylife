@@ -44,7 +44,7 @@ import pandas as pd
 from pylife.strength.fatigue import Fatigue
 from pylife.materiallaws.woehlercurve import WoehlerCurve
 
-import pylife.strength.solidity
+import pylife.strength.solidity as SOL
 
 
 
@@ -125,7 +125,7 @@ class MinerElementary(MinerBase):
             then in a descending manner till the
             number of cycles of the highest stress class
         """
-        return 1. / collective.solidity.haibach(self.k_1)
+        return 1. / SOL.haibach(collective, self.k_1)
 
 
 @pd.api.extensions.register_series_accessor('gassner_miner_haibach')
@@ -169,11 +169,10 @@ class MinerHaibach(MinerBase):
             return value is 'inf' if maximum collective amplitude < SD
         """
 
-        rf = collective.rainflow
-        s_a = rf.amplitude
+        s_a = collective.amplitude
         max_amp = s_a.max()
 
-        cycles = rf.cycles
+        cycles = collective.cycles
 
         s_a = s_a / max_amp
         x_D = self.SD / max_amp
