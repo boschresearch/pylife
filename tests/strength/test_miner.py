@@ -16,17 +16,13 @@
 
 import numpy as np
 import pandas as pd
-import pdb
 import pytest
-import os
-import sys
 
 import pylife.strength.miner as miner
-from pylife.strength import miner
-from pylife.stress.rainflow import *
-
+import pylife.stress.rainflow
 
 from . import data
+
 
 def make_collective_from_raw_data(raw_collective):
     smallest_length = np.abs(np.diff(raw_collective[:, 0])).min()
@@ -39,10 +35,10 @@ def make_collective_from_raw_data(raw_collective):
                      name='cycles')
     return coll
 
+
 @pytest.fixture
 def collective(request):
     request.cls.coll = make_collective_from_raw_data(data.collective).rainflow
-
 
 
 # parameters for the example given in Haibach2006
@@ -80,7 +76,7 @@ def test_effective_damage_sum_limitations():
 class TestMinerElementary():
 
     def test_lifetime_factor(self, miner_elementary):
-        z = 1.3180413239445 # = (ND / H0)**(1. / k)
+        z = 1.3180413239445  # = (ND / H0)**(1. / k)
         np.testing.assert_almost_equal(miner_elementary.finite_life_factor(190733.0), z)
 
     def test_lifetime_multiple(self, miner_elementary):

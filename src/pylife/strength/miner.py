@@ -15,23 +15,20 @@
 # limitations under the License.
 
 """
-
 Implementation of the miner rule for fatigue analysis
 =====================================================
 
 Currently, the following implementations are part of this module:
 
-* Miner-elementary
-* Miner-haibach
-
-The source will be given in the function/class
+* Miner Elementary
+* Miner Haibach
 
 References
 ----------
-M. Wächter, C. Müller and A. Esderts, "Angewandter Festigkeitsnachweis nach {FKM}-Richtlinie"
-Springer Fachmedien Wiesbaden 2017, https://doi.org/10.1007/978-3-658-17459-0
+* M. Wächter, C. Müller and A. Esderts, "Angewandter Festigkeitsnachweis nach {FKM}-Richtlinie"
+  Springer Fachmedien Wiesbaden 2017, https://doi.org/10.1007/978-3-658-17459-0
 
-E. Haibach, "Betriebsfestigkeit", Springer-Verlag 2006, https://doi.org/10.1007/3-540-29364-7
+* E. Haibach, "Betriebsfestigkeit", Springer-Verlag 2006, https://doi.org/10.1007/3-540-29364-7
 """
 
 __author__ = "Cedric Philip Wagner"
@@ -47,11 +44,10 @@ from pylife.materiallaws.woehlercurve import WoehlerCurve
 import pylife.strength.solidity as SOL
 
 
-
 class MinerBase(WoehlerCurve):
-    """Basic functions related to miner-rule (original)
+    """Basic functions related to miner-rule (original).
 
-    Uses the constructor of :class:`pylife.materiallaws.WoehlerCurve`.
+    Uses the constructor of :class:`~pylife.materiallaws.WoehlerCurve`.
     """
 
     def finite_life_factor(self, N):
@@ -82,8 +78,8 @@ class MinerBase(WoehlerCurve):
 
         Parameters
         ----------
-        collective : :class:`pylife.stress.rainflow.RainflowCollective` or similar
-           The load collective
+        collective : :class:`~pylife.stress.rainflow.RainflowCollective` or similar
+            The load collective
 
         Returns
         -------
@@ -99,56 +95,51 @@ class MinerBase(WoehlerCurve):
 
 @pd.api.extensions.register_series_accessor('gassner_miner_elementary')
 class MinerElementary(MinerBase):
-    """Implementation of Miner-elementary according to Waechter2017
-
-    """
+    """Implementation of Miner Elementary according to Waechter2017."""
 
     def gassner(self, collective):
+        """Calculate the Gaßner shift according to Miner Elementary.
+
+        Parameters
+        ----------
+        collective : :class:`~pylife.stress.rainflow.RainflowCollective` or similar
+            The load collective
+
+        Returns
+        -------
+        gassner : :class:`~pylife.stength.Fatigue`
+            The Gaßner shifted fatigue strength object.
+        """
         gassner = self.to_pandas().copy()
         gassner['ND'] = self.ND * self.lifetime_multiple(collective)
         return Fatigue(gassner)
 
     def lifetime_multiple(self, collective):
-        """Compute the lifetime multiple according to miner-elementary
+        """Compute the lifetime multiple according to Miner Elementary.
 
         Described in Waechter2017 as "Lebensdauervielfaches, A_ele".
 
         Parameters
         ----------
-        collective : np.ndarray
-            numpy array of shape (:, 2)
-            where ":" depends on the number of classes defined
-            for the rainflow counting
-            * column: class values in ascending order
-            * column: accumulated number of cycles
-            first entry is the total number of cycles
-            then in a descending manner till the
-            number of cycles of the highest stress class
+        collective : :class:`~pylife.stress.rainflow.RainflowCollective` or similar
+            The load collective
         """
         return 1. / SOL.haibach(collective, self.k_1)
 
 
 @pd.api.extensions.register_series_accessor('gassner_miner_haibach')
 class MinerHaibach(MinerBase):
-    """Miner-modified according to Haibach (2006)
+    """Miner-modified according to Haibach (2006).
 
-    WARNING: Contrary to Miner-elementary, the lifetime multiple A
-             is not constant but dependent on the evaluated load level!
-
-    Parameters
-    ----------
-    see MinerBase
-
-    Attributes
-    ----------
-    A : dict
-        the multiple of the life time initiated as dict
-        Since A is different for each load level, the
-        load level is taken as dict key (values are rounded to 0 decimals)
+    Warnings
+    --------
+    Contrary to Miner Elementary, the lifetime multiple is not constant but
+    dependent on the evaluated load level!  That is why there is no method for
+    the Gaßner shift.
     """
 
     def lifetime_multiple(self, collective):
-        """Compute the lifetime multiple for Miner-modified according to Haibach
+        """Compute the lifetime multiple for Miner-modified according to Haibach.
 
         Refer to Haibach (2006), p. 291 (3.21-61). The lifetime multiple can be
         expressed in respect to the maximum amplitude so that
@@ -156,19 +147,15 @@ class MinerHaibach(MinerBase):
 
         Parameters
         ----------
-        collective : np.ndarray (optional)
-            the collective can optionally be input to this function
-            if it is not specified, then the attribute is used.
-            If no collective exists as attribute (is set during setup)
-            then an error is thrown
+        collective : :class:`~pylife.stress.rainflow.RainflowCollective` or similar
+            The load collective
 
         Returns
         -------
-        lifetime_multiple  : float > 0
+        lifetime_multiple : float > 0
             lifetime multiple
             return value is 'inf' if maximum collective amplitude < SD
         """
-
         s_a = collective.amplitude
         max_amp = s_a.max()
 
