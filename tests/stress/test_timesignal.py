@@ -91,3 +91,11 @@ def test_running_stats_filt():
         col='data', window_length=2049, buffer_overlap=0.0, limit=0.1, method="abs")
     pd.testing.assert_frame_equal(test_abs, df,
                                   check_index_type=False)
+    
+    test = tsig.TimeSignalPrep(df).running_stats_filt(col='data', window_length=int(5e10), 
+                                                      buffer_overlap=1.1, limit=0.0, method="abs")
+    pd.testing.assert_frame_equal(test, df, check_index_type=False)
+    
+    test = tsig.TimeSignalPrep(df).running_stats_filt(col='data', window_length=1, 
+                                                      buffer_overlap=0, limit=1.1, method="abs")
+    assert test.shape == (0,1)
