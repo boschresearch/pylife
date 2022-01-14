@@ -18,12 +18,19 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 import sys
+import importlib
 import pytest
+import pandas as pd
 
 
 def test_import_bayesian():
+
     sys.modules['pymc3'] = None
     sys.modules['theano'] = None
+
+    sys.modules.pop('pylife.materialdata.woehler')
+    if 'pylife.materialdata.woehler.bayesian' in sys.modules:
+        sys.modules.pop('pylife.materialdata.woehler.bayesian')
 
     import pylife.materialdata.woehler as WL
 
