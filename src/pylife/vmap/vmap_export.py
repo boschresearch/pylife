@@ -503,7 +503,7 @@ class VMAPExport:
                 geometry_set.create_dataset('MYGEOMETRYSETDATA', data=pd.DataFrame(indices),
                                             dtype=np.int32, chunks=True)
                 geometry_set_group.attrs['MYSIZE'] = set_size + 1
-            except Exception as e:
+            except Exception:
                 del geometry_set_group[geometry_set_name]
                 raise VMAPExportError(
                     'An error occurred while creating geometry set %s in geometry %s: %s'
