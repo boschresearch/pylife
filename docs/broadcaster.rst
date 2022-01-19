@@ -16,7 +16,7 @@ Example
 ~~~~~~~
 
 Take for example the function
-:func:`~pylife.materiallaws.WoehlerCurve.basquin_cycles`.  Imagine you have a
+:func:`~pylife.materiallaws.WoehlerCurve.cycles`.  Imagine you have a
 single Wöhler curve dataset like
 
 .. jupyter-execute::
@@ -41,7 +41,7 @@ value:
 
 .. jupyter-execute::
 
-    woehler_curve_data.woehler.basquin_cycles(load=350.)
+    woehler_curve_data.woehler.cycles(load=350.)
 
 
 Now let's say, you have different loads for each `element_id` if your FEM-mesh:
@@ -52,12 +52,12 @@ Now let's say, you have different loads for each `element_id` if your FEM-mesh:
     amplitude
 
 
-:func:`~pylife.materiallaws.WoehlerCurve.basquin_cycles` now gives you a result
+:func:`~pylife.materiallaws.WoehlerCurve.cycles` now gives you a result
 for every `element_id`.
 
 .. jupyter-execute::
 
-    woehler_curve_data.woehler.basquin_cycles(load=amplitude)
+    woehler_curve_data.woehler.cycles(load=amplitude)
 
 
 In the next step, even the Wöhler curve data is different for every element,
@@ -81,7 +81,7 @@ associated with its load and with its Wöhler curve:
 
 .. jupyter-execute::
 
-   woehler_curve_data.woehler.basquin_cycles(load=amplitude)
+   woehler_curve_data.woehler.cycles(load=amplitude)
 
 In another case we assume that you have a Wöhler curve associated to every
 element, and the loads are constant throughout the component but different for
@@ -98,7 +98,7 @@ allowable cycles are calculated:
 
 .. jupyter-execute::
 
-    woehler_curve_data.woehler.basquin_cycles(load=amplitude_scenarios)
+    woehler_curve_data.woehler.cycles(load=amplitude_scenarios)
 
 As is very uncommon that the load is constant all over the component like in
 the previous example we now consider an even more complex one.  Let's say we
@@ -120,13 +120,13 @@ Now the broadcaster still aligns the `element_id`:
 
 .. jupyter-execute::
 
-    woehler_curve_data.woehler.basquin_cycles(load=amplitude_scenarios)
+    woehler_curve_data.woehler.cycles(load=amplitude_scenarios)
 
 Note that in the above examples the call was always identical
 
 .. code-block:: python
 
-    woehler_curve_data.woehler.basquin_cycles(load=...)
+    woehler_curve_data.woehler.cycles(load=...)
 
 That means that when you write a module for a certain functionality **you don't
 need to know if your code later on receives a single value parameter or a whole
@@ -142,7 +142,7 @@ are on the level that you simply want to use pyLife's functionality to perform
 calculations, you should not be required to think about how to broadcast your
 datasets to one another.  It should simply happen automatically.  In our
 example the the calls to the :class:`pylife.Broadcaster` are done inside
-:func:`~pylife.materiallaws.WoehlerCurve.basquin_cycles`.
+:func:`~pylife.materiallaws.WoehlerCurve.cycles`.
 
 You do need to deal with the :class:`pylife.Broadcaster` when you implement new
 calculation methods.  Let's go through an example.

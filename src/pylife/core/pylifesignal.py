@@ -224,6 +224,9 @@ class PylifeSignal(Broadcaster):
         The default implementation just returns the object given when
         instantiating the signal class. Derived classes may return a modified
         object or augmented, if they store some extra information.
+
+        By default the object is **not** copied. So make a copy yourself, if
+        you intent to modify it.
         """
         return self._obj
 

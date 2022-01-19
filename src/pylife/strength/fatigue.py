@@ -46,7 +46,7 @@ class Fatigue(WoehlerCurve):
             The calculated damage values. The index is the broadcast between
             `load_collective` and `self`.
         """
-        cycles = self.basquin_cycles(load_collective.amplitude)
+        cycles = self.cycles(load_collective.amplitude)
         return pd.Series(load_collective.cycles / cycles, name='damage')
 
     def security_load(self, load_collective, allowed_failure_probability):
@@ -63,7 +63,7 @@ class Fatigue(WoehlerCurve):
             The calculated security_factors. The index is the broadcast between
             `load_collective` and `self`.
         """
-        allowed_load = self.basquin_load(load_collective.cycles, allowed_failure_probability)
+        allowed_load = self.load(load_collective.cycles, allowed_failure_probability)
         return pd.Series(allowed_load / load_collective.amplitude, name='security_factor')
 
     def security_cycles(self, load_collective, allowed_failure_probability):
@@ -80,5 +80,5 @@ class Fatigue(WoehlerCurve):
             The calculated security_factors. The index is the broadcast between
             `load_collective` and `self`.
         """
-        allowed_cycles = self.basquin_cycles(load_collective.amplitude, allowed_failure_probability)
+        allowed_cycles = self.cycles(load_collective.amplitude, allowed_failure_probability)
         return pd.Series(allowed_cycles / load_collective.cycles, name='security_factor')

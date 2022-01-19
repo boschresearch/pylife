@@ -149,6 +149,55 @@ class WoehlerCurve(PylifeSignal):
         self._obj['k_2'] = 2. * self._obj.k_1 - 1.
         return self
 
+    def cycles(self, load, failure_probability=0.5):
+        """Calculate the cycles numbers from loads.
+
+        Parameters
+        ----------
+        load : array_like
+            The load levels for which the corresponding cycle numbers are to be calculated.
+        failure_probability : float, optional
+            The failure probability with which the component should fail when
+            charged with `load` for the calculated cycle numbers. Default 0.5
+
+        Returns
+        -------
+        cycles : numpy.ndarray
+            The cycle numbers at which the component fails for the given `load` values
+
+
+        Notes
+        -----
+        By default the calculation is performed according to the Basquin
+        equation using :meth:`basquin_cycles`.  Derived classes can choose to
+        override this in order to implement a different fatigue law.
+        """
+        return self.basquin_cycles(load, failure_probability)
+
+    def load(self, cycles, failure_probability=0.5):
+        """Calculate the load values from loads.
+
+        Parameters
+        ----------
+        cycles : array_like
+            The cycle numbers for which the corresponding load levels are to be calculated.
+        failure_probability : float, optional
+            The failure probability with which the component should fail when
+            charged with `load` for the calculated cycle numbers. Default 0.5
+
+        Returns
+        -------
+        cycles : numpy.ndarray
+            The cycle numbers at which the component fails for the given `load` values
+
+        Notes
+        -----
+        By default the calculation is performed according to the Basquin
+        equation using :meth:`basquin_cycles`.  Derived classes can choose to
+        override this in order to implement a different fatigue law.
+        """
+        return self.basquin_load(cycles, failure_probability)
+
     def basquin_cycles(self, load, failure_probability=0.5):
         """Calculate the cycles numbers from loads according to the Basquin equation.
 
@@ -165,7 +214,6 @@ class WoehlerCurve(PylifeSignal):
         cycles : numpy.ndarray
             The cycle numbers at which the component fails for the given `load` values
         """
-
         transformed = self.transform_to_failure_probability(failure_probability)
 
         if hasattr(load, '__iter__'):
