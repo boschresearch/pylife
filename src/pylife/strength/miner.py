@@ -34,6 +34,7 @@ References
 __author__ = "Cedric Philip Wagner"
 __maintainer__ = "Johannes Mueller"
 
+from abc import ABC, abstractmethod
 
 import numpy as np
 import pandas as pd
@@ -44,7 +45,7 @@ from pylife.materiallaws.woehlercurve import WoehlerCurve
 import pylife.strength.solidity as SOL
 
 
-class MinerBase(WoehlerCurve):
+class MinerBase(WoehlerCurve, ABC):
     """Basic functions related to miner-rule (original).
 
     Uses the constructor of :class:`~pylife.materiallaws.WoehlerCurve`.
@@ -96,6 +97,25 @@ class MinerBase(WoehlerCurve):
         The absolute load levels of the collective are important.
         """
         return self.cycles(collective.amplitude.max()) * self.lifetime_multiple(collective)
+
+    @abstractmethod
+    def lifetime_multiple(self, collective):
+        """Compute the lifetime multiple according to the corresponding Miner rule.
+
+        Needs to be implemented in the class implementing the Miner rule.
+
+        Parameters
+        ----------
+        collective : :class:`~pylife.stress.rainflow.RainflowCollective` or similar
+            The load collective
+
+        Returns
+        -------
+        lifetime_multiple : float > 0
+            lifetime multiple
+        """
+
+        pass
 
 
 @pd.api.extensions.register_series_accessor('gassner_miner_elementary')
