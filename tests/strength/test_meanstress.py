@@ -85,17 +85,6 @@ def test_FKM_goodman_single_M_sm():
     np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
 
-@pytest.mark.skip(reason="cyclic signal gone")
-def test_FKM_goodman_single_M_R():
-    cyclic_signal = goodman_signal_r()
-    M = 0.5
-
-    R_goal = -1.
-
-    res = cyclic_signal.meanstress_transform.FKM_goodman(pd.Series({ 'M':M, 'M2':M/3 }), R_goal).amplitude
-    np.testing.assert_array_almost_equal(res, np.ones_like(res))
-
-
 def test_FKM_goodman_multiple_M_sm():
     cyclic_signal = goodman_signal_sm()
     cyclic_signal.index.name = 'element_id'
@@ -104,16 +93,6 @@ def test_FKM_goodman_multiple_M_sm():
     R_goal = -1.
     haigh = pd.DataFrame({'M':[M]*7, 'M2':[M/3]*7})
     res = cyclic_signal.meanstress_transform.FKM_goodman(haigh, R_goal).amplitude
-    np.testing.assert_array_almost_equal(res, np.ones_like(res))
-
-
-@pytest.mark.skip(reason="cyclic signal gone")
-def test_FKM_goodman_multiple_M_sm_R():
-    cyclic_signal = goodman_signal_r()
-    M = 0.5
-
-    R_goal = -1.
-    res = cyclic_signal.meanstress_transform.FKM_goodman(pd.DataFrame({ 'M':[M]*7, 'M2':[M/3]*7, }), R_goal).range
     np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
 
@@ -195,27 +174,6 @@ def test_five_segment_single_M_backwards(Sm, Sa):
     }), R_goal)
 
     np.testing.assert_array_almost_equal(res.amplitude, Sa)
-
-
-@pytest.mark.skip(reason="cyclic signal gone")
-def test_five_segment_single_M_R():
-    cyclic_signal = five_segment_signal_r()
-    M0 = 0.5
-    M1 = M0/3.
-    M2 = M0/6.
-    M3 = 1.
-    M4 = -2.
-
-    R12 = 2./5.
-    R23 = 4./5.
-
-    R_goal = -1.
-
-    res = cyclic_signal.meanstress_transform.five_segment(pd.Series({
-        'M0': M0, 'M1': M1, 'M2': M2, 'M3': M3, 'M4': M4,
-        'R12': R12, 'R23': R23
-    }), R_goal).range
-    np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
 
 def test_five_segment_multiple_M_sm():
