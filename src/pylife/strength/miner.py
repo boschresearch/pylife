@@ -67,8 +67,13 @@ class MinerBase(WoehlerCurve):
 
         Parameters
         ----------
-        A : float or np.ndarray (with 1 element)
+        collective : a load collective
             the multiple of the lifetime
+
+        Returns
+        -------
+        effective_damage_sum : float or :class:`pandas.Series`
+            The effective damage sums for the collective
         """
         A = self.lifetime_multiple(collective)
         return effective_damage_sum(A)
@@ -123,6 +128,11 @@ class MinerElementary(MinerBase):
         ----------
         collective : :class:`~pylife.stress.rainflow.RainflowCollective` or similar
             The load collective
+
+        Returns
+        -------
+        lifetime_multiple : float > 0
+            lifetime multiple
         """
         return 1. / SOL.haibach(collective, self.k_1)
 
