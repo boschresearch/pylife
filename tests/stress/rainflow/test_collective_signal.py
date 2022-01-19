@@ -46,6 +46,7 @@ def test_rainflow_collective_signal_amplitude_from_to(df, expected):
     expected_cycles = pd.Series(1.0, name='cycles', index=df.index)
     pd.testing.assert_series_equal(df.rainflow.cycles, expected_cycles)
 
+
 @pytest.mark.parametrize('df, expected', [
     (
         pd.DataFrame(columns=[1, 2], dtype=np.float64),
@@ -67,7 +68,6 @@ def test_rainflow_collective_signal_mean_from_to(df, expected):
 
     expected_cycles = pd.Series(1.0, name='cycles', index=df.index)
     pd.testing.assert_series_equal(df.rainflow.cycles, expected_cycles)
-
 
 
 @pytest.mark.parametrize('df, expected_upper, expected_lower', [
@@ -291,3 +291,89 @@ def test_rainflow_collective_signal_mean_range_shift_scalar(df, expected_amplitu
     scaled = df.rainflow.shift(2.0)
     pd.testing.assert_series_equal(scaled.amplitude, expected_amplitude)
     pd.testing.assert_series_equal(scaled.meanstress, expected_mean)
+
+
+@pytest.mark.parametrize('bins, expected_index_tuples, expected_data', [
+    ([0, 1, 2, 3], [(0, 1), (1, 2), (2, 3)], [0, 2, 1]),
+    ([1, 2, 3], [(1, 2), (2, 3)], [2, 1])
+])
+def test_rainflow_collective_signal_range_histogram_alter_bins(bins, expected_index_tuples, expected_data):
+    df = pd.DataFrame({
+        'range': [1., 2., 1.],
+        'mean': [0, 0, 0]
+    }, columns=['range', 'mean'])
+
+    expected = pd.Series(expected_data,
+                         name='cycles',
+                         index=pd.IntervalIndex.from_tuples(expected_index_tuples, name='range'))
+
+    result = df.rainflow.range_histogram(bins)
+
+    pd.testing.assert_series_equal(result.to_pandas(), expected)
+
+
+def test_rainflow_collective_signal_range_histogram_alter_ranges():
+    df = pd.DataFrame({
+        'range': [1., 2., 1., 2., 1],
+        'mean': [0, 0, 0, 0, 0]
+    }, columns=['range', 'mean'])
+
+    expected_index = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)], name='range')
+    expected = pd.Series([0, 3, 2], name='cycles', index=expected_index)
+
+    result = df.rainflow.range_histogram([0, 1, 2, 3])
+
+    pd.testing.assert_series_equal(result.to_pandas(), expected)
+
+
+def test_rainflow_collective_signal_range_histogram_interval_index():
+    df = pd.DataFrame({
+        'range': [1., 2., 1., 2., 1],
+        'mean': [0, 0, 0, 0, 0]
+    }, columns=['range', 'mean'])
+
+    expected_index = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)], name='range')
+    expected = pd.Series([0, 3, 2], name='cycles', index=expected_index)
+
+    result = df.rainflow.range_histogram(expected_index)
+
+    pd.testing.assert_series_equal(result.to_pandas(), expected)
+
+
+def test_rainflow_collective_signal_range_histogram_unnested_grouped():
+    element_idx = pd.Index([10, 20, 30], name='element_id')
+    cycle_idx = pd.Index([0, 1, 2], name='cycle_number')
+    idx = pd.MultiIndex.from_product((element_idx, cycle_idx))
+
+    df = pd.DataFrame({
+        'range': [1., 2., 1., 2., 1., 2., 1., 1., 1],
+        'mean': [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    }, columns=['range', 'mean'], index=idx)
+
+    expected_intervals = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)], name='range')
+    expected_index = pd.MultiIndex.from_product([element_idx, expected_intervals])
+    expected = pd.Series([0, 2, 1, 0, 1, 2, 0, 3, 0], name='cycles', index=expected_index)
+
+    result = df.rainflow.range_histogram([0, 1, 2, 3], 'cycle_number')
+
+    pd.testing.assert_series_equal(result.to_pandas(), expected)
+
+
+def test_rainflow_collective_signal_range_histogram_nested_grouped():
+    element_idx = pd.Index([10, 20], name='element_id')
+    node_idx = pd.Index([100, 101], name='node_id')
+    cycle_idx = pd.Index([0, 1], name='cycle_number')
+    idx = pd.MultiIndex.from_product((element_idx, node_idx, cycle_idx))
+
+    df = pd.DataFrame({
+        'range': [1., 2., 1., 2., 1., 2., 1., 1.],
+        'mean': [0, 0, 0, 0, 0, 0, 0, 0]
+    }, columns=['range', 'mean'], index=idx)
+
+    expected_intervals = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)], name='range')
+    expected_index = pd.MultiIndex.from_product([element_idx, node_idx, expected_intervals])
+    expected = pd.Series([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 2, 0], name='cycles', index=expected_index)
+
+    result = df.rainflow.range_histogram([0, 1, 2, 3], 'cycle_number')
+
+    pd.testing.assert_series_equal(result.to_pandas(), expected)

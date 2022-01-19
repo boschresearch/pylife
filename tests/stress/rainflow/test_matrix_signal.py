@@ -490,3 +490,32 @@ def test_rainflow_range_mean_shift_series(rainflow_matrix_range_mean):
 
     assert isinstance(shiftd, pylife.stress.rainflow.RainflowMatrix)
     pd.testing.assert_series_equal(shiftd.to_pandas(), expected)
+
+
+@pytest.mark.parametrize('range_interval', [
+    (pd.interval_range(0., 12., 3)),
+    (pd.interval_range(0., 6., 3))
+])
+def test_rainflow_cumulative_range_only_range(range_interval):
+    idx = pd.IntervalIndex(range_interval, name='range')
+    result = pd.Series(1, index=idx).rainflow.cumulated_range()
+
+    expected = pd.Series([1, 1, 1], name='cumulated_cycles', index=idx)
+
+    pd.testing.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize('range_interval', [
+    (pd.interval_range(0., 12., 3)),
+    (pd.interval_range(0., 6., 3))
+])
+def test_rainflow_cumulative_range_range_mean(range_interval):
+    range_idx = pd.IntervalIndex(range_interval, name='range')
+    mean_idx = pd.IntervalIndex(pd.interval_range(0., 1., 3), name='mean')
+    idx = pd.MultiIndex.from_product([range_idx, mean_idx])
+    print(pd.Series(1, index=idx))
+    result = pd.Series(1, index=idx).rainflow.cumulated_range()
+
+    expected = pd.Series([1, 2, 3, 1, 2, 3, 1, 2, 3], name='cumulated_cycles', index=idx)
+
+    pd.testing.assert_series_equal(result, expected)
