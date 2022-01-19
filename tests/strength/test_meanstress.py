@@ -187,7 +187,7 @@ def test_five_segment_single_M_backwards(Sm, Sa):
     R12 = 2./5.
     R23 = 4./5.
 
-    R_goal = ((Sm-Sa)/(Sm+Sa))[0]
+    R_goal = -np.inf if Sm+Sa == 0 else ((Sm-Sa)/(Sm+Sa))[0]
 
     res = cyclic_signal.meanstress_transform.five_segment(pd.Series({
         'M0': M0, 'M1': M1, 'M2': M2, 'M3': M3, 'M4': M4,
