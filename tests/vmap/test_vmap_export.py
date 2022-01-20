@@ -368,3 +368,8 @@ def test_export_import_round_robin(tmpdir, filename):
                        .to_frame())
 
     pd.testing.assert_frame_equal(mesh, reimported_mesh)
+
+
+def test_os_error_on_open_file():
+    with pytest.raises(FileNotFoundError):
+        self._export = vmap.VMAPExport(os.path.join("/some/most/probably/not/existing/path", "test.vmap"))

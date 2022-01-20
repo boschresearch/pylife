@@ -108,8 +108,7 @@ class VMAPExport:
         except OSError as error:
             if os.path.exists(self._file_name):
                 os.remove(self._file_name)
-            raise VMAPExportError('An error occurred while creating file %s: %s'
-                                  % (self._file_name, error.strerror))
+            raise
 
     @property
     def file_name(self):
