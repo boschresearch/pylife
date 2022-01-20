@@ -190,6 +190,12 @@ class TestExport(unittest.TestCase):
         with pytest.raises(TypeError, match=re.escape('Invalid set name (must be a string).')):
             self._export.add_element_set(geometry_name, elemment_set, self._mesh, invalid_name)
 
+    def test_add_element_set_invalid_geometry_name(self):
+        geometry_name = 'foo'
+        elemment_set = pd.Index([1, 2, 3])
+        with pytest.raises(KeyError, match=re.escape('No geometry with the name foo')):
+            self._export.add_element_set(geometry_name, elemment_set, self._mesh, 'ALL')
+
     def test_add_variable(self):
         state_name = 'STATE-2'
         state_full_path = 'VMAP/VARIABLES/%s' % state_name
