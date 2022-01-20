@@ -16,7 +16,7 @@ class TestExport(unittest.TestCase):
     def setUp(self):
         self._tmp_dir = tempfile.mkdtemp()
         self._export = vmap.VMAPExport(os.path.join(self._tmp_dir, 'test.vmap'))
-        self._import_expected = vmap.VMAPImport('tests/vmap/testfiles/beam_2d_squ_lin.vmap')
+        self._import_expected = vmap.VMAPImport(os.path.join(os.path.dirname(__file__),'testfiles/beam_2d_squ_lin.vmap'))
         self._mesh = (self._import_expected.make_mesh('1', 'STATE-2')
                       .join_coordinates()
                       .join_variable('DISPLACEMENT')
