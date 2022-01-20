@@ -60,6 +60,12 @@ class TestExport(unittest.TestCase):
         with h5py.File(self._export.file_name, 'r') as file:
             assert file[geometry_path].attrs['MYNAME'] == name
 
+    def test_set_invalid_geometry_name(self):
+        geometry_path = 'INVALID'
+        name = 'PART-1-1'
+        with pytest.raises(KeyError, match='VMAP object INVALID does not exist.'):
+            self._export.set_group_attribute(geometry_path, 'MYNAME', name)
+
     def test_add_dataset(self):
         self._export.add_integration_types(RD.integration_type_content)
         dataset_name = 'INTEGRATIONTYPES'
@@ -168,8 +174,21 @@ class TestExport(unittest.TestCase):
     def test_add_node_set_invalid(self):
         geometry_name = '1'
         invalid_node_set = pd.Index([17, 18, 19])
-        with self.assertRaises(KeyError):
+        with pytest.raises(KeyError, match='Provided index set is not a subset of the node indices.'):
             self._export.add_node_set(geometry_name, invalid_node_set, self._mesh, 'ALL')
+
+    def test_add_element_set_invalid(self):
+        geometry_name = '1'
+        invalid_elemment_set = pd.Index([17, 18, 19])
+        with pytest.raises(KeyError, match='Provided index set is not a subset of the element indices.'):
+            self._export.add_element_set(geometry_name, invalid_elemment_set, self._mesh, 'ALL')
+
+    def test_add_element_set_invalid_name(self):
+        geometry_name = '1'
+        elemment_set = pd.Index([1, 2, 3])
+        invalid_name = 123
+        with pytest.raises(TypeError, match=re.escape('Invalid set name (must be a string).')):
+            self._export.add_element_set(geometry_name, elemment_set, self._mesh, invalid_name)
 
     def test_add_variable(self):
         state_name = 'STATE-2'
@@ -249,13 +268,21 @@ class TestExport(unittest.TestCase):
         state_name = 'STATE-2'
         geometry_name = '1'
         variable_name = 'DISPLACEMENT'
-        with self.assertRaises(KeyError):
+        with pytest.raises(vmap.APIUseError,
+                           match=re.escape(
+                               "location parameter needs to be of type VariableLocations.")):
             self._export.add_variable(state_name, geometry_name, variable_name, self._mesh,
                                       column_names=['dx', 'dy', 'dz'], location=4)
         with vmap.VMAPImport(self._export.file_name) as import_actual:
             variable = import_actual.try_get_vmap_object(
                 'VMAP/VARIABLES/%s/%s/%s' % (state_name, geometry_name, variable_name))
             assert variable is None
+
+    def test_variable_location_displacement(self):
+        assert self._export.variable_location('DISPLACEMENT') == structures.VariableLocations.NODE
+
+    def test_variable_location_stress_cauchy(self):
+        assert self._export.variable_location('STRESS_CAUCHY') == structures.VariableLocations.ELEMENT_NODAL
 
     def test_add_variable_already_exists(self):
         state_name = 'STATE-2'
