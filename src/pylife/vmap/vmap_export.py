@@ -105,7 +105,7 @@ class VMAPExport:
             with h5py.File(file_name, 'w') as file:
                 self._create_fundamental_groups(file)
             self._dimension = 2
-        except OSError as error:
+        except OSError:
             if os.path.exists(self._file_name):
                 os.remove(self._file_name)
             raise
