@@ -1,0 +1,7 @@
+{
+    "path": "../../demos/local_stress_with_FE.ipynb",
+    "extra-media": [
+	"../../demos/plate_with_hole.vmap",
+	"../../demos/collectives.p"
+    ]
+}
