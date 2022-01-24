@@ -27,15 +27,33 @@ class FKMDetector(AbstractDetector):
     """Rainflow detector as described in FKM non linear.
 
     The algorithm has been published by Clormann & Seeger 1985 and has
-    been cited havily since.
+    been cited heavily since.
 
-    See the `here <subsection_FKM_>`_ in the demo for an example.
+    .. jupyter-execute::
+
+        from pylife.stress.timesignal import TimeSignalGenerator
+        import pylife.stress.rainflow as RF
+
+        ts = TimeSignalGenerator(10, {
+            'number': 50,
+            'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
+            'frequency_median': 4, 'frequency_std_dev': 3,
+            'offset_median': 0, 'offset_std_dev': 0.4}, None, None).query(10000)
+
+        rfc = RF.FKMDetector(recorder=RF.LoopValueRecorder())
+        rfc.process(ts)
+
+        rfc.recorder.collective
+
+    Alternatively you can ask the recorder for a histogram matrix:
+
+    .. jupyter-execute::
+
+        rfc.recorder.matrix_series(bins=16)
 
     Note
     ----
     This detector **does not** report the loop index.
-
-    .. _subsection_FKM: ../demos/rainflow.ipynb#Algorithm-recommended-by-FKM-non-linear
     """
 
     def __init__(self, recorder):
@@ -78,6 +96,8 @@ class FKMDetector(AbstractDetector):
             loop_assumed = True
             while loop_assumed:
                 iz = len(self._residuals)
+                if iz < ir:
+                    break
                 loop_assumed = False
                 if iz > ir:
                     last0 = self._residuals[-1]
@@ -88,9 +108,9 @@ class FKMDetector(AbstractDetector):
                         self._residuals.pop()
                         if np.abs(last0) < max_turn and np.abs(last1) < max_turn:
                             loop_assumed = True
-                elif iz == ir:
-                    if np.abs(current) > max_turn:
-                        ir += 1
+                    continue
+                if np.abs(current) > max_turn:
+                    ir += 1
             max_turn = max(np.abs(current), max_turn)
             self._residuals.append(current)
 

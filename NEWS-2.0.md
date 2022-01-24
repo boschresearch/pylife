@@ -76,6 +76,11 @@ to `docs`.  Both are the common locations for Python 3.x packages.
       ...
   ```
 
+* The name of a rainflow matrix series is no longer `frequency` but `cycles`.
+
+* The names of the functions `scatteringRange2std` and `std2scatteringRange`
+  have been adjusted to the naming conventions and are now
+  `scattering_range_to_std` and `std_to_scattering_range`.
 
 ## Variable names
 

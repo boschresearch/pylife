@@ -1,0 +1,75 @@
+name: Build odbserver and upload to PyPI
+
+on:
+  release:
+    type: [published]
+
+defaults:
+  run:
+    working-directory: tools/odbserver
+
+jobs:
+  build_wheels:
+    name: Build wheels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v2
+        name: Install Python
+        with:
+          python-version: '3.8'
+
+      - name: Install setuptools
+        run: |
+          pip install -U setuptools setuptools_scm wheel
+      - name: Build wheels
+        run: |
+          python setup.py bdist_wheel
+      - uses: actions/upload-artifact@v2
+        with:
+          path: tools/odbserver/dist/*.whl
+
+
+  build_sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v2
+        name: Install Python
+        with:
+          python-version: '3.8'
+
+      - name: Install setuptools
+        run: |
+          pip install -U setuptools setuptools_scm wheel
+
+      - name: Build sdist
+        run: python setup.py sdist
+
+      - uses: actions/upload-artifact@v2
+        with:
+          path: tools/odbserver/dist/*.tar.gz
+
+  upload_pypi:
+    needs: [build_wheels, build_sdist]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: artifact
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.upload_pypi }}
+          #password: ${{ secrets.test_pypi }}
+          #repository_url: https://test.pypi.org/legacy/

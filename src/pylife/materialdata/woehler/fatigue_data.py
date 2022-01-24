@@ -18,7 +18,7 @@ import pandas as pd
 import numpy as np
 import scipy.stats as stats
 
-from pylife.utils.functions import scatteringRange2std
+from pylife.utils.functions import scattering_range_to_std
 
 from pylife import PylifeSignal
 from pylife import DataValidator

@@ -25,6 +25,7 @@ Strength
 .. toctree::
    :maxdepth: 2
 
+   strength/fatigue
    strength/meanstress
    strength/failure_probability
    strength/miner
@@ -36,6 +37,7 @@ Materiallaws
 .. toctree::
    :maxdepth: 2
 
+   materiallaws/hookeslaw
    materiallaws/rambgood
    materiallaws/woehlercurve
    materiallaws/true_stress_strain

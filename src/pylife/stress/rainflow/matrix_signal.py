@@ -17,45 +17,62 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
+
+from abc import ABC, abstractmethod
+
 import pandas as pd
 import numpy as np
 
 from pylife import PylifeSignal
 
+from .abstract_load_collective import AbstractLoadCollective
+
+
 @pd.api.extensions.register_series_accessor('rainflow')
-class RainflowMatrix(PylifeSignal):
+class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
 
     def _validate(self):
         self._class_location = 'mid'
         if 'range' in self._obj.index.names:
+            self._fail_if_not_multiindex(['range', 'mean'])
+            self._impl = _RangeMeanMatrix(self._obj)
             return
         if 'from' in self._obj.index.names and 'to' in self._obj.index.names:
+            self._fail_if_not_multiindex(['from', 'to'])
+            self._impl = _FromToMatrix(self._obj)
             return
+
         raise AttributeError("Rainflow needs either 'range'/('mean') or 'from'/'to' in index levels.")
+
+    def _fail_if_not_multiindex(self, index_names):
+        for name in index_names:
+            if name not in self._obj.index.names:
+                continue
+            if not isinstance(self._obj.index.get_level_values(name), pd.IntervalIndex):
+                raise AttributeError("Index of a rainflow matrix must be pandas.IntervalIndex.")
 
     @property
     def amplitude(self):
-        if 'range' in self._obj.index.names:
-            rng = getattr(self._obj.index.get_level_values('range'), self._class_location)
-        else:
-            fr = getattr(self._obj.index.get_level_values('from'), self._class_location).values
-            to = getattr(self._obj.index.get_level_values('to'), self._class_location).values
-            rng = np.abs(fr-to)
-
+        rng = self._impl.amplitude()
         return pd.Series(rng/2., name='amplitude', index=self._obj.index)
 
     @property
-    def frequency(self):
-        freq = self._obj.copy()
-        freq.name = 'frequency'
-        return freq
+    def meanstress(self):
+        mean = self._impl.meanstress()
+        return pd.Series(mean, name='meanstress', index=self._obj.index)
+
+    @property
+    def cycles(self):
+        cycles = self._obj.copy()
+        cycles.name = 'cycles'
+        return cycles
 
     def use_class_right(self):
-        self._class_location = 'right'
+        self._impl._class_location = 'right'
         return self
 
     def use_class_left(self):
-        self._class_location = 'left'
+        self._impl._class_location = 'left'
         return self
 
     def scale(self, factors):
@@ -67,7 +84,7 @@ class RainflowMatrix(PylifeSignal):
     def _shift_or_scale(self, func, operand, skip=[]):
         def do_transform_interval_index(level_name):
             level = obj.index.get_level_values(level_name)
-            if level.name not in self._obj.index.names or level_name in skip:
+            if level.name not in self._impl.index_names or level_name in skip:
                 return level
             values = level.values
             left = func(values.left, operand_broadcast)
@@ -81,4 +98,55 @@ class RainflowMatrix(PylifeSignal):
         levels = [do_transform_interval_index(lv) for lv in obj.index.names]
 
         new_index = pd.MultiIndex.from_arrays(levels, names=obj.index.names)
-        return pd.Series(obj.values, index=new_index, name='frequency')
+        return pd.Series(obj.values, index=new_index, name='cycles')
+
+    def cumulated_range(self):
+        return pd.Series(self._obj.groupby('range').transform(lambda g: np.cumsum(g)),
+                         name='cumulated_cycles')
+
+class _RainflowMatrixImpl(ABC):
+
+    @property
+    @abstractmethod
+    def index_names(self):
+        return set([])
+
+    def __init__(self, obj):
+        self._obj = obj
+        self._class_location = 'mid'
+
+
+class _FromToMatrix(_RainflowMatrixImpl):
+
+    @property
+    def index_names(self):
+        return set(['from', 'to'])
+
+    def _from_tos(self):
+        fr = getattr(self._obj.index.get_level_values('from'), self._class_location).values
+        to = getattr(self._obj.index.get_level_values('to'), self._class_location).values
+        return fr, to
+
+    def amplitude(self):
+        fr, to = self._from_tos()
+        return np.abs(fr-to)
+
+    def meanstress(self):
+        fr, to = self._from_tos()
+        return (fr+to) / 2.
+
+
+class _RangeMeanMatrix(_RainflowMatrixImpl):
+
+    @property
+    def index_names(self):
+        return set(['range', 'mean'])
+
+    def amplitude(self):
+        return getattr(self._obj.index.get_level_values('range'), self._class_location)
+
+    def meanstress(self):
+        if 'mean' not in self._obj.index.names:
+            return np.zeros_like(self._obj)
+
+        return getattr(self._obj.index.get_level_values('mean'), self._class_location)

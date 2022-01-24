@@ -17,13 +17,16 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
+from .abstract_load_collective import AbstractLoadCollective
+
 import pandas as pd
 import numpy as np
 
 from pylife import PylifeSignal
+from pylife.stress.rainflow import RainflowMatrix
 
 @pd.api.extensions.register_dataframe_accessor('rainflow')
-class RainflowCollective(PylifeSignal):
+class RainflowCollective(PylifeSignal, AbstractLoadCollective):
     """A Rainflow collective.
 
     The usual use of this signal is to process hysteresis loop data from a
@@ -62,7 +65,7 @@ class RainflowCollective(PylifeSignal):
         return pd.Series(rng/2., name='amplitude', index=self._obj.index)
 
     @property
-    def mean(self):
+    def meanstress(self):
         """Calculate the mean load values of the load collective.
 
         Returns
@@ -72,41 +75,15 @@ class RainflowCollective(PylifeSignal):
         """
         fr = self._obj['from']
         to = self._obj['to']
-        return pd.Series((fr+to)/2., name='mean')
+        return pd.Series((fr+to)/2., name='meanstress')
 
     @property
-    def upper(self):
-        """Calculate the upper load values of the load collective.
-
-        Returns
-        -------
-        upper : pd.Series
-            The upper load values of the load collective
-        """
-        res = self._obj.max(axis=1)
-        res.name = 'upper'
-        return res
-
-    @property
-    def lower(self):
-        """Calculate the lower load values of the load collective.
-
-        Returns
-        -------
-        lower : pd.Series
-            The lower load values of the load collective
-        """
-        res = self._obj.min(axis=1)
-        res.name = 'lower'
-        return res
-
-    @property
-    def frequency(self):
-        """The frequency of each member of the collective is 1.0.
+    def cycles(self):
+        """The cycles of each member of the collective is 1.0.
 
         This is for compatibility with :class:`pylife.stress.rainflow.RainflowMatrix`
         """
-        return 1.0
+        return pd.Series(1.0, name='cycles', index=self._obj.index)
 
     def scale(self, factors):
         """Scale the collective.
@@ -129,3 +106,36 @@ class RainflowCollective(PylifeSignal):
         """
         diffs, obj = self.broadcast(diffs)
         return obj.add(diffs, axis=0).rainflow
+
+    def range_histogram(self, bins, axis=None):
+        """Calculate the histogram of range values along a given axis.
+
+        Parameters
+        ----------
+        bins : int, sequence of scalars or pd.IntervalIndex
+            The bins of the histogram to be calculated
+
+        Returns
+        -------
+        range histogram : :class:`pylife.rainflow.RainflowMatrix`
+
+        axis : str, optional
+            The index axis along which the histogram is calculated. If missing
+            the histogram is calculated over the whole collective.
+        """
+        def make_histogram(group):
+            cycles, intervals = np.histogram(group * 2., bins)
+            idx = pd.IntervalIndex.from_breaks(intervals, name='range')
+            return pd.Series(cycles, index=idx, name='cycles')
+
+        if isinstance(bins, pd.IntervalIndex):
+            bins = np.append(bins.left[0], bins.right)
+
+        if axis is None:
+            return RainflowMatrix(make_histogram(self.amplitude))
+
+        result = pd.Series(self.amplitude
+                           .groupby(self._obj.index.droplevel(axis).names)
+                           .apply(make_histogram), name='cycles')
+
+        return RainflowMatrix(result)

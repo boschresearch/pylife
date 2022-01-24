@@ -37,7 +37,6 @@ class psdSignal:
     def rms_psd(self):
         f  = np.logspace(np.log10(self.index.values.min()),np.log10(
                               self.index.values.max()),2048)
-        # f  = np.linspace(self.index.values.min(),self.index.values.max(),2048)
         psd = pd.DataFrame()
         for colact in self.columns:
             psd[colact] = np.interp(f,self.index.values,self[colact])
@@ -47,11 +46,11 @@ class psdSignal:
     def _intMinlog(self,psdin,fsel,factor_rms_nods):
         self_rms_df = pd.DataFrame(data = 10**np.interp(psdin.index.values, fsel,np.log10(self)),
                                                     index = psdin.index.values)
-        Ysel =  np.interp(fsel,psdin.index.values,psdin.values.flatten())
+        ysel =  np.interp(fsel, psdin.index.values, psdin.values.flatten())
         rms_in = psdSignal.rms_psd(psdin).values
         rms_smooth = psdSignal.rms_psd(self_rms_df).values
         eps1 = (rms_in-rms_smooth)**2/rms_in**2
-        eps2 =  np.dot(np.log10(Ysel/self),np.log10(Ysel/self))/np.dot(np.log10(Ysel),np.log10(Ysel))
+        eps2 =  np.dot(np.log10(ysel/self),np.log10(ysel/self))/np.dot(np.log10(ysel),np.log10(ysel))
         return factor_rms_nods*eps1+(1-factor_rms_nods)*eps2
 
 
@@ -88,14 +87,11 @@ class psdSignal:
             df_in = pd.DataFrame(data = np.interp(f,self.index.values,self[colact]),
                                  index = f)
             Hi0 = 10**(np.interp(fsel,f,np.log10(df_in.values.flatten())))
-            # Hi = op.fmin(psdSignal._intMinlog,Hi0,args=(df_in,fsel,factor_rms_nodes),disp = 0)
             lim = np.array([df_in.values.min()*np.ones_like(fsel),
                             np.array(df_in.values.max()*np.ones_like(fsel))]).T
 
             Hi = op.minimize(psdSignal._intMinlog,x0 = Hi0,bounds = tuple(map(tuple, lim)),
                              args=(df_in,fsel,factor_rms_nodes))
             opt_df[colact] =  10**np.interp(fout,fsel,np.log10(Hi.x))
-
-        # opt_df.index = f
         opt_df.index = fout
         return opt_df

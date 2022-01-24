@@ -142,7 +142,7 @@ load_hist_1 = pd.Series([
     8.0,
     0.0,
     0.0,
-], name='frequency', index=load_index())
+], name='cycles', index=load_index())
 
 load_hist_2 = pd.Series([
     1.114E5,
@@ -153,7 +153,7 @@ load_hist_2 = pd.Series([
     63.0,
     24.0,
     1.0,
-], name='frequency', index=load_index())
+], name='cycles', index=load_index())
 
 load_hist_3 = pd.Series([
     1.829E5,
@@ -164,7 +164,7 @@ load_hist_3 = pd.Series([
     0.0,
     0.0,
     0.0
-], name='frequency', index=load_index())
+], name='cycles', index=load_index())
 
 
 @pytest.mark.parametrize('load_hist, expected', [
@@ -209,28 +209,30 @@ def test_security_load_single(TS, allowed_pf, expected):
         'TS': TS,
         'ND': 1e6
     })
-    load_signal = pd.DataFrame({'sigma_m': [0.0], 'sigma_a': [100.0]})
-    security_factor = wc.fatigue.security_load(load_signal, 1e7, allowed_pf)
+    load_collective = pd.DataFrame({'mean': [0.0], 'amplitude': [100.0], 'cycles': 1e7})
+    security_factor = wc.fatigue.security_load(load_collective, allowed_pf)
     np.testing.assert_allclose(security_factor, expected)
 
 
 def test_security_load_multiple():
+    idx = pd.Index([1, 2, 3], name='element_id')
     wc = pd.DataFrame({
         'SD': [500., 500., 300.],
         'k_1': [6., 6., 6.],
         'TS': [2., 1.0000001, 1.25],
         'ND': [1e6, 1e6, 1e6]
-    })
+    }, index=idx)
     load_signal = pd.DataFrame({
-        'sigma_m': [0., 0., 0.],
-        'sigma_a': [250., 125.,  100.]
-    })
-    expected = [2.0, 4.0, 3.0]
+        'mean': [0., 0., 0.],
+        'amplitude': [250., 125.,  100.],
+        'cycles': [1e7, 1e7, 1e7]
+    }, index=idx)
 
-    result = wc.fatigue.security_load(load_signal, 1e7, 0.5)
+    expected = pd.Series([2.0, 4.0, 3.0], index=idx, name='security_factor')
+    result = wc.fatigue.security_load(load_signal, 0.5)
 
-    print(result)
-    np.testing.assert_allclose(result, expected)
+    pd.testing.assert_series_equal(result, expected)
+
 
 
 @pytest.mark.parametrize('TN, allowed_pf, cycles, expected', [
@@ -240,13 +242,33 @@ def test_security_load_multiple():
     (4., 1e-6, 1e4, 7.65),
     (4., 1e-6, 1e3, 76.5),
 ])
-def test_security_cycles(TN, allowed_pf, cycles, expected):
+def test_security_cycles_single(TN, allowed_pf, cycles, expected):
     wc = pd.Series({
         'SD': 500.,
         'k_1': 0.5,
         'TN': TN,
         'ND': 1e6
     })
-    load_signal = pd.DataFrame({'sigma_m': [0.0], 'sigma_a': [500.0]})
-    security_factor = wc.fatigue.security_cycles(cycles, load_signal, allowed_pf)
+    load_collective = pd.DataFrame({'mean': [0.0], 'amplitude': [500.0], 'cycles': [cycles]})
+    security_factor = wc.fatigue.security_cycles(load_collective, allowed_pf)
     np.testing.assert_allclose(security_factor, expected, rtol=1e-3)
+
+
+def test_security_cycles_multiple():
+    idx = pd.Index([1, 2, 3], name='element_id')
+    wc = pd.DataFrame({
+        'SD': [500., 500., 500.],
+        'k_1': [.5, .5, .5],
+        'TN': [4., 4., 4.],
+        'ND': [1e6, 1e6, 1e6],
+    }, index=idx)
+
+    load_collective = pd.DataFrame({
+        'amplitude': [500., 500., 500.],
+        'cycles': [1e6, 1e5, 1e4],
+    }, index=idx)
+
+    expected = pd.Series([1., 10., 100.], index=idx, name='security_factor')
+    result = wc.fatigue.security_cycles(load_collective, 0.5)
+
+    pd.testing.assert_series_equal(result, expected)

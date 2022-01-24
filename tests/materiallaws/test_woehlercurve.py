@@ -478,3 +478,43 @@ def test_woehler_miner_original_homogenious_cycles(pf):
     load = np.logspace(3., 2., 50)
     cycles = wc_data.woehler.basquin_cycles(load, failure_probability=pf)
     assert (np.diff(cycles[np.isfinite(cycles)]) > 0.).all()
+
+
+def test_broadcast_load_cycles_clashing_index():
+    """Don't know exactly what's going on there."""
+    wc = pd.DataFrame({
+        'SD': [500., 500., 300.],
+        'k_1': [6., 6., 6.],
+        'TS': [2., 1.0000001, 1.25],
+        'ND': [1e6, 1e6, 1e6]
+    })
+
+    cycles = pd.Series([1e6, 1e6, 1e6])
+
+    result = wc.woehler.basquin_load(cycles)
+    expected = pd.Series(
+        [500., 500., 500., 500., 500., 500., 300., 300., 300],
+        index=pd.MultiIndex.from_product([[0, 1, 2], [0, 1, 2]])
+    )
+
+    pd.testing.assert_series_equal(result, expected)
+
+
+from hypothesis import given, note, strategies as st
+
+@given(st.floats(min_value=10., max_value=500.),
+       st.floats(min_value=1.0, max_value=10.0),
+       st.floats(min_value=1e2, max_value=1e7),
+       st.floats(min_value=1.0, max_value=1e9))
+def test_load_is_basquin_load(SD, k_1, ND, cycles):
+    wc = WoehlerCurve.from_parameters(SD=SD, k_1=k_1, ND=ND)
+    assert wc.load(cycles) == wc.basquin_load(cycles)
+
+
+@given(st.floats(min_value=10., max_value=500.),
+       st.floats(min_value=1.0, max_value=10.0),
+       st.floats(min_value=1e2, max_value=1e7),
+       st.floats(min_value=1.0, max_value=1000.0))
+def test_cycles_is_basquin_cycles(SD, k_1, ND, load):
+    wc = WoehlerCurve.from_parameters(SD=SD, k_1=k_1, ND=ND)
+    assert wc.cycles(load) == wc.basquin_cycles(load)

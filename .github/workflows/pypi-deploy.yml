@@ -20,6 +20,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v2
         name: Install Python
@@ -28,13 +30,15 @@ jobs:
 
       - name: Install cibuildwheel
         run: |
-          python -m pip install cibuildwheel
+          #python -m pip install cibuildwheel
+          pip install -U setuptools setuptools_scm wheel
       - name: Build wheels
         run: |
-          python -m cibuildwheel --output-dir wheelhouse
+          # python -m cibuildwheel --output-dir wheelhouse
+          python setup.py bdist_wheel
       - uses: actions/upload-artifact@v2
         with:
-          path: ./wheelhouse/*.whl
+          path: ./dist/*.whl
 
 
   build_sdist:
@@ -42,11 +46,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v2
         name: Install Python
         with:
           python-version: '3.8'
+
+      - name: Install setuptools
+        run: |
+          pip install -U setuptools setuptools_scm wheel
 
       - name: Build sdist
         run: python setup.py sdist
@@ -69,5 +79,5 @@ jobs:
         with:
           user: __token__
           password: ${{ secrets.upload_pypi }}
-          # password: ${{ secrets.test_pypi }}
-          # repository_url: https://test.pypi.org/legacy/
+          #password: ${{ secrets.test_pypi }}
+          #repository_url: https://test.pypi.org/legacy/

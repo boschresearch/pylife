@@ -3,6 +3,7 @@ dependencies:
 - python >2
 - pytest
 - pytest-cov
+- hypothesis
 - flake8
 - pep8-naming
 - matplotlib
