@@ -27,12 +27,6 @@ def change_workingdir_dir(monkeypatch):
     monkeypatch.chdir('demos')
 
 
-@testbook('demos/load_collective.ipynb', execute=True)
-def test_load_collective(tb):
-    damage = tb.get("damage")
-    np.testing.assert_approx_equal(damage.sum(), 0.009127965693745597)
-
-
 @testbook('demos/hotspot_plate.ipynb', execute=True)
 def test_hotspot_plate(tb):
     tb.inject(
