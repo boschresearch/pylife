@@ -149,7 +149,7 @@ class FailureProbability:
         failure probability : numpy.ndarray or float
         '''
         if load_values.shape != load_pdf.shape:
-            raise Exception("Load values and pdf must have same dimensions.")
+            raise ValueError("Load values and pdf must have same dimensions.")
 
         strength_cdf = norm.cdf(load_values, loc=self.s_50, scale=self.s_std)
 

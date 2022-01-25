@@ -17,14 +17,19 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
+
+from abc import ABC, abstractmethod
+
 import pandas as pd
 import numpy as np
 
 from pylife import PylifeSignal
 
+from .abstract_load_collective import AbstractLoadCollective
+
 
 @pd.api.extensions.register_series_accessor('rainflow')
-class RainflowMatrix(PylifeSignal):
+class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
 
     def _validate(self):
         self._class_location = 'mid'
@@ -57,22 +62,10 @@ class RainflowMatrix(PylifeSignal):
         return pd.Series(mean, name='meanstress', index=self._obj.index)
 
     @property
-    def upper(self):
-        res = self.meanstress + self.amplitude
-        res.name = 'upper'
-        return res
-
-    @property
-    def lower(self):
-        res = self.meanstress - self.amplitude
-        res.name = 'lower'
-        return res
-
-    @property
     def cycles(self):
-        freq = self._obj.copy()
-        freq.name = 'cycles'
-        return freq
+        cycles = self._obj.copy()
+        cycles.name = 'cycles'
+        return cycles
 
     def use_class_right(self):
         self._impl._class_location = 'right'
@@ -91,7 +84,7 @@ class RainflowMatrix(PylifeSignal):
     def _shift_or_scale(self, func, operand, skip=[]):
         def do_transform_interval_index(level_name):
             level = obj.index.get_level_values(level_name)
-            if level.name not in self._obj.index.names or level_name in skip:
+            if level.name not in self._impl.index_names or level_name in skip:
                 return level
             values = level.values
             left = func(values.left, operand_broadcast)
@@ -107,14 +100,27 @@ class RainflowMatrix(PylifeSignal):
         new_index = pd.MultiIndex.from_arrays(levels, names=obj.index.names)
         return pd.Series(obj.values, index=new_index, name='cycles')
 
+    def cumulated_range(self):
+        return pd.Series(self._obj.groupby('range').transform(lambda g: np.cumsum(g)),
+                         name='cumulated_cycles')
 
-class _RainflowMatrixImpl:
+class _RainflowMatrixImpl(ABC):
+
+    @property
+    @abstractmethod
+    def index_names(self):
+        return set([])
+
     def __init__(self, obj):
         self._obj = obj
         self._class_location = 'mid'
 
 
 class _FromToMatrix(_RainflowMatrixImpl):
+
+    @property
+    def index_names(self):
+        return set(['from', 'to'])
 
     def _from_tos(self):
         fr = getattr(self._obj.index.get_level_values('from'), self._class_location).values
@@ -131,6 +137,10 @@ class _FromToMatrix(_RainflowMatrixImpl):
 
 
 class _RangeMeanMatrix(_RainflowMatrixImpl):
+
+    @property
+    def index_names(self):
+        return set(['range', 'mean'])
 
     def amplitude(self):
         return getattr(self._obj.index.get_level_values('range'), self._class_location)

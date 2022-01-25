@@ -392,6 +392,25 @@ def test_rainflow_range_mean_scale_scalar(rainflow_matrix_range_mean):
     pd.testing.assert_series_equal(scaled.to_pandas(), expected)
 
 
+def test_rainflow_range_mean_foo_scale_scalar(rainflow_matrix_range_mean):
+    foo_index = pd.Index([1, 2, 3], name='foo')
+    levels = rainflow_matrix_range_mean.index.levels
+    total_index = pd.MultiIndex.from_product([levels[0], levels[1], foo_index])
+    rainflow_matrix = pd.Series(1, index=total_index)
+
+    range_intervals = pd.interval_range(0., 6., 3)
+    mean_intervals = pd.interval_range(-1., 2., 3)
+    expected_index = pd.MultiIndex.from_product(
+        [range_intervals, mean_intervals, foo_index],
+        names=['range', 'mean', 'foo']
+    )
+    expected = pd.Series(1, index=expected_index, name='cycles')
+
+    scaled = rainflow_matrix.rainflow.scale(0.5)
+    assert isinstance(scaled, pylife.stress.rainflow.RainflowMatrix)
+    pd.testing.assert_series_equal(scaled.to_pandas(), expected)
+
+
 def test_rainflow_range_mean_scale_series(rainflow_matrix_range_mean):
     range_intervals = pd.IntervalIndex.from_arrays(
         [
@@ -471,3 +490,32 @@ def test_rainflow_range_mean_shift_series(rainflow_matrix_range_mean):
 
     assert isinstance(shiftd, pylife.stress.rainflow.RainflowMatrix)
     pd.testing.assert_series_equal(shiftd.to_pandas(), expected)
+
+
+@pytest.mark.parametrize('range_interval', [
+    (pd.interval_range(0., 12., 3)),
+    (pd.interval_range(0., 6., 3))
+])
+def test_rainflow_cumulative_range_only_range(range_interval):
+    idx = pd.IntervalIndex(range_interval, name='range')
+    result = pd.Series(1, index=idx).rainflow.cumulated_range()
+
+    expected = pd.Series([1, 1, 1], name='cumulated_cycles', index=idx)
+
+    pd.testing.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize('range_interval', [
+    (pd.interval_range(0., 12., 3)),
+    (pd.interval_range(0., 6., 3))
+])
+def test_rainflow_cumulative_range_range_mean(range_interval):
+    range_idx = pd.IntervalIndex(range_interval, name='range')
+    mean_idx = pd.IntervalIndex(pd.interval_range(0., 1., 3), name='mean')
+    idx = pd.MultiIndex.from_product([range_idx, mean_idx])
+    print(pd.Series(1, index=idx))
+    result = pd.Series(1, index=idx).rainflow.cumulated_range()
+
+    expected = pd.Series([1, 2, 3, 1, 2, 3, 1, 2, 3], name='cumulated_cycles', index=idx)
+
+    pd.testing.assert_series_equal(result, expected)

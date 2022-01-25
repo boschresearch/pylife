@@ -498,3 +498,23 @@ def test_broadcast_load_cycles_clashing_index():
     )
 
     pd.testing.assert_series_equal(result, expected)
+
+
+from hypothesis import given, note, strategies as st
+
+@given(st.floats(min_value=10., max_value=500.),
+       st.floats(min_value=1.0, max_value=10.0),
+       st.floats(min_value=1e2, max_value=1e7),
+       st.floats(min_value=1.0, max_value=1e9))
+def test_load_is_basquin_load(SD, k_1, ND, cycles):
+    wc = WoehlerCurve.from_parameters(SD=SD, k_1=k_1, ND=ND)
+    assert wc.load(cycles) == wc.basquin_load(cycles)
+
+
+@given(st.floats(min_value=10., max_value=500.),
+       st.floats(min_value=1.0, max_value=10.0),
+       st.floats(min_value=1e2, max_value=1e7),
+       st.floats(min_value=1.0, max_value=1000.0))
+def test_cycles_is_basquin_cycles(SD, k_1, ND, load):
+    wc = WoehlerCurve.from_parameters(SD=SD, k_1=k_1, ND=ND)
+    assert wc.cycles(load) == wc.basquin_cycles(load)

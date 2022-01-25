@@ -25,15 +25,11 @@ pyLife Cookbook
 
    demos/hotspot_plate.nblink
    demos/stress_gradient.nblink
-
-.. toctree::
-   :maxdepth: 1
-   :caption: VMAP IO
-
-   demos/VMAP_io.nblink
+   demos/local_stress_with_FE.nblink
 
 .. toctree::
    :maxdepth: 1
    :caption: Tools
 
    demos/psd_optimizer.nblink
+   demos/time_series_handling.nblink

@@ -572,6 +572,7 @@ all_data = [
     data_neg_res_2
 ]
 
+
 def sort_fatigue_data(fd):
     return fd.sort_values(by=['load', 'cycles']).reset_index(drop=True)
 

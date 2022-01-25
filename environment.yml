@@ -3,12 +3,14 @@ dependencies:
 - python >2
 - pytest
 - pytest-cov
+- hypothesis
 - flake8
 - pep8-naming
 - matplotlib
 - jupyter
 - pandoc
+- pytables
 - pip = 20.2
 - pip:
-  - -e .
+  - -e .[testing]
   - pyvista
