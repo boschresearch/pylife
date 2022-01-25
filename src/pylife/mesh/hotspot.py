@@ -50,7 +50,7 @@ class HotSpot(meshsignal.Mesh):
         Returns
         -------
         hotspots : pandas.Series
-            A Series of intergers with the same index of the accessed
+            A Series of integers with the same index of the accessed
             mesh object indicating which mesh point belongs to which hotspot.
             A value 0 means below the `limit_frac`.
 
