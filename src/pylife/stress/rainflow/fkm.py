@@ -94,8 +94,6 @@ class FKMDetector(AbstractDetector):
 
         from_vals = []
         to_vals = []
-        from_index = []
-        to_index = []
 
         for current in turns:
             loop_assumed = True
@@ -124,6 +122,5 @@ class FKMDetector(AbstractDetector):
             self._max_turn = max_turn
 
         self._recorder.record_values(from_vals, to_vals)
-        self._recorder.record_index(from_index, to_index)
 
         return self
