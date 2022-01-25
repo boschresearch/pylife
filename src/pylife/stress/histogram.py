@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 
 
-def combine_hist(hist_list, method='sum', nbins=64):
+def combine_hist(hist_list, method='sum', nbins=64, histtype="rf"):
     """
     Performs the combination of multiple Histograms.
 
@@ -35,6 +35,9 @@ def combine_hist(hist_list, method='sum', nbins=64):
         method: 'sum', 'min', 'max', 'mean', 'std'  default is 'sum'
     nbins: int
         number of bins of the combined histogram
+    histtype: str
+       histogram type: 'rf', 'spectrum'  default is 'rf'
+        
 
     Returns
     -------
@@ -47,13 +50,34 @@ def combine_hist(hist_list, method='sum', nbins=64):
     """
 
     hist_combined = pd.concat(hist_list)
-    index_min = hist_combined.index.left.min()
-    index_max = hist_combined.index.right.max()
-
+    if histtype == "rf":
+        from_max = np.max(hist_combined.index.get_level_values("from").right)
+        from_min = np.min(hist_combined.index.get_level_values("from").left)
+        to_max = np.max(hist_combined.index.get_level_values("to").right)
+        to_min = np.min(hist_combined.index.get_level_values("to").left)
+    
+        index_from = pd.cut(hist_combined.index.get_level_values("from").mid,
+                            np.linspace(from_min, from_max, nbins+1))
+        index_to = pd.cut(hist_combined.index.get_level_values("to").mid,
+                            np.linspace(to_min, to_max, nbins+1))
+        
+        categorial_index = [index_from, index_to]
+    else:
+        index_min = hist_combined.index.left.min()
+        index_max = hist_combined.index.right.max()
+        categorial_index = pd.cut(hist_combined.index.mid.values,
+               np.linspace(index_min, index_max, nbins+1))
+    
     kwargs = {'ddof': 0} if method == 'std' else {}
+    result = hist_combined.groupby(categorial_index).agg(method, **kwargs)
 
-    result = (hist_combined
-              .groupby(pd.cut(hist_combined.index.mid.values, np.linspace(index_min, index_max, nbins+1)))
-              .agg(method, **kwargs))
-    result.index = pd.interval_range(index_min, index_max, nbins, name='range')
+    if histtype == "rf":
+        result_index = pd.MultiIndex.from_arrays([pd.IntervalIndex(result.index.get_level_values(0)),
+                                       pd.IntervalIndex(result.index.get_level_values(1))],
+                                      names = ["from", "to"])
+    else:
+        result_index = pd.interval_range(index_min, index_max, nbins, name='range')
+    
+    result.index = result_index
+    
     return result
