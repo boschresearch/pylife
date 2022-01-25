@@ -26,25 +26,25 @@ def test_combine_hist():
     hist2 = pd.Series(np.array([12, 3, 20]), index=pd.interval_range(start=1, periods=3))
 
     expect_sum = pd.Series(np.array([5, 22, 3, 20]), index=pd.interval_range(start=0, periods=4))
-    test_sum = hi.combine_hist([hist1, hist2], method='sum', nbins=4)
+    test_sum = hi.combine_hist([hist1, hist2], method='sum', nbins=4, histtype="range")
     pd.testing.assert_series_equal(test_sum, expect_sum, check_names=False)
 
     expect_min = pd.Series(np.array([5, 3]), index=pd.interval_range(
                                   start=0, end=4, periods=2))
-    test_min = hi.combine_hist([hist1, hist2], method='min', nbins=2)
+    test_min = hi.combine_hist([hist1, hist2], method='min', nbins=2, histtype="range")
     pd.testing.assert_series_equal(test_min, expect_min, check_names=False)
 
     expect_max = pd.Series(np.array([12, 20]), index=pd.interval_range(
                                   start=0, end=4, periods=2))
-    test_max = hi.combine_hist([hist1, hist2], method='max', nbins=2)
+    test_max = hi.combine_hist([hist1, hist2], method='max', nbins=2, histtype="range")
     pd.testing.assert_series_equal(test_max, expect_max, check_names=False)
 
     expect_mean = pd.Series(np.array([9., 11.5]), index=pd.interval_range(start=0, end=4, periods=2))
-    test_mean = hi.combine_hist([hist1, hist2], method='mean', nbins=2)
+    test_mean = hi.combine_hist([hist1, hist2], method='mean', nbins=2, histtype="range")
     pd.testing.assert_series_equal(test_mean, expect_mean, check_names=False)
 
     expect_std = pd.Series(np.array([np.std(np.array([5, 10, 12])),
                                      np.std(np.array([3, 20]))]),
                            index=pd.interval_range(start=0, end=4, periods=2))
-    test_std = hi.combine_hist([hist1, hist2], method='std', nbins=2)
+    test_std = hi.combine_hist([hist1, hist2], method='std', nbins=2, histtype="range")
     pd.testing.assert_series_equal(test_std, expect_std, check_names=False)

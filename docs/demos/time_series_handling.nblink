@@ -1,0 +1,4 @@
+{
+    "path": "../../demos/time_series_handling.ipynb",
+    "extra-media": ["../../demos/helper_functions.py"]
+}
