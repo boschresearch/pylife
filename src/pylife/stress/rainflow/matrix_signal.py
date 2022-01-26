@@ -59,7 +59,8 @@ class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
     @property
     def amplitude_histogram(self):
         index = self._impl.amplitude_histogram_index()
-        return pd.Series(self._obj.values, index=index)
+        index.name = 'amplitude'
+        return pd.Series(self._obj.values, index=index, name='cycles')
 
     @property
     def meanstress(self):

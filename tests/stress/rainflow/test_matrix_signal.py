@@ -127,9 +127,10 @@ def test_rainflow_from_to_amplitude_right(rainflow_matrix_from_to):
 def test_rainflow_from_to_amplitude_histogram(rainflow_matrix_from_to, cycles_value):
     expected_index = pd.IntervalIndex.from_arrays(
         [0., 0., 2., 0., 0., 0., 4., 2., 0.],
-        [4., 6., 8., 6., 4., 4., 10., 8., 6.]
+        [4., 6., 8., 6., 4., 4., 10., 8., 6.],
+        name='amplitude'
     )
-    expected = pd.Series(cycles_value, index=expected_index)
+    expected = pd.Series(cycles_value, index=expected_index, name='cycles')
     matrix = rainflow_matrix_from_to * cycles_value
 
     result = matrix.rainflow.amplitude_histogram
@@ -334,7 +335,8 @@ def test_rainflow_range_mean_amplitude_right(rainflow_matrix_range_mean):
 def test_rainflow_rainge_mean_amplitude_histogram(rainflow_matrix_range_mean):
     expected_index = pd.IntervalIndex.from_arrays(
         [0., 0., 0., 2., 2., 2., 4., 4., 4.],
-        [2., 2., 2., 4., 4., 4., 6., 6., 6.]
+        [2., 2., 2., 4., 4., 4., 6., 6., 6.],
+        name='amplitude'
     )
     result = rainflow_matrix_range_mean.rainflow.amplitude_histogram
 
