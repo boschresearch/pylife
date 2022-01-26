@@ -56,43 +56,43 @@ def five_segment_signal_r():
     return pd.DataFrame({'range': 2.*Sa, 'R': R })
 
 
-def test_FKM_goodman_plain_sm():
+def test_fkm_goodman_plain_sm():
     cyclic_signal = goodman_signal_sm()
     Sa = cyclic_signal['range'].to_numpy()/2.
     Sm = cyclic_signal['mean'].to_numpy()
     M = 0.5
 
 #    R_goal = 1.
-#    testing.assert_raises(ValueError, MST.FKM_goodman, Sa, Sm, M, M/3, R_goal)
+#    testing.assert_raises(ValueError, MST.fkm_goodman, Sa, Sm, M, M/3, R_goal)
 
     R_goal = -1.
-    res = MST.FKM_goodman(Sa, Sm, M, M/3, R_goal)
+    res = MST.fkm_goodman(Sa, Sm, M, M/3, R_goal)
     np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
     Sm = np.array([5])
     Sa = np.array([0])
-    res = MST.FKM_goodman(Sa, Sm, M, M/3, R_goal)
+    res = MST.fkm_goodman(Sa, Sm, M, M/3, R_goal)
     assert np.equal(res, 0.)
 
 
-def test_FKM_goodman_single_M_sm():
+def test_fkm_goodman_single_M_sm():
     cyclic_signal = goodman_signal_sm()
     M = 0.5
 
     R_goal = -1.
 
-    res = cyclic_signal.meanstress_transform.FKM_goodman(pd.Series({'M':M, 'M2':M/3 }), R_goal).amplitude
+    res = cyclic_signal.meanstress_transform.fkm_goodman(pd.Series({'M':M, 'M2':M/3 }), R_goal).amplitude
     np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
 
-def test_FKM_goodman_multiple_M_sm():
+def test_fkm_goodman_multiple_M_sm():
     cyclic_signal = goodman_signal_sm()
     cyclic_signal.index.name = 'element_id'
     M = 0.5
 
     R_goal = -1.
     haigh = pd.DataFrame({'M':[M]*7, 'M2':[M/3]*7})
-    res = cyclic_signal.meanstress_transform.FKM_goodman(haigh, R_goal).amplitude
+    res = cyclic_signal.meanstress_transform.fkm_goodman(haigh, R_goal).amplitude
     np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
 
@@ -205,7 +205,7 @@ def test_five_segment_multiple_M_sm():
     (-1./3., 8./5.),
     (1./3., 14./12.)
 ])
-def test_FKM_goodman_hist_range_mean(R_goal, expected):
+def test_fkm_goodman_hist_range_mean(R_goal, expected):
     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
     mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
 
@@ -216,7 +216,7 @@ def test_FKM_goodman_hist_range_mean(R_goal, expected):
     mat.loc[(2. - 1./24., 0.)] = 5.
 
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
-    res = mat.meanstress_transform.FKM_goodman(haigh, R_goal).to_pandas()
+    res = mat.meanstress_transform.fkm_goodman(haigh, R_goal).to_pandas()
 
     test_interval = pd.Interval(expected-1./96., expected+1./96.)
     assert res.loc[res.index.overlaps(test_interval)].sum() == 9
@@ -229,7 +229,7 @@ def test_FKM_goodman_hist_range_mean(R_goal, expected):
     (-1./3., 8./5.),
     (1./3., 14./12.)
 ])
-def test_FKM_goodman_hist_from_to(R_goal, expected):
+def test_fkm_goodman_hist_from_to(R_goal, expected):
     fr = pd.IntervalIndex.from_breaks(np.linspace(-1., 1., 49), closed='left')
     to = pd.IntervalIndex.from_breaks(np.linspace(0, 2., 49), closed='left')
 
@@ -240,7 +240,7 @@ def test_FKM_goodman_hist_from_to(R_goal, expected):
     mat.loc[(-1., 1.)] = 5
 
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
-    res = mat.meanstress_transform.FKM_goodman(haigh, R_goal).to_pandas()
+    res = mat.meanstress_transform.fkm_goodman(haigh, R_goal).to_pandas()
 
     test_interval = pd.Interval(expected-1./96., expected+1./96.)
     assert res.loc[res.index.overlaps(test_interval)].sum() == 9
@@ -253,7 +253,7 @@ def test_FKM_goodman_hist_from_to(R_goal, expected):
     (-1./3., 8./5.),
     (1./3., 14./12.)
 ])
-def test_FKM_goodman_hist_range_mean_nonzero(R_goal, expected):
+def test_fkm_goodman_hist_range_mean_nonzero(R_goal, expected):
     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
     mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
 
@@ -264,7 +264,7 @@ def test_FKM_goodman_hist_range_mean_nonzero(R_goal, expected):
     mat.loc[(2.-1./96., 0.)] = 5.
 
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
-    res = mat[mat.values > 0].meanstress_transform.FKM_goodman(haigh, R_goal).to_pandas()
+    res = mat[mat.values > 0].meanstress_transform.fkm_goodman(haigh, R_goal).to_pandas()
 
     test_interval = pd.Interval(expected-1./96., expected+1./96.)
 
@@ -282,7 +282,7 @@ def test_null_histogram():
     mat = pd.Series(np.zeros(24*24, dtype=np.int32), name='cycles',
                     index=pd.MultiIndex.from_product([rg, mn], names=['from', 'to']))
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
-    res = mat.meanstress_transform.FKM_goodman(haigh, -1).to_pandas()
+    res = mat.meanstress_transform.fkm_goodman(haigh, -1).to_pandas()
 
     assert not res.any()
 
@@ -294,7 +294,7 @@ def test_full_histogram():
     series = pd.Series(np.linspace(1, 576, 576, dtype=np.int32), name='cycles',
                        index=pd.MultiIndex.from_product([rg, mn], names=['from', 'to']))
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
-    res = series.meanstress_transform.FKM_goodman(haigh, -1).to_pandas()
+    res = series.meanstress_transform.fkm_goodman(haigh, -1).to_pandas()
 
     assert res.sum() == series.sum()
 

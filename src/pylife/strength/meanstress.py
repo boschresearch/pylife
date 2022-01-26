@@ -371,7 +371,7 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
 @pd.api.extensions.register_dataframe_accessor('meanstress_transform')
 class MeanstressTransformCollective(RF.RainflowCollective):
 
-    def FKM_goodman(self, ms_sens, R_goal):
+    def fkm_goodman(self, ms_sens, R_goal):
         hd = HaighDiagram.fkm_goodman(ms_sens)
         res = hd.transform(self._obj, R_goal)
         return res.rainflow
@@ -401,7 +401,7 @@ class MeanstressTransformMatrix(RF.RainflowMatrix):
             self._binsize_y = self._obj.index.get_level_values('mean').length.min()
 
 
-    def FKM_goodman(self, haigh, R_goal):
+    def fkm_goodman(self, haigh, R_goal):
         collective = pd.DataFrame({
             'range': self.amplitude * 2.,
             'mean': self.meanstress
@@ -426,17 +426,17 @@ class MeanstressTransformMatrix(RF.RainflowMatrix):
         return result
 
 
-def FKM_goodman(amplitude, meanstress, M, M2, R_goal):
+def fkm_goodman(amplitude, meanstress, M, M2, R_goal):
     cycles = pd.DataFrame({
         'range': 2.*amplitude,
         'mean': meanstress
     })
 
-    haigh_FKM_goodman = pd.Series({
+    haigh_fkm_goodman = pd.Series({
         'M': M,
         'M2': M2
     })
-    hd = HaighDiagram.fkm_goodman(haigh_FKM_goodman)
+    hd = HaighDiagram.fkm_goodman(haigh_fkm_goodman)
 
     res = hd.transform(cycles, R_goal)
     return res.rainflow.amplitude.to_numpy()

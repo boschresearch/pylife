@@ -37,7 +37,7 @@ def test_meanstress_collective_empty_fail():
         df.meanstress_transform
 
 
-def test_meanstress_collective_empty_FKM_goodman(ms_sens):
+def test_meanstress_collective_empty_fkm_goodman(ms_sens):
     from_intervals = pd.interval_range(0., 0., 0)
     to_intervals = pd.interval_range(0., 0., 0)
     index = pd.MultiIndex.from_product([from_intervals, to_intervals], names=['from', 'to'])
@@ -47,11 +47,11 @@ def test_meanstress_collective_empty_FKM_goodman(ms_sens):
     expected = pd.Series([],
                          index=pd.IntervalIndex(to_intervals, name='range'),
                          name='cycles', dtype=np.float64)
-    res = ser.meanstress_transform.FKM_goodman(ms_sens, -1.).to_pandas()
+    res = ser.meanstress_transform.fkm_goodman(ms_sens, -1.).to_pandas()
     pd.testing.assert_series_equal(res, expected)
 
 
-def test_meanstress_collective_FKM_goodman_single_ms_sens(ms_sens):
+def test_meanstress_collective_fkm_goodman_single_ms_sens(ms_sens):
     fr = pd.IntervalIndex.from_breaks(np.linspace(-1., 1., 49), closed='left')
     to = pd.IntervalIndex.from_breaks(np.linspace(0, 2., 49), closed='left')
     index = pd.MultiIndex.from_product([fr, to], names=['from', 'to'])
@@ -67,13 +67,13 @@ def test_meanstress_collective_FKM_goodman_single_ms_sens(ms_sens):
 
     expected = 2.0
     expected_interval = pd.Interval(expected - 1./96., expected + 1./96.)
-    res = rf.meanstress_transform.FKM_goodman(haigh, R_goal).to_pandas()
+    res = rf.meanstress_transform.fkm_goodman(haigh, R_goal).to_pandas()
 
     assert res.loc[res.index.overlaps(expected_interval)].sum() == 9
     assert res.loc[~res.index.overlaps(expected_interval)].sum() == 0
 
 
-def test_meanstress_collective_FKM_goodman_multiple_ms_sens():
+def test_meanstress_collective_fkm_goodman_multiple_ms_sens():
     df = pd.DataFrame({
         'from': [-6., -4.,  -5./2., -1., -0.4, 0., 7./12.],
         'to': [-2., 0., 0.5, 1., 1.2, 4./3., 21./12.]
@@ -89,7 +89,7 @@ def test_meanstress_collective_FKM_goodman_multiple_ms_sens():
         (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9)
     ], names=[None, 'element_id'])
 
-    res = df.meanstress_transform.FKM_goodman(ms_sens, -1.)
+    res = df.meanstress_transform.fkm_goodman(ms_sens, -1.)
 
     expected_amplitude = pd.Series(
         [1., 1., 1., 1., 1., 1., 1., 1.2, 1.2, 1.1, 1.0, 0.96, 0.93, 0.91],
