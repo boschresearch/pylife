@@ -47,7 +47,11 @@ from .fatigue_data import \
 from .elementary import Elementary
 from .probit import Probit
 from .maxlike import MaxLikeInf, MaxLikeFull
-from .bayesian import Bayesian
+
+try:
+    from .bayesian import Bayesian
+except ModuleNotFoundError:
+    from .pymc3_dummy import Bayesian
 
 __all__ = [
     'FatigueData',
