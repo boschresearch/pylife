@@ -115,8 +115,7 @@ def rebin_histogram(histogram, binning):
         return overlap / test_interval.length
 
     def aggregate_hist(interval):
-        res = hist.apply(lambda v: v.iloc[0] * interval_overlap(interval, v.name), axis=1)
-        return res.sum()
+        return hist.apply(lambda v: v.iloc[0] * interval_overlap(interval, v.name), axis=1).sum()
 
     def binning_has_gaps():
         left = binning.left[1:]
