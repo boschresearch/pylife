@@ -150,3 +150,29 @@ def rebin_histogram(histogram, binning):
     hist = histogram.to_frame()
 
     return binning.to_series().apply(aggregate_hist)
+
+
+def rebin_histogram_n_bins(histogram, binnum):
+    """Rebin histogram to a given number of bins.
+
+    Parameters
+    ----------
+    histogram : :class:`pandas.Series` with :class:`pandas.IntervalIndex`
+        The histogram data to be rebinned
+
+    binnum : int
+        The number of bins
+
+    Returns
+    -------
+    rebinned : :class:`pandas.Series` with :class:`pandas.IntervalIndex`
+        The rebinned histogram
+
+    Raises
+    ------
+    TypeError : if the ``histogram`` does not have an ``IntervalIndex``.
+    """
+    start = histogram.index.left.min()
+    end = histogram.index.right.max()
+    binning = pd.interval_range(start, end, binnum)
+    return rebin_histogram(histogram, binning)

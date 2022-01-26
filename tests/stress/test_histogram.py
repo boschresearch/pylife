@@ -153,3 +153,17 @@ def test_rebin_histogram(histogram, expected, regular_binning):
     rebinned = hi.rebin_histogram(histogram, regular_binning)
 
     pd.testing.assert_series_equal(rebinned, pd.Series(expected, index=regular_binning))
+
+
+@pytest.mark.parametrize('original_binning, binnum, expected', [
+    ([(0.0, 1.0)], 4, [(0.0, 0.25), (0.25, 0.5), (0.5, 0.75), (0.75, 1.0)]),
+    ([(0.0, 1.0)], 2, [(0.0, 0.5), (0.5, 1.0)]),
+    ([(1.0, 2.0)], 4, [(1.0, 1.25), (1.25, 1.5), (1.5, 1.75), (1.75, 2.0)]),
+    ([(1.0, 2.0)], 2, [(1.0, 1.5), (1.5, 2.0)]),
+])
+def test_rebin_histogram_n_bins(original_binning, binnum, expected):
+    histogram = pd.Series([1.0], pd.IntervalIndex.from_tuples(original_binning))
+    rebinned = hi.rebin_histogram_n_bins(histogram, binnum)
+
+    expected = pd.IntervalIndex.from_tuples(expected)
+    pd.testing.assert_index_equal(rebinned.index, expected)
