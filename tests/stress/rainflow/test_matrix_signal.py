@@ -123,6 +123,20 @@ def test_rainflow_from_to_amplitude_right(rainflow_matrix_from_to):
     pd.testing.assert_series_equal(rainflow_matrix_from_to.rainflow.use_class_right().amplitude, expected)
 
 
+@pytest.mark.parametrize('cycles_value', [1, 2])
+def test_rainflow_from_to_amplitude_histogram(rainflow_matrix_from_to, cycles_value):
+    expected_index = pd.IntervalIndex.from_arrays(
+        [0., 0., 2., 0., 0., 0., 4., 2., 0.],
+        [4., 6., 8., 6., 4., 4., 10., 8., 6.]
+    )
+    expected = pd.Series(cycles_value, index=expected_index)
+    matrix = rainflow_matrix_from_to * cycles_value
+
+    result = matrix.rainflow.amplitude_histogram
+
+    pd.testing.assert_series_equal(result, expected)
+
+
 def test_rainflow_from_to_meanstress_left(rainflow_matrix_from_to):
     expected = pd.Series([-3., -2., -1., -1., 0., 1., 1., 2., 3.],
                          name='meanstress',
@@ -315,6 +329,16 @@ def test_rainflow_range_mean_amplitude_right(rainflow_matrix_range_mean):
                          name='amplitude',
                          index=rainflow_matrix_range_mean.index)
     pd.testing.assert_series_equal(rainflow_matrix_range_mean.rainflow.use_class_right().amplitude, expected)
+
+
+def test_rainflow_rainge_mean_amplitude_histogram(rainflow_matrix_range_mean):
+    expected_index = pd.IntervalIndex.from_arrays(
+        [0., 0., 0., 2., 2., 2., 4., 4., 4.],
+        [2., 2., 2., 4., 4., 4., 6., 6., 6.]
+    )
+    result = rainflow_matrix_range_mean.rainflow.amplitude_histogram
+
+    pd.testing.assert_index_equal(result.index, expected_index)
 
 
 def test_rainflow_range_mean_meanstress_left(rainflow_matrix_range_mean):
