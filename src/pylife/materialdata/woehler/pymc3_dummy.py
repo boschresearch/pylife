@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2020 - for information on the respective copyright owner
+# Copyright (c) 2019-2021 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,8 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .vmap_import import VMAPImport
-from .vmap_export import VMAPExport, VMAPExportError
-from .exceptions import *
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
 
-__all__ = ['VMAPImport', 'VMAPExport', 'VMAPExportError']
+
+class Bayesian:
+    """Dummy class to raise a meaningful exception when pymc3 is not available."""
+
+    def __init__(self, _):
+        raise ImportError("pymc3 and dependencies are not installed. "
+                          "Use `pip install pylife[pymc3]` to install it.")
