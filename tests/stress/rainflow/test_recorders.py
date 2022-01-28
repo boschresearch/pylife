@@ -83,8 +83,8 @@ def test_full_rainflow_recorder_new_all_empty():
 ])
 def test_full_rainflow_recorder_record_value(value_from, value_to, index_from, index_to):
     fr = RFR.FullRecorder()
-    fr.record_values(value_from, value_to)
-    fr.record_index(index_from, index_to)
+    fr.record_values([value_from], [value_to])
+    fr.record_index([index_from], [index_to])
     np.testing.assert_array_equal(fr.values_from, [value_from])
     np.testing.assert_array_equal(fr.values_to, [value_to])
     np.testing.assert_array_equal(fr.index_from, [index_from])
@@ -95,8 +95,8 @@ def test_loop_value_rainflow_recorder_record_two_values():
     vf1, vt1, vf2, vt2 = 23., 42., 46., 84.
     lvr = RFR.LoopValueRecorder()
 
-    lvr.record_values(vf1, vt1)
-    lvr.record_values(vf2, vt2)
+    lvr.record_values([vf1], [vt1])
+    lvr.record_values([vf2], [vt2])
 
     np.testing.assert_array_equal(lvr.values_from, [vf1, vf2])
     np.testing.assert_array_equal(lvr.values_to, [vt1, vt2])
@@ -106,11 +106,11 @@ def test_full_rainflow_recorder_record_two_values():
     vf1, vt1, if1, it1, vf2, vt2, if2, it2 = 23., 42., 11, 17, 46., 84., 22, 34
     fr = RFR.FullRecorder()
 
-    fr.record_values(vf1, vt1)
-    fr.record_index(if1, it1)
+    fr.record_values([vf1], [vt1])
+    fr.record_index([if1], [it1])
 
-    fr.record_values(vf2, vt2)
-    fr.record_index(if2, it2)
+    fr.record_values([vf2], [vt2])
+    fr.record_index([if2], [it2])
 
     np.testing.assert_array_equal(fr.values_from, [vf1, vf2])
     np.testing.assert_array_equal(fr.values_to, [vt1, vt2])
@@ -132,10 +132,10 @@ def test_full_rainflow_recorder_empty_collective_default():
 def test_full_rainflow_recorder_two_non_zero_collective():
     vf1, vt1, if1, it1, vf2, vt2, if2, it2 = 23., 42., 11, 17, 46., 84., 22, 34
     fr = RFR.FullRecorder()
-    fr.record_values(vf1, vt1)
-    fr.record_index(if1, it1)
-    fr.record_values(vf2, vt2)
-    fr.record_index(if2, it2)
+    fr.record_values([vf1], [vt1])
+    fr.record_index([if1], [it1])
+    fr.record_values([vf2], [vt2])
+    fr.record_index([if2], [it2])
 
     expected = pd.DataFrame({
         'from': [vf1, vf2],
@@ -165,8 +165,8 @@ def test_full_rainflow_recorder_empty_matrix_5_bins():
 ])
 def test_full_rainflow_recorder_one_non_zero(value_from, value_to, index_from, index_to):
     fr = RFR.FullRecorder()
-    fr.record_values(value_from, value_to)
-    fr.record_index(index_from, index_to)
+    fr.record_values([value_from], [value_to])
+    fr.record_index([index_from], [index_to])
 
     expected_from = np.linspace(value_from - 0.5, value_from + 0.5, 11)
     expected_to = np.linspace(value_to - 0.5, value_to + 0.5, 11)
@@ -182,12 +182,12 @@ def test_full_rainflow_recorder_one_non_zero(value_from, value_to, index_from, i
 def test_full_rainflow_recorder_two_non_zero():
     vf1, vt1, if1, it1, vf2, vt2, if2, it2 = 23., 42., 11, 17, 46., 84., 22, 34
     fr = RFR.FullRecorder()
-    fr.record_values(vf1, vt1)
-    fr.record_index(if1, it1)
-    fr.record_values(vf2, vt2)
-    fr.record_index(if2, it2)
-    fr.record_values(vf2, vt2)
-    fr.record_index(if2, it2)
+    fr.record_values([vf1], [vt1])
+    fr.record_index([if1], [it1])
+    fr.record_values([vf2], [vt2])
+    fr.record_index([if2], [it2])
+    fr.record_values([vf2], [vt2])
+    fr.record_index([if2], [it2])
 
     expected_from = np.linspace(vf1, vf2, 11)
     expected_to = np.linspace(vt1, vt2, 11)
@@ -211,8 +211,8 @@ def test_loop_value_rainflow_recorder_record_two_values_collective():
     vf1, vt1, vf2, vt2 = 23., 42., 46., 84.
     lvr = RFR.LoopValueRecorder()
 
-    lvr.record_values(vf1, vt1)
-    lvr.record_values(vf2, vt2)
+    lvr.record_values([vf1], [vt1])
+    lvr.record_values([vf2], [vt2])
 
     expected = pd.DataFrame({
         'from': [vf1, vf2],
@@ -241,7 +241,7 @@ def test_loopvalue_rainflow_recorder_empty_matrix_series_5_bins():
 ])
 def test_loopvalue_rainflow_recorder_matrix_series_one_non_zero(value_from, value_to):
     fr = RFR.LoopValueRecorder()
-    fr.record_values(value_from, value_to)
+    fr.record_values([value_from], [value_to])
 
     expected_from = pd.IntervalIndex.from_breaks(np.linspace(value_from - 0.5, value_from + 0.5, 11))
     expected_to = pd.IntervalIndex.from_breaks(np.linspace(value_to - 0.5, value_to + 0.5, 11))

@@ -137,6 +137,11 @@ class ThreePointDetector(AbstractDetector):
         highest_front = np.argmax(residuals)
         lowest_front = np.argmin(residuals)
 
+        from_vals = []
+        to_vals = []
+        from_index = []
+        to_index = []
+
         back = residual_index[-1] + 1
         while back < turns.shape[0]:
             if len(residual_index) >= 2:
@@ -150,14 +155,19 @@ class ThreePointDetector(AbstractDetector):
                     lowest_front = front
                 elif (start >= max(lowest_front, highest_front) and
                       np.abs(back_val - front_val) >= np.abs(front_val - start_val)):
-                    self._recorder.record_values(start_val, front_val)
-                    self._recorder.record_index(turns_index[start], turns_index[front])
+                    from_vals.append(start_val)
+                    to_vals.append(front_val)
+                    from_index.append(turns_index[start])
+                    to_index.append(turns_index[front])
                     residual_index.pop()
                     residual_index.pop()
                     continue
 
             residual_index.append(back)
             back += 1
+
+        self._recorder.record_values(from_vals, to_vals)
+        self._recorder.record_index(from_index, to_index)
 
         self._residuals = turns_np[residual_index]
         self._residual_index = turns_index[residual_index[:-1]]

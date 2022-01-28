@@ -92,6 +92,9 @@ class FKMDetector(AbstractDetector):
         max_turn = self._max_turn
         turns_index, turns = self._new_turns(samples)
 
+        from_vals = []
+        to_vals = []
+
         for current in turns:
             loop_assumed = True
             while loop_assumed:
@@ -103,7 +106,8 @@ class FKMDetector(AbstractDetector):
                     last0 = self._residuals[-1]
                     last1 = self._residuals[-2]
                     if np.abs(current-last0) >= np.abs(last0-last1):
-                        self._recorder.record_values(last1, last0)
+                        from_vals.append(last1)
+                        to_vals.append(last0)
                         self._residuals.pop()
                         self._residuals.pop()
                         if np.abs(last0) < max_turn and np.abs(last1) < max_turn:
@@ -116,5 +120,7 @@ class FKMDetector(AbstractDetector):
 
             self._ir = ir
             self._max_turn = max_turn
+
+        self._recorder.record_values(from_vals, to_vals)
 
         return self
