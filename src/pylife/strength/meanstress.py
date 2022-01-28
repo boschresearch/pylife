@@ -323,10 +323,8 @@ class _SegmentTransformer:
         self.transformed_cycles.loc[to_shift, 'R'] = R_goal
 
 
-
 def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
-    """
-    Estimate the mean stress sensitivity from two `FiniteLifeCurve` objects for the same amount of cycles `N_c`.
+    r"""Estimate the mean stress sensitivity from two `FiniteLifeCurve` objects for the same amount of cycles `N_c`.
 
     The formula for calculation is taken from: "Betriebsfestigkeit", Haibach, 3. Auflage 2006
 
@@ -394,7 +392,7 @@ class MeanstressTransformMatrix(RF.RainflowMatrix):
             self._Sm = (f+t)/2.
             self._binsize_x = self._obj.index.get_level_values('from').length.min()
             self._binsize_y = self._obj.index.get_level_values('to').length.min()
-        elif self._obj.index.names == ['range', 'mean']:
+        else:
             self._Sa = self._obj.index.get_level_values('range').mid / 2.
             self._Sm = self._obj.index.get_level_values('mean').mid
             self._binsize_x = self._obj.index.get_level_values('range').length.min()
@@ -402,11 +400,6 @@ class MeanstressTransformMatrix(RF.RainflowMatrix):
 
 
     def fkm_goodman(self, haigh, R_goal):
-        collective = pd.DataFrame({
-            'range': self.amplitude * 2.,
-            'mean': self.meanstress
-        })
-
         ranges = HaighDiagram.fkm_goodman(haigh).transform(self._obj, R_goal)['range']
         return self._rebin_results(ranges).rainflow
 
