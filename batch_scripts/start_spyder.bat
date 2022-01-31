@@ -1,3 +1,3 @@
-call conda activate ../_venv
+call conda activate ../.venv
 call spyder --workdir=../pylife
 
