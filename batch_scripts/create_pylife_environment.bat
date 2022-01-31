@@ -12,4 +12,4 @@ call conda create -p .venv pip=20.2 python=3.7
 call conda activate ./.venv
 
 rem call conda install pywin32
-call pip install -e .[testing,docs]
+call pip install -e .[testing,docs,analysis,pymc3]
