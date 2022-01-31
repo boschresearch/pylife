@@ -17,6 +17,7 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
+from abc import ABCMeta, abstractmethod
 import numpy as np
 
 
@@ -69,7 +70,7 @@ def find_turns(samples):
     return index, samples[index]
 
 
-class AbstractDetector:
+class AbstractDetector(metaclass=ABCMeta):
     """The common base class for rainflow detectors.
 
     Subclasses implementing a specific rainflow counting algorithm are supposed
@@ -116,18 +117,36 @@ class AbstractDetector:
 
     @property
     def residual_index(self):
-        """The index of the residual turning points of the time signal so far.
-        """
+        """The index of the residual turning points of the time signal so far."""
         return np.append(self._residual_index, self._head_index - 1)
 
     @property
     def recorder(self):
-        """The recorder instance the detector is reporting to.
-        """
+        """The recorder instance the detector is reporting to."""
         return self._recorder
 
+    @abstractmethod
+    def process(self, samples):
+        """Process a sample chunk.
+
+        Parameters
+        ----------
+        samples : array_like, shape (N, )
+            The samples to be processed
+
+        Returns
+        -------
+        self : ThreePointDetector
+            The ``self`` object so that processing can be chained
+
+        Notes
+        -----
+        Must be implemented by subclasses.
+        """
+        return self
+
     def _new_turns(self, samples):
-        """Provide new turning points for the next chunk
+        """Provide new turning points for the next chunk.
 
         Parameters
         ----------
@@ -143,7 +162,6 @@ class AbstractDetector:
 
         Notes
         -----
-
         This method can be called by the ``process()`` implementation of
         subclasses. The sample tail i.e. the samples after the last turning
         point of the chunk are stored and prepended to the samples of the next
@@ -224,38 +242,38 @@ class AbstractRecorder:
 
         return chunk_num, global_index - chunk_index[chunk_num]
 
-    def record_values(self, value_from, value_to):
-        """Record hysteresis loop values to the recorder.
+    def record_values(self, values_from, values_to):
+        """Report hysteresis loop values to the recorder.
 
         Parameters
         ----------
-        value_from : float
-            The sample value where the hysteresis loop starts from.
+        values_from : list of floats
+            The sample values where the hysteresis loop starts from.
 
-        value_to : float
-            The sample value where the hysteresis loop goes to and turns back from.
+        values_to : list of floats
+            The sample values where the hysteresis loop goes to and turns back from.
 
         Note
         ----
-        Default implementation does nothing. To be implemented by recorders
+        Default implementation does nothing. Can be implemented by recorders
         interested in the hysteresis loop values.
         """
         pass
 
-    def record_index(self, index_from, index_to):
+    def record_index(self, indeces_from, indeces_to):
         """Record hysteresis loop index to the recorder.
 
         Parameters
         ----------
-        index_from : float
-            The sample index where the hysteresis loop starts from.
+        indeces_from : list of ints
+            The sample indeces where the hysteresis loop starts from.
 
-        index_to : float
-            The sample index where the hysteresis loop goes to and turns back from.
+        indeces_to : list of ints
+            The sample indeces where the hysteresis loop goes to and turns back from.
 
         Note
         ----
-        Default implementation does nothing. To be implemented by recorders
+        Default implementation does nothing. Can be implemented by recorders
         interested in the hysteresis loop values.
         """
         pass

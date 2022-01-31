@@ -15,7 +15,7 @@
 # limitations under the License.
 
 from .vmap_import import VMAPImport
-from .vmap_export import VMAPExport
+from .vmap_export import VMAPExport, VMAPExportError
 from .exceptions import *
 
-__all__ = ['VMAPImport', 'VMAPExport']
+__all__ = ['VMAPImport', 'VMAPExport', 'VMAPExportError']

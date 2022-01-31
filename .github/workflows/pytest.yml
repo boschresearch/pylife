@@ -9,8 +9,8 @@ jobs:
       MPLBACKEND: svg
     strategy:
       matrix:
-        os: [ubuntu-18.04, windows-latest]
-        python-version: [3.7, 3.8, 3.9]
+        os: [ubuntu-20.04, windows-latest]
+        python-version: ['3.8', '3.9']
 
     steps:
     - uses: actions/checkout@v2
@@ -23,8 +23,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -U setuptools setuptools_scm wheel
         pip install flake8 pytest pytest-cov
-        pip install --prefer-binary -r requirements.txt
-        python setup.py build_ext --inplace --force --define CYTHON_TRACE
+        pip install -e .[testing]
     - name: Test with pytest
       env:
         THEANO_FLAGS: cxx=""

@@ -54,7 +54,11 @@ docs/demos/*
 !docs/demos/*.nblink
 
 # Per-project virtualenvs
-.venv*/
-_venv*/
-.conda*/
+.venv*
+_venv*
+.conda*
 coverage_report*
+
+.hypothesis
+.mutmut-cache
+.python-version

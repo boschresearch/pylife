@@ -51,10 +51,10 @@ class LoopValueRecorder(AbstractRecorder):
         """
         return pd.DataFrame({'from': self._values_from, 'to': self._values_to})
 
-    def record_values(self, value_from, value_to):
+    def record_values(self, values_from, values_to):
         """Record the loop values."""
-        self._values_from.append(value_from)
-        self._values_to.append(value_to)
+        self._values_from += values_from
+        self._values_to += values_to
 
     def matrix(self, bins=10):
         """Calculate a histogram of the recorded values.
@@ -137,5 +137,5 @@ class FullRecorder(LoopValueRecorder):
 
     def record_index(self, index_from, index_to):
         """Record the index."""
-        self._index_from.append(index_from)
-        self._index_to.append(index_to)
+        self._index_from += index_from
+        self._index_to += index_to
