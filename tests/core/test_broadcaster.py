@@ -179,7 +179,7 @@ def test_broadcast_series_to_frame_3_elements_index_none():
     pd.testing.assert_frame_equal(obj, expected_obj)
 
 
-def test_broadcast_series_to_seires_same_single_index():
+def test_broadcast_series_to_series_same_single_index():
     series = pd.Series([1, 3], index=pd.Index(['x', 'y'], name='iname1'), name='src')
 
     foo_bar = pd.Series([1, 2], index=pd.Index(['x', 'y'], name='iname1'), name='dst')
@@ -458,3 +458,33 @@ def test_broadcast_frame_to_frame_mixed_multi_index_name_drop_level():
 
     pd.testing.assert_frame_equal(param, expected_prm)
     pd.testing.assert_frame_equal(obj, expected_obj)
+
+
+def test_broadcast_series_to_series_overlapping_interval_index():
+    interval_index = pd.IntervalIndex.from_tuples([
+        (0.0, 1.0), (1.0, 2.0), (1.5, 2.5)
+    ], name='interval')
+
+    obj = pd.Series([1, 2, 3], index=interval_index, name='series')
+
+    operand = pd.Series([4, 5, 6], index=pd.RangeIndex(3, name='operand'), name='foo')
+
+    prm, obj = Broadcaster(obj).broadcast(operand)
+
+    expected_index = pd.MultiIndex.from_tuples([
+        (pd.Interval(0.0, 1.0), 0),
+        (pd.Interval(0.0, 1.0), 1),
+        (pd.Interval(0.0, 1.0), 2),
+        (pd.Interval(1.0, 2.0), 0),
+        (pd.Interval(1.0, 2.0), 1),
+        (pd.Interval(1.0, 2.0), 2),
+        (pd.Interval(1.5, 2.5), 0),
+        (pd.Interval(1.5, 2.5), 1),
+        (pd.Interval(1.5, 2.5), 2),
+    ], names=['interval', 'operand'])
+
+    expected_obj = pd.Series([1, 1, 1, 2, 2, 2, 3, 3, 3], index=expected_index, name='series')
+    expected_prm = pd.Series([4, 5, 6, 4, 5, 6, 4, 5, 6], index=expected_index, name='foo')
+
+    pd.testing.assert_series_equal(obj, expected_obj)
+    pd.testing.assert_series_equal(prm, expected_prm)

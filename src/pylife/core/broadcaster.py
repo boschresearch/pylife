@@ -259,6 +259,8 @@ class Broadcaster:
 
         uuids = _replace_none_index_names_with_unique_string([parameter, self._obj])
 
+        index_level_cache = _IndexLevelCache(self._obj, parameter)
+
         prm_index_names = list(parameter.index.names)
         obj_index_names = list(self._obj.index.names)
 
@@ -270,6 +272,10 @@ class Broadcaster:
         else:
             obj, prm = cross_join_and_align_obj_and_parameter()
 
+        obj.index = index_level_cache.restore_real_index(obj.index)
+        prm.index = index_level_cache.restore_real_index(prm.index)
+
+        index_level_cache.restore_original_indeces()
         _replace_unique_string_with_none_name([obj, prm, self._obj, parameter], uuids)
 
         return prm, obj
@@ -296,6 +302,8 @@ def _broadcast_to(obj, new_index):
         new = pd.DataFrame(obj)
 
     new = pd.DataFrame(index=new_index).join(new, how='left')
+    if isinstance(new_index, pd.MultiIndex):
+        new = new.reorder_levels(new_index.names)
     if isinstance(obj, pd.Series):
         new = new.iloc[:, 0]
         new.name = obj.name
@@ -321,3 +329,68 @@ def _replace_none_index_names_with_unique_string(objs):
 def _replace_unique_string_with_none_name(objs, uuids):
     for obj in objs:
         obj.index.names = [None if name in uuids else name for name in obj.index.names]
+
+
+class _IndexLevelCache:
+
+    def __init__(self, obj, operand):
+
+        self._obj_index = obj.index
+        self._operand_index = operand.index
+
+        self._obj = obj
+        self._operand = operand
+
+        common = set(obj.index.names).intersection(operand.index.names)
+        only_obj = set(obj.index.names).difference(common)
+        only_operand = set(operand.index.names).difference(common)
+
+        self.index_levels = {}
+
+        for name in common:
+            obj_level = obj.index.get_level_values(name)
+            operand_level = operand.index.get_level_values(name)
+            self.index_levels[name] = obj_level.append(operand_level).unique()
+
+        for name in only_obj:
+            self.index_levels[name] = obj.index.get_level_values(name).unique()
+
+        for name in only_operand:
+            self.index_levels[name] = operand.index.get_level_values(name).unique()
+
+        self.new_index_obj = self._make_new_index(obj.index)
+        self.new_index_operand = self._make_new_index(operand.index)
+
+        obj.index = self.new_index_obj
+        operand.index = self.new_index_operand
+
+    def restore_original_indeces(self):
+        self._obj.index = self._obj_index
+        self._operand.index =self._operand_index
+
+    def restore_real_index(self, new_index):
+
+        if len(new_index.names) > 1:
+            real_index = pd.MultiIndex.from_arrays(
+                [
+                    self.index_levels[name][new_index.get_level_values(name)]
+                    for name in new_index.names
+                ],
+                names=new_index.names
+            )
+        else:
+            real_index = pd.Index(self.index_levels[new_index.name][new_index], name=new_index.name)
+
+        return real_index
+
+    def _make_new_index(self, index):
+        if len(index.names) == 1:
+            return pd.Index(self.index_levels[index.name].get_indexer_for(index), name=index.name)
+
+        return pd.MultiIndex.from_arrays(
+            [
+                self.index_levels[name].get_indexer_for(index.get_level_values(name))
+                for name in index.names
+            ],
+            names=index.names
+        )
