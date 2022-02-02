@@ -70,6 +70,34 @@ def test_rainflow_collective_signal_mean_from_to(df, expected):
     pd.testing.assert_series_equal(df.rainflow.cycles, expected_cycles)
 
 
+@pytest.mark.parametrize('df, expected', [
+    (
+        pd.DataFrame(columns=[1, 2], dtype=np.float64),
+        pd.Series(dtype=np.float64)
+    ),
+    (
+        pd.DataFrame([
+            [-1., 1.],
+            [3, -1],
+            [0., 0.],
+            [-1.0, 0.0],
+        ]),
+        pd.Series([-1., -1./3., 0., -np.inf])
+    ),
+    (
+        pd.DataFrame([[-2., 2.], [6, -2]], index=[23, 42]),
+        pd.Series([-1., -1./3.], index=[23, 42])
+    )
+])
+def test_rainflow_collective_signal_R_from_to(df, expected):
+    df.columns = ['from', 'to']
+    expected.name = 'R'
+    pd.testing.assert_series_equal(df.rainflow.R, expected)
+
+    expected_cycles = pd.Series(1.0, name='cycles', index=df.index)
+    pd.testing.assert_series_equal(df.rainflow.cycles, expected_cycles)
+
+
 @pytest.mark.parametrize('df, expected_upper, expected_lower', [
     (
         pd.DataFrame(columns=[1, 2], dtype=np.float64),
@@ -223,6 +251,12 @@ def test_rainflow_collective_signal_upper_lower_range_mean(df, expected_upper, e
     expected_lower.name = 'lower'
     pd.testing.assert_series_equal(df.rainflow.upper, expected_upper)
     pd.testing.assert_series_equal(df.rainflow.lower, expected_lower)
+
+
+def test_rainflow_collective_upper_lower_range_mean_single_value():
+    df = pd.DataFrame({'range': [2.0], 'mean': 0.0})
+    expected = pd.DataFrame({'from': [-1.0], 'to': [1.0]})
+    pd.testing.assert_frame_equal(df.rainflow.to_pandas(), expected)
 
 
 @pytest.mark.parametrize('df, expected', [

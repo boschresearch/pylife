@@ -57,9 +57,33 @@ class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
         return pd.Series(rng/2., name='amplitude', index=self._obj.index)
 
     @property
+    def amplitude_histogram(self):
+        index = self._impl.amplitude_histogram_index()
+        index.name = 'amplitude'
+        return pd.Series(self._obj.values, index=index, name='cycles')
+
+    @property
     def meanstress(self):
         mean = self._impl.meanstress()
         return pd.Series(mean, name='meanstress', index=self._obj.index)
+
+    @property
+    def R(self):
+        res = (self.lower / self.upper).fillna(0.0)
+        res.name = 'R'
+        return res
+
+    @property
+    def upper(self):
+        res = self.meanstress + self.amplitude
+        res.name = 'upper'
+        return res
+
+    @property
+    def lower(self):
+        res = self.meanstress - self.amplitude
+        res.name = 'lower'
+        return res
 
     @property
     def cycles(self):
@@ -131,6 +155,26 @@ class _FromToMatrix(_RainflowMatrixImpl):
         fr, to = self._from_tos()
         return np.abs(fr-to)
 
+    def amplitude_histogram_index(self):
+        left = np.zeros(len(self._obj))
+        right = np.zeros(len(self._obj))
+
+        fr = self._obj.index.get_level_values('from')
+        to = self._obj.index.get_level_values('to')
+
+        hanging = fr.mid > to.mid
+        standing = fr.mid <= to.mid
+
+        left[hanging] = fr[hanging].left - to[hanging].right
+        right[hanging] = fr[hanging].right - to[hanging].left
+
+        left[standing] = to[standing].left - fr[standing].right
+        right[standing] = to[standing].right - fr[standing].left
+
+        left[left < 0.0] = 0.0
+
+        return pd.IntervalIndex.from_arrays(left, right)
+
     def meanstress(self):
         fr, to = self._from_tos()
         return (fr+to) / 2.
@@ -142,8 +186,13 @@ class _RangeMeanMatrix(_RainflowMatrixImpl):
     def index_names(self):
         return set(['range', 'mean'])
 
-    def amplitude(self):
-        return getattr(self._obj.index.get_level_values('range'), self._class_location)
+    def amplitude(self, location=None):
+        return getattr(self._obj.index.get_level_values('range'), location or self._class_location)
+
+    def amplitude_histogram_index(self):
+        left = self.amplitude(location='left') / 2.
+        right = self.amplitude(location='right') / 2.
+        return pd.IntervalIndex.from_arrays(left, right)
 
     def meanstress(self):
         if 'mean' not in self._obj.index.names:

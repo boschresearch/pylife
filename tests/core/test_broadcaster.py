@@ -179,7 +179,7 @@ def test_broadcast_series_to_frame_3_elements_index_none():
     pd.testing.assert_frame_equal(obj, expected_obj)
 
 
-def test_broadcast_series_to_seires_same_single_index():
+def test_broadcast_series_to_series_same_single_index():
     series = pd.Series([1, 3], index=pd.Index(['x', 'y'], name='iname1'), name='src')
 
     foo_bar = pd.Series([1, 2], index=pd.Index(['x', 'y'], name='iname1'), name='dst')
@@ -353,6 +353,41 @@ def test_broadcast_frame_to_frame_different_multi_index_name():
     pd.testing.assert_frame_equal(obj, expected_obj)
 
 
+def test_broadcast_frame_to_frame_different_multi_index_name_drop_level():
+    df = pd.DataFrame({
+        'a': [1, 3, 5, 7],
+        'b': [2, 4, 6, 8]
+    }, index=pd.MultiIndex.from_tuples([('x', 1), ('x', 2), ('y', 1), ('y', 2)], names=['iname1', 'iname2']))
+
+    foo_bar = pd.DataFrame({
+        'foo': [1, 2, 3, 4],
+        'bar': [3, 4, 5, 6]
+    }, index=pd.MultiIndex.from_tuples([('a', 10), ('a', 20), ('b', 10), ('b', 20)], names=['srcname1', 'srcname2']))
+
+    param, obj = Broadcaster(foo_bar).broadcast(df, droplevel=['srcname2'])
+
+    expected_obj = pd.DataFrame({
+        'foo': [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4],
+        'bar': [3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6]
+    }, index=pd.MultiIndex.from_tuples([
+        ('a', 10, 'x', 1), ('a', 10, 'x', 2), ('a', 10, 'y', 1), ('a', 10, 'y', 2),
+        ('a', 20, 'x', 1), ('a', 20, 'x', 2), ('a', 20, 'y', 1), ('a', 20, 'y', 2),
+        ('b', 10, 'x', 1), ('b', 10, 'x', 2), ('b', 10, 'y', 1), ('b', 10, 'y', 2),
+        ('b', 20, 'x', 1), ('b', 20, 'x', 2), ('b', 20, 'y', 1), ('b', 20, 'y', 2)
+    ], names=['srcname1', 'srcname2', 'iname1', 'iname2']))
+
+    expected_param = pd.DataFrame({
+        'a': [1, 3, 5, 7, 1, 3, 5, 7],
+        'b': [2, 4, 6, 8, 2, 4, 6, 8]
+    }, index=pd.MultiIndex.from_tuples([
+        ('a', 'x', 1), ('a', 'x', 2), ('a', 'y', 1), ('a', 'y', 2),
+        ('b', 'x', 1), ('b', 'x', 2), ('b', 'y', 1), ('b', 'y', 2)
+    ], names=['srcname1', 'iname1', 'iname2']))
+
+    pd.testing.assert_frame_equal(param, expected_param)
+    pd.testing.assert_frame_equal(obj, expected_obj)
+
+
 def test_broadcast_frame_to_frame_mixed_multi_index_name():
     df = pd.DataFrame({
         'a': [1, 3, 5, 7],
@@ -388,3 +423,68 @@ def test_broadcast_frame_to_frame_mixed_multi_index_name():
 
     pd.testing.assert_frame_equal(param, expected_prm)
     pd.testing.assert_frame_equal(obj, expected_obj)
+
+
+def test_broadcast_frame_to_frame_mixed_multi_index_name_drop_level():
+    df = pd.DataFrame({
+        'a': [1, 3, 5, 7],
+        'b': [2, 4, 6, 8]
+    }, index=pd.MultiIndex.from_tuples([('x', 1), ('x', 2), ('y', 1), ('y', 2)], names=['iname1', 'srcname2']))
+
+    foo_bar = pd.DataFrame({
+        'foo': [1, 2, 3, 4],
+        'bar': [3, 4, 5, 6]
+    }, index=pd.MultiIndex.from_tuples([('a', 1), ('b', 1), ('a', 2), ('b', 2)], names=['srcname1', 'srcname2']))
+
+    param, obj = Broadcaster(foo_bar).broadcast(df, droplevel=['srcname1'])
+
+    expected_obj = pd.DataFrame({
+        'foo': [1, 1, 2, 2, 3, 3, 4, 4],
+        'bar': [3, 3, 4, 4, 5, 5, 6, 6]
+    }, index=pd.MultiIndex.from_tuples([
+        ('a', 1, 'x'), ('a', 1, 'y'),
+        ('b', 1, 'x'), ('b', 1, 'y'),
+        ('a', 2, 'x'), ('a', 2, 'y'),
+        ('b', 2, 'x'), ('b', 2, 'y')
+    ], names=['srcname1', 'srcname2', 'iname1']))
+
+    expected_prm = pd.DataFrame({
+        'a': [1, 5, 3, 7],
+        'b': [2, 6, 4, 8]
+    }, index=pd.MultiIndex.from_tuples([
+        (1, 'x'), (1, 'y'),
+        (2, 'x'), (2, 'y')
+    ], names=['srcname2', 'iname1']))
+
+    pd.testing.assert_frame_equal(param, expected_prm)
+    pd.testing.assert_frame_equal(obj, expected_obj)
+
+
+def test_broadcast_series_to_series_overlapping_interval_index():
+    interval_index = pd.IntervalIndex.from_tuples([
+        (0.0, 1.0), (1.0, 2.0), (1.5, 2.5)
+    ], name='interval')
+
+    obj = pd.Series([1, 2, 3], index=interval_index, name='series')
+
+    operand = pd.Series([4, 5, 6], index=pd.RangeIndex(3, name='operand'), name='foo')
+
+    prm, obj = Broadcaster(obj).broadcast(operand)
+
+    expected_index = pd.MultiIndex.from_tuples([
+        (pd.Interval(0.0, 1.0), 0),
+        (pd.Interval(0.0, 1.0), 1),
+        (pd.Interval(0.0, 1.0), 2),
+        (pd.Interval(1.0, 2.0), 0),
+        (pd.Interval(1.0, 2.0), 1),
+        (pd.Interval(1.0, 2.0), 2),
+        (pd.Interval(1.5, 2.5), 0),
+        (pd.Interval(1.5, 2.5), 1),
+        (pd.Interval(1.5, 2.5), 2),
+    ], names=['interval', 'operand'])
+
+    expected_obj = pd.Series([1, 1, 1, 2, 2, 2, 3, 3, 3], index=expected_index, name='series')
+    expected_prm = pd.Series([4, 5, 6, 4, 5, 6, 4, 5, 6], index=expected_index, name='foo')
+
+    pd.testing.assert_series_equal(obj, expected_obj)
+    pd.testing.assert_series_equal(prm, expected_prm)

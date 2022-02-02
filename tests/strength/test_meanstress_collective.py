@@ -14,13 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys, os, copy
-import warnings
 import pytest
 
 import numpy as np
 import pandas as pd
-import numpy.testing as testing
 
 import pylife.strength.meanstress as MST
 
@@ -36,23 +33,23 @@ def test_meanstress_collective_empty_fail():
         df.meanstress_transform
 
 
-def test_meanstress_collective_empty_FKM_goodman(ms_sens):
+def test_meanstress_collective_empty_fkm_goodman(ms_sens):
     df = pd.DataFrame(columns=['from', 'to'])
 
-    res = df.meanstress_transform.FKM_goodman(ms_sens, -1.).to_pandas()
+    res = df.meanstress_transform.fkm_goodman(ms_sens, -1.).to_pandas()
     assert 'from' in res.columns
     assert 'to' in res.columns
     assert len(res.columns) == 2
     assert res.shape[0] == 0
 
 
-def test_meanstress_collective_FKM_goodman_single_ms_sens(ms_sens):
+def test_meanstress_collective_fkm_goodman_single_ms_sens(ms_sens):
     df = pd.DataFrame({
         'from': [-6., -4.,  -5./2., -1., -0.4, 0., 7./12.],
         'to': [-2., 0., 0.5, 1., 1.2, 4./3., 21./12.]
     }, index=[3, 4, 5, 6, 7, 8, 9])
 
-    res = df.meanstress_transform.FKM_goodman(ms_sens, -1.)
+    res = df.meanstress_transform.fkm_goodman(ms_sens, -1.)
 
     expected_amplitude = pd.Series(np.ones(7), name='amplitude', index=df.index)
     pd.testing.assert_series_equal(res.amplitude, expected_amplitude)
@@ -61,7 +58,7 @@ def test_meanstress_collective_FKM_goodman_single_ms_sens(ms_sens):
     pd.testing.assert_series_equal(res.meanstress, expected_meanstress)
 
 
-def test_meanstress_collective_FKM_goodman_multiple_ms_sens():
+def test_meanstress_collective_fkm_goodman_multiple_ms_sens():
     df = pd.DataFrame({
         'from': [-6., -4.,  -5./2., -1., -0.4, 0., 7./12.],
         'to': [-2., 0., 0.5, 1., 1.2, 4./3., 21./12.]
@@ -77,7 +74,7 @@ def test_meanstress_collective_FKM_goodman_multiple_ms_sens():
         (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9)
     ], names=[None, 'element_id'])
 
-    res = df.meanstress_transform.FKM_goodman(ms_sens, -1.)
+    res = df.meanstress_transform.fkm_goodman(ms_sens, -1.)
 
     expected_amplitude = pd.Series(
         [1., 1., 1., 1., 1., 1., 1., 1.2, 1.2, 1.1, 1.0, 0.96, 0.93, 0.91],
