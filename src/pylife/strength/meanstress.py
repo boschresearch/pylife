@@ -204,15 +204,21 @@ class HaighDiagram(PylifeSignal):
         return res
 
     def _validate(self):
-        self._R_index = self._find_R_index()
-        # if self._R_index.left.min() != -np.inf or self._R_index.right.max() != 1.0:
-        #     raise AttributeError("The 'R' IntervalIndex must cover the exact range (-inf, 1.0].")
-        # if self._R_index.is_overlapping:
-        #     raise AttributeError("The intervals of the 'R' IntervalIndex must not overlap.")
-        # if not self._R_index.is_monotonic_increasing:
-        #     raise AttributeError("The 'R' IntervalIndex must be monotonic increasing.")
 
-        # self._check_for_gaps()
+        def has_gaps(idx):
+            if len(idx) <= 1:
+                return False
+            return (pd.DataFrame({'l': idx.left[1:], 'r': idx.right[:-1]})
+                    .apply(lambda r: r.l != r.r and not (r.l == -np.inf and r.r == np.inf), axis=1)
+                    .any())
+
+        self._R_index = self._find_R_index()
+
+        if self._check_if_R_index(lambda idx: idx.is_overlapping):
+            raise AttributeError("The intervals of the 'R' IntervalIndex must not overlap.")
+
+        if self._check_if_R_index(has_gaps):
+            raise AttributeError("The intervals of the 'R' IntervalIndex must not have gaps.")
 
     def _find_R_index(self):
         if 'R' not in self._obj.index.names:
@@ -225,13 +231,14 @@ class HaighDiagram(PylifeSignal):
             raise AttributeError("The 'R' index must be an IntervalIndex.")
         return R_index
 
-    def _check_for_gaps(self):
-        if len(self._R_index) == 1:
-            return
-        left = self._R_index.left[1:]
-        right = self._R_index.right[:-1]
-        if pd.DataFrame({'l': left, 'r': right}).apply(lambda r: r.l != r.r, axis=1).any():
-            raise AttributeError("The intervals of the 'R' IntervalIndex must not have gaps.")
+    def _check_if_R_index(self, check_func):
+        if isinstance(self._obj.index, pd.IntervalIndex):
+            return check_func(self._obj.index)
+
+        all_but_R = filter(lambda n: n != 'R', map(lambda n: n or 0, self._obj.index.names))
+        return (self._obj.index.to_frame(index=False).groupby(list(all_but_R))
+                .apply(lambda g: check_func(g.set_index('R').index))
+                .any())
 
 
 class _SegmentTransformer:

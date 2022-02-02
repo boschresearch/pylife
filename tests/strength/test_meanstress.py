@@ -81,7 +81,7 @@ def test_fkm_goodman_single_M_sm():
 
     R_goal = -1.
 
-    res = cyclic_signal.meanstress_transform.fkm_goodman(pd.Series({'M':M, 'M2':M/3 }), R_goal).amplitude
+    res = cyclic_signal.meanstress_transform.fkm_goodman(pd.Series({'M': M, 'M2': M/3 }), R_goal).amplitude
     np.testing.assert_array_almost_equal(res, np.ones_like(res))
 
 
@@ -91,7 +91,7 @@ def test_fkm_goodman_multiple_M_sm():
     M = 0.5
 
     R_goal = -1.
-    haigh = pd.DataFrame({'M':[M]*7, 'M2':[M/3]*7})
+    haigh = pd.DataFrame({'M': [M]*7, 'M2': [M/3]*7})
     res = cyclic_signal.meanstress_transform.fkm_goodman(haigh, R_goal).amplitude
     np.testing.assert_array_almost_equal(res, np.ones_like(res))
 

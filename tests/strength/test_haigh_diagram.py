@@ -112,7 +112,6 @@ def test_haigh_diagram_fkm_goodman_multiple_M_M2():
     pd.testing.assert_series_equal(hd.to_pandas(), expected, rtol=1e-4)
 
 
-
 ## TODO
 ##
 ## * left closed intervals?
@@ -132,25 +131,47 @@ def test_haigh_diagram_fkm_goodman_multiple_M_M2():
 #         hd.haigh_diagram
 
 
-# def test_haigh_diagram_fail_R_is_overlapping():
-#     idx = pd.IntervalIndex.from_tuples([(-np.inf, 0.1), (0.0, 1.0)], name='R')
-#     hd = pd.Series([0.5, 0.5], index=idx)
-#     with pytest.raises(AttributeError, match=r"The intervals of the 'R' IntervalIndex must not overlap."):
-#         hd.haigh_diagram
+def test_haigh_diagram_fail_R_is_overlapping_multi():
+    idx = pd.MultiIndex.from_tuples([
+        (1, pd.Interval(1.0, np.inf)),
+        (1, pd.Interval(-np.inf, -1.0)),
+        (1, pd.Interval(-1.0, 0.0)),
+        (2, pd.Interval(1.0, np.inf)),
+        (2, pd.Interval(-np.inf, -0.5)),
+        (2, pd.Interval(-0.6, 0.0)),
+    ], names=['element_id', 'R'])
+    hd = pd.Series(1.0, index=idx)
+    with pytest.raises(AttributeError, match=r"The intervals of the 'R' IntervalIndex must not overlap."):
+        hd.haigh_diagram
 
 
-# def test_haigh_diagram_fail_R_is_not_monotonic_increasing():
-#     idx = pd.IntervalIndex.from_tuples([(0.1, 1.0), (-np.inf, 0.1)], name='R')
-#     hd = pd.Series([0.5, 0.5], index=idx)
-#     with pytest.raises(AttributeError, match=r"The 'R' IntervalIndex must be monotonic increasing."):
-#         hd.haigh_diagram
+def test_haigh_diagram_fail_R_is_overlapping():
+    idx = pd.IntervalIndex.from_tuples([(-np.inf, 0.1), (0.0, 1.0)], name='R')
+    hd = pd.Series([0.5, 0.5], index=idx)
+    with pytest.raises(AttributeError, match=r"The intervals of the 'R' IntervalIndex must not overlap."):
+        hd.haigh_diagram
 
 
-# def test_haigh_diagram_fail_if_R_has_gaps():
-#     idx = pd.IntervalIndex.from_tuples([(-np.inf, 0.0), (0.1, 1.0)], name='R')
-#     hd = pd.Series([0.5, 0.5], index=idx)
-#     with pytest.raises(AttributeError, match=r"The intervals of the 'R' IntervalIndex must not have gaps."):
-#         hd.haigh_diagram
+def test_haigh_diagram_fail_if_R_has_gaps():
+    idx = pd.IntervalIndex.from_tuples([(-np.inf, 0.0), (0.1, 1.0)], name='R')
+    hd = pd.Series([0.5, 0.5], index=idx)
+    with pytest.raises(AttributeError, match=r"The intervals of the 'R' IntervalIndex must not have gaps."):
+        hd.haigh_diagram
+
+
+def test_haigh_diagram_fail_if_R_has_gaps_multi():
+    idx = pd.MultiIndex.from_tuples([
+        (1, pd.Interval(1.0, np.inf)),
+        (1, pd.Interval(-np.inf, -1.0)),
+        (1, pd.Interval(-1.0, 0.0)),
+        (2, pd.Interval(1.0, np.inf)),
+        (2, pd.Interval(-np.inf, -0.5)),
+        (2, pd.Interval(-0.4, 0.0)),
+    ], names=['element_id', 'R'])
+    hd = pd.Series(1.0, index=idx)
+    with pytest.raises(AttributeError, match=r"The intervals of the 'R' IntervalIndex must not have gaps."):
+        hd.haigh_diagram
+
 
 def test_haigh_diagram_multiindex_unique():
     foo_level = pd.Index([1, 2, 3], name='foo')
