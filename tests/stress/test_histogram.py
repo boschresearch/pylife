@@ -115,6 +115,36 @@ def test_rebin_empty_histogram(empty_histogram, regular_binning):
     pd.testing.assert_index_equal(rebinned.index, regular_binning)
 
 
+def test_rebin_histogram_name_empty_histogram(empty_histogram, regular_binning):
+    empty_histogram.name = "empty_histogram"
+    rebinned = hi.rebin_histogram(empty_histogram, regular_binning)
+
+    assert rebinned.name == "empty_histogram"
+
+
+def test_rebin_histogram_name_non_empty_histogram(regular_binning):
+    histogram = pd.Series([1.0], index=pd.IntervalIndex.from_tuples([(0.2, 0.4)]), name="foo")
+    rebinned = hi.rebin_histogram(histogram, regular_binning)
+
+    assert rebinned.name == "foo"
+
+
+def test_rebin_histogram_index_name_empty_histogram(empty_histogram, regular_binning):
+    empty_histogram.index.name = "index_name"
+    rebinned = hi.rebin_histogram(empty_histogram, regular_binning)
+
+    assert rebinned.index.name == "index_name"
+
+
+def test_rebin_histogram_index_name_non_empty_histogram(regular_binning):
+    histogram = pd.Series(
+        [1.0], index=pd.IntervalIndex.from_tuples([(0.2, 0.4)], name="index_name")
+    )
+    rebinned = hi.rebin_histogram(histogram, regular_binning)
+
+    assert rebinned.index.name == "index_name"
+
+
 @pytest.mark.parametrize('histogram, expected',[
     (
         pd.Series([1.0], index=pd.IntervalIndex.from_tuples([(0.2, 0.4)])),

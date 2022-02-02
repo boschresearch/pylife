@@ -144,11 +144,14 @@ def rebin_histogram(histogram, binning):
         warnings.warn("histogram is partly out of binning. This information will be lost!", RuntimeWarning)
 
     if len(histogram) == 0:
-        return pd.Series(0.0, index=binning)
+        rebinned = pd.Series(0.0, index=binning)
+    else:
+        hist = histogram.to_frame()
+        rebinned = binning.to_series().apply(aggregate_hist)
 
-    hist = histogram.to_frame()
-
-    return binning.to_series().apply(aggregate_hist)
+    rebinned.name = histogram.name
+    rebinned.index.name = histogram.index.name
+    return rebinned
 
 
 def rebin_histogram_n_bins(histogram, binnum):
