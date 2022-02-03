@@ -28,8 +28,8 @@ from pylife import PylifeSignal
 from .abstract_load_collective import AbstractLoadCollective
 
 
-@pd.api.extensions.register_series_accessor('rainflow')
-class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
+@pd.api.extensions.register_series_accessor('load_collective')
+class MatrixLoadCollective(PylifeSignal, AbstractLoadCollective):
 
     def _validate(self):
         self._class_location = 'mid'
@@ -42,14 +42,14 @@ class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
             self._impl = _FromToMatrix(self._obj)
             return
 
-        raise AttributeError("Rainflow needs either 'range'/('mean') or 'from'/'to' in index levels.")
+        raise AttributeError("Load collective matrix needs either 'range'/('mean') or 'from'/'to' in index levels.")
 
     def _fail_if_not_multiindex(self, index_names):
         for name in index_names:
             if name not in self._obj.index.names:
                 continue
             if not isinstance(self._obj.index.get_level_values(name), pd.IntervalIndex):
-                raise AttributeError("Index of a rainflow matrix must be pandas.IntervalIndex.")
+                raise AttributeError("Index of a load collective matrix must be pandas.IntervalIndex.")
 
     @property
     def amplitude(self):
@@ -100,10 +100,10 @@ class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
         return self
 
     def scale(self, factors):
-        return self._shift_or_scale(lambda x, y: x * y, factors).rainflow
+        return self._shift_or_scale(lambda x, y: x * y, factors).load_collective
 
     def shift(self, diffs):
-        return self._shift_or_scale(lambda x, y: x + y, diffs, skip=['range']).rainflow
+        return self._shift_or_scale(lambda x, y: x + y, diffs, skip=['range']).load_collective
 
     def _shift_or_scale(self, func, operand, skip=[]):
         def do_transform_interval_index(level_name):
@@ -128,7 +128,7 @@ class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
         return pd.Series(self._obj.groupby('range').transform(lambda g: np.cumsum(g)),
                          name='cumulated_cycles')
 
-class _RainflowMatrixImpl(ABC):
+class _MatrixLoadCollectiveImpl(ABC):
 
     @property
     @abstractmethod
@@ -140,7 +140,7 @@ class _RainflowMatrixImpl(ABC):
         self._class_location = 'mid'
 
 
-class _FromToMatrix(_RainflowMatrixImpl):
+class _FromToMatrix(_MatrixLoadCollectiveImpl):
 
     @property
     def index_names(self):
@@ -180,7 +180,7 @@ class _FromToMatrix(_RainflowMatrixImpl):
         return (fr+to) / 2.
 
 
-class _RangeMeanMatrix(_RainflowMatrixImpl):
+class _RangeMeanMatrix(_MatrixLoadCollectiveImpl):
 
     @property
     def index_names(self):

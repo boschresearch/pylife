@@ -29,7 +29,7 @@ def ms_sens():
 
 def test_meanstress_collective_empty_fail():
     df = pd.DataFrame({'foo': [], 'bar': []})
-    with pytest.raises(AttributeError, match="Rainflow"):
+    with pytest.raises(AttributeError, match="Load collective"):
         df.meanstress_transform
 
 

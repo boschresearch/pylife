@@ -35,7 +35,7 @@ import numpy as np
 import pandas as pd
 
 from pylife import PylifeSignal, Broadcaster
-import pylife.stress.rainflow as RF
+import pylife.stress.collective as CL
 
 
 @pd.api.extensions.register_series_accessor('haigh_diagram')
@@ -173,7 +173,7 @@ class HaighDiagram(PylifeSignal):
 
         Parameters
         ----------
-        cycles : :class:`pd.Series` accepted by class:``RainflowCollective` or class:`RainflowMatrix``
+        cycles : :class:`pd.Series` accepted by class:``LoadCollective` or class:`MatrixLoadCollective``
             The load collective
 
         Returns
@@ -244,7 +244,7 @@ class HaighDiagram(PylifeSignal):
 class _SegmentTransformer:
 
     def __init__(self, cycles, haigh, R_segments, R_goal):
-        rf = cycles.rainflow
+        rf = cycles.load_collective
         self.transformed_cycles = pd.DataFrame({
             'amplitude': rf.amplitude,
             'R': rf.R
@@ -374,21 +374,21 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
 
 
 @pd.api.extensions.register_dataframe_accessor('meanstress_transform')
-class MeanstressTransformCollective(RF.RainflowCollective):
+class MeanstressTransformCollective(CL.LoadCollective):
 
     def fkm_goodman(self, ms_sens, R_goal):
         hd = HaighDiagram.fkm_goodman(ms_sens)
         res = hd.transform(self._obj, R_goal)
-        return res.rainflow
+        return res.load_collective
 
     def five_segment(self, haigh, R_goal):
         hd = HaighDiagram.five_segment(haigh)
         res = hd.transform(self._obj, R_goal)
-        return res.rainflow
+        return res.load_collective
 
 
 @pd.api.extensions.register_series_accessor('meanstress_transform')
-class MeanstressTransformMatrix(RF.RainflowMatrix):
+class MeanstressTransformMatrix(CL.MatrixLoadCollective):
 
     def _validate(self):
         super()._validate()
@@ -408,7 +408,7 @@ class MeanstressTransformMatrix(RF.RainflowMatrix):
 
     def fkm_goodman(self, haigh, R_goal):
         ranges = HaighDiagram.fkm_goodman(haigh).transform(self._obj, R_goal)['range']
-        return self._rebin_results(ranges).rainflow
+        return self._rebin_results(ranges).load_collective
 
     def _rebin_results(self, ranges):
         if ranges.shape[0] == 0:
@@ -439,7 +439,7 @@ def fkm_goodman(amplitude, meanstress, M, M2, R_goal):
     hd = HaighDiagram.fkm_goodman(haigh_fkm_goodman)
 
     res = hd.transform(cycles, R_goal)
-    return res.rainflow.amplitude.to_numpy()
+    return res.load_collective.amplitude.to_numpy()
 
 
 def five_segment_correction(amplitude, meanstress, M0, M1, M2, M3, M4, R12, R23, R_goal):
@@ -477,4 +477,4 @@ def five_segment_correction(amplitude, meanstress, M0, M1, M2, M3, M4, R12, R23,
 
     hd = HaighDiagram.five_segment(haigh_five_segment)
     res = hd.transform(cycles, R_goal)
-    return res.rainflow.amplitude.to_numpy()
+    return res.load_collective.amplitude.to_numpy()

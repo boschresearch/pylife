@@ -25,10 +25,10 @@ __maintainer__ = "Johannes Mueller"
 import pandas as pd
 import numpy as np
 
-import pylife.stress.rainflow as RF
+import pylife.stress.collective as CL
 
 @pd.api.extensions.register_series_accessor('solidity')
-class SolidityAccessor(RF.RainflowMatrix):
+class SolidityAccessor(CL.MatrixLoadCollective):
 
     def haibach(self, k):
         return haibach(self, k)
