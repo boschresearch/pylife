@@ -24,8 +24,8 @@ from pylife.stress import timesignal as pts
 def create_input_DF():
     fs = 2048
     t = np.arange(0, 30, 1/fs)
-    ts_df = pd.DataFrame({"sin1": np.sin(10* 2 * np.pi * t), 
-                          "sin2": 2 * np.sin(10* 2 * np.pi * t + 0.05), 
+    ts_df = pd.DataFrame({"sin1": np.sin(10* 2 * np.pi * t),
+                          "sin2": 2 * np.sin(10* 2 * np.pi * t + 0.05),
                           "cos": 10 * np.cos(5* 2 * np.pi * t),
                           "wn": np.random.rand(len(t))},
                          index=t)
@@ -36,8 +36,8 @@ def test_fs_calc_true():
     df = create_input_DF()
     fs = 2048
     assert fs == pts.fs_calc(df)
-    
-def test_fs_calc_false():    
+
+def test_fs_calc_false():
     df = create_input_DF()
     df.index = df.index.astype(str)
     assert 1 == pts.fs_calc(df)
@@ -51,14 +51,14 @@ def test_resample_acc_sine():
     test_sin = pts.resample_acc(ts_sin, int(12*omega)).describe().drop(
         ['count', 'mean', '50%', '25%', '75%'])
     pd.testing.assert_frame_equal(test_sin, expected_sin, rtol=2)
-    
-def test_resample_acc_wn():    
+
+def test_resample_acc_wn():
     # white noise
     ts_wn = pd.DataFrame(np.random.randn(129), index=np.linspace(0, 1, 129))
     expected_wn = ts_wn.describe()
     test_wn = pts.resample_acc(ts_wn, fs = pts.fs_calc(ts_wn)).describe()
     pd.testing.assert_frame_equal(test_wn, expected_wn, check_exact=True)
-def test_resample_acc_Sor():    
+def test_resample_acc_Sor():
     # SoR
     t = np.arange(0, 20, 1/4096)
     ts_sin = pd.DataFrame(np.sin(10 * 2 * np.pi * t), index=t)
@@ -67,7 +67,7 @@ def test_resample_acc_Sor():
     test_sin = pts.resample_acc(ts_sin, 2048).describe().drop(
         ['count', 'mean', '50%', '25%', '75%'])
     pd.testing.assert_frame_equal(test_sin, expected_sin, rtol=1e-2)
-def test_resample_acc_sawtooth():    
+def test_resample_acc_sawtooth():
     # sawtooth
     t=t = np.arange(0, 10, 1/4096)
     ts_st = pd.DataFrame(sg.sawtooth(2 * np.pi * 1 * t), index=t)
@@ -82,7 +82,7 @@ def test_ps_df():
                          columns=["wn", "sine"],
                          index=t)
     test_psd = pts.psd_df(ts_df, 512)
-    
+
     np.testing.assert_allclose(test_psd.sum().values, np.array([1, 0.5]), rtol=1e-1)
 
 # def test_running_stats_filt():
@@ -179,7 +179,7 @@ def test_roll_dataset():
 
 # %%
 
-
+@pytest.mark.skipif(not pts._HAVE_TSFRESH, reason="Don't have tsfresh")
 def test_extract_feature_df():
     global extracted_features
     extracted_features = pts._extract_feature_df(df_rolled, feature="maximum")
@@ -191,6 +191,7 @@ def test_extract_feature_df():
 # %%
 
 
+@pytest.mark.skipif(not pts._HAVE_TSFRESH, reason="Don't have tsfresh")
 def test_select_relevant_windows():
 
     ts_prep_selected = ts_prep_rolling.copy()
@@ -209,6 +210,7 @@ def test_select_relevant_windows():
 # %%
 
 
+@pytest.mark.skipif(not pts._HAVE_TSFRESH, reason="Don't have tsfresh")
 def test_polyfit_gridpoints1():
     global ts_grid_test
     ts_grid_test = grid_points.copy()
@@ -248,7 +250,7 @@ def test_polyfit_gridpoints1():
 
 # %%
 
-
+@pytest.mark.skipif(not pts._HAVE_TSFRESH, reason="Don't have tsfresh")
 def test_clean_timeseries(ts_inp):
     global ts_cleaned
 
@@ -291,6 +293,7 @@ def extraced_feature_gaps(df_gaps_rolled):
     return extraced_feature_gaps
 
 
+@pytest.mark.skipif(not pts._HAVE_TSFRESH, reason="Don't have tsfresh")
 def test_select_relevant_windows2(df_gaps_prep, extraced_feature_gaps):
     ts_gaps_selected = df_gaps_prep.copy()
     global grid_points_gaps
@@ -308,7 +311,7 @@ def test_select_relevant_windows2(df_gaps_prep, extraced_feature_gaps):
 
 # %%
 
-
+@pytest.mark.skipif(not pts._HAVE_TSFRESH, reason="Don't have tsfresh")
 def test_clean_timeseries2(ts_gaps, df_gaps_prep):
     poly_gridpoints_gaps = pts._polyfit_gridpoints(
         grid_points_gaps, df_gaps_prep, order=3, verbose=False, n_gridpoints=3)
@@ -324,6 +327,7 @@ def test_clean_timeseries2(ts_gaps, df_gaps_prep):
 # %% Test timeseries 3
 
 
+@pytest.mark.skipif(not pts._HAVE_TSFRESH, reason="Don't have tsfresh")
 def test_clean_timeseries3():
     t1 = np.linspace(0, 2*np.pi, 1000, endpoint=False)
     t2 = np.linspace(2*np.pi, 4*np.pi, 1000)

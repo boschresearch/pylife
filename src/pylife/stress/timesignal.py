@@ -21,8 +21,15 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 import scipy.signal as signal
-import tsfresh as ts
-from matplotlib.mlab import magnitude_spectrum, psd
+
+from matplotlib.mlab import psd
+
+try:
+    import tsfresh as ts
+    _HAVE_TSFRESH = True
+except ModuleNotFoundError:
+    _HAVE_TSFRESH = False
+
 
 class TimeSignalGenerator:
     '''Generates mixed time signals
@@ -456,6 +463,10 @@ def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
         cleaned DataFrame
 
         """
+
+    if not _HAVE_TSFRESH:
+        raise ImportError("tsfresh and dependencies are not installed. "
+                          "Use `pip install pylife[tsfresh]` to install it.")
 
     df_prep = _prepare_rolling(df)
     ts_time = df_prep.copy()
