@@ -32,7 +32,7 @@ except ModuleNotFoundError:
 
 
 class TimeSignalGenerator:
-    '''Generates mixed time signals
+    r"""Generates mixed time signals
 
     The generated time signal is a mixture of random sets of
 
@@ -63,7 +63,7 @@ class TimeSignalGenerator:
     So the whole sinus :math:`S` set is given by the following expression:
 
             :math:`S = \sum^n_i A_i \sin(\omega_i t + \phi_i) + c_i`.
-    '''
+    """
 
     def __init__(self, sample_rate, sine_set, gauss_set, log_gauss_set):
         sine_amplitudes = stats.norm.rvs(loc=sine_set['amplitude_median'],
@@ -84,7 +84,7 @@ class TimeSignalGenerator:
         self.time_position = 0.0
 
     def query(self, sample_num):
-        '''Gets a sample chunk of the time signal
+        """Gets a sample chunk of the time signal
 
         Parameters
         ----------
@@ -99,7 +99,7 @@ class TimeSignalGenerator:
 
         You can query multiple times, the newly delivered samples
         will smoothly attach to the previously queried ones.
-        '''
+        """
         samples = np.zeros(sample_num)
         end_time_position = self.time_position + \
             (sample_num-1) / self.sample_rate
@@ -116,10 +116,10 @@ class TimeSignalGenerator:
         return samples
 
     def reset(self):
-        ''' Resets the generator
+        """ Resets the generator
 
         A resetted generator behaves like a new generator.
-        '''
+        """
         self.time_position = 0.0
 
 def fs_calc(df):
@@ -269,20 +269,21 @@ def _roll_dataset(prep_roll_df, window_size=1000, overlap=200):
     # throws away the last halfshift
     rolling_direction = window_size - overlap
     cycles = int((len(prep_roll_df)-window_size) / rolling_direction)+1
-    df_rolled = pd.DataFrame()
+
+    parts = []
     # shiften
     for i in range(cycles):
         position = (rolling_direction) * i
-        shift = prep_roll_df.iloc[position: position + window_size, :]
+        shift = prep_roll_df.iloc[position: position + window_size, :].copy()
         # change IDs to format (id,time)
         df = pd.DataFrame({'id': np.int64(np.zeros(len(shift), dtype=int)),
                            'max_time': shift.iloc[-1, -1]})
 
-        shift.loc[:, "id"] = pd.MultiIndex.from_frame(df).to_numpy()
+        shift['id'] = pd.MultiIndex.from_frame(df).to_numpy()
 
-        df_rolled = df_rolled.append(shift, ignore_index=True)
+        parts.append(shift)
 
-    return df_rolled
+    return pd.concat(parts, ignore_index=True)
 
 
 def _extract_feature_df(df_rolled, feature="maximum"):
@@ -371,11 +372,11 @@ def _select_relevant_windows(prep_roll, extracted_features, comparison_column_ex
             just_added_NaNs = False
 
     index_liste = []
-    '''
+    """
     tail = (len(prep_roll)-window_size) % rolling_direction+1
     for i in range(tail):
         liste.append(len(prep_roll)-i-1)
-    '''
+    """
     liste = list(pd.core.common.flatten(liste))
     liste = list(set(liste))
     for i in range(len(liste)):
@@ -413,7 +414,7 @@ def _polyfit_gridpoints(grid_points, prep_roll, order=3,
     # add a null row at the start and reset time index
     delta_t = prep_roll.index[1]-prep_roll.index[0]
     line = pd.DataFrame(grid_points.iloc[:1], index=[- delta_t])
-    grid_points = grid_points.append(line, ignore_index=False)
+    grid_points = pd.concat([grid_points, line], ignore_index=False)
     grid_points.index = grid_points.index + delta_t
     poly_gridpoints = grid_points.sort_index()
     poly_gridpoints.iloc[0, :] = 0
@@ -473,7 +474,7 @@ def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
     # adding a row
     delta_t = ts_time.index[1]-ts_time.index[0]
     line = pd.DataFrame(ts_time.iloc[:1], index=[- delta_t])
-    ts_time = ts_time.append(line, ignore_index=False)
+    ts_time = pd.concat([ts_time, line], ignore_index=False)
     ts_time.index = ts_time.index + delta_t
     ts_time = ts_time.sort_index()
 
