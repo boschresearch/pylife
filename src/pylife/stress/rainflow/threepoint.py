@@ -46,7 +46,7 @@ class ThreePointDetector(AbstractDetector):
 
     .. jupyter-execute::
 
-        rfc.recorder.matrix_series(bins=16)
+        rfc.recorder.histogram(bins=16)
 
     We take three turning points into account to detect closed hysteresis loops.
 
