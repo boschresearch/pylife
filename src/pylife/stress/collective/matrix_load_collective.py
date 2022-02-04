@@ -29,7 +29,7 @@ from .abstract_load_collective import AbstractLoadCollective
 
 
 @pd.api.extensions.register_series_accessor('load_collective')
-class MatrixLoadCollective(PylifeSignal, AbstractLoadCollective):
+class LoadCollectiveHistogram(PylifeSignal, AbstractLoadCollective):
 
     def _validate(self):
         self._class_location = 'mid'
@@ -128,7 +128,7 @@ class MatrixLoadCollective(PylifeSignal, AbstractLoadCollective):
         return pd.Series(self._obj.groupby('range').transform(lambda g: np.cumsum(g)),
                          name='cumulated_cycles')
 
-class _MatrixLoadCollectiveImpl(ABC):
+class _LoadCollectiveHistogramImpl(ABC):
 
     @property
     @abstractmethod
@@ -140,7 +140,7 @@ class _MatrixLoadCollectiveImpl(ABC):
         self._class_location = 'mid'
 
 
-class _FromToMatrix(_MatrixLoadCollectiveImpl):
+class _FromToMatrix(_LoadCollectiveHistogramImpl):
 
     @property
     def index_names(self):
@@ -180,7 +180,7 @@ class _FromToMatrix(_MatrixLoadCollectiveImpl):
         return (fr+to) / 2.
 
 
-class _RangeMeanMatrix(_MatrixLoadCollectiveImpl):
+class _RangeMeanMatrix(_LoadCollectiveHistogramImpl):
 
     @property
     def index_names(self):

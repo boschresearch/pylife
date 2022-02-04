@@ -222,7 +222,7 @@ def test_rainflow_from_to_scale_scalar(lc_matrix_from_to):
     expected = pd.Series(1, index=expected_index, name='cycles')
 
     scaled = lc_matrix_from_to.load_collective.scale(0.5)
-    assert isinstance(scaled, pylife.stress.collective.MatrixLoadCollective)
+    assert isinstance(scaled, pylife.stress.collective.LoadCollectiveHistogram)
     pd.testing.assert_series_equal(scaled.to_pandas(), expected)
 
 
@@ -257,7 +257,7 @@ def test_rainflow_from_to_scale_series(lc_matrix_from_to):
 
     scaled = lc_matrix_from_to.load_collective.scale(factors)
 
-    assert isinstance(scaled, pylife.stress.collective.MatrixLoadCollective)
+    assert isinstance(scaled, pylife.stress.collective.LoadCollectiveHistogram)
     pd.testing.assert_series_equal(scaled.to_pandas(), expected)
 
 
@@ -268,7 +268,7 @@ def test_rainflow_from_to_shift_scalar(lc_matrix_from_to):
     expected = pd.Series(1, index=expected_index, name='cycles')
 
     shifted = lc_matrix_from_to.load_collective.shift(4.)
-    assert isinstance(shifted, pylife.stress.collective.MatrixLoadCollective)
+    assert isinstance(shifted, pylife.stress.collective.LoadCollectiveHistogram)
     pd.testing.assert_series_equal(shifted.to_pandas(), expected)
 
 
@@ -303,7 +303,7 @@ def test_rainflow_from_to_shift_series(lc_matrix_from_to):
 
     shiftd = lc_matrix_from_to.load_collective.shift(factors)
 
-    assert isinstance(shiftd, pylife.stress.collective.MatrixLoadCollective)
+    assert isinstance(shiftd, pylife.stress.collective.LoadCollectiveHistogram)
     pd.testing.assert_series_equal(shiftd.to_pandas(), expected)
 
 
@@ -422,7 +422,7 @@ def test_matrix_range_mean_scale_scalar(lc_matrix_range_mean):
     expected = pd.Series(1, index=expected_index, name='cycles')
 
     scaled = lc_matrix_range_mean.load_collective.scale(0.5)
-    assert isinstance(scaled, pylife.stress.collective.MatrixLoadCollective)
+    assert isinstance(scaled, pylife.stress.collective.LoadCollectiveHistogram)
     pd.testing.assert_series_equal(scaled.to_pandas(), expected)
 
 
@@ -441,7 +441,7 @@ def test_matrix_range_mean_foo_scale_scalar(lc_matrix_range_mean):
     expected = pd.Series(1, index=expected_index, name='cycles')
 
     scaled = lc_matrix.load_collective.scale(0.5)
-    assert isinstance(scaled, pylife.stress.collective.MatrixLoadCollective)
+    assert isinstance(scaled, pylife.stress.collective.LoadCollectiveHistogram)
     pd.testing.assert_series_equal(scaled.to_pandas(), expected)
 
 
@@ -476,7 +476,7 @@ def test_matrix_range_mean_scale_series(lc_matrix_range_mean):
 
     scaled = lc_matrix_range_mean.load_collective.scale(factors)
 
-    assert isinstance(scaled, pylife.stress.collective.MatrixLoadCollective)
+    assert isinstance(scaled, pylife.stress.collective.LoadCollectiveHistogram)
     pd.testing.assert_series_equal(scaled.to_pandas(), expected)
 
 
@@ -487,7 +487,7 @@ def test_matrix_range_mean_shift_scalar(lc_matrix_range_mean):
     expected = pd.Series(1, index=expected_index, name='cycles')
 
     shifted = lc_matrix_range_mean.load_collective.shift(4.)
-    assert isinstance(shifted, pylife.stress.collective.MatrixLoadCollective)
+    assert isinstance(shifted, pylife.stress.collective.LoadCollectiveHistogram)
     pd.testing.assert_series_equal(shifted.to_pandas(), expected)
 
 
@@ -522,7 +522,7 @@ def test_matrix_range_mean_shift_series(lc_matrix_range_mean):
 
     shiftd = lc_matrix_range_mean.load_collective.shift(factors)
 
-    assert isinstance(shiftd, pylife.stress.collective.MatrixLoadCollective)
+    assert isinstance(shiftd, pylife.stress.collective.LoadCollectiveHistogram)
     pd.testing.assert_series_equal(shiftd.to_pandas(), expected)
 
 

@@ -28,7 +28,7 @@ import numpy as np
 import pylife.stress.collective as CL
 
 @pd.api.extensions.register_series_accessor('solidity')
-class SolidityAccessor(CL.MatrixLoadCollective):
+class SolidityAccessor(CL.LoadCollectiveHistogram):
 
     def haibach(self, k):
         return haibach(self, k)

@@ -173,7 +173,7 @@ class HaighDiagram(PylifeSignal):
 
         Parameters
         ----------
-        cycles : :class:`pd.Series` accepted by class:``LoadCollective` or class:`MatrixLoadCollective``
+        cycles : :class:`pd.Series` accepted by class:``LoadCollective` or class:`LoadCollectiveHistogram``
             The load collective
 
         Returns
@@ -388,7 +388,7 @@ class MeanstressTransformCollective(CL.LoadCollective):
 
 
 @pd.api.extensions.register_series_accessor('meanstress_transform')
-class MeanstressTransformMatrix(CL.MatrixLoadCollective):
+class MeanstressTransformMatrix(CL.LoadCollectiveHistogram):
 
     def _validate(self):
         super()._validate()
