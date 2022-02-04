@@ -33,7 +33,7 @@ def ms_sens():
 def test_meanstress_collective_empty_fail():
     df = pd.Series([], index=pd.MultiIndex.from_tuples([], names= ['foo', 'bar']), dtype=np.float64)
 
-    with pytest.raises(AttributeError, match="Rainflow"):
+    with pytest.raises(AttributeError, match="Load collective"):
         df.meanstress_transform
 
 

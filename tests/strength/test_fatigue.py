@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 
 import pylife.strength.fatigue
-import pylife.stress.rainflow
+import pylife.stress
 
 
 def load_index():
@@ -173,7 +173,7 @@ load_hist_3 = pd.Series([
     (load_hist_3, expected_elementary_3),
 ])
 def test_damage_fatigue_elementary(load_hist, expected):
-    fatigue = material['elementary'].fatigue.miner_elementary().damage(load_hist.rainflow)
+    fatigue = material['elementary'].fatigue.miner_elementary().damage(load_hist.load_collective)
     pd.testing.assert_series_equal(fatigue, expected, rtol=1e-3)
 
 
@@ -183,7 +183,7 @@ def test_damage_fatigue_elementary(load_hist, expected):
     (load_hist_3, expected_haibach_3),
 ])
 def test_damage_fatigue_haibach(load_hist, expected):
-    fatigue = material['haibach'].fatigue.miner_haibach().damage(load_hist.rainflow)
+    fatigue = material['haibach'].fatigue.miner_haibach().damage(load_hist.load_collective)
     pd.testing.assert_series_equal(fatigue, expected, rtol=1e-3)
 
 
@@ -193,7 +193,7 @@ def test_damage_fatigue_haibach(load_hist, expected):
     (load_hist_3, expected_original_3),
 ])
 def test_damage_fatigue_original(load_hist, expected):
-    fatigue = material['original'].fatigue.damage(load_hist.rainflow)
+    fatigue = material['original'].fatigue.damage(load_hist.load_collective)
     pd.testing.assert_series_equal(fatigue, expected, rtol=1e-3)
 
 

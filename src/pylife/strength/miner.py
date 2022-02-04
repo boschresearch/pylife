@@ -84,7 +84,7 @@ class MinerBase(WoehlerCurve, ABC):
 
         Parameters
         ----------
-        collective : :class:`~pylife.stress.rainflow.RainflowCollective` or similar
+        collective : :class:`~pylife.stress.rainflow.LoadCollective` or similar
             The load collective
 
         Returns
@@ -106,7 +106,7 @@ class MinerBase(WoehlerCurve, ABC):
 
         Parameters
         ----------
-        collective : :class:`~pylife.stress.rainflow.RainflowCollective` or similar
+        collective : :class:`~pylife.stress.rainflow.LoadCollective` or similar
             The load collective
 
         Returns
@@ -127,7 +127,7 @@ class MinerElementary(MinerBase):
 
         Parameters
         ----------
-        collective : :class:`~pylife.stress.rainflow.RainflowCollective` or similar
+        collective : :class:`~pylife.stress.rainflow.LoadCollective` or similar
             The load collective
 
         Returns
@@ -146,7 +146,7 @@ class MinerElementary(MinerBase):
 
         Parameters
         ----------
-        collective : :class:`~pylife.stress.rainflow.RainflowCollective` or similar
+        collective : :class:`~pylife.stress.rainflow.LoadCollective` or similar
             The load collective
 
         Returns
@@ -177,7 +177,7 @@ class MinerHaibach(MinerBase):
 
         Parameters
         ----------
-        collective : :class:`~pylife.stress.rainflow.RainflowCollective` or similar
+        collective : :class:`~pylife.stress.rainflow.LoadCollective` or similar
             The load collective
 
         Returns

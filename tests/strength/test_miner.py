@@ -19,7 +19,7 @@ import pandas as pd
 import pytest
 
 import pylife.strength.miner as miner
-import pylife.stress.rainflow
+import pylife.stress
 
 from . import data
 
@@ -38,7 +38,7 @@ def make_collective_from_raw_data(raw_collective):
 
 @pytest.fixture
 def collective(request):
-    request.cls.coll = make_collective_from_raw_data(data.collective).rainflow
+    request.cls.coll = make_collective_from_raw_data(data.collective).load_collective
 
 
 # parameters for the example given in Haibach2006
@@ -116,12 +116,12 @@ class TestMinerElementary():
         The examples can be found on page 271.
         """
         coll = make_collective_from_raw_data(data.coll_elementary_acc)
-        load_level = coll.rainflow.amplitude.max()
+        load_level = coll.load_collective.amplitude.max()
         expected_N = 2167330
         miner_elementary = sn_curve_parameters_elementary.gassner_miner_elementary
         # some rounding is assumed in the example from the book
         # so in respect to millions of cycles a small neglectable tolerance is accepted
-        gassner = miner_elementary.gassner(coll.rainflow)
+        gassner = miner_elementary.gassner(coll.load_collective)
         np.testing.assert_approx_equal(expected_N, gassner.cycles(load_level), significant=6)
 
 
@@ -172,7 +172,7 @@ class TestMinerHaibach:
         The examples can be found on page 292.
         """
         coll = make_collective_from_raw_data(data.coll_haibach_mod_acc)
-        coll = coll.rainflow.scale(load_level/coll.rainflow.amplitude.max())
+        coll = coll.load_collective.scale(load_level/coll.load_collective.amplitude.max())
 
         miner_haibach = sn_curve_parameters_haibach.gassner_miner_haibach
         # some rounding is assumed in the example from the book

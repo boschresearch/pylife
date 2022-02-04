@@ -47,10 +47,10 @@ class AbstractRainflowCounter:
         return self._detector.residuals
 
     def get_rainflow_matrix(self, bins):
-        return self._recorder.matrix(bins)
+        return self._recorder.histogram_numpy(bins)
 
     def get_rainflow_matrix_frame(self, bins):
-        return pd.DataFrame(self._recorder.matrix_series(bins))
+        return pd.DataFrame(self._recorder.histogram(bins))
 
 
 class RainflowCounterThreePoint(AbstractRainflowCounter):

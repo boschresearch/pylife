@@ -49,7 +49,7 @@ class FKMDetector(AbstractDetector):
 
     .. jupyter-execute::
 
-        rfc.recorder.matrix_series(bins=16)
+        rfc.recorder.histogram(bins=16)
 
     Note
     ----
