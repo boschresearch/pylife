@@ -23,6 +23,23 @@ import numpy as np
 import pandas as pd
 
 
+def combine_histogram(hist_list, binning=None, method='sum'):
+    hist_list = list(filter(lambda h: len(h) > 1, hist_list))
+    if len(hist_list) == 0:
+        return pd.Series(dtype=np.float64, index=pd.IntervalIndex.from_tuples([]))
+
+    left = min(filter(lambda v: not np.isnan(v), map(lambda h: h.index.left.min(), hist_list)))
+    right = max(filter(lambda v: not np.isnan(v), map(lambda h: h.index.right.max(), hist_list)))
+
+    binning = binning or int(np.ceil(np.sqrt(sum(map(lambda h: len(h)**2, hist_list)))))
+    if isinstance(binning, int):
+        binning = pd.interval_range(left, right, binning)
+
+    hist_concat = pd.concat(map(lambda h: rebin_histogram(h, binning), hist_list))
+
+    return hist_concat.groupby(hist_concat.index).agg(method)
+
+
 def combine_hist(hist_list, method='sum', nbins=64, histtype="rf"):
     """
     Performs the combination of multiple Histograms.
@@ -92,8 +109,8 @@ def rebin_histogram(histogram, binning):
     histogram : :class:`pandas.Series` with :class:`pandas.IntervalIndex`
         The histogram data to be rebinned
 
-    binning : :class:`pandas.IntervalIndex`
-        The given binning
+    binning : :class:`pandas.IntervalIndex` or int
+        The given binning or number of bins
 
 
     Returns
@@ -118,6 +135,8 @@ def rebin_histogram(histogram, binning):
         return hist.apply(lambda v: v.iloc[0] * interval_overlap(interval, v.name), axis=1).sum()
 
     def binning_has_gaps():
+        if len(binning) == 0:
+            return False
         left = binning.left[1:]
         right = binning.right[:-1]
         return pd.DataFrame({'l': left, 'r': right}).apply(lambda r: r.l != r.r, axis=1).any()
@@ -131,10 +150,18 @@ def rebin_histogram(histogram, binning):
     if not isinstance(histogram.index, pd.IntervalIndex):
         raise TypeError("histogram needs to have an IntervalIndex.")
 
+    if isinstance(binning, int):
+        binning = _binning_of_n_bins(histogram, binning)
+
     if not isinstance(binning, pd.IntervalIndex):
         raise TypeError("binning argument must be a pandas.IntervalIndex.")
 
-    if not binning.is_non_overlapping_monotonic or binning.is_monotonic_decreasing:
+    if (
+            len(binning) > 0
+            and (
+                not binning.is_non_overlapping_monotonic or binning.is_monotonic_decreasing
+            )
+    ):
         raise ValueError("binning index must be monotonic increasing without overlaps.")
 
     if binning_has_gaps():
@@ -154,27 +181,11 @@ def rebin_histogram(histogram, binning):
     return rebinned
 
 
-def rebin_histogram_n_bins(histogram, binnum):
-    """Rebin histogram to a given number of bins.
-
-    Parameters
-    ----------
-    histogram : :class:`pandas.Series` with :class:`pandas.IntervalIndex`
-        The histogram data to be rebinned
-
-    binnum : int
-        The number of bins
-
-    Returns
-    -------
-    rebinned : :class:`pandas.Series` with :class:`pandas.IntervalIndex`
-        The rebinned histogram
-
-    Raises
-    ------
-    TypeError : if the ``histogram`` does not have an ``IntervalIndex``.
-    """
+def _binning_of_n_bins(histogram, binnum):
     start = histogram.index.left.min()
     end = histogram.index.right.max()
-    binning = pd.interval_range(start, end, binnum)
-    return rebin_histogram(histogram, binning)
+
+    if np.isnan(start) or np.isnan(end):
+        return pd.interval_range(0., 0., 0)
+
+    return pd.interval_range(start, end, binnum)

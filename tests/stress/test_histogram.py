@@ -22,38 +22,118 @@ import pandas as pd
 from pylife.stress import histogram as hi
 
 
-def test_combine_hist():
-    hist1 = pd.Series(np.array([5, 10]), index=pd.interval_range(start=0, end=2))
-    hist2 = pd.Series(np.array([12, 3, 20]), index=pd.interval_range(start=1, periods=3))
-
-    expect_sum = pd.Series(np.array([5, 22, 3, 20]), index=pd.interval_range(start=0, periods=4))
-    test_sum = hi.combine_hist([hist1, hist2], method='sum', nbins=4, histtype="range")
-    pd.testing.assert_series_equal(test_sum, expect_sum, check_names=False)
-
-    expect_min = pd.Series(np.array([5, 3]), index=pd.interval_range(
-                                  start=0, end=4, periods=2))
-    test_min = hi.combine_hist([hist1, hist2], method='min', nbins=2, histtype="range")
-    pd.testing.assert_series_equal(test_min, expect_min, check_names=False)
-
-    expect_max = pd.Series(np.array([12, 20]), index=pd.interval_range(
-                                  start=0, end=4, periods=2))
-    test_max = hi.combine_hist([hist1, hist2], method='max', nbins=2, histtype="range")
-    pd.testing.assert_series_equal(test_max, expect_max, check_names=False)
-
-    expect_mean = pd.Series(np.array([9., 11.5]), index=pd.interval_range(start=0, end=4, periods=2))
-    test_mean = hi.combine_hist([hist1, hist2], method='mean', nbins=2, histtype="range")
-    pd.testing.assert_series_equal(test_mean, expect_mean, check_names=False)
-
-    expect_std = pd.Series(np.array([np.std(np.array([5, 10, 12])),
-                                     np.std(np.array([3, 20]))]),
-                           index=pd.interval_range(start=0, end=4, periods=2))
-    test_std = hi.combine_hist([hist1, hist2], method='std', nbins=2, histtype="range")
-    pd.testing.assert_series_equal(test_std, expect_std, check_names=False)
-
-
 @pytest.fixture
 def empty_histogram():
     return pd.Series(dtype=np.float64, index=pd.IntervalIndex.from_tuples([]))
+
+
+@pytest.fixture
+def some_histogram_1d():
+    return pd.Series(np.array([5., 10.]), index=pd.interval_range(start=0, end=2))
+
+
+@pytest.fixture
+def another_histogram_1d():
+    return pd.Series(np.array([12., 3., 20.]), index=pd.interval_range(start=1, periods=3))
+
+
+@pytest.fixture
+def hists_to_combine_1d(some_histogram_1d, another_histogram_1d):
+    return [some_histogram_1d, another_histogram_1d]
+
+
+def test_combine_zero_histograms(empty_histogram):
+    result = hi.combine_histogram([])
+    pd.testing.assert_series_equal(result, empty_histogram)
+
+@pytest.mark.parametrize('method', ['sum', 'min', 'max', 'mean'])
+def test_combine_two_empty_histograms_1d(empty_histogram, method):
+    result = hi.combine_histogram([empty_histogram, empty_histogram], method=method)
+    pd.testing.assert_series_equal(result, empty_histogram)
+
+
+@pytest.mark.parametrize('method', ['sum', 'max'])
+def test_combine_non_empty_with_empty(empty_histogram, some_histogram_1d, method):
+    result = hi.combine_histogram([some_histogram_1d, empty_histogram], method=method)
+    pd.testing.assert_series_equal(result, some_histogram_1d)
+
+
+@pytest.mark.parametrize('method', ['sum', 'min', 'max', 'mean'])
+def test_combine_empty_with_non_empty(empty_histogram, another_histogram_1d, method):
+    result = hi.combine_histogram([empty_histogram, another_histogram_1d], method=method)
+    pd.testing.assert_series_equal(result, another_histogram_1d)
+
+
+@pytest.mark.parametrize('method, expected', [
+    ('sum', [27., 23.]),
+    ('min', [12., 0.]),
+    ('max', [15., 23.]),
+    ('mean', [13.5, 11.5])
+])
+def test_combine_two_histograms_1d(some_histogram_1d, another_histogram_1d, method, expected):
+    result = hi.combine_histogram([some_histogram_1d, another_histogram_1d], binning=2, method=method)
+    expected = pd.Series(expected, index=pd.interval_range(start=0, end=4, periods=2))
+    pd.testing.assert_series_equal(result, expected)
+
+@pytest.mark.parametrize('method, expected', [
+    ('sum', [5., 22., 3., 20.]),
+    ('min', [0., 10., 0., 0.]),
+    ('max', [5., 12., 3., 20.]),
+    ('mean', [2.5, 11., 1.5, 10.])
+])
+def test_combine_two_histograms_autobin_1d(some_histogram_1d, another_histogram_1d, method, expected):
+    print(some_histogram_1d)
+    print(another_histogram_1d)
+    result = hi.combine_histogram([some_histogram_1d, another_histogram_1d], method=method)
+    expected = pd.Series(expected, index=pd.interval_range(start=0, end=4, periods=4))
+    pd.testing.assert_series_equal(result, expected)
+
+
+def test_combine_hist_sum(hists_to_combine_1d):
+    expect_sum = pd.Series(np.array([5., 22., 3., 20.]), index=pd.interval_range(start=0, periods=4))
+    test_sum = hi.combine_hist(hists_to_combine_1d, method='sum', nbins=4, histtype="range")
+    pd.testing.assert_series_equal(test_sum, expect_sum, check_names=False)
+
+
+def test_combine_hist_min(hists_to_combine_1d):
+    expect_min = pd.Series(np.array([5., 3.]), index=pd.interval_range(
+                                  start=0, end=4, periods=2))
+    test_min = hi.combine_hist(hists_to_combine_1d, method='min', nbins=2, histtype="range")
+    pd.testing.assert_series_equal(test_min, expect_min, check_names=False)
+
+
+def test_combine_hist_max(hists_to_combine_1d):
+    expect_max = pd.Series(np.array([12., 20.]), index=pd.interval_range(
+                                  start=0, end=4, periods=2))
+    test_max = hi.combine_hist(hists_to_combine_1d, method='max', nbins=2, histtype="range")
+    pd.testing.assert_series_equal(test_max, expect_max, check_names=False)
+
+
+def test_combine_hist_mean(hists_to_combine_1d):
+    expect_mean = pd.Series(np.array([9., 11.5]), index=pd.interval_range(start=0, end=4, periods=2))
+    test_mean = hi.combine_hist(hists_to_combine_1d, method='mean', nbins=2, histtype="range")
+    pd.testing.assert_series_equal(test_mean, expect_mean, check_names=False)
+
+
+def test_combine_hist_std(hists_to_combine_1d):
+    expect_std = pd.Series(np.array([np.std(np.array([5, 10, 12])),
+                                     np.std(np.array([3, 20]))]),
+                           index=pd.interval_range(start=0, end=4, periods=2))
+    test_std = hi.combine_hist(hists_to_combine_1d, method='std', nbins=2, histtype="range")
+    pd.testing.assert_series_equal(test_std, expect_std, check_names=False)
+
+
+# def test_combine_test_big_bin():
+#     hist1 = pd.Series([1, 2], index=pd.IntervalIndex.from_tuples([(0.0, 0.5), (0.5, 1.0)]))
+#     hist2 = pd.Series([4], index=pd.IntervalIndex.from_tuples([(0.0, 1.0)]))
+
+#     result = hi.combine_hist([hist1, hist2], method=sum, nbins=2, histtype='range')
+
+#     expected = pd.Series([3, 4], index=pd.IntervalIndex.from_tuples([(0.0, 0.5), (0.5, 1.0)], name='range'))
+
+#     pd.testing.assert_series_equal(result, expected)
+
+
 
 
 @pytest.fixture
@@ -193,7 +273,7 @@ def test_rebin_histogram(histogram, expected, regular_binning):
 ])
 def test_rebin_histogram_n_bins(original_binning, binnum, expected):
     histogram = pd.Series([1.0], pd.IntervalIndex.from_tuples(original_binning))
-    rebinned = hi.rebin_histogram_n_bins(histogram, binnum)
+    rebinned = hi.rebin_histogram(histogram, binnum)
 
     expected = pd.IntervalIndex.from_tuples(expected)
     pd.testing.assert_index_equal(rebinned.index, expected)
