@@ -3,6 +3,7 @@ pytest
 scipy
 pandas
 cython
+tsfresh
 pymc3
 jupyter
 matplotlib

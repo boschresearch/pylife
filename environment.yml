@@ -12,5 +12,5 @@ dependencies:
 - pytables
 - pip = 20.2
 - pip:
-  - -e .[testing]
+  - -e .[testing,all]
   - pyvista
