@@ -19,25 +19,26 @@ __maintainer__ = "Johannes Mueller"
 
 import warnings
 
+import functools as ft
+
 import numpy as np
 import pandas as pd
 
 
 def combine_histogram(hist_list, binning=None, method='sum'):
-    hist_list = list(filter(lambda h: len(h) > 1, hist_list))
+    hist_list = list(filter(lambda h: len(h) > 0, hist_list))
     if len(hist_list) == 0:
         return pd.Series(dtype=np.float64, index=pd.IntervalIndex.from_tuples([]))
 
-    left = min(filter(lambda v: not np.isnan(v), map(lambda h: h.index.left.min(), hist_list)))
-    right = max(filter(lambda v: not np.isnan(v), map(lambda h: h.index.right.max(), hist_list)))
-
-    binning = binning or int(np.ceil(np.sqrt(sum(map(lambda h: len(h)**2, hist_list)))))
+    binning = binning or max(map(lambda h: len(h), hist_list))
     if isinstance(binning, int):
+        left = min(filter(lambda v: not np.isnan(v), map(lambda h: h.index.left.min(), hist_list)))
+        right = max(filter(lambda v: not np.isnan(v), map(lambda h: h.index.right.max(), hist_list)))
         binning = pd.interval_range(left, right, binning)
 
-    hist_concat = pd.concat(map(lambda h: rebin_histogram(h, binning), hist_list))
-
-    return hist_concat.groupby(hist_concat.index).agg(method)
+    index = ft.reduce(lambda acc, el: acc.join(el.index, how='outer'), hist_list, pd.Index([]))
+    concat = pd.concat(map(lambda h: pd.Series(h, index=index), hist_list))
+    return rebin_histogram(concat.groupby(concat.index).agg(method), binning)
 
 
 def combine_hist(hist_list, method='sum', nbins=64, histtype="rf"):
@@ -147,11 +148,20 @@ def rebin_histogram(histogram, binning):
             histogram.index.left.min() < binning.left.min()
         )
 
+    def binning_of_n_bins(index, binnum):
+        start = index.left.min()
+        end = index.right.max()
+
+        if np.isnan(start) or np.isnan(end):
+            return pd.interval_range(0., 0., 0)
+
+        return pd.interval_range(start, end, binnum)
+
     if not isinstance(histogram.index, pd.IntervalIndex):
         raise TypeError("histogram needs to have an IntervalIndex.")
 
     if isinstance(binning, int):
-        binning = _binning_of_n_bins(histogram, binning)
+        binning = binning_of_n_bins(histogram.index, binning)
 
     if not isinstance(binning, pd.IntervalIndex):
         raise TypeError("binning argument must be a pandas.IntervalIndex.")
@@ -181,11 +191,9 @@ def rebin_histogram(histogram, binning):
     return rebinned
 
 
-def _binning_of_n_bins(histogram, binnum):
-    start = histogram.index.left.min()
-    end = histogram.index.right.max()
+def rebin_histogram_2d(histogram, binning):
 
-    if np.isnan(start) or np.isnan(end):
-        return pd.interval_range(0., 0., 0)
+    for name in reversed(histogram.index.names):
+        histogram = histogram.groupby(name).apply(lambda h: rebin_histogram(h.droplevel(name), binning))
 
-    return pd.interval_range(start, end, binnum)
+    return histogram
