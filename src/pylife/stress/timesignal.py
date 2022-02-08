@@ -14,6 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""A module for time signal handling
+
+Warning
+-------
+
+This module is not considered finalized even though it is part of pylife-2.0.
+Breaking changes might occur in upcoming minor releases.
+"""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
@@ -34,11 +43,7 @@ except ModuleNotFoundError:
 class TimeSignalGenerator:
     r"""Generates mixed time signals
 
-    The generated time signal is a mixture of random sets of
-
-    * sinus signals
-    * gauss signals (not yet)
-    * log gauss signals (not yet)
+    The generated time signal is a mixture of random sets of sinus signals
 
     For each set the user supplys a dict describing the set::
 
