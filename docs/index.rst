@@ -13,6 +13,11 @@ pyLife Documentation
    INSTALLATION
 
 .. toctree::
+   :maxdepth: 2
+
+   tutorials/index.rst
+
+.. toctree::
    :maxdepth: 3
    :caption: User Guide
 
@@ -25,7 +30,7 @@ pyLife Documentation
    cookbook
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Reference
 
    reference
