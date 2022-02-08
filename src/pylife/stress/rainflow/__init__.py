@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -84,9 +84,6 @@ from .recorders import LoopValueRecorder, FullRecorder
 
 from .compat import RainflowCounterThreePoint, RainflowCounterFKM
 
-from .matrix_signal import RainflowMatrix
-from .collective_signal import RainflowCollective
-
 __all__ = [
     'find_turns',
     'AbstractDetector',
@@ -98,6 +95,4 @@ __all__ = [
     'FullRecorder',
     'RainflowCounterThreePoint',
     'RainflowCounterFKM',
-    'RainflowMatrix',
-    'RainflowCollective'
 ]

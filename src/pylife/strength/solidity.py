@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -25,10 +25,10 @@ __maintainer__ = "Johannes Mueller"
 import pandas as pd
 import numpy as np
 
-import pylife.stress.rainflow as RF
+import pylife.stress.collective as CL
 
 @pd.api.extensions.register_series_accessor('solidity')
-class SolidityAccessor(RF.RainflowMatrix):
+class SolidityAccessor(CL.LoadCollectiveHistogram):
 
     def haibach(self, k):
         return haibach(self, k)

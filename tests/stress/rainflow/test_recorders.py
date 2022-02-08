@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -147,16 +147,16 @@ def test_full_rainflow_recorder_two_non_zero_collective():
     pd.testing.assert_frame_equal(fr.collective, expected)
 
 
-def test_full_rainflow_recorder_empty_matrix_default():
+def test_full_rainflow_recorder_empty_histogram_default():
     fr = RFR.FullRecorder()
-    matrix, _, _ = fr.matrix()
-    np.testing.assert_array_equal(matrix, np.zeros((10, 10)))
+    histogram, _, _ = fr.histogram_numpy()
+    np.testing.assert_array_equal(histogram, np.zeros((10, 10)))
 
 
-def test_full_rainflow_recorder_empty_matrix_5_bins():
+def test_full_rainflow_recorder_empty_histogram_5_bins():
     fr = RFR.FullRecorder()
-    matrix, _, _ = fr.matrix(bins=5)
-    np.testing.assert_array_equal(matrix, np.zeros((5, 5)))
+    histogram, _, _ = fr.histogram_numpy(bins=5)
+    np.testing.assert_array_equal(histogram, np.zeros((5, 5)))
 
 
 @pytest.mark.parametrize('value_from, value_to, index_from, index_to', [
@@ -170,13 +170,13 @@ def test_full_rainflow_recorder_one_non_zero(value_from, value_to, index_from, i
 
     expected_from = np.linspace(value_from - 0.5, value_from + 0.5, 11)
     expected_to = np.linspace(value_to - 0.5, value_to + 0.5, 11)
-    expected_matrix = np.zeros((10, 10))
-    expected_matrix[5, 5] = 1.
+    expected_histogram = np.zeros((10, 10))
+    expected_histogram[5, 5] = 1.
 
-    matrix, vfrom, vto = fr.matrix()
+    histogram, vfrom, vto = fr.histogram_numpy()
     np.testing.assert_array_equal(expected_from, vfrom)
     np.testing.assert_array_equal(expected_to, vto)
-    np.testing.assert_array_equal(expected_matrix, matrix)
+    np.testing.assert_array_equal(expected_histogram, histogram)
 
 
 def test_full_rainflow_recorder_two_non_zero():
@@ -191,14 +191,14 @@ def test_full_rainflow_recorder_two_non_zero():
 
     expected_from = np.linspace(vf1, vf2, 11)
     expected_to = np.linspace(vt1, vt2, 11)
-    expected_matrix = np.zeros((10, 10))
-    expected_matrix[0, 0] = 1.
-    expected_matrix[-1, -1] = 2.
+    expected_histogram = np.zeros((10, 10))
+    expected_histogram[0, 0] = 1.
+    expected_histogram[-1, -1] = 2.
 
-    matrix, vfrom, vto = fr.matrix()
+    histogram, vfrom, vto = fr.histogram_numpy()
     np.testing.assert_array_equal(expected_from, vfrom)
     np.testing.assert_array_equal(expected_to, vto)
-    np.testing.assert_array_equal(expected_matrix, matrix)
+    np.testing.assert_array_equal(expected_histogram, histogram)
 
 
 def test_loopvalue_rainflow_recorder_empty_collective_default():
@@ -221,25 +221,26 @@ def test_loop_value_rainflow_recorder_record_two_values_collective():
 
     pd.testing.assert_frame_equal(lvr.collective, expected)
 
-def test_lopvalue_rainflow_recorder_empty_matrix_series_default():
+
+def test_lopvalue_rainflow_recorder_empty_histogram_default():
     fr = RFR.LoopValueRecorder()
-    matrix = fr.matrix_series()
-    assert matrix.index.names[0] == 'from'
-    assert matrix.index.names[1] == 'to'
-    np.testing.assert_array_equal(matrix.to_numpy(), np.zeros(100))
+    histogram = fr.histogram()
+    assert histogram.index.names[0] == 'from'
+    assert histogram.index.names[1] == 'to'
+    np.testing.assert_array_equal(histogram.to_numpy(), np.zeros(100))
 
 
-def test_loopvalue_rainflow_recorder_empty_matrix_series_5_bins():
+def test_loopvalue_rainflow_recorder_empty_histogram_5_bins():
     fr = RFR.LoopValueRecorder()
-    matrix = fr.matrix_series(bins=5).to_numpy()
-    np.testing.assert_array_equal(matrix, np.zeros(25))
+    histogram = fr.histogram(bins=5).to_numpy()
+    np.testing.assert_array_equal(histogram, np.zeros(25))
 
 
 @pytest.mark.parametrize('value_from, value_to', [
     (23., 42.),
     (46., 84.)
 ])
-def test_loopvalue_rainflow_recorder_matrix_series_one_non_zero(value_from, value_to):
+def test_loopvalue_rainflow_recorder_histogram_one_non_zero(value_from, value_to):
     fr = RFR.LoopValueRecorder()
     fr.record_values([value_from], [value_to])
 
@@ -247,8 +248,8 @@ def test_loopvalue_rainflow_recorder_matrix_series_one_non_zero(value_from, valu
     expected_to = pd.IntervalIndex.from_breaks(np.linspace(value_to - 0.5, value_to + 0.5, 11))
     expected_index = pd.MultiIndex.from_product([expected_from, expected_to], names=['from', 'to'])
 
-    expected_matrix = np.zeros((10, 10))
-    expected_matrix[5, 5] = 1.
+    expected_histogram = np.zeros((10, 10))
+    expected_histogram[5, 5] = 1.
 
-    matrix = fr.matrix_series()
-    pd.testing.assert_series_equal(matrix, pd.Series(expected_matrix.flatten(), index=expected_index))
+    histogram = fr.histogram()
+    pd.testing.assert_series_equal(histogram, pd.Series(expected_histogram.flatten(), index=expected_index))

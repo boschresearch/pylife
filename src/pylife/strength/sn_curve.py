@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -19,11 +19,11 @@ __maintainer__ = "Johannes Mueller"
 
 import warnings
 
-import numpy as np
 import pandas as pd
 
 import pylife.strength.fatigue
-import pylife.stress.rainflow
+import pylife.stress
+
 
 class FiniteLifeBase:
     """Base class for SN curve calculations - either in logarithmic or regular scale"""
@@ -166,7 +166,7 @@ class FiniteLifeCurve(FiniteLifeBase):
             names = ["range" if name == index_name else name for name in loads.index.names]
             loads.index.set_names(names, inplace=True)
 
-        damage = estimator.damage(loads.rainflow)
+        damage = estimator.damage(loads.load_collective)
         if index_name != "range":
             names = [index_name if name == "range" else name for name in loads.index.names]
             damage.index.set_names(names, inplace=True)

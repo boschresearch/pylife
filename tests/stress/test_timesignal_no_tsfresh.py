@@ -14,25 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__author__ = "Johannes Mueller"
-__maintainer__ = __author__
-
 import sys
 import pytest
 
 
-def test_import_bayesian():
+def test_clean_timeseries_no_tsfresh():
+    sys.modules['tsfresh'] = None
 
-    sys.modules['pymc3'] = None
-    sys.modules['theano'] = None
+    sys.modules.pop('pylife.stress.timesignal', None)
 
-    sys.modules.pop('pylife.materialdata.woehler', None)
-    sys.modules.pop('pylife.materialdata.woehler.bayesian', None)
+    import pylife.stress.timesignal as pts
 
-    import pylife.materialdata.woehler as WL
-
-    with pytest.raises(ImportError, match=r"pip install pylife\[pymc3\]"):
-        WL.Bayesian(None)
-
-    del sys.modules['pymc3']
-    del sys.modules['theano']
+    with pytest.raises(ImportError, match=r"pip install pylife\[tsfresh\]"):
+        pts.clean_timeseries(None, None)

@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -18,16 +18,16 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 from .abstract_load_collective import AbstractLoadCollective
+from .matrix_load_collective import LoadCollectiveHistogram
 
 import pandas as pd
 import numpy as np
 
 from pylife import PylifeSignal
-from pylife.stress.rainflow import RainflowMatrix
 
-@pd.api.extensions.register_dataframe_accessor('rainflow')
-class RainflowCollective(PylifeSignal, AbstractLoadCollective):
-    """A Rainflow collective.
+@pd.api.extensions.register_dataframe_accessor('load_collective')
+class LoadCollective(PylifeSignal, AbstractLoadCollective):
+    """A Load collective.
 
     The usual use of this signal is to process hysteresis loop data from a
     rainflow recording.  Usually the keys ``from`` and ``to`` are used to
@@ -47,7 +47,7 @@ class RainflowCollective(PylifeSignal, AbstractLoadCollective):
                 'to': to
             }, index=self._obj.index)
             return
-        raise AttributeError("Rainflow needs either 'range'/'mean' or 'from'/'to' in column names.")
+        raise AttributeError("Load collective needs either 'range'/'mean' or 'from'/'to' in column names.")
 
     @property
     def amplitude(self):
@@ -78,10 +78,49 @@ class RainflowCollective(PylifeSignal, AbstractLoadCollective):
         return pd.Series((fr+to)/2., name='meanstress')
 
     @property
+    def R(self):
+        """Calculate the R values of the load collective.
+
+        Returns
+        -------
+        R : pd.Series
+            The R values of the load collective
+        """
+        res = (self.lower / self.upper).fillna(0.0)
+        res.name = 'R'
+        return res
+
+    @property
+    def upper(self):
+        """Calculate the upper load values of the load collective.
+
+        Returns
+        -------
+        upper : pd.Series
+            The upper load values of the load collective
+        """
+        res = self._obj.max(axis=1)
+        res.name = 'upper'
+        return res
+
+    @property
+    def lower(self):
+        """Calculate the lower load values of the load collective.
+
+        Returns
+        -------
+        lower : pd.Series
+            The lower load values of the load collective
+        """
+        res = self._obj.min(axis=1)
+        res.name = 'lower'
+        return res
+
+    @property
     def cycles(self):
         """The cycles of each member of the collective is 1.0.
 
-        This is for compatibility with :class:`pylife.stress.rainflow.RainflowMatrix`
+        This is for compatibility with :class:`~pylife.stress.pylife.stress.LoadCollectiveHistogram`
         """
         return pd.Series(1.0, name='cycles', index=self._obj.index)
 
@@ -94,7 +133,7 @@ class RainflowCollective(PylifeSignal, AbstractLoadCollective):
             The factor(s) to scale the collective with.
         """
         factors, obj = self.broadcast(factors)
-        return obj.multiply(factors, axis=0).rainflow
+        return obj.multiply(factors, axis=0).load_collective
 
     def shift(self, diffs):
         """Shift the collective.
@@ -105,7 +144,7 @@ class RainflowCollective(PylifeSignal, AbstractLoadCollective):
             The diff(s) to shift the collective by.
         """
         diffs, obj = self.broadcast(diffs)
-        return obj.add(diffs, axis=0).rainflow
+        return obj.add(diffs, axis=0).load_collective
 
     def range_histogram(self, bins, axis=None):
         """Calculate the histogram of range values along a given axis.
@@ -117,7 +156,7 @@ class RainflowCollective(PylifeSignal, AbstractLoadCollective):
 
         Returns
         -------
-        range histogram : :class:`pylife.rainflow.RainflowMatrix`
+        range histogram : :class:`~pylife.pylife.stress.LoadCollectiveHistogram`
 
         axis : str, optional
             The index axis along which the histogram is calculated. If missing
@@ -132,10 +171,10 @@ class RainflowCollective(PylifeSignal, AbstractLoadCollective):
             bins = np.append(bins.left[0], bins.right)
 
         if axis is None:
-            return RainflowMatrix(make_histogram(self.amplitude))
+            return LoadCollectiveHistogram(make_histogram(self.amplitude))
 
         result = pd.Series(self.amplitude
                            .groupby(self._obj.index.droplevel(axis).names)
                            .apply(make_histogram), name='cycles')
 
-        return RainflowMatrix(result)
+        return LoadCollectiveHistogram(result)

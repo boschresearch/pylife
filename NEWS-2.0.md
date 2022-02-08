@@ -82,6 +82,10 @@ to `docs`.  Both are the common locations for Python 3.x packages.
   have been adjusted to the naming conventions and are now
   `scattering_range_to_std` and `std_to_scattering_range`.
 
+* The accessor class `CyclicStress` with the accessor `cyclic_stress` is gone.
+  Use `pylife.LoadCollective` instead.
+
+
 ## Variable names
 
 Currently we are brainstorming on guidelines about variable names.  See the

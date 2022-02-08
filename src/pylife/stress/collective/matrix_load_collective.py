@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -28,8 +28,8 @@ from pylife import PylifeSignal
 from .abstract_load_collective import AbstractLoadCollective
 
 
-@pd.api.extensions.register_series_accessor('rainflow')
-class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
+@pd.api.extensions.register_series_accessor('load_collective')
+class LoadCollectiveHistogram(PylifeSignal, AbstractLoadCollective):
 
     def _validate(self):
         self._class_location = 'mid'
@@ -42,14 +42,14 @@ class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
             self._impl = _FromToMatrix(self._obj)
             return
 
-        raise AttributeError("Rainflow needs either 'range'/('mean') or 'from'/'to' in index levels.")
+        raise AttributeError("Load collective matrix needs either 'range'/('mean') or 'from'/'to' in index levels.")
 
     def _fail_if_not_multiindex(self, index_names):
         for name in index_names:
             if name not in self._obj.index.names:
                 continue
             if not isinstance(self._obj.index.get_level_values(name), pd.IntervalIndex):
-                raise AttributeError("Index of a rainflow matrix must be pandas.IntervalIndex.")
+                raise AttributeError("Index of a load collective matrix must be pandas.IntervalIndex.")
 
     @property
     def amplitude(self):
@@ -57,9 +57,33 @@ class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
         return pd.Series(rng/2., name='amplitude', index=self._obj.index)
 
     @property
+    def amplitude_histogram(self):
+        index = self._impl.amplitude_histogram_index()
+        index.name = 'amplitude'
+        return pd.Series(self._obj.values, index=index, name='cycles')
+
+    @property
     def meanstress(self):
         mean = self._impl.meanstress()
         return pd.Series(mean, name='meanstress', index=self._obj.index)
+
+    @property
+    def R(self):
+        res = (self.lower / self.upper).fillna(0.0)
+        res.name = 'R'
+        return res
+
+    @property
+    def upper(self):
+        res = self.meanstress + self.amplitude
+        res.name = 'upper'
+        return res
+
+    @property
+    def lower(self):
+        res = self.meanstress - self.amplitude
+        res.name = 'lower'
+        return res
 
     @property
     def cycles(self):
@@ -76,10 +100,10 @@ class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
         return self
 
     def scale(self, factors):
-        return self._shift_or_scale(lambda x, y: x * y, factors).rainflow
+        return self._shift_or_scale(lambda x, y: x * y, factors).load_collective
 
     def shift(self, diffs):
-        return self._shift_or_scale(lambda x, y: x + y, diffs, skip=['range']).rainflow
+        return self._shift_or_scale(lambda x, y: x + y, diffs, skip=['range']).load_collective
 
     def _shift_or_scale(self, func, operand, skip=[]):
         def do_transform_interval_index(level_name):
@@ -104,7 +128,7 @@ class RainflowMatrix(PylifeSignal, AbstractLoadCollective):
         return pd.Series(self._obj.groupby('range').transform(lambda g: np.cumsum(g)),
                          name='cumulated_cycles')
 
-class _RainflowMatrixImpl(ABC):
+class _LoadCollectiveHistogramImpl(ABC):
 
     @property
     @abstractmethod
@@ -116,7 +140,7 @@ class _RainflowMatrixImpl(ABC):
         self._class_location = 'mid'
 
 
-class _FromToMatrix(_RainflowMatrixImpl):
+class _FromToMatrix(_LoadCollectiveHistogramImpl):
 
     @property
     def index_names(self):
@@ -131,19 +155,44 @@ class _FromToMatrix(_RainflowMatrixImpl):
         fr, to = self._from_tos()
         return np.abs(fr-to)
 
+    def amplitude_histogram_index(self):
+        left = np.zeros(len(self._obj))
+        right = np.zeros(len(self._obj))
+
+        fr = self._obj.index.get_level_values('from')
+        to = self._obj.index.get_level_values('to')
+
+        hanging = fr.mid > to.mid
+        standing = fr.mid <= to.mid
+
+        left[hanging] = fr[hanging].left - to[hanging].right
+        right[hanging] = fr[hanging].right - to[hanging].left
+
+        left[standing] = to[standing].left - fr[standing].right
+        right[standing] = to[standing].right - fr[standing].left
+
+        left[left < 0.0] = 0.0
+
+        return pd.IntervalIndex.from_arrays(left, right)
+
     def meanstress(self):
         fr, to = self._from_tos()
         return (fr+to) / 2.
 
 
-class _RangeMeanMatrix(_RainflowMatrixImpl):
+class _RangeMeanMatrix(_LoadCollectiveHistogramImpl):
 
     @property
     def index_names(self):
         return set(['range', 'mean'])
 
-    def amplitude(self):
-        return getattr(self._obj.index.get_level_values('range'), self._class_location)
+    def amplitude(self, location=None):
+        return getattr(self._obj.index.get_level_values('range'), location or self._class_location)
+
+    def amplitude_histogram_index(self):
+        left = self.amplitude(location='left') / 2.
+        right = self.amplitude(location='right') / 2.
+        return pd.IntervalIndex.from_arrays(left, right)
 
     def meanstress(self):
         if 'mean' not in self._obj.index.names:

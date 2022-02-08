@@ -17,22 +17,10 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
-import sys
-import pytest
+from .load_collective import LoadCollective
+from .matrix_load_collective import LoadCollectiveHistogram
 
-
-def test_import_bayesian():
-
-    sys.modules['pymc3'] = None
-    sys.modules['theano'] = None
-
-    sys.modules.pop('pylife.materialdata.woehler', None)
-    sys.modules.pop('pylife.materialdata.woehler.bayesian', None)
-
-    import pylife.materialdata.woehler as WL
-
-    with pytest.raises(ImportError, match=r"pip install pylife\[pymc3\]"):
-        WL.Bayesian(None)
-
-    del sys.modules['pymc3']
-    del sys.modules['theano']
+__all__ = [
+    LoadCollective,
+    LoadCollectiveHistogram
+]

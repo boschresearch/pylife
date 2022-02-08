@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -46,7 +46,7 @@ class FourPointDetector(AbstractDetector):
 
     .. jupyter-execute::
 
-        rfc.recorder.matrix_series(bins=16)
+        rfc.recorder.histogram(bins=16)
 
     We take four turning points into account to detect closed hysteresis loops.
 

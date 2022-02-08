@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -56,8 +56,8 @@ class LoopValueRecorder(AbstractRecorder):
         self._values_from += values_from
         self._values_to += values_to
 
-    def matrix(self, bins=10):
-        """Calculate a histogram of the recorded values.
+    def histogram_numpy(self, bins=10):
+        """Calculate a histogram of the recorded values into a plain numpy.histogram2d.
 
         Parameters
         ----------
@@ -75,8 +75,8 @@ class LoopValueRecorder(AbstractRecorder):
         """
         return np.histogram2d(self._values_from, self._values_to, bins)
 
-    def matrix_series(self, bins=10):
-        """Calculate a histogram of the recorded values into a pandas.Series.
+    def histogram(self, bins=10):
+        """Calculate a histogram of the recorded values into a :class:`pandas.Series`.
 
         An interval index is used to index the bins.
 
@@ -91,7 +91,7 @@ class LoopValueRecorder(AbstractRecorder):
             A pandas.Series using a multi interval index in order to
             index data point for a given from/to value pair.
         """
-        hist, fr, to = self.matrix(bins)
+        hist, fr, to = self.histogram_numpy(bins)
         index_fr = pd.IntervalIndex.from_breaks(fr)
         index_to = pd.IntervalIndex.from_breaks(to)
 

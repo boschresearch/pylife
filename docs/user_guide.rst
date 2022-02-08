@@ -43,6 +43,7 @@ Analyzing load collectives and stresses
 These modules perform basic operations on time signals as well as more complpex
 things as rainflow counting.
 
+* :mod:`pylife.stress.collective` – facilities to handle load collectives
 * :mod:`pylife.stress.rainflow` – a versatile module for rainflow counting
 * :mod:`pylife.stress.equistress` for equivalent stress calculations from
   stress tensors

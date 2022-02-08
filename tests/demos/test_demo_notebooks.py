@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -17,7 +17,9 @@
 import pytest
 
 import numpy as np
+import nbformat
 from testbook import testbook
+import testbook.client as TBC
 
 pytestmark = pytest.mark.demos
 
@@ -71,5 +73,23 @@ def test_ramberg_osgood(tb):
         """
         assert monotone_strain.max() == hyst_strain.max()
         assert hyst_strain.max() == - hyst_strain.min()
+        """
+    )
+
+
+@testbook('demos/time_series_handling.ipynb', execute=True)
+def test_time_series_handling(tb):
+    tb.inject(
+        """
+        assert 'envelope' in df_psd.columns
+        """
+    )
+
+
+@testbook('demos/lifetime_calc.ipynb', execute=True)
+def test_lifetime_calc(tb):
+    tb.inject(
+        """
+        np.testing.assert_approx_equal(fp_component, 4.23e-4, significant=3)
         """
     )
