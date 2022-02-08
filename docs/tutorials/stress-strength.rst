@@ -123,7 +123,7 @@ object that has been broadcasted, in our case the load collective:
 
 
 The second is the object that has been broadcasted to, in our case the node
-stress distibution.
+stress distribution.
 
 .. jupyter-execute::
 
