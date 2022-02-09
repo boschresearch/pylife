@@ -84,8 +84,6 @@ def test_combine_two_histograms_1d(some_histogram_1d, another_histogram_1d, meth
     ('mean', [5., 11., 3., 20.])
 ])
 def test_combine_two_histograms_finer_bin_1d(some_histogram_1d, another_histogram_1d, method, expected):
-    print(some_histogram_1d)
-    print(another_histogram_1d)
     result = hi.combine_histogram([some_histogram_1d, another_histogram_1d], binning=4, method=method)
     expected = pd.Series(expected, index=pd.interval_range(start=0, end=4, periods=4))
     pd.testing.assert_series_equal(result, expected)
@@ -281,6 +279,44 @@ def test_rebin_histogram_n_bins(original_binning, binnum, expected):
     pd.testing.assert_index_equal(rebinned.index, expected)
 
 
+def test_rebin_histogram_additional_index():
+    hi_index = pd.IntervalIndex.from_tuples([(0.0, 0.5), (0.5, 1.0)], name='hi')
+    other_index = pd.Index([1, 2], name='foo')
+    index = pd.MultiIndex.from_product([hi_index, other_index])
+
+    histogram = pd.Series([1.0, 2.0, 3.0, 4.0], index=index)
+
+    expected_hi_index = pd.Index(
+        pd.interval_range(start=0, end=1, periods=4),
+        name='hi'
+    )
+    expected_index = pd.MultiIndex.from_product([expected_hi_index, other_index])
+    expected_histogram = pd.Series([0.5, 1.0, 0.5, 1.0, 1.5, 2.0, 1.5, 2.0], index=expected_index)
+
+    result = hi.rebin_histogram(histogram, 4)
+
+    pd.testing.assert_series_equal(result.sort_index(), expected_histogram)
+
+
+def test_rebin_histogram_additional_index_given_rebin():
+    hi_index = pd.IntervalIndex.from_tuples([(0.0, 0.5), (0.5, 1.0)], name='hi')
+    other_index = pd.Index([1, 2], name='foo')
+    index = pd.MultiIndex.from_product([hi_index, other_index])
+
+    histogram = pd.Series([1.0, 2.0, 3.0, 4.0], index=index)
+
+    new_hi_index = pd.Index(
+        pd.interval_range(start=0, end=1, periods=4),
+        name='hi'
+    )
+    expected_index = pd.MultiIndex.from_product([new_hi_index, other_index])
+    expected_histogram = pd.Series([0.5, 1.0, 0.5, 1.0, 1.5, 2.0, 1.5, 2.0], index=expected_index)
+
+    result = hi.rebin_histogram(histogram, new_hi_index)
+
+    pd.testing.assert_series_equal(result.sort_index(), expected_histogram)
+
+
 def test_rebin_histogram_2d():
     idx_x = pd.interval_range(0, 1, 2)
     idx_y = pd.interval_range(0, 10, 2)
@@ -293,7 +329,51 @@ def test_rebin_histogram_2d():
 
     expected = pd.Series(0.25, index=target_idx)
 
-    result = hi.rebin_histogram_2d(histogram, 4)
+    result = hi.rebin_histogram(histogram, 4)
+
+    assert result.sum() == histogram.sum()
+    pd.testing.assert_series_equal(result, expected)
+
+
+def test_rebin_histogram_2d_given_rebin():
+    idx_x = pd.interval_range(0, 1, 2)
+    idx_y = pd.interval_range(0, 10, 2)
+    histogram = pd.Series(1.0, index=pd.MultiIndex.from_product([idx_x, idx_y], names=['foo', 'bar']))
+
+    idx_x = pd.interval_range(0, 1, 4)
+    idx_y = pd.interval_range(0, 10, 4)
+
+    target_idx = pd.MultiIndex.from_product([idx_x, idx_y], names=['foo', 'bar'])
+
+    expected = pd.Series(0.25, index=target_idx)
+
+    result = hi.rebin_histogram(histogram, target_idx)
+
+    assert result.sum() == histogram.sum()
+    pd.testing.assert_series_equal(result, expected)
+
+
+def test_rebin_histogram_3d():
+    idx_x = pd.interval_range(0., 1., 2)
+    idx_y = pd.interval_range(0., 10., 2)
+    idx_z = pd.interval_range(0., 100., 2)
+    histogram = pd.Series(2.0, index=pd.MultiIndex.from_product(
+        [idx_x, idx_y, idx_z],
+        names=['foo', 'bar', 'baz']
+    ))
+
+    idx_x = pd.interval_range(0., 1., 4)
+    idx_y = pd.interval_range(0., 10., 4)
+    idx_z = pd.interval_range(0., 100., 4)
+
+    target_idx = pd.MultiIndex.from_product(
+        [idx_x, idx_y, idx_z],
+        names=['foo', 'bar', 'baz']
+    )
+
+    expected = pd.Series(0.25, index=target_idx)
+
+    result = hi.rebin_histogram(histogram, 4)
 
     assert result.sum() == histogram.sum()
     pd.testing.assert_series_equal(result, expected)

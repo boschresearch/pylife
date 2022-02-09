@@ -125,6 +125,25 @@ def rebin_histogram(histogram, binning):
     TypeError : if the ``histogram`` or the ``binning`` do not have an ``IntervalIndex``.
     ValueError : if the binning is not monotonic increasing or has gaps.
     """
+    if not isinstance(histogram.index, pd.MultiIndex):
+        return _do_rebin_histogram(histogram, binning)
+
+    original_names = histogram.index.names
+    for name in histogram.index.names:
+        if not isinstance(histogram.index.get_level_values(name), pd.IntervalIndex):
+            continue
+
+        this_binning = binning.levels[binning.names.index(name)] if isinstance(binning, pd.MultiIndex) else binning
+
+        remaining_names = list(filter(lambda m: m != name, original_names))
+        histogram = (histogram
+                     .groupby(remaining_names)
+                     .apply(lambda h: _do_rebin_histogram(h.droplevel(remaining_names), this_binning)))
+
+    return histogram.reorder_levels(original_names)
+
+
+def _do_rebin_histogram(histogram, binning):
     def interval_overlap(reference_interval, test_interval):
         if not reference_interval.overlaps(test_interval):
             return 0.0
@@ -135,19 +154,6 @@ def rebin_histogram(histogram, binning):
     def aggregate_hist(interval):
         return hist.apply(lambda v: v.iloc[0] * interval_overlap(interval, v.name), axis=1).sum()
 
-    def binning_has_gaps():
-        if len(binning) == 0:
-            return False
-        left = binning.left[1:]
-        right = binning.right[:-1]
-        return pd.DataFrame({'l': left, 'r': right}).apply(lambda r: r.l != r.r, axis=1).any()
-
-    def binning_does_not_cover_histogram():
-        return (
-            histogram.index.right.max() > binning.right.max() or
-            histogram.index.left.min() < binning.left.min()
-        )
-
     def binning_of_n_bins(index, binnum):
         start = index.left.min()
         end = index.right.max()
@@ -157,25 +163,19 @@ def rebin_histogram(histogram, binning):
 
         return pd.interval_range(start, end, binnum)
 
+    def binning_does_not_cover_histogram():
+        return (
+            histogram.index.right.max() > binning.right.max() or
+            histogram.index.left.min() < binning.left.min()
+        )
+
     if not isinstance(histogram.index, pd.IntervalIndex):
         raise TypeError("histogram needs to have an IntervalIndex.")
 
     if isinstance(binning, int):
         binning = binning_of_n_bins(histogram.index, binning)
-
-    if not isinstance(binning, pd.IntervalIndex):
-        raise TypeError("binning argument must be a pandas.IntervalIndex.")
-
-    if (
-            len(binning) > 0
-            and (
-                not binning.is_non_overlapping_monotonic or binning.is_monotonic_decreasing
-            )
-    ):
-        raise ValueError("binning index must be monotonic increasing without overlaps.")
-
-    if binning_has_gaps():
-        raise ValueError("binning index must not have gaps.")
+    else:
+        _fail_if_binning_invalid(binning)
 
     if binning_does_not_cover_histogram():
         warnings.warn("histogram is partly out of binning. This information will be lost!", RuntimeWarning)
@@ -191,9 +191,27 @@ def rebin_histogram(histogram, binning):
     return rebinned
 
 
-def rebin_histogram_2d(histogram, binning):
+def _fail_if_binning_invalid(binning):
+    def binning_is_overlapping_or_non_monotonic_increasing():
+        return (
+            len(binning) > 0
+            and (
+                not binning.is_non_overlapping_monotonic or binning.is_monotonic_decreasing
+            )
+        )
 
-    for name in reversed(histogram.index.names):
-        histogram = histogram.groupby(name).apply(lambda h: rebin_histogram(h.droplevel(name), binning))
+    def binning_has_gaps():
+        if len(binning) == 0:
+            return False
+        left = binning.left[1:]
+        right = binning.right[:-1]
+        return pd.DataFrame({'l': left, 'r': right}).apply(lambda r: r.l != r.r, axis=1).any()
 
-    return histogram
+    if not isinstance(binning, pd.IntervalIndex):
+        raise TypeError("binning argument must be a pandas.IntervalIndex.")
+
+    if binning_is_overlapping_or_non_monotonic_increasing():
+        raise ValueError("binning index must be monotonic increasing without overlaps.")
+
+    if binning_has_gaps():
+        raise ValueError("binning index must not have gaps.")
