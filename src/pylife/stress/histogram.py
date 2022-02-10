@@ -26,6 +26,23 @@ import pandas as pd
 
 
 def combine_histogram(hist_list, binning=None, method='sum'):
+    """Combine a list of histograms to one.
+
+    Parameters
+    ----------
+    hist_list: list
+        list of histograms with all histograms as interval indexed :class:`pandas.Series`
+    method: str or aggregating function
+        method used for the aggregation, e.g. 'sum', 'min', 'max', 'mean', 'std'
+        default is 'sum'
+    binning: int or :class:`pandas.IntervalIndex` resp :class:`pandas.MultiIndex``
+        the binning of the combined histogram
+
+    Returns
+    -------
+    histogram : pd.Series
+        The resulting histogram
+    """
     hist_list = list(filter(lambda h: len(h) > 0, hist_list))
     if len(hist_list) == 0:
         return pd.Series(dtype=np.float64, index=pd.IntervalIndex.from_tuples([]))
@@ -38,6 +55,7 @@ def combine_histogram(hist_list, binning=None, method='sum'):
 
     index = ft.reduce(lambda acc, el: acc.join(el.index, how='outer'), hist_list, pd.Index([]))
     concat = pd.concat(map(lambda h: pd.Series(h, index=index), hist_list))
+
     return rebin_histogram(concat.groupby(concat.index).agg(method), binning)
 
 
