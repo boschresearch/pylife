@@ -19,7 +19,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from pylife.stress import histogram as hi
+from pylife.utils import histogram as hi
 
 
 @pytest.fixture
