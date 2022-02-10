@@ -30,6 +30,7 @@ __author__ = "Johannes Mueller, Lena Rapp"
 __maintainer__ = "Johannes Mueller"
 
 from collections.abc import Iterable
+import operator as op
 
 import numpy as np
 import pandas as pd
@@ -432,9 +433,8 @@ class MeanstressTransformMatrix(CL.LoadCollectiveHistogram):
             return sums
 
         def sum_intervals(iv, ranges, obj):
-            if iv.left == 0.0:
-                iv = pd.Interval(iv.left, iv.right, closed='both')
-            return obj.iloc[np.where([r in iv for r in ranges])[0]].sum()
+            op_left = op.ge if iv.left == 0.0 else op.gt
+            return obj.iloc[op_left(ranges.values, iv.left) & op.le(ranges.values, iv.right)].sum()
 
         if ranges.shape[0] == 0:
             new_idx = pd.IntervalIndex(pd.interval_range(0.,  0., 0), name='range')
