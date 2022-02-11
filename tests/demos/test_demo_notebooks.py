@@ -51,7 +51,7 @@ def test_hotspot_plate(tb):
 
 @testbook('demos/local_stress_with_FE.ipynb', execute=True)
 def test_local_stress_with_fe(tb):
-    tb.inject("np.testing.assert_approx_equal(damage.max(), 0.002319614543675979)")
+    tb.inject("np.testing.assert_approx_equal(damage.max(), 0.0023, significant=2)")
 
 
 
