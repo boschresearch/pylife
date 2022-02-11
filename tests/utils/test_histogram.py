@@ -38,6 +38,49 @@ def another_histogram_1d():
 
 
 @pytest.fixture
+def some_histogram_2d():
+    return pd.Series(
+        np.array([5., 10., 10., 20.]),
+        index=pd.MultiIndex.from_product([
+            pd.interval_range(start=0, end=2),
+            pd.interval_range(start=0, end=2)
+        ], names=['foo', 'bar'])
+    )
+
+
+@pytest.fixture
+def another_histogram_2d():
+    return pd.Series(
+        np.array([
+            12., 3., 20.,
+            24., 6., 40.,
+            36., 9., 60.
+        ]),
+        index=pd.MultiIndex.from_product([
+            pd.interval_range(start=0, periods=3),
+            pd.interval_range(start=0, periods=3)
+        ], names=['foo', 'bar'])
+    )
+
+
+@pytest.fixture
+def some_histogram_3d():
+    return pd.Series(
+        np.array([
+            5., 10.,
+            10., 20.,
+            15., 30.,
+            20., 40.
+        ]),
+        index=pd.MultiIndex.from_product([
+            pd.interval_range(start=0, end=2),
+            pd.interval_range(start=2, end=4),
+            pd.interval_range(start=0, periods=2)
+        ], names=['foo', 'bar', 'baz'])
+    )
+
+
+@pytest.fixture
 def hists_to_combine_1d(some_histogram_1d, another_histogram_1d):
     return [some_histogram_1d, another_histogram_1d]
 
@@ -66,60 +109,99 @@ def test_combine_empty_with_non_empty(empty_histogram, another_histogram_1d, met
 
 
 @pytest.mark.parametrize('method, expected', [
-    ('sum', [27., 23.]),
-    ('min', [15., 23.]),
-    ('max', [17., 23.]),
-    ('mean', [16., 23.])
-])
-def test_combine_two_histograms_1d(some_histogram_1d, another_histogram_1d, method, expected):
-    result = hi.combine_histogram([some_histogram_1d, another_histogram_1d], binning=2, method=method)
-    expected = pd.Series(expected, index=pd.interval_range(start=0, end=4, periods=2))
-    pd.testing.assert_series_equal(result, expected)
-
-
-@pytest.mark.parametrize('method, expected', [
     ('sum', [5., 22., 3., 20.]),
     ('min', [5., 10., 3., 20.]),
     ('max', [5., 12., 3., 20.]),
     ('mean', [5., 11., 3., 20.])
 ])
-def test_combine_two_histograms_finer_bin_1d(some_histogram_1d, another_histogram_1d, method, expected):
-    result = hi.combine_histogram([some_histogram_1d, another_histogram_1d], binning=4, method=method)
+def test_combine_two_histograms_1d(some_histogram_1d, another_histogram_1d, method, expected):
+    result = hi.combine_histogram([some_histogram_1d, another_histogram_1d], method=method)
     expected = pd.Series(expected, index=pd.interval_range(start=0, end=4, periods=4))
+    pd.testing.assert_series_equal(result, expected)
+
+
+def test_combine_1d_with_2d_histogram(some_histogram_1d, another_histogram_2d):
+    with pytest.raises(ValueError, match=r"Histograms must have identical dimensions to be combined."):
+        hi.combine_histogram([some_histogram_1d, another_histogram_2d])
+
+
+def test_combine_1d_with_2d_histogram_duplicate_index_names(some_histogram_1d, another_histogram_2d):
+    some = some_histogram_1d.copy(deep=True)
+    other = another_histogram_2d.copy(deep=True)
+    some.index.name = 'foo'
+    other.index.names = ['foo', 'foo']
+    with pytest.raises(ValueError, match=r"Histograms must have identical dimensions to be combined."):
+        hi.combine_histogram([some, other])
+
+
+def test_combine_2d_with_3d_histogram(some_histogram_2d, some_histogram_3d):
+    with pytest.raises(ValueError, match=r"Histograms must have identical dimensions to be combined."):
+        hi.combine_histogram([some_histogram_2d, some_histogram_3d])
+
+
+def test_combine_2d_with_2d_histogram_inconsistent_names(some_histogram_2d):
+    other = some_histogram_2d.copy(deep=True)
+    other.index.names = ['foo', 'baz']
+    with pytest.raises(ValueError, match=r"Histograms must have identical dimensions to be combined."):
+        hi.combine_histogram([some_histogram_2d, other])
+
+
+@pytest.mark.parametrize('method, expected', [
+    ('sum', [17., 13., 20., 34., 26., 40., 36., 9., 60.]),
+    ('min', [5., 3., 20., 10., 6., 40., 36., 9., 60.]),
+    ('max', [12., 10., 20., 24., 20., 40., 36., 9., 60.])
+])
+def test_combine_2d_with_2d_histogram(some_histogram_2d, another_histogram_2d, method, expected):
+    result = hi.combine_histogram([some_histogram_2d, another_histogram_2d], method=method)
+
+    expected_index = pd.MultiIndex.from_product(
+        [pd.interval_range(start=0, end=3, periods=3), pd.interval_range(start=0, end=3, periods=3)],
+        names=['foo', 'bar']
+    )
+    expected = pd.Series(expected, index=expected_index)
+
     pd.testing.assert_series_equal(result, expected)
 
 
 def test_combine_hist_sum(hists_to_combine_1d):
     expect_sum = pd.Series(np.array([5., 22., 3., 20.]), index=pd.interval_range(start=0, periods=4))
-    test_sum = hi.combine_hist(hists_to_combine_1d, method='sum', nbins=4, histtype="range")
+    test_sum = hi.combine_histogram(hists_to_combine_1d, method='sum')
     pd.testing.assert_series_equal(test_sum, expect_sum, check_names=False)
 
 
 def test_combine_hist_min(hists_to_combine_1d):
-    expect_min = pd.Series(np.array([5., 3.]), index=pd.interval_range(
-                                  start=0, end=4, periods=2))
-    test_min = hi.combine_hist(hists_to_combine_1d, method='min', nbins=2, histtype="range")
+    expect_min = pd.Series(
+        np.array([5., 10., 3., 20.]),
+        index=pd.interval_range(start=0, end=4, periods=4)
+    )
+    test_min = hi.combine_histogram(hists_to_combine_1d, method='min')
     pd.testing.assert_series_equal(test_min, expect_min, check_names=False)
 
 
 def test_combine_hist_max(hists_to_combine_1d):
-    expect_max = pd.Series(np.array([12., 20.]), index=pd.interval_range(
-                                  start=0, end=4, periods=2))
-    test_max = hi.combine_hist(hists_to_combine_1d, method='max', nbins=2, histtype="range")
+    expect_max = pd.Series(
+        np.array([5., 12., 3., 20.]),
+        index=pd.interval_range(start=0, end=4, periods=4)
+    )
+    test_max = hi.combine_histogram(hists_to_combine_1d, method='max')
     pd.testing.assert_series_equal(test_max, expect_max, check_names=False)
 
 
 def test_combine_hist_mean(hists_to_combine_1d):
-    expect_mean = pd.Series(np.array([9., 11.5]), index=pd.interval_range(start=0, end=4, periods=2))
-    test_mean = hi.combine_hist(hists_to_combine_1d, method='mean', nbins=2, histtype="range")
+    expect_mean = pd.Series(
+        np.array([5., 11., 3., 20.]),
+        index=pd.interval_range(start=0, end=4, periods=4)
+    )
+    test_mean = hi.combine_histogram(hists_to_combine_1d, method='mean')
     pd.testing.assert_series_equal(test_mean, expect_mean, check_names=False)
 
 
 def test_combine_hist_std(hists_to_combine_1d):
-    expect_std = pd.Series(np.array([np.std(np.array([5, 10, 12])),
-                                     np.std(np.array([3, 20]))]),
-                           index=pd.interval_range(start=0, end=4, periods=2))
-    test_std = hi.combine_hist(hists_to_combine_1d, method='std', nbins=2, histtype="range")
+    expect_std = pd.Series(
+        np.array([0, np.std([10, 12]), 0., 0.]),
+        index=pd.interval_range(start=0, end=4, periods=4)
+    )
+    test_std = hi.combine_histogram(hists_to_combine_1d, method=lambda x: np.std(x))
     pd.testing.assert_series_equal(test_std, expect_std, check_names=False)
 
 
@@ -127,9 +209,12 @@ def test_combine_test_big_bin():
     hist1 = pd.Series([1, 2], index=pd.IntervalIndex.from_tuples([(0.0, 0.5), (0.5, 1.0)]))
     hist2 = pd.Series([4], index=pd.IntervalIndex.from_tuples([(0.0, 1.0)]))
 
-    result = hi.combine_histogram([hist1, hist2], method=sum, binning=2)
+    result = hi.combine_histogram([hist1, hist2], method=sum)
 
-    expected = pd.Series([3., 4.], index=pd.IntervalIndex.from_tuples([(0.0, 0.5), (0.5, 1.0)]))
+    expected = pd.Series(
+        [1, 4, 2],
+        index=pd.IntervalIndex.from_tuples([(0.0, 0.5), (0.0, 1.0), (0.5, 1.0)])
+    )
 
     pd.testing.assert_series_equal(result, expected)
 

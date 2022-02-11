@@ -19,13 +19,11 @@ __maintainer__ = "Johannes Mueller"
 
 import warnings
 
-import functools as ft
-
 import numpy as np
 import pandas as pd
 
 
-def combine_histogram(hist_list, binning=None, method='sum'):
+def combine_histogram(hist_list, method='sum'):
     """Combine a list of histograms to one.
 
     Parameters
@@ -35,89 +33,40 @@ def combine_histogram(hist_list, binning=None, method='sum'):
     method: str or aggregating function
         method used for the aggregation, e.g. 'sum', 'min', 'max', 'mean', 'std'
         default is 'sum'
-    binning: int or :class:`pandas.IntervalIndex` resp :class:`pandas.MultiIndex``
-        the binning of the combined histogram
 
     Returns
     -------
     histogram : pd.Series
         The resulting histogram
     """
+    def dimensions_are_consistent():
+        for h in hist_list[1:]:
+            if len(h.index.names) != len(hist_list[0].index.names):
+                return False
+            if set(h.index.names) != set(hist_list[0].index.names):
+                return False
+
+        return True
+
     hist_list = list(filter(lambda h: len(h) > 0, hist_list))
     if len(hist_list) == 0:
         return pd.Series(dtype=np.float64, index=pd.IntervalIndex.from_tuples([]))
 
-    binning = binning or max(map(lambda h: len(h), hist_list))
-    if isinstance(binning, int):
-        left = min(filter(lambda v: not np.isnan(v), map(lambda h: h.index.left.min(), hist_list)))
-        right = max(filter(lambda v: not np.isnan(v), map(lambda h: h.index.right.max(), hist_list)))
-        binning = pd.interval_range(left, right, binning)
+    if not dimensions_are_consistent():
+        raise ValueError("Histograms must have identical dimensions to be combined.")
 
-    index = ft.reduce(lambda acc, el: acc.join(el.index, how='outer'), hist_list, pd.Index([]))
-    concat = pd.concat(map(lambda h: pd.Series(h, index=index), hist_list))
+    names = hist_list[0].index.names
+    reorder_index = (lambda h: h.index) if len(names) == 1 else (lambda h: h.index.reorder_levels(names))
 
-    return rebin_histogram(concat.groupby(concat.index).agg(method), binning)
+    tmp_binning = pd.concat(reorder_index(h).to_series() for h in hist_list).index.unique()
 
+    concat = pd.concat(hist_list)
+    combined = concat.groupby(concat.index).agg(method)
 
-def combine_hist(hist_list, method='sum', nbins=64, histtype="rf"):
-    """
-    Performs the combination of multiple Histograms.
+    if isinstance(tmp_binning, pd.MultiIndex):
+        combined.index = pd.MultiIndex.from_tuples(combined.index, names=names)
 
-    Parameters
-    ----------
-
-    hist_list: list
-        list of histograms with all histograms (saved as DataFrames in pyLife format)
-    method: str
-        method: 'sum', 'min', 'max', 'mean', 'std'  default is 'sum'
-    nbins: int
-        number of bins of the combined histogram
-    histtype: str
-       histogram type: 'rf', 'spectrum'  default is 'rf'
-
-
-    Returns
-    -------
-
-    DataFrame:
-        Combined histogram
-    list:
-        list with the reindexed input histograms
-
-    """
-
-    hist_combined = pd.concat(hist_list)
-    if histtype == "rf":
-        from_max = np.max(hist_combined.index.get_level_values("from").right)
-        from_min = np.min(hist_combined.index.get_level_values("from").left)
-        to_max = np.max(hist_combined.index.get_level_values("to").right)
-        to_min = np.min(hist_combined.index.get_level_values("to").left)
-
-        index_from = pd.cut(hist_combined.index.get_level_values("from").mid,
-                            np.linspace(from_min, from_max, nbins+1))
-        index_to = pd.cut(hist_combined.index.get_level_values("to").mid,
-                            np.linspace(to_min, to_max, nbins+1))
-
-        categorial_index = [index_from, index_to]
-    else:
-        index_min = hist_combined.index.left.min()
-        index_max = hist_combined.index.right.max()
-        categorial_index = pd.cut(hist_combined.index.mid.values,
-               np.linspace(index_min, index_max, nbins+1))
-
-    kwargs = {'ddof': 0} if method == 'std' else {}
-    result = hist_combined.groupby(categorial_index).agg(method, **kwargs)
-
-    if histtype == "rf":
-        result_index = pd.MultiIndex.from_arrays([pd.IntervalIndex(result.index.get_level_values(0)),
-                                       pd.IntervalIndex(result.index.get_level_values(1))],
-                                      names = ["from", "to"])
-    else:
-        result_index = pd.interval_range(index_min, index_max, nbins, name='range')
-
-    result.index = result_index
-
-    return result
+    return combined
 
 
 def rebin_histogram(histogram, binning, nan_default=False):
