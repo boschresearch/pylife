@@ -265,6 +265,15 @@ def test_rebin_histogram(histogram, expected, regular_binning):
     pd.testing.assert_series_equal(rebinned, pd.Series(expected, index=regular_binning))
 
 
+def test_rebin_histogram_nan_default(regular_binning):
+    histogram = pd.Series([1.0], index=pd.IntervalIndex.from_tuples([(0.2, 0.4)]))
+    expected = pd.Series([1.0, np.nan, np.nan, np.nan], index=regular_binning)
+
+    rebinned = hi.rebin_histogram(histogram, regular_binning, nan_default=True)
+
+    pd.testing.assert_series_equal(rebinned, expected)
+
+
 @pytest.mark.parametrize('original_binning, binnum, expected', [
     ([(0.0, 1.0)], 4, [(0.0, 0.25), (0.25, 0.5), (0.5, 0.75), (0.75, 1.0)]),
     ([(0.0, 1.0)], 2, [(0.0, 0.5), (0.5, 1.0)]),
@@ -332,6 +341,22 @@ def test_rebin_histogram_2d():
     result = hi.rebin_histogram(histogram, 4)
 
     assert result.sum() == histogram.sum()
+    pd.testing.assert_series_equal(result, expected)
+
+
+def test_rebin_histogram_2d_not_rebin_fill():
+    idx_x = pd.interval_range(0., 1., 2)
+    idx_y = pd.interval_range(0., 10., 2)
+    histogram = pd.Series([1., 2., 3., 4.], index=pd.MultiIndex.from_product([idx_x, idx_y], names=['foo', 'bar']))
+
+    idx_x = pd.interval_range(0., 2., 4)
+    idx_y = pd.interval_range(0., 20., 4)
+
+    target_idx = pd.MultiIndex.from_product([idx_x, idx_y], names=['foo', 'bar'])
+
+    expected = pd.Series([1.0, 2.0, np.nan, np.nan, 3.0, 4.0] + [np.nan]*10, index=target_idx)
+
+    result = hi.rebin_histogram(histogram, target_idx, nan_default=True)
     pd.testing.assert_series_equal(result, expected)
 
 

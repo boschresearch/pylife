@@ -120,7 +120,7 @@ def combine_hist(hist_list, method='sum', nbins=64, histtype="rf"):
     return result
 
 
-def rebin_histogram(histogram, binning):
+def rebin_histogram(histogram, binning, nan_default=False):
     """Rebin a histogram to a given binning.
 
     Parameters
@@ -130,6 +130,10 @@ def rebin_histogram(histogram, binning):
 
     binning : :class:`pandas.IntervalIndex` or int
         The given binning or number of bins
+
+    nan_default : bool
+        If True non occupied bins will be occupied with ``np.nan``, else 0.0
+        Default False
 
 
     Returns
@@ -143,8 +147,10 @@ def rebin_histogram(histogram, binning):
     TypeError : if the ``histogram`` or the ``binning`` do not have an ``IntervalIndex``.
     ValueError : if the binning is not monotonic increasing or has gaps.
     """
+    default_value = np.nan if nan_default else 0.0
+
     if not isinstance(histogram.index, pd.MultiIndex):
-        return _do_rebin_histogram(histogram, binning)
+        return _do_rebin_histogram(histogram, binning, default_value)
 
     original_names = histogram.index.names
     for name in histogram.index.names:
@@ -156,21 +162,22 @@ def rebin_histogram(histogram, binning):
         remaining_names = list(filter(lambda m: m != name, original_names))
         histogram = (histogram
                      .groupby(remaining_names)
-                     .apply(lambda h: _do_rebin_histogram(h.droplevel(remaining_names), this_binning)))
+                     .apply(lambda h: _do_rebin_histogram(h.droplevel(remaining_names), this_binning, default_value)))
 
     return histogram.reorder_levels(original_names)
 
 
-def _do_rebin_histogram(histogram, binning):
+def _do_rebin_histogram(histogram, binning, default_value):
     def interval_overlap(reference_interval, test_interval):
-        if not reference_interval.overlaps(test_interval):
-            return 0.0
-
         overlap = min(reference_interval.right, test_interval.right) - max(reference_interval.left, test_interval.left)
         return overlap / test_interval.length
 
     def aggregate_hist(interval):
-        return hist.apply(lambda v: v.iloc[0] * interval_overlap(interval, v.name), axis=1).sum()
+        occupied = hist.loc[hist.index.overlaps(interval)].dropna()
+        if len(occupied) == 0:
+            return default_value
+
+        return occupied.apply(lambda v: v.iloc[0] * interval_overlap(interval, v.name), axis=1).sum()
 
     def binning_of_n_bins(index, binnum):
         start = index.left.min()
