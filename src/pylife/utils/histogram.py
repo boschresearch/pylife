@@ -56,14 +56,11 @@ def combine_histogram(hist_list, method='sum'):
         raise ValueError("Histograms must have identical dimensions to be combined.")
 
     names = hist_list[0].index.names
-    reorder_index = (lambda h: h.index) if len(names) == 1 else (lambda h: h.index.reorder_levels(names))
-
-    tmp_binning = pd.concat(reorder_index(h).to_series() for h in hist_list).index.unique()
 
     concat = pd.concat(hist_list)
     combined = concat.groupby(concat.index).agg(method)
 
-    if isinstance(tmp_binning, pd.MultiIndex):
+    if isinstance(concat.index, pd.MultiIndex):
         combined.index = pd.MultiIndex.from_tuples(combined.index, names=names)
 
     return combined
