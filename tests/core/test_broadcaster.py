@@ -204,6 +204,19 @@ def test_broadcast_series_to_series_different_single_index_name():
     pd.testing.assert_series_equal(obj, expected_obj)
 
 
+def test_broadcast_frame_to_series_one_common():
+    series = pd.Series(3.0, index=pd.Index([1,2], name='bar'))
+    df = pd.DataFrame(
+        {'col': np.arange(6)},
+        index=pd.MultiIndex.from_product([pd.Index([1, 2, 3]), series.index])
+    )
+
+    param, obj = Broadcaster(df).broadcast(series)
+    Broadcaster(df.col).broadcast(series)
+
+    pd.testing.assert_series_equal(param, pd.Series(3.0, index=df.index))
+
+
 def test_broadcast_frame_to_frame_same_single_index():
     df = pd.DataFrame({
         'a': [1, 3],
