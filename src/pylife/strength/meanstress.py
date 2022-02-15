@@ -30,6 +30,7 @@ __author__ = "Johannes Mueller, Lena Rapp"
 __maintainer__ = "Johannes Mueller"
 
 from collections.abc import Iterable
+import operator as op
 
 import numpy as np
 import pandas as pd
@@ -392,18 +393,21 @@ class MeanstressTransformMatrix(CL.LoadCollectiveHistogram):
 
     def _validate(self):
         super()._validate()
-        if self._obj.index.names == ['from', 'to']:
+
+        if set(self._obj.index.names).issuperset({'from', 'to'}):
             f = self._obj.index.get_level_values('from').mid
             t = self._obj.index.get_level_values('to').mid
             self._Sa = np.abs(f-t)/2.
             self._Sm = (f+t)/2.
             self._binsize_x = self._obj.index.get_level_values('from').length.min()
             self._binsize_y = self._obj.index.get_level_values('to').length.min()
+            self._remaining_names = list(filter(lambda n: n not in ['from', 'to'], self._obj.index.names))
         else:
             self._Sa = self._obj.index.get_level_values('range').mid / 2.
             self._Sm = self._obj.index.get_level_values('mean').mid
             self._binsize_x = self._obj.index.get_level_values('range').length.min()
             self._binsize_y = self._obj.index.get_level_values('mean').length.min()
+            self._remaining_names = list(filter(lambda n: n not in ['range', 'mean'], self._obj.index.names))
 
 
     def fkm_goodman(self, haigh, R_goal):
@@ -411,18 +415,41 @@ class MeanstressTransformMatrix(CL.LoadCollectiveHistogram):
         return self._rebin_results(ranges).load_collective
 
     def _rebin_results(self, ranges):
+
+        def resulting_intervals():
+            ranges_max = ranges.max()
+            binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
+            bincount = int(np.ceil(ranges_max / binsize))
+            return pd.IntervalIndex.from_breaks(np.linspace(0, ranges_max, bincount), name="range")
+
+        def aggregate(r, itvs, ranges, obj):
+            ranges = ranges.xs(tuple(r), level=list(r.index))
+            obj = obj.xs(tuple(r), level=list(r.index))
+            sums = (
+                itvs
+                .to_series()
+                .apply(lambda iv: sum_intervals(iv, ranges, obj))
+            )
+            return sums
+
+        def sum_intervals(iv, ranges, obj):
+            op_left = op.ge if iv.left == 0.0 else op.gt
+            return obj.iloc[op_left(ranges.values, iv.left) & op.le(ranges.values, iv.right)].sum()
+
         if ranges.shape[0] == 0:
             new_idx = pd.IntervalIndex(pd.interval_range(0.,  0., 0), name='range')
             return pd.Series([], index=new_idx, name='cycles', dtype=np.float64)
-        ranges_max = ranges.max()
-        binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
-        bincount = int(np.ceil(ranges_max / binsize))
-        new_idx = pd.IntervalIndex.from_breaks(np.linspace(0, ranges_max, bincount), name="range")
-        result = pd.Series(data=np.zeros(bincount-1), index=new_idx, name='cycles', dtype=np.int32)
-        for i, intv in enumerate(new_idx):
-            cond = np.logical_and(ranges >= intv.left, ranges < intv.right)
-            result.loc[intv] = np.int32(np.sum(self._obj.values[cond]))
-        result.iloc[-1] += np.int32(np.sum(self._obj.values[ranges == ranges_max]))
+
+        intv_idx = resulting_intervals()
+
+        if len(self._remaining_names) > 0:
+            remaining_idx = self._obj.index.to_frame(index=False).groupby(self._remaining_names).first().index
+            result = remaining_idx.to_frame(index=False).apply(lambda r: aggregate(r, intv_idx, ranges, self._obj), axis=1)
+            result.index = remaining_idx
+            result = result.stack().reorder_levels(['range'] + self._remaining_names)
+        else:
+            result = intv_idx.to_series().apply(lambda iv: sum_intervals(iv, ranges, self._obj))
+
         return result
 
 
