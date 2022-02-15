@@ -18,7 +18,6 @@ Stress
    stress/stresssignal
    stress/timesignal
    stress/frequencysignal
-   stress/histogram
 
 Strength
 --------
@@ -75,4 +74,5 @@ Utils
    :maxdepth: 2
 
    utils/functions
+   utils/histogram
    utils/probability_data
