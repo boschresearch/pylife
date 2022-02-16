@@ -51,7 +51,7 @@ def test_hotspot_plate(tb):
 
 @testbook('demos/local_stress_with_FE.ipynb', execute=True)
 def test_local_stress_with_fe(tb):
-    tb.inject("np.testing.assert_approx_equal(damage.max(), 0.002319614543675979)")
+    tb.inject("np.testing.assert_approx_equal(damage.max(), 0.0023, significant=2)")
 
 
 
@@ -61,7 +61,7 @@ def test_psd_optimizer(tb):
         """
         np.testing.assert_allclose(
             [rms_psd(psdSignal.psd_smoother(psd, fsel, fit)) for fit in np.linspace(0, 1, 4)],
-            [19.30855280765641, 11.13723910736734, 9.997749625841077, np.nan]
+            [19.30855280765641, 11.13723910736734, 9.997749625841077, np.nan], rtol=1e-05
         )
         """
     )

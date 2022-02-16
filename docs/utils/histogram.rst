@@ -1,6 +1,6 @@
 The ``histogram`` module
 ########################
 
-.. automodule:: pylife.stress.histogram
+.. automodule:: pylife.utils.histogram
 	:undoc-members:
 	:members:

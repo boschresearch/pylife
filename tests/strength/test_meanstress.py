@@ -247,6 +247,81 @@ def test_fkm_goodman_hist_from_to(R_goal, expected):
     assert res.loc[np.logical_not(res.index.overlaps(test_interval))].sum() == 0
 
 
+def test_meanstress_transform_additional_index():
+    fr = pd.IntervalIndex.from_breaks(np.linspace(-1., 1., 49), closed='left')
+    to = pd.IntervalIndex.from_breaks(np.linspace(0, 2., 49), closed='left')
+    node = pd.Index([1, 2, 3], name='node_id')
+
+    mat = pd.Series(
+        0.0,
+        index=pd.MultiIndex.from_product([fr, to, node], names=['from', 'to', 'node_id']),
+        name='cycles'
+    )
+
+    mat.loc[(14./24., 21./12., 1)] = 1
+    mat.loc[(0., 4./3., 1)] = 3
+    mat.loc[(-1., 1., 1)] = 5
+
+    mat.loc[(14./24., 21./12., 2)] = 2
+    mat.loc[(0., 4./3., 2)] = 6
+    mat.loc[(-1., 1., 2)] = 10
+
+    mat.loc[(14./24., 21./12., 3)] = 4
+    mat.loc[(0., 4./3., 3)] = 12
+    mat.loc[(-1., 1., 3)] = 20
+
+    haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
+    res = mat.meanstress_transform.fkm_goodman(haigh, -1.0).to_pandas()
+
+    assert set(res.index.names) == {'range', 'node_id'}
+    assert len(res) == 83*3
+
+    assert res.loc[(2.0, 1)] == 9
+    assert res.loc[(2.0, 2)] == 18
+    assert res.loc[(2.0, 3)] == 36
+
+
+def test_meanstress_transform_two_additional_indices():
+    fr = pd.IntervalIndex.from_breaks(np.linspace(-1., 1., 49), closed='left', name='from')
+    to = pd.IntervalIndex.from_breaks(np.linspace(0, 2., 49), closed='left', name='to')
+    node = pd.Index([1, 2], name='node_id')
+    element = pd.Index([1, 2], name='element_id')
+
+    mat = pd.Series(
+        0.0,
+        index=pd.MultiIndex.from_product([fr, to, node, element]),
+        name='cycles'
+    )
+
+    mat.loc[(14./24., 21./12., 1, 1)] = 1
+    mat.loc[(0., 4./3., 1, 1)] = 3
+    mat.loc[(-1., 1., 1, 1)] = 5
+
+    mat.loc[(14./24., 21./12., 2, 1)] = 2
+    mat.loc[(0., 4./3., 2, 1)] = 6
+    mat.loc[(-1., 1., 2, 1)] = 10
+
+    mat.loc[(14./24., 21./12., 1, 2)] = 4
+    mat.loc[(0., 4./3., 1, 2)] = 12
+    mat.loc[(-1., 1., 1, 2)] = 20
+
+    mat.loc[(14./24., 21./12., 2, 2)] = 8
+    mat.loc[(0., 4./3., 2, 2)] = 24
+    mat.loc[(-1., 1., 2, 2)] = 40
+
+    haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
+    res = mat.meanstress_transform.fkm_goodman(haigh, -1.0).to_pandas()
+
+    assert set(res.index.names) == {'range', 'node_id', 'element_id'}
+    assert len(res) == 83*4
+
+    assert res.loc[(2.0, 1, 1)] == 9
+    assert res.loc[(2.0, 2, 1)] == 18
+
+    assert res.loc[(2.0, 1, 2)] == 36
+    assert res.loc[(2.0, 2, 2)] == 72
+
+
 @pytest.mark.parametrize("R_goal, expected", [  # all calculated by pencil on paper
     (-1., 2.0),
     (0., 4./3.),
