@@ -411,3 +411,26 @@ def test_load_collective_range_histogram_nested_grouped():
     result = df.load_collective.range_histogram([0, 1, 2, 3], 'cycle_number')
 
     pd.testing.assert_series_equal(result.to_pandas(), expected)
+
+
+def test_load_collective_strange_shift():
+    upper_loads = pd.Series([1000., 2000., 1500])
+    collective = pd.DataFrame({
+        'to': upper_loads,
+        'from': 0.0,
+    })
+    collective.index.name = 'load_block'
+
+    mises = pd.Series([1.0, 2.0, 3.0], index=pd.Index([1, 2, 3], name='node_id'), name='mises')
+
+    lower_stress = pd.Series([100., 200., 300.], index=mises.index, name='lower_stress')
+
+    result = collective.load_collective.scale(mises).shift(lower_stress).to_pandas()
+
+    expected_index = pd.MultiIndex.from_product([collective.index, mises.index])
+    expected = pd.DataFrame({
+        'to': [1100., 2200., 3300., 2100., 4200., 6300., 1600., 3200., 4800.],
+        'from': [100., 200., 300.] * 3
+    }, index=expected_index)
+
+    pd.testing.assert_frame_equal(result, expected)

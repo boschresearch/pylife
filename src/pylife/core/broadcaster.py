@@ -225,7 +225,12 @@ class Broadcaster:
 
     def _broadcast_frame_to_frame(self, parameter, droplevel):
         def align_and_reorder():
-            obj, prm = self._obj.align(parameter, axis=0)
+            if isinstance(self._obj, pd.DataFrame) and isinstance(parameter, pd.Series):
+                obj, prm = self._obj.align(pd.DataFrame({0: parameter}), axis=0)
+                prm = prm.iloc[:, 0]
+                prm.name = parameter.name
+            else:
+                obj, prm = self._obj.align(parameter, axis=0)
 
             if len(droplevel) > 0:
                 prm_columns = list(filter(lambda level: level not in droplevel, total_columns))
