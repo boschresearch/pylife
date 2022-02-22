@@ -13,8 +13,11 @@ Stress
 .. toctree::
    :maxdepth: 2
 
+   stress/index
    stress/equistress
    stress/rainflow
+   stress/load_collective
+   stress/load_histogram
    stress/stresssignal
    stress/timesignal
    stress/frequencysignal

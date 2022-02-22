@@ -18,7 +18,7 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 from .abstract_load_collective import AbstractLoadCollective
-from .matrix_load_collective import LoadCollectiveHistogram
+from .load_histogram import LoadHistogram
 
 import pandas as pd
 import numpy as np
@@ -120,7 +120,7 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
     def cycles(self):
         """The cycles of each member of the collective is 1.0.
 
-        This is for compatibility with :class:`~pylife.stress.pylife.stress.LoadCollectiveHistogram`
+        This is for compatibility with :class:`~pylife.stress.pylife.stress.LoadHistogram`
         """
         return pd.Series(1.0, name='cycles', index=self._obj.index)
 
@@ -156,7 +156,7 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
         Returns
         -------
-        range histogram : :class:`~pylife.pylife.stress.LoadCollectiveHistogram`
+        range histogram : :class:`~pylife.pylife.stress.LoadHistogram`
 
         axis : str, optional
             The index axis along which the histogram is calculated. If missing
@@ -171,10 +171,10 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
             bins = np.append(bins.left[0], bins.right)
 
         if axis is None:
-            return LoadCollectiveHistogram(make_histogram(self.amplitude))
+            return LoadHistogram(make_histogram(self.amplitude))
 
         result = pd.Series(self.amplitude
                            .groupby(self._obj.index.droplevel(axis).names)
                            .apply(make_histogram), name='cycles')
 
-        return LoadCollectiveHistogram(result)
+        return LoadHistogram(result)

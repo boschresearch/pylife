@@ -15,7 +15,7 @@ pyLife Documentation
 .. toctree::
    :maxdepth: 2
 
-   tutorials/index.rst
+   tutorials
 
 .. toctree::
    :maxdepth: 3
