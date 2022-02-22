@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys, os, copy
 import warnings
 import pytest
 
@@ -23,7 +22,6 @@ import pandas as pd
 import numpy.testing as testing
 
 import pylife.strength.meanstress as MST
-from pylife.strength.sn_curve import FiniteLifeCurve
 
 
 def goodman_signal_sm():

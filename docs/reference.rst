@@ -31,8 +31,6 @@ Strength
    strength/meanstress
    strength/failure_probability
    strength/miner
-   strength/sn_curve
-   strength/helpers
 
 Materiallaws
 ------------

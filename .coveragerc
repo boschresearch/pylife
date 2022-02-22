@@ -2,12 +2,13 @@
 [run]
 branch = True
 source = pylife
-# omit = bad_file.py
+omit =
+     src/pylife/strength/helpers.py
+     src/pylife/strength/sn_curve.py
 
 [paths]
 source =
     src/
-    */site-packages/
 
 [report]
 # Regexes for lines to exclude from consideration

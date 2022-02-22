@@ -21,8 +21,16 @@
 __author__ = "Cedric Philip Wagner"
 __maintainer__ = "Johannes Mueller"
 
+import warnings
+
 import numpy as np
 
+warnings.warn(
+    FutureWarning(
+        "The module pylife.strength.helpers is deprecated and no longer under test. "
+        "We will restore the functionality in another module if needed."
+    )
+)
 
 class StressRelations:
     """Namespace for simple relations of stress / amplitude / R-ratio
