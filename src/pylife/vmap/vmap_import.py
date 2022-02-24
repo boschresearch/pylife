@@ -94,8 +94,8 @@ class VMAPImport:
         """
         return pd.DataFrame(
             self._file["/VMAP/GEOMETRY/%s/POINTS/MYCOORDINATES" % geometry][()],
-            columns=['x', 'y', 'z'],
-            index=self._node_index(geometry)
+            columns = ['x', 'y', 'z'],
+            index = self._node_index(geometry)
         )
 
     def make_mesh(self, geometry, state=None):

@@ -103,7 +103,8 @@ class OdbServer:
             _send_response(variable)
 
 
-def _send_response(pickle_data, numpy_arrays=[]):
+def _send_response(pickle_data, numpy_arrays=None):
+    numpy_arrays = numpy_arrays or []
     s = pickle.dumps((len(numpy_arrays), pickle_data))
     sys.stdout.write(s + '\n')
     sys.stdout.flush()

@@ -102,7 +102,7 @@ class Broadcaster:
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
 
-    def broadcast(self, parameter, droplevel=[]):
+    def broadcast(self, parameter, droplevel=None):
         """Broadcast the parameter to the object of ``self``.
 
         Parameters
@@ -196,6 +196,8 @@ class Broadcaster:
               obj
 
         """
+        droplevel = droplevel or []
+
         if not isinstance(parameter, pd.Series) and not isinstance(parameter, pd.DataFrame):
             if isinstance(self._obj, pd.Series):
                 return self._broadcast_series(parameter)

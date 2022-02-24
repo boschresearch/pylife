@@ -105,7 +105,7 @@ class LoadHistogram(PylifeSignal, AbstractLoadCollective):
     def shift(self, diffs):
         return self._shift_or_scale(lambda x, y: x + y, diffs, skip=['range']).load_collective
 
-    def _shift_or_scale(self, func, operand, skip=[]):
+    def _shift_or_scale(self, func, operand, skip=None):
         def do_transform_interval_index(level_name):
             level = obj.index.get_level_values(level_name)
             if level.name not in self._impl.index_names or level_name in skip:
@@ -117,6 +117,7 @@ class LoadHistogram(PylifeSignal, AbstractLoadCollective):
             index = pd.IntervalIndex.from_arrays(left, right)
             return index
 
+        skip = skip or []
         operand_broadcast, obj = self.broadcast(operand)
 
         levels = [do_transform_interval_index(lv) for lv in obj.index.names]
