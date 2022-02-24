@@ -32,12 +32,32 @@ import pandas as pd
 
 
 class OdbServerError(Exception):
+    """Raised when the ODB Server launch fails."""
+
     pass
 
 
 class OdbClient:
+    """The interface class to access data from odb files provided by the odbserver.
+    """
 
     def __init__(self, odb_file, abaqus_bin=None, python_env_path=None):
+        """Initialize the ``OdbClient``.
+
+        Parameters
+        ----------
+        odb_file : string
+            The path to the odb file
+
+        abaqus_bin : string, optional
+            The path to the abaqus *binary* (not a .bat or shell script).
+            Guessed if not given.
+
+        python_env_path : string, optional
+            The path to the python2 environmnent to be used by the odbserver.
+            Guessed if not given.
+
+        """
         self._proc = None
         env = os.environ
         env['PYTHONPATH'] = _guess_pythonpath(python_env_path)
@@ -81,51 +101,192 @@ class OdbClient:
                 return
 
     def instance_names(self):
+        """Query the instance names from the odbserver.
+
+        Returns
+        -------
+        instance_names : list of string
+            The names of the instances.
+        """
         return _ascii(_decode, self._query('get_instances'))
 
     def node_coordinates(self, instance_name, nset_name=''):
+        """Query the node coordinates of an instance.
+
+        Parameters
+        ----------
+        instance_name : string
+            The name of the instance to be queried
+        nset_name : string, optional
+            A name of a node set of the instance that the query is to be limited to.
+
+        Returns
+        -------
+        node_coords : :class:`pandas.DataFrame`
+            The node list as a pandas data frame without connectivity.
+            The columns are named ``x``, ``y`` and ``z``.
+        """
         index, node_data = self._query('get_nodes', (instance_name, nset_name))
         return pd.DataFrame(data=node_data, columns=['x', 'y', 'z'],
                             index=pd.Int64Index(index, name='node_id'))
 
     def element_connectivity(self, instance_name, elset_name=''):
+        """Query the element connectivity of an instance.
+
+        Parameters
+        ----------
+        instance_name : string
+            The name of the instance to be queried
+        elset_name : string, optional
+            A name of an element set of the instance that the query is to be limited to.
+
+        Returns
+        -------
+        connectivity : :class:`pandas.DataFrame`
+            The connectivity as a :class:`pandas.DataFrame`.
+            For every element there is list of node ids that the element is connected to.
+
+        """
         index, connectivity = self._query('get_connectivity', (instance_name, elset_name))
         return pd.DataFrame({'connectivity': connectivity},
                             index=pd.Int64Index(index, name='element_id'))
 
     def nset_names(self, instance_name=''):
+        """Query the available node set names.
+
+        Parameters
+        ----------
+        instance_name : string, optional
+            The name of the instance the node sets are queried from. If not given the
+            node sets of all instances are returned.
+
+        Returns
+        -------
+        instance_names : list of strings
+            The names of the instances
+        """
         return _ascii(_decode, self._query('get_node_sets', instance_name))
 
     def node_ids(self, nset_name, instance_name=''):
+        """Query the node ids of a certain node set.
+
+        Parameters
+        ----------
+        nset_name : string
+            The name of the node set
+        instance_name : string, optional
+            The name of the instance the node set is to be taken from. If not given
+            node sets from all instances are considered.
+
+        Returns
+        -------
+        node_ids : :class:`pandas.Index`
+            The node ids as :class:`pandas.Index`
+        """
         node_ids = self._query('get_node_set', (instance_name, nset_name))
-        return pd.Int64Index(node_ids, name='node_id')
+        return pd.Index(node_ids, name='node_id')
 
     def elset_names(self, instance_name=''):
+        """Query the available element set names.
+
+        Parameters
+        ----------
+        instance_name : string, optional
+            The name of the instance the element sets are queried from. If not given the
+            element sets of all instances are returned.
+
+        Returns
+        -------
+        instance_names : list of strings
+            The names of the instances
+        """
         return _ascii(_decode, self._query('get_element_sets', instance_name))
 
     def element_ids(self, elset_name, instance_name=''):
+        """Query the element ids of a certain element set.
+
+        Parameters
+        ----------
+        elset_name : string
+            The name of the element set
+        instance_name : string, optional
+            The name of the instance the element set is to be taken from. If not given
+            element sets from all instances are considered.
+
+        Returns
+        -------
+        element_ids : :class:`pandas.Index`
+            The element ids as :class:`pandas.Index`
+        """
         element_ids = self._query('get_element_set', (instance_name, elset_name))
         return pd.Int64Index(element_ids, name='element_id')
 
     def step_names(self):
+        """Query the step names from the odb file.
+
+        Returns
+        -------
+        step_names : list of string
+            The names of all the steps stored in the odb file.
+        """
         return _ascii(_decode, self._query('get_steps'))
 
     def frame_ids(self, step_name):
-        return self._query('get_frames', step_name)
-
-    def variable_names(self, step_name, frame_id):
-        return _ascii(_decode, self._query('get_variable_names', (step_name, frame_id)))
-
-    def variable(self, variable_name, instance_name, step_name, frame_id, nset_name='', elset_name='', position=None):
-        """Read field data.
+        """Query the frames of a given step.
 
         Parameters
         ----------
-        ...
-        position : string
+        step_name : string
+            The name of the step
+
+        Returns
+        -------
+        step_name : list of ints
+            The name of the step the frame ids are expected in.
+        """
+        return self._query('get_frames', step_name)
+
+    def variable_names(self, step_name, frame_id):
+        """Query the variable names of a certain step and frame.
+
+        Parameters
+        ----------
+        step_name : string
+            The name of the step
+        frame_id : int
+            The index of the frame
+
+        Returns
+        -------
+        variable_names : list of string
+            The names of the variables
+        """
+        return _ascii(_decode, self._query('get_variable_names', (step_name, frame_id)))
+
+    def variable(self, variable_name, instance_name, step_name, frame_id, nset_name='', elset_name='', position=None):
+        """Read field variable data.
+
+        Parameters
+        ----------
+        variable_name : string
+            The name of the variable.
+        instance_name : string
+            The name of the instance.
+        step_name : string
+            The name of the step
+        frame_id : int
+            The index of the frame
+        nset_name : string, optional
+            The name of the node set to be queried. If not given, the whole instance
+        elnset_name : string, optional
+            The name of the element set to be queried. If not given, the whole instance
+        position : string, optional
             Position within element. Terminology as in Abaqus .inp file:
-            "INTEGRATION POINTS", "CENTROIDAL", "WHOLE ELEMENT", "NODES",
-            "FACES", "AVERAGED AT NODES"
+            ``INTEGRATION POINTS``, ``CENTROIDAL``, ``WHOLE ELEMENT``, ``NODES``,
+            ``FACES``, ``AVERAGED AT NODES``
+
+            If not given the native position is taken, except for ``INTEGRATION_POINTS``
+            The ``ELEMENT_NODAL`` position is used.
         """
         response = self._query('get_variable', (instance_name, step_name, frame_id, variable_name, nset_name, elset_name, position))
         (labels, index_labels, index_data, values) = response
@@ -211,6 +372,7 @@ def _guess_abaqus_bin_windows():
         r"C:/Program Files/SIMULIA/2018/AbaqusCAE/win_b64/code/bin/ABQLauncher.exe"
         r"C:/Program Files/SIMULIA/2020/EstProducts/win_b64/code/bin/ABQLauncher.exe",
         r"C:/Program Files/SIMULIA/2020/Products/win_b64/code/bin/ABQLauncher.exe",
+        r"C:/Program Files/SIMULIA/2021/EstProducts/win_b64/code/bin/ABQLauncher.exe",
     ]
     for guess in guesses:
         if os.path.exists(guess):

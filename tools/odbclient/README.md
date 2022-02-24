@@ -32,7 +32,7 @@ process is stopped automatically.
 pip install pylife-odbclient
 ```
 
-* See the [instructions in `pylife-odbserver`](../odbserver/README.md) on how
+* See the instructions in <a href="../odbserver/">`pylife-odbserver`</a> on how
   to install the server.
 
 
@@ -59,7 +59,7 @@ Then you can instantiate a `OdbClient` object using
 ```python
 import odbclient as CL
 
-client = CL.OdbClient("<path-to-abaqus>/abaqus", "<path-to-env>", "yourodb.odb")
+client = CL.OdbClient("yourodb.odb")
 ```
 
 See the API doc of `OdbClient` for details. (At the moment only in the sources,
@@ -68,8 +68,16 @@ sorry.)
 
 ## Limitations
 
+### Limited functionality
+
 Only a subset of Abaqus variable locations are supported. These are: nodal,
 element nodal, whole element and centroid. Integration point variables are
 extrapolated to element nodal.
 
 You can only extract data from an odb file, not write to it.
+
+### String literals
+
+So far only names made of `ascii` strings are supported.  That means that
+instance names, node that names and the like containing non-ascii characters
+like German umlauts will not work.

@@ -9,5 +9,6 @@ order to make sure that their versions are corresponding to the one of pyLife.
 
 ## Available addon packages
 
-* `odbclient` and `odbserver` – a client-server solution to read access Abaqus
+* <a href="odbclient">`pylife-odbclient`</a> – a client-server solution to read access Abaqus
   `.odb` files from within a Python 3.x process.
+* <a href="odbserver">`pylife-odbserver`</a> – the server part for `pylife-odbclient`

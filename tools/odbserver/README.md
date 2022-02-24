@@ -35,5 +35,5 @@ conda create -n odbserver python=2.7 pip
 
 * Run `pip install pylife-odbserver`
 
-* See the [instructions in `pylife-odbclient`](../odbclient/README.md) on how
+* See the instructions in <a href="../odbclient/">`pylife-odbclient`</a> on how
   to install the client.

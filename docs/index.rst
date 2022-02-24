@@ -2,6 +2,7 @@ pyLife Documentation
 ====================
 
 .. toctree::
+   :maxdepth: 1
    :caption: About
 
    README
@@ -18,7 +19,7 @@ pyLife Documentation
    tutorials
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: User Guide
 
    user_guide
@@ -36,7 +37,13 @@ pyLife Documentation
    reference
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :caption: Additional tools
+
+   tools/index.rst
+
+.. toctree::
+   :maxdepth: 1
    :caption: News
 
    NEWS-2.0

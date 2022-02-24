@@ -253,7 +253,7 @@ def _set_position(field, user_request=None):
     field : Abaqus field object
         Required if ``user_request=None``.
     user_request : string
-        Abaqus .inp file terminology (*ELEMENT OUTPUT, position=...). 
+        Abaqus .inp file terminology (*ELEMENT OUTPUT, position=...).
 
     Returns
     -------
@@ -270,13 +270,12 @@ def _set_position(field, user_request=None):
     if user_request is not None:
         return _position_dict[user_request]
 
-    else:
-        odb_pos = field.locations[0].position
+    odb_pos = field.locations[0].position
 
-        if odb_pos == ODB.INTEGRATION_POINT:
-            return ODB.ELEMENT_NODAL
+    if odb_pos == ODB.INTEGRATION_POINT:
+        return ODB.ELEMENT_NODAL
 
-        return odb_pos
+    return odb_pos
 
 def _get_frame(step, frame_id):
     for frame in step.frames:
