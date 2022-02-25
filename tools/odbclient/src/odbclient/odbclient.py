@@ -126,9 +126,10 @@ class OdbClient:
             The node list as a pandas data frame without connectivity.
             The columns are named ``x``, ``y`` and ``z``.
         """
+        self._fail_if_instance_invalid(instance_name)
         index, node_data = self._query('get_nodes', (instance_name, nset_name))
         return pd.DataFrame(data=node_data, columns=['x', 'y', 'z'],
-                            index=pd.Int64Index(index, name='node_id'))
+                            index=pd.Index(index, name='node_id', dtype=np.int64))
 
     def element_connectivity(self, instance_name, elset_name=''):
         """Query the element connectivity of an instance.
@@ -165,6 +166,7 @@ class OdbClient:
         instance_names : list of strings
             The names of the instances
         """
+        self._fail_if_instance_invalid(instance_name)
         return _ascii(_decode, self._query('get_node_sets', instance_name))
 
     def node_ids(self, nset_name, instance_name=''):
@@ -200,6 +202,7 @@ class OdbClient:
         instance_names : list of strings
             The names of the instances
         """
+        self._fail_if_instance_invalid(instance_name)
         return _ascii(_decode, self._query('get_element_sets', instance_name))
 
     def element_ids(self, elset_name, instance_name=''):
@@ -341,6 +344,10 @@ class OdbClient:
             self._proc = None
 
             raise OdbServerError(error_message.decode('ascii'))
+
+    def _fail_if_instance_invalid(self, instance_name):
+        if instance_name not in self.instance_names() and instance_name != '':
+            raise KeyError("Invalid instance name '%s'." % instance_name)
 
 
 def _ascii(fcn, args):
