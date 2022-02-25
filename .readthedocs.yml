@@ -29,3 +29,5 @@ python:
         - docs
         - all
         - extras
+    - method: pip
+      path: tools/odbclient
