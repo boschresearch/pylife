@@ -136,7 +136,7 @@ class AbstractDetector(metaclass=ABCMeta):
 
         Returns
         -------
-        self : ThreePointDetector
+        self : instance of the subclass
             The ``self`` object so that processing can be chained
 
         Notes

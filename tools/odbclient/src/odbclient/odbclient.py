@@ -39,25 +39,73 @@ class OdbServerError(Exception):
 
 class OdbClient:
     """The interface class to access data from odb files provided by the odbserver.
+
+    Parameters
+    ----------
+    odb_file : string
+        The path to the odb file
+
+    abaqus_bin : string, optional
+        The path to the abaqus *binary* (not a .bat or shell script).
+        Guessed if not given.
+
+    python_env_path : string, optional
+        The path to the python2 environmnent to be used by the odbserver.
+        Guessed if not given.
+
+    Examples
+    --------
+    Instantiating and querying instance names
+
+    >>> import odbclient as CL
+    >>> client = CL.OdbClient("some_file.odb")
+    >>> client.instance_names()
+    ['PART-1-1']
+
+    Querying node coordinates
+
+    >>> client.node_coordinates('PART-1-1')
+                x     y     z
+    node_id
+    1       -30.0  15.0  10.0
+    2       -30.0  25.0  10.0
+    3       -30.0  15.0   0.0
+
+
+    Querying step names
+
+    >>> client.step_names()
+    ['Load']
+
+    Querying frames of a step
+
+    >>> client.frame_ids('Load')
+    [0, 1]
+
+    Querying variable names of a frame and step
+
+    >>> client.variable_names('Load', 1)
+    ['CF', 'COORD', 'E', 'EVOL', 'IVOL', 'RF', 'S', 'U']
+
+    Querying variable data of an instance, frame and step
+
+    >>> client.variable('S', 'PART-1-1', 'Load', 1)
+                              S11        S22  ...       S13       S23
+    node_id element_id                        ...
+    5       1          -38.617779   2.705118  ... -3.578981  1.355571
+    7       1          -38.617779   2.705118  ...  3.578981 -1.355571
+    3       1          -50.749348 -21.749729  ... -7.597347 -0.000003
+    1       1          -50.749348 -21.749729  ...  7.597347  0.000003
+    6       1           38.643414  -2.588303  ...  3.522046  1.446851
+    ...                       ...        ...  ...       ...       ...
+    54      4            7.353698  -3.177251  ...  1.775653 -2.608372
+    56      4           -6.695759 -17.656754  ...  0.217049 -3.040078
+    55      4           -6.695759 -17.656754  ... -0.217049  3.040078
+    47      4           -0.226473   1.787100  ...  0.967435 -0.671089
+    48      4           -0.226473   1.787100  ... -0.967435  0.671089
     """
 
     def __init__(self, odb_file, abaqus_bin=None, python_env_path=None):
-        """Initialize the ``OdbClient``.
-
-        Parameters
-        ----------
-        odb_file : string
-            The path to the odb file
-
-        abaqus_bin : string, optional
-            The path to the abaqus *binary* (not a .bat or shell script).
-            Guessed if not given.
-
-        python_env_path : string, optional
-            The path to the python2 environmnent to be used by the odbserver.
-            Guessed if not given.
-
-        """
         self._proc = None
         env = os.environ
         env['PYTHONPATH'] = _guess_pythonpath(python_env_path)

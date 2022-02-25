@@ -33,7 +33,10 @@ i.e. is deleted, the server process is stopped automatically.
 conda create -n odbserver python=2.7 pip
 ```
 
-* Run `pip install pylife-odbserver`
+* Run
+```
+pip install pylife-odbserver
+```
 
-* See the instructions in <a href="../odbclient/">`pylife-odbclient`</a> on how
+* See the <a href="../odbclient/">instructions in `pylife-odbclient`</a> on how
   to install the client.

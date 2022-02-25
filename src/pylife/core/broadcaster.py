@@ -32,14 +32,14 @@ class Broadcaster:
 
     In most cases the ``Broadcaster`` class is not used directly.  The
     functionality is in most cases used by the derived class
-    :class:`pylife.PylifeSignal`.
+    :class:`~pylife.PylifeSignal`.
 
     The purpose of the ``Broadcaster`` is to take two numerical objects and
     return two objects of the same numerical data with an aligned index.  That
     means that mathematical operations using the two objects as operands can be
     implemented using numpy's broadcasting functionality.
 
-    See method :method:`pylife.Broadcaster.broadcast` documentation for details.
+    See method :meth:`~pylife.Broadcaster.broadcast` documentation for details.
 
     The broadcasting is done in the following ways:
 

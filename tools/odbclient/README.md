@@ -32,7 +32,7 @@ process is stopped automatically.
 pip install pylife-odbclient
 ```
 
-* See the instructions in <a href="../odbserver/">`pylife-odbserver`</a> on how
+* See the <a href="../odbserver/">instructions in `pylife-odbserver`</a> on how
   to install the server.
 
 
@@ -62,8 +62,8 @@ import odbclient as CL
 client = CL.OdbClient("yourodb.odb")
 ```
 
-See the API doc of `OdbClient` for details. (At the moment only in the sources,
-sorry.)
+See the [API docs of `OdbClient`][1]
+for details.
 
 
 ## Limitations
@@ -81,3 +81,6 @@ You can only extract data from an odb file, not write to it.
 So far only names made of `ascii` strings are supported.  That means that
 instance names, node that names and the like containing non-ascii characters
 like German umlauts will not work.
+
+___
+[1]: https://pylife.readthedocs.io/en/latest/tools/odbclient/odbclient.html
