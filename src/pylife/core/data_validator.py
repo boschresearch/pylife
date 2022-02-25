@@ -39,7 +39,7 @@ class DataValidator:
         Raises
         ------
         AttributeError
-            If `signal` is neither a `pandas.DataFrame` nor a `pandas.Series`
+            if `signal` is neither a `pandas.DataFrame` nor a `pandas.Series`
 
         Notes
         -----
@@ -72,7 +72,7 @@ class DataValidator:
         Raises
         ------
         AttributeError
-            If `signal` is neither a `pandas.DataFrame` nor a `pandas.Series`
+            if `signal` is neither a `pandas.DataFrame` nor a `pandas.Series`
 
         Notes
         -----

@@ -363,7 +363,7 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
     Raises
     ------
     ValueError
-        If the resulting M_sigma doesn't lie in the range from 0 to 1 a ValueError is raised, as this value would
+        if the resulting M_sigma doesn't lie in the range from 0 to 1 a ValueError is raised, as this value would
         suggest higher strength with additional loads.
     """
     S_a_R0 = sn_curve_R0.woehler.basquin_load(N_c) if N_c < sn_curve_R0.ND else sn_curve_R0.SD

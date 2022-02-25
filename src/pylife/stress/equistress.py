@@ -363,7 +363,7 @@ def mises(s11, s22, s33, s12, s13, s23):
 
     Raises
     ------
-    AssertionError:
+    AssertionError
         Components' shape is not consistent.
     """
     s11 = np.array(s11)

@@ -20,17 +20,18 @@ import scipy.stats as stats
 
 
 class ProbabilityFit:
-    def __init__(self, probs, occurrences):
-        """Fit samples and their estimated occurrences to a lognorm distribution.
+    """Fit samples and their estimated occurrences to a lognorm distribution.
 
-        Parameters:
-        -----------
-        probs : array_like
-            The estimated cumulated probabilities of the sample values
-            (i.e. estimated by func:`pylife.utils.functions.rossow_cumfreqs`)
-        occurences : array_like
-            the values of the samples
-        """
+    Parameters:
+    -----------
+    probs : array_like
+        The estimated cumulated probabilities of the sample values
+        (i.e. estimated by func:`pylife.utils.functions.rossow_cumfreqs`)
+    occurences : array_like
+        the values of the samples
+    """
+
+    def __init__(self, probs, occurrences):
         if len(probs) != len(occurrences):
             raise ValueError("probs and occurrence arrays must have the same 1D shape.")
         if len(probs) < 2:
@@ -43,16 +44,20 @@ class ProbabilityFit:
 
     @property
     def slope(self):
+        """The slope of the probability curve"""
         return self._slope
 
     @property
     def intercept(self):
+        """The intercept of the probability curve"""
         return self._intercept
 
     @property
     def occurrences(self):
+        """The occurrences (sample values)"""
         return self._occurrences
 
     @property
     def percentiles(self):
+        """The calculated percentiles of the cumulated probabilities"""
         return self._ppf

@@ -25,11 +25,11 @@ from pylife.materiallaws import WoehlerCurve
 @pd.api.extensions.register_series_accessor('fatigue')
 @pd.api.extensions.register_dataframe_accessor('fatigue')
 class Fatigue(WoehlerCurve):
-    """Extension for `WoehlerCurve` accessor class for fatigue calculations.
+    """Extension for ``WoehlerCurve`` accessor class for fatigue calculations.
 
     Note
     ----
-    This class is accessible by the `fatigue` accessor attribute.
+    This class is accessible by the ``fatigue`` accessor attribute.
     """
 
     def damage(self, load_collective):
@@ -42,9 +42,9 @@ class Fatigue(WoehlerCurve):
 
         Returns
         -------
-        damage : pd.Series
+        damage : :class:`pandas.Series`
             The calculated damage values. The index is the broadcast between
-            `load_collective` and `self`.
+            ``load_collective`` and ``self``.
         """
         cycles = self.cycles(load_collective.amplitude)
         return pd.Series(load_collective.cycles / cycles, name='damage')
@@ -59,9 +59,9 @@ class Fatigue(WoehlerCurve):
 
         Returns
         -------
-        security_factor : pd.Series
+        security_factor : :class:`pandas.Series`
             The calculated security_factors. The index is the broadcast between
-            `load_distribution` and `self`.
+            ``load_distribution`` and ``self``.
         """
         allowed_load = self.load(load_distribution.cycles, allowed_failure_probability)
         return pd.Series(allowed_load / load_distribution.amplitude, name='security_factor')
@@ -76,9 +76,9 @@ class Fatigue(WoehlerCurve):
 
         Returns
         -------
-        security_factor : pd.Series
+        security_factor : :class:`pandas.Series`
             The calculated security_factors. The index is the broadcast between
-            `load_distribution` and `self`.
+            ``load_distribution`` and ``self``.
         """
         allowed_cycles = self.cycles(load_distribution.amplitude, allowed_failure_probability)
         return pd.Series(allowed_cycles / load_distribution.cycles, name='security_factor')

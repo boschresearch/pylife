@@ -101,6 +101,8 @@ extensions = [
     'jupyter_sphinx'
 ]
 
+napoleon_custom_sections = ["Limitations"]
+
 todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
