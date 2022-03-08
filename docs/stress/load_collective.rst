@@ -1,6 +1,6 @@
 The ``LoadCollective`` class
 ############################
 
-.. automodule:: pylife.stress.LoadCollective
+.. autoclass:: pylife.stress.LoadCollective
 	:undoc-members:
 	:members:

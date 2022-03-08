@@ -1,6 +1,6 @@
 The ``LoadHistogram`` class
 ###########################
 
-.. automodule:: pylife.stress.LoadHistogram
+.. autoclass:: pylife.stress.LoadHistogram
 	:undoc-members:
 	:members:

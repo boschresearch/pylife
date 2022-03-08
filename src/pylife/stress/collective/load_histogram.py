@@ -53,6 +53,13 @@ class LoadHistogram(PylifeSignal, AbstractLoadCollective):
 
     @property
     def amplitude(self):
+        """Calculate the amplitudes of the load collective.
+
+        Returns
+        -------
+        amplitude : pd.Series
+            The amplitudes of the load collective
+        """
         rng = self._impl.amplitude()
         return pd.Series(rng/2., name='amplitude', index=self._obj.index)
 
@@ -64,45 +71,117 @@ class LoadHistogram(PylifeSignal, AbstractLoadCollective):
 
     @property
     def meanstress(self):
+        """Calculate the mean load values of the load collective.
+
+        Returns
+        -------
+        mean : pd.Series
+            The mean load values of the load collective
+        """
         mean = self._impl.meanstress()
         return pd.Series(mean, name='meanstress', index=self._obj.index)
 
     @property
     def R(self):
+        """Calculate the R values of the load collective.
+
+        Returns
+        -------
+        R : pd.Series
+            The R values of the load collective
+        """
         res = (self.lower / self.upper).fillna(0.0)
         res.name = 'R'
         return res
 
     @property
     def upper(self):
+        """Calculate the upper load values of the load collective.
+
+        Returns
+        -------
+        upper : pd.Series
+            The upper load values of the load collective
+        """
         res = self.meanstress + self.amplitude
         res.name = 'upper'
         return res
 
     @property
     def lower(self):
+        """Calculate the lower load values of the load collective.
+
+        Returns
+        -------
+        lower : pd.Series
+            The lower load values of the load collective
+        """
         res = self.meanstress - self.amplitude
         res.name = 'lower'
         return res
 
     @property
     def cycles(self):
+        """The cycles of each class of the collective.
+
+        Returns
+        -------
+        cycles : pd.Series
+            The cycles of each class of the collective
+        """
         cycles = self._obj.copy()
         cycles.name = 'cycles'
         return cycles
 
     def use_class_right(self):
+        """Use the upper limit of the class bins.
+
+
+        Returns
+        -------
+        self
+        """
         self._impl._class_location = 'right'
         return self
 
     def use_class_left(self):
+        """Use the lower limit of the class bins.
+
+        Returns
+        -------
+        self
+        """
         self._impl._class_location = 'left'
         return self
 
     def scale(self, factors):
+        """Scale the collective.
+
+        Parameters
+        ----------
+        factors : scalar or :class:`pandas.Series`
+            The factor(s) to scale the collective with.
+
+        Returns
+        -------
+        scaled : ``LoadCollective``
+            The scaled collective.
+        """
         return self._shift_or_scale(lambda x, y: x * y, factors).load_collective
 
     def shift(self, diffs):
+        """Shift the collective.
+
+        Parameters
+        ----------
+        diffs : scalar or :class:`pandas.Series`
+            The diff(s) to shift the collective by.
+
+        Returns
+        -------
+        shifted : ``LoadCollective``
+            The shifted collective.
+        """
         return self._shift_or_scale(lambda x, y: x + y, diffs, skip=['range']).load_collective
 
     def _shift_or_scale(self, func, operand, skip=None):

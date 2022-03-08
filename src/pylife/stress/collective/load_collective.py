@@ -131,6 +131,11 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         ----------
         factors : scalar or :class:`pandas.Series`
             The factor(s) to scale the collective with.
+
+        Returns
+        -------
+        scaled : ``LoadHistogram``
+            The scaled histogram.
         """
         factors, obj = self.broadcast(factors)
         return obj.multiply(factors, axis=0).load_collective
@@ -142,6 +147,11 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         ----------
         diffs : scalar or :class:`pandas.Series`
             The diff(s) to shift the collective by.
+
+        Returns
+        -------
+        shifted : ``LoadHistogram``
+            The shifted histogram.
         """
         diffs, obj = self.broadcast(diffs)
         return obj.add(diffs, axis=0).load_collective
