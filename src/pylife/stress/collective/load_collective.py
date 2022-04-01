@@ -118,10 +118,13 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
     @property
     def cycles(self):
-        """The cycles of each member of the collective is 1.0.
+        """The cycles of each member of the collective is 1.0. when no cycles are given
 
         This is for compatibility with :class:`~pylife.stress.pylife.stress.LoadHistogram`
         """
+        if 'cycles' in self._obj.keys():
+            return self._obj.cycles
+        
         return pd.Series(1.0, name='cycles', index=self._obj.index)
 
     def scale(self, factors):
@@ -130,7 +133,7 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         Parameters
         ----------
         factors : scalar or :class:`pandas.Series`
-            The factor(s) to scale the collective with.
+            The factor(s) to scale the collective 'from' and 'to' with.
 
         Returns
         -------
@@ -138,7 +141,8 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
             The scaled histogram.
         """
         factors, obj = self.broadcast(factors)
-        return obj.multiply(factors, axis=0).load_collective
+        obj[['from', 'to']] = obj[['from', 'to']].multiply(factors, axis=0)
+        return obj.load_collective
 
     def shift(self, diffs):
         """Shift the collective.
@@ -154,8 +158,9 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
             The shifted histogram.
         """
         diffs, obj = self.broadcast(diffs)
-        return obj.add(diffs, axis=0).load_collective
-
+        obj[['from', 'to']] = obj[['from', 'to']].add(diffs, axis=0)
+        return obj.load_collective
+		
     def range_histogram(self, bins, axis=None):
         """Calculate the histogram of range values along a given axis.
 
