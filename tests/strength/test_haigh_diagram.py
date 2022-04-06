@@ -94,6 +94,12 @@ def test_haigh_diagram_fkm_goodman_multiple_M():
     pd.testing.assert_series_equal(hd.to_pandas(), expected, rtol=1e-4)
 
 
+def test_haigh_diagram_fkm_goodman_sized_M():
+    MST.HaighDiagram.fkm_goodman(pd.DataFrame({
+        'M': 0.5
+    }, index=pd.Index(np.arange(101), name='element_id')))
+
+
 def test_haigh_diagram_fkm_goodman_multiple_M_M2():
     hd = MST.HaighDiagram.fkm_goodman(pd.DataFrame({
         'M': [0.5, 0.4],
