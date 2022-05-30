@@ -21,6 +21,6 @@ from .load_collective import LoadCollective
 from .load_histogram import LoadHistogram
 
 __all__ = [
-    LoadCollective,
-    LoadHistogram
+    "LoadCollective",
+    "LoadHistogram"
 ]
