@@ -18,7 +18,9 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 from abc import ABCMeta, abstractmethod
+import warnings
 import numpy as np
+import pandas as pd
 
 
 def find_turns(samples):
@@ -42,7 +44,29 @@ def find_turns(samples):
     the same values, building a turning point together, the first sample of the
     plateau is indexed.
 
+
+    Warnings
+    --------
+    Any ``NaN`` values are dropped from the input signal before processing it
+    and will thus also not appear in the turns.  That means that the index
+    returned is no longer congruent with the index of the initial signal.
+    Therefore a warning is issued if ``NaN`` values have been dropped.  The
+    reason for this is, that if the ``NaN`` appears next to an actual turning
+    point the turning point is no longer detected which will lead to an
+    underestimation of the damage sum later in the damage calculation.
+    Generally you should not have ``NaN`` values in your signal.  If you do, it
+    would be a good idea to clean them out before the rainflow detection.
+
     """
+
+    def clean_nans(samples):
+        nans = pd.isna(samples)
+        if any(nans):
+            warnings.warn(UserWarning("At least one NaN like value has been dropped from the input signal. "
+                                      "Index will be INVALID!"))
+            return samples[~nans]
+        return samples
+
     def plateau_turns(diffs):
         plateau_turns = np.zeros_like(diffs, dtype=np.bool_)[1:]
         duplicates = np.array(diffs == 0, dtype=np.int8)
@@ -61,6 +85,8 @@ def find_turns(samples):
                 plateau_turns[dups_starts[np.where(diffs[dups_starts] * diffs[dups_ends+1] < 0)]] = True
 
         return plateau_turns
+
+    samples = clean_nans(samples)
 
     diffs = np.diff(samples)
     peak_turns = diffs[:-1] * diffs[1:] < 0.0

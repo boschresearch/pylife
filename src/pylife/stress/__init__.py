@@ -20,6 +20,6 @@ __maintainer__ = __author__
 from .collective import LoadCollective, LoadHistogram
 
 __all__ = [
-    LoadCollective,
-    LoadHistogram
+    "LoadCollective",
+    "LoadHistogram"
 ]
