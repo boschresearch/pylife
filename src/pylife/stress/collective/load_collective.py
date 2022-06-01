@@ -42,10 +42,17 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         if 'range' in self.keys() and 'mean' in self.keys():
             fr = self._obj['mean'] - self._obj['range'] / 2.
             to = self._obj['mean'] + self._obj['range'] / 2.
+
+            cycles = self._obj.get('cycles')
+
             self._obj = pd.DataFrame({
                 'from': fr,
                 'to': to
             }, index=self._obj.index)
+
+            if cycles is not None:
+                self._obj['cycles'] = cycles
+
             return
         raise AttributeError("Load collective needs either 'range'/'mean' or 'from'/'to' in column names.")
 
@@ -99,7 +106,7 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         upper : pd.Series
             The upper load values of the load collective
         """
-        res = self._obj.max(axis=1)
+        res = self._obj.loc[:, ['from', 'to']].max(axis=1)
         res.name = 'upper'
         return res
 
@@ -112,7 +119,7 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         lower : pd.Series
             The lower load values of the load collective
         """
-        res = self._obj.min(axis=1)
+        res = self._obj.loc[:, ['from', 'to']].min(axis=1)
         res.name = 'lower'
         return res
 
@@ -124,7 +131,7 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         """
         if 'cycles' in self._obj.keys():
             return self._obj.cycles
-        
+
         return pd.Series(1.0, name='cycles', index=self._obj.index)
 
     def scale(self, factors):
@@ -160,7 +167,7 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         diffs, obj = self.broadcast(diffs)
         obj[['from', 'to']] = obj[['from', 'to']].add(diffs, axis=0)
         return obj.load_collective
-		
+
     def range_histogram(self, bins, axis=None):
         """Calculate the histogram of range values along a given axis.
 
