@@ -18,7 +18,9 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 from abc import ABCMeta, abstractmethod
+import warnings
 import numpy as np
+import pandas as pd
 
 
 def find_turns(samples):
@@ -43,6 +45,14 @@ def find_turns(samples):
     plateau is indexed.
 
     """
+
+    def clean_nans(samples):
+        nans = pd.isna(samples)
+        if any(nans):
+            warnings.warn(UserWarning("At least one NaN like value has been dropped from the input signal."))
+            return samples[~nans]
+        return samples
+
     def plateau_turns(diffs):
         plateau_turns = np.zeros_like(diffs, dtype=np.bool_)[1:]
         duplicates = np.array(diffs == 0, dtype=np.int8)
@@ -61,6 +71,8 @@ def find_turns(samples):
                 plateau_turns[dups_starts[np.where(diffs[dups_starts] * diffs[dups_ends+1] < 0)]] = True
 
         return plateau_turns
+
+    samples = clean_nans(samples)
 
     diffs = np.diff(samples)
     peak_turns = diffs[:-1] * diffs[1:] < 0.0
