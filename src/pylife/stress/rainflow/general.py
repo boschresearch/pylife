@@ -48,24 +48,29 @@ def find_turns(samples):
     Warnings
     --------
     Any ``NaN`` values are dropped from the input signal before processing it
-    and will thus also not appear in the turns.  That means that the index
-    returned is no longer congruent with the index of the initial signal.
-    Therefore a warning is issued if ``NaN`` values have been dropped.  The
-    reason for this is, that if the ``NaN`` appears next to an actual turning
-    point the turning point is no longer detected which will lead to an
-    underestimation of the damage sum later in the damage calculation.
-    Generally you should not have ``NaN`` values in your signal.  If you do, it
-    would be a good idea to clean them out before the rainflow detection.
+    and will thus also not appear in the turns.  In those cases a warning is
+    issued.  The reason for this is, that if the ``NaN`` appears next to an
+    actual turning point the turning point is no longer detected which will
+    lead to an underestimation of the damage sum later in the damage
+    calculation.  Generally you should not have ``NaN`` values in your signal.
+    If you do, it would be a good idea to clean them out before the rainflow
+    detection.
 
     """
 
     def clean_nans(samples):
         nans = pd.isna(samples)
         if any(nans):
-            warnings.warn(UserWarning("At least one NaN like value has been dropped from the input signal. "
-                                      "Index will be INVALID!"))
-            return samples[~nans]
-        return samples
+            warnings.warn(UserWarning("At least one NaN like value has been dropped from the input signal."))
+            return samples[~nans], nans
+        return samples, None
+
+    def correct_turns_by_nans(index, nans):
+        if nans is None:
+            return
+        nan_positions = np.where(nans)[0]
+        for nan_pos in nan_positions:
+            index[index >= nan_pos] += 1
 
     def plateau_turns(diffs):
         plateau_turns = np.zeros_like(diffs, dtype=np.bool_)[1:]
@@ -86,14 +91,17 @@ def find_turns(samples):
 
         return plateau_turns
 
-    samples = clean_nans(samples)
+    samples, nans = clean_nans(samples)
 
     diffs = np.diff(samples)
     peak_turns = diffs[:-1] * diffs[1:] < 0.0
 
     index = np.where(np.logical_or(peak_turns, plateau_turns(diffs)))[0] + 1
 
-    return index, samples[index]
+    turns_values = samples[index]
+    correct_turns_by_nans(index, nans)
+
+    return index, turns_values
 
 
 class AbstractDetector(metaclass=ABCMeta):
