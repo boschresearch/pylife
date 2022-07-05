@@ -25,15 +25,14 @@ from other commercial companies dealing with the topic. We commend this library
 to university teachers to use it for education purposes.
 
 
-## Disclaimer
+## Status
 
-The `develop` branch is at the moment undergoing heavy development for the
-`pylife-2.0` release.  Check out [NEWS-2.0.md](NEWS-2.0.md) for details.  That
-means that breaking changes are likely to occur.  If you are new to pyLife, it
-is nevertheless worthwhile following the `develop` branch, as it stabilizes in
-the upcoming months.  The way things are done are and will be a huge
-improvement over `pylife-1.x`.
-
+pyLife-2.0.0 has been released.  That means that for the time being we hope
+that we will not introduce *breaking* changes.  That does not mean that the
+release is stable finished and perfect.  We will do small improvements,
+especially with respect to documentation in the upcoming months and release
+them frequently as 2.0.x releases.  Once we have noticeable feature additions
+we will come up with a 2.x.0 release.  No ETA about that.
 
 ## Contents
 

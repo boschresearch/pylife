@@ -113,7 +113,7 @@ class RambergOsgood:
 
     def _get_abs_sign(self, x):
         '''Calculate the absolute value and the sign for a given input
-        
+
         Parameters
         ----------
         x : array-like float
@@ -137,7 +137,7 @@ class RambergOsgood:
         ----------
         strain : array-like float
             The strain
-            
+
         Returns
         -------
         stress : array-like float
@@ -244,10 +244,10 @@ class RambergOsgood:
 
         Raises
         ------
-        ValueError if stress > max_stress
+        ValueError
+            if stress > max_stress
         '''
         stress = np.asarray(stress)
         if (stress > max_stress).any():
             raise ValueError("Value for 'stress' must not be higher than 'max_stress'.")
         return self.strain(max_stress) - self.delta_strain(max_stress-stress)
-

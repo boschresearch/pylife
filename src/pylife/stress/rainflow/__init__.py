@@ -29,7 +29,7 @@ recorders and detectors that come with pyLife but also write your own custom
 detectors and custom recorders.
 
 Detectors
-.........
+^^^^^^^^^
 
 Detectors process a one dimensional time signal and detect hysteresis loops in
 them. A hysteresis loop consists of the sample point where the hysteresis
@@ -55,8 +55,16 @@ As of now, pyLife comes with the following detectors:
   does not report sample index.
 
 
+Warning
+.......
+
+Make sure you don't have any ``NaN`` values in your input signal.  They are
+dropped in order to make sure not to miss any hysteresis loops and thus will
+render the index invalid.  A warning is issued by :func:`~.find_turns` if
+``NaN`` values are dropped.
+
 Recorders
-.........
+^^^^^^^^^
 
 Recorders are notified by detectors about loops and will process the loop
 information as they wish.

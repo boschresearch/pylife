@@ -106,7 +106,7 @@ class PylifeSignal(Broadcaster):
         Raises
         ------
         AttributeError
-            If `self._obj` is neither a `pandas.DataFrame` nor a `pandas.Series`
+            if `self._obj` is neither a `pandas.DataFrame` nor a `pandas.Series`
 
         Notes
         -----
@@ -136,7 +136,7 @@ class PylifeSignal(Broadcaster):
         Raises
         ------
         AttributeError
-            If `self._obj` is neither a `pandas.DataFrame` nor a `pandas.Series`
+            if `self._obj` is neither a `pandas.DataFrame` nor a `pandas.Series`
 
         Notes
         -----

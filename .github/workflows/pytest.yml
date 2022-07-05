@@ -7,6 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       MPLBACKEND: svg
+      THEANO_FLAGS: cxx=""    
     strategy:
       matrix:
         os: [ubuntu-20.04, windows-latest]
@@ -23,9 +24,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -U setuptools setuptools_scm wheel
         pip install flake8 pytest pytest-cov
-        pip install -e .[testing]
-    - name: Test with pytest
-      env:
-        THEANO_FLAGS: cxx=""
-      run: |
-        pytest
+        pip install -e .[all,testing]
+    - name: Unit tests
+      run: pytest
+    - name: Notebook flow tests
+      uses: GabrielBB/xvfb-action@v1
+      with:
+        run: python -m pytest -m demos

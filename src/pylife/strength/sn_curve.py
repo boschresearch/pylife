@@ -24,6 +24,12 @@ import pandas as pd
 import pylife.strength.fatigue
 import pylife.stress
 
+warnings.warn(
+    FutureWarning(
+        "The module pylife.strength.helpers is deprecated and no longer under test. "
+        "The functionality is now avaliable in the pylife.materiallaws.WoehlerCurve."
+    )
+)
 
 class FiniteLifeBase:
     """Base class for SN curve calculations - either in logarithmic or regular scale"""

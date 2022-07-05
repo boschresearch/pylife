@@ -13,10 +13,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""A module for frequency signal handling
+
+Warning
+-------
+
+This module is not considered finalized even though it is part of pylife-2.0.
+Breaking changes might occur in upcoming minor releases.
+"""
+
 import numpy as np
 import pandas as pd
 from scipy import optimize as op
-
 
 class psdSignal:
     '''Handles different routines for self signals

@@ -18,9 +18,9 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 from .load_collective import LoadCollective
-from .matrix_load_collective import LoadCollectiveHistogram
+from .load_histogram import LoadHistogram
 
 __all__ = [
-    LoadCollective,
-    LoadCollectiveHistogram
+    "LoadCollective",
+    "LoadHistogram"
 ]

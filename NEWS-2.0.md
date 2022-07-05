@@ -1,7 +1,6 @@
 # What is new and what has changed in pyLife-2.0
 
-The pyLife-2.0 release is planned for end of 2021.  No promises, though.  This
-document lists changes and new features of pyLife-2.0.
+This document lists changes and new features of pyLife-2.0.
 
 
 ## General changes

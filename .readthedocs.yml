@@ -23,8 +23,11 @@ formats:
 python:
   version: 3.8
   install:
-    - requirements: docs/requirements.txt
     - method: pip
       path: .
       extra_requirements:
         - docs
+        - all
+        - extras
+    - method: pip
+      path: tools/odbclient

@@ -101,6 +101,8 @@ extensions = [
     'jupyter_sphinx'
 ]
 
+napoleon_custom_sections = ["Limitations"]
+
 todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
@@ -117,7 +119,7 @@ master_doc = "index"
 
 # General information about the project.
 project = u'pyLife'
-copyright = u'2017 – 2021, pyLife Developer Team'
+copyright = u'2017 – 2022, pyLife Developer Team'
 author = u'pyLife Developer Team'
 
 # The version info for the project you're documenting, acts as replacement for

@@ -29,10 +29,14 @@ def change_workingdir_dir(monkeypatch):
     monkeypatch.chdir('demos')
 
 
-@testbook('demos/hotspot_plate.ipynb', execute=True)
+@testbook('demos/hotspot_plate.ipynb')
 def test_hotspot_plate(tb):
+    with tb.patch('pyvista.Plotter'):
+        tb.execute()
+
     tb.inject(
         """
+        first_hotspot = mesh[mesh['hotspot'] == 1]
         pd.testing.assert_index_equal(
             first_hotspot.index,
             pd.MultiIndex.from_tuples([(456, 5)], names=['element_id', 'node_id'])
@@ -41,6 +45,7 @@ def test_hotspot_plate(tb):
     )
     tb.inject(
         """
+        second_hotspot = mesh[mesh['hotspot'] == 2]
         pd.testing.assert_index_equal(
             second_hotspot.index,
             pd.MultiIndex.from_tuples([(2852, 9)], names=['element_id', 'node_id'])
@@ -49,8 +54,11 @@ def test_hotspot_plate(tb):
     )
 
 
-@testbook('demos/local_stress_with_FE.ipynb', execute=True)
+@testbook('demos/local_stress_with_FE.ipynb')
 def test_local_stress_with_fe(tb):
+    with tb.patch('pyvista.Plotter'):
+        tb.execute()
+
     tb.inject("np.testing.assert_approx_equal(damage.max(), 0.0023, significant=2)")
 
 
@@ -86,8 +94,11 @@ def test_time_series_handling(tb):
     )
 
 
-@testbook('demos/lifetime_calc.ipynb', execute=True)
+@testbook('demos/lifetime_calc.ipynb')
 def test_lifetime_calc(tb):
+    with tb.patch('pyvista.Plotter'):
+        tb.execute()
+
     tb.inject(
         """
         np.testing.assert_approx_equal(fp_component, 4.23e-4, significant=3)

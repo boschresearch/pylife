@@ -52,7 +52,7 @@ class VMAPExport:
     Raises
     ------
     Exception
-        If the file cannot be read an exception is raised.
+        if the file cannot be read an exception is raised.
         So far any exception from the ``h5py`` module is passed through.
     """
 

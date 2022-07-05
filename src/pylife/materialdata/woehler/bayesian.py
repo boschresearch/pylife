@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
@@ -27,6 +28,14 @@ from .likelihood import Likelihood
 
 
 class Bayesian(Elementary):
+    """A Wöhler analyzer using Bayesian optimization
+
+    Warning
+    -------
+
+    We are considering switching from pymc3 to GPyOpt as calculation engine in the
+    future.  Maybe this will lead to breaking changes without new major release.
+    """
 
     class _LogLike(tt.Op):
         """

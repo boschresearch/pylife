@@ -29,7 +29,7 @@ import numpy as np
 
 
 def scattering_range_to_std(T):
-    """Convert a scattering range (`TS` or `TN` in DIN 50100:2016-12) into standard deviation.
+    """Convert a scattering range (``TS`` or ``TN`` in DIN 50100:2016-12) into standard deviation.
 
     Parameters
     ----------
@@ -43,15 +43,15 @@ def scattering_range_to_std(T):
 
     Notes
     -----
-    Actually `1/(2*norm.ppf(0.9))*np.log10(T)`
+    Actually ``1/(2*norm.ppf(0.9))*np.log10(T)``
 
-    Inverse of `std_to_scattering_range()`
+    Inverse of ``std_to_scattering_range()``
     """
     return 0.39015207303618954*np.log10(T)
 
 
 def std_to_scattering_range(std):
-    """Convert a standard deviation into scattering range (`TS` or `TN` in DIN 50100:2016-12).
+    """Convert a standard deviation into scattering range (``TS`` or ``TN`` in DIN 50100:2016-12).
 
     Parameters
     ----------
@@ -61,13 +61,13 @@ def std_to_scattering_range(std):
     Returns
     -------
     T : float
-        inverted scattering range corresponding to `std` assuming a normal distribution
+        inverted scattering range corresponding to ``std`` assuming a normal distribution
 
     Notes
     -----
-    Actually `10**(2*norm.ppf(0.9)*std`
+    Actually ``10**(2*norm.ppf(0.9)*std``
 
-    Inverse of `scattering_range_to_std()`
+    Inverse of ``scattering_range_to_std()``
     """
     return 10**(2.5631031310892007*std)
 
@@ -110,7 +110,7 @@ def rossow_cumfreqs(N):
 
     References
     ----------
-    'Statistics of Metal Fatigue in Engineering' page 16
+    *Statistics of Metal Fatigue in Engineering' page 16*
 
     https://books.google.de/books?isbn=3752857722
 

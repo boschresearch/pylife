@@ -94,17 +94,20 @@ class HaighDiagram(PylifeSignal):
 
         if isinstance(haigh_fkm_goodman, pd.Series):
             haigh_index = interval_index
+            dummy_index = pd.Index([0, 1, 2], name='R')
         else:
             haigh_frame, _ = Broadcaster(haigh_fkm_goodman.index.to_frame()).broadcast(interval_index.to_frame())
             haigh_index = haigh_frame.index
+            dummy_index = pd.Index([0, 1, 2] * len(haigh_fkm_goodman), name='R')
 
-        haigh = pd.Series(0.0, index=haigh_index)
+        haigh = pd.Series(0.0, index=dummy_index)
 
         R_index = haigh.index.get_level_values('R')
 
-        haigh.iloc[R_index.get_indexer_for([pd.Interval(-np.inf, 0.0)])] = M
-        haigh.iloc[R_index.get_indexer_for([pd.Interval(0.0, 1.0)])] = M2
+        haigh.iloc[R_index.get_indexer_for([1])] = M
+        haigh.iloc[R_index.get_indexer_for([2])] = M2
 
+        haigh.index = haigh_index
         return cls(haigh)
 
     @classmethod
@@ -174,7 +177,7 @@ class HaighDiagram(PylifeSignal):
 
         Parameters
         ----------
-        cycles : :class:`pd.Series` accepted by class:``LoadCollective` or class:`LoadCollectiveHistogram``
+        cycles : :class:`pd.Series` accepted by class:``LoadCollective` or class:`LoadHistogram``
             The load collective
 
         Returns
@@ -363,7 +366,7 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
     Raises
     ------
     ValueError
-        If the resulting M_sigma doesn't lie in the range from 0 to 1 a ValueError is raised, as this value would
+        if the resulting M_sigma doesn't lie in the range from 0 to 1 a ValueError is raised, as this value would
         suggest higher strength with additional loads.
     """
     S_a_R0 = sn_curve_R0.woehler.basquin_load(N_c) if N_c < sn_curve_R0.ND else sn_curve_R0.SD
@@ -389,7 +392,7 @@ class MeanstressTransformCollective(CL.LoadCollective):
 
 
 @pd.api.extensions.register_series_accessor('meanstress_transform')
-class MeanstressTransformMatrix(CL.LoadCollectiveHistogram):
+class MeanstressTransformMatrix(CL.LoadHistogram):
 
     def _validate(self):
         super()._validate()

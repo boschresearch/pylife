@@ -18,7 +18,7 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 from .abstract_load_collective import AbstractLoadCollective
-from .matrix_load_collective import LoadCollectiveHistogram
+from .load_histogram import LoadHistogram
 
 import pandas as pd
 import numpy as np
@@ -42,10 +42,17 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         if 'range' in self.keys() and 'mean' in self.keys():
             fr = self._obj['mean'] - self._obj['range'] / 2.
             to = self._obj['mean'] + self._obj['range'] / 2.
+
+            cycles = self._obj.get('cycles')
+
             self._obj = pd.DataFrame({
                 'from': fr,
                 'to': to
             }, index=self._obj.index)
+
+            if cycles is not None:
+                self._obj['cycles'] = cycles
+
             return
         raise AttributeError("Load collective needs either 'range'/'mean' or 'from'/'to' in column names.")
 
@@ -99,7 +106,7 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         upper : pd.Series
             The upper load values of the load collective
         """
-        res = self._obj.max(axis=1)
+        res = self._obj.loc[:, ['from', 'to']].max(axis=1)
         res.name = 'upper'
         return res
 
@@ -112,16 +119,19 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         lower : pd.Series
             The lower load values of the load collective
         """
-        res = self._obj.min(axis=1)
+        res = self._obj.loc[:, ['from', 'to']].min(axis=1)
         res.name = 'lower'
         return res
 
     @property
     def cycles(self):
-        """The cycles of each member of the collective is 1.0.
+        """The cycles of each member of the collective is 1.0. when no cycles are given
 
-        This is for compatibility with :class:`~pylife.stress.pylife.stress.LoadCollectiveHistogram`
+        This is for compatibility with :class:`~pylife.stress.pylife.stress.LoadHistogram`
         """
+        if 'cycles' in self._obj.keys():
+            return self._obj.cycles
+
         return pd.Series(1.0, name='cycles', index=self._obj.index)
 
     def scale(self, factors):
@@ -130,10 +140,16 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         Parameters
         ----------
         factors : scalar or :class:`pandas.Series`
-            The factor(s) to scale the collective with.
+            The factor(s) to scale the collective 'from' and 'to' with.
+
+        Returns
+        -------
+        scaled : ``LoadHistogram``
+            The scaled histogram.
         """
         factors, obj = self.broadcast(factors)
-        return obj.multiply(factors, axis=0).load_collective
+        obj[['from', 'to']] = obj[['from', 'to']].multiply(factors, axis=0)
+        return obj.load_collective
 
     def shift(self, diffs):
         """Shift the collective.
@@ -142,9 +158,15 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         ----------
         diffs : scalar or :class:`pandas.Series`
             The diff(s) to shift the collective by.
+
+        Returns
+        -------
+        shifted : ``LoadHistogram``
+            The shifted histogram.
         """
         diffs, obj = self.broadcast(diffs)
-        return obj.add(diffs, axis=0).load_collective
+        obj[['from', 'to']] = obj[['from', 'to']].add(diffs, axis=0)
+        return obj.load_collective
 
     def range_histogram(self, bins, axis=None):
         """Calculate the histogram of range values along a given axis.
@@ -156,7 +178,7 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
         Returns
         -------
-        range histogram : :class:`~pylife.pylife.stress.LoadCollectiveHistogram`
+        range histogram : :class:`~pylife.pylife.stress.LoadHistogram`
 
         axis : str, optional
             The index axis along which the histogram is calculated. If missing
@@ -171,10 +193,10 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
             bins = np.append(bins.left[0], bins.right)
 
         if axis is None:
-            return LoadCollectiveHistogram(make_histogram(self.amplitude))
+            return LoadHistogram(make_histogram(self.amplitude))
 
         result = pd.Series(self.amplitude
                            .groupby(self._obj.index.droplevel(axis).names)
                            .apply(make_histogram), name='cycles')
 
-        return LoadCollectiveHistogram(result)
+        return LoadHistogram(result)

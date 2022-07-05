@@ -25,11 +25,11 @@ from pylife.materiallaws import WoehlerCurve
 @pd.api.extensions.register_series_accessor('fatigue')
 @pd.api.extensions.register_dataframe_accessor('fatigue')
 class Fatigue(WoehlerCurve):
-    """Extension for `WoehlerCurve` accessor class for fatigue calculations.
+    """Extension for ``WoehlerCurve`` accessor class for fatigue calculations.
 
     Note
     ----
-    This class is accessible by the `fatigue` accessor attribute.
+    This class is accessible by the ``fatigue`` accessor attribute.
     """
 
     def damage(self, load_collective):
@@ -42,43 +42,43 @@ class Fatigue(WoehlerCurve):
 
         Returns
         -------
-        damage : pd.Series
+        damage : :class:`pandas.Series`
             The calculated damage values. The index is the broadcast between
-            `load_collective` and `self`.
+            ``load_collective`` and ``self``.
         """
         cycles = self.cycles(load_collective.amplitude)
         return pd.Series(load_collective.cycles / cycles, name='damage')
 
-    def security_load(self, load_collective, allowed_failure_probability):
-        """Calculate the security factor in load direction for given load collective.
+    def security_load(self, load_distribution, allowed_failure_probability):
+        """Calculate the security factor in load direction for given load distribution.
 
         Parameters
         ----------
-        load_collective : pandas object or object behaving like a load collective
-            The given load collective
+        load_distribution : pandas object or object behaving like a load collective
+            The given load distribution
 
         Returns
         -------
-        security_factor : pd.Series
+        security_factor : :class:`pandas.Series`
             The calculated security_factors. The index is the broadcast between
-            `load_collective` and `self`.
+            ``load_distribution`` and ``self``.
         """
-        allowed_load = self.load(load_collective.cycles, allowed_failure_probability)
-        return pd.Series(allowed_load / load_collective.amplitude, name='security_factor')
+        allowed_load = self.load(load_distribution.cycles, allowed_failure_probability)
+        return pd.Series(allowed_load / load_distribution.amplitude, name='security_factor')
 
-    def security_cycles(self, load_collective, allowed_failure_probability):
-        """Calculate the security factor in cycles direction for given load collective.
+    def security_cycles(self, load_distribution, allowed_failure_probability):
+        """Calculate the security factor in cycles direction for given load distribution.
 
         Parameters
         ----------
-        load_collective : pandas object or object behaving like a load collective
-            The given load collective
+        load_distribution : pandas object or object behaving like a load collective
+            The given load distribution
 
         Returns
         -------
-        security_factor : pd.Series
+        security_factor : :class:`pandas.Series`
             The calculated security_factors. The index is the broadcast between
-            `load_collective` and `self`.
+            ``load_distribution`` and ``self``.
         """
-        allowed_cycles = self.cycles(load_collective.amplitude, allowed_failure_probability)
-        return pd.Series(allowed_cycles / load_collective.cycles, name='security_factor')
+        allowed_cycles = self.cycles(load_distribution.amplitude, allowed_failure_probability)
+        return pd.Series(allowed_cycles / load_distribution.cycles, name='security_factor')

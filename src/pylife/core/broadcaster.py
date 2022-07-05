@@ -32,14 +32,14 @@ class Broadcaster:
 
     In most cases the ``Broadcaster`` class is not used directly.  The
     functionality is in most cases used by the derived class
-    :class:`pylife.PylifeSignal`.
+    :class:`~pylife.PylifeSignal`.
 
     The purpose of the ``Broadcaster`` is to take two numerical objects and
     return two objects of the same numerical data with an aligned index.  That
     means that mathematical operations using the two objects as operands can be
     implemented using numpy's broadcasting functionality.
 
-    See method :method:`pylife.Broadcaster.broadcast` documentation for details.
+    See method :meth:`~pylife.Broadcaster.broadcast` documentation for details.
 
     The broadcasting is done in the following ways:
 
@@ -102,7 +102,7 @@ class Broadcaster:
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
 
-    def broadcast(self, parameter, droplevel=[]):
+    def broadcast(self, parameter, droplevel=None):
         """Broadcast the parameter to the object of ``self``.
 
         Parameters
@@ -196,6 +196,8 @@ class Broadcaster:
               obj
 
         """
+        droplevel = droplevel or []
+
         if not isinstance(parameter, pd.Series) and not isinstance(parameter, pd.DataFrame):
             if isinstance(self._obj, pd.Series):
                 return self._broadcast_series(parameter)
@@ -225,7 +227,12 @@ class Broadcaster:
 
     def _broadcast_frame_to_frame(self, parameter, droplevel):
         def align_and_reorder():
-            obj, prm = self._obj.align(parameter, axis=0)
+            if isinstance(self._obj, pd.DataFrame) and isinstance(parameter, pd.Series):
+                obj, prm = self._obj.align(pd.DataFrame({0: parameter}), axis=0)
+                prm = prm.iloc[:, 0]
+                prm.name = parameter.name
+            else:
+                obj, prm = self._obj.align(parameter, axis=0)
 
             if len(droplevel) > 0:
                 prm_columns = list(filter(lambda level: level not in droplevel, total_columns))

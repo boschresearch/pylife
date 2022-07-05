@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -28,6 +28,8 @@ import pandas as pd
 
 import odbclient
 
+from odbclient.odbclient import OdbServerError
+
 @pytest.fixture
 def client():
     return odbclient.OdbClient('tests/beam_3d_hex_quad.odb')
@@ -52,6 +54,39 @@ def test_odbclient_node_coordinates(client):
     pd.testing.assert_frame_equal(client.node_coordinates('PART-1-1'), expected)
 
 
+def test_odbclient_node_coordinates_invalid_instance_name(client):
+    with pytest.raises(KeyError, match="Invalid instance name 'nonexistent'."):
+        client.node_coordinates('nonexistent')
+
+
+@pytest.mark.parametrize('instance_name, expected', [
+    ('', ' ALL NODES'),
+    ('PART-1-1', ['ALL', 'FIX', 'LOAD'])
+])
+def test_odbclient_nset_names(client, instance_name, expected):
+    np.testing.assert_array_equal(client.nset_names(instance_name), expected)
+
+
+@pytest.mark.timeout(10)
+def test_odbclient_nset_names_invalid_instance_name(client):
+    with pytest.raises(KeyError, match="Invalid instance name 'nonexistent'."):
+        client.nset_names('nonexistent')
+
+
+@pytest.mark.parametrize('instance_name, expected', [
+    ('', ' ALL ELEMENTS'),
+    ('PART-1-1', ['ALL', 'FIX'])
+])
+def test_odbclient_elset_names(client, instance_name, expected):
+    np.testing.assert_array_equal(client.elset_names(instance_name), expected)
+
+
+@pytest.mark.timeout(10)
+def test_odbclient_elset_names_invalid_instance_name(client):
+    with pytest.raises(KeyError, match="Invalid instance name 'nonexistent'."):
+        client.elset_names('nonexistent')
+
+
 @pytest.mark.skip("to be implemented")
 def test_element_connectivity(client):
     expected = pd.read_csv('tests/connectivity.csv', index_col='element_id')
@@ -73,6 +108,11 @@ def test_frame_ids(client):
     np.testing.assert_array_equal(result, expected)
 
 
+def test_frame_ids_invalid_step_name(client):
+    with pytest.raises(KeyError, match='nonexistent'):
+        client.frame_ids('nonexistent')
+
+
 def test_variable_names(client):
     expected = ['CF', 'COORD', 'E', 'EVOL', 'IVOL', 'RF', 'S', 'U']
     result = client.variable_names('Load', 0)
@@ -85,6 +125,11 @@ def test_variable_stress_element_nodal(client):
     result = client.variable('S', 'PART-1-1', 'Load', 1)
 
     pd.testing.assert_frame_equal(result, expected)
+
+
+def test_variable_invalid_instance_name(client):
+    with pytest.raises(KeyError, match="nonexistent"):
+        client.variable('S', 'nonexistent', 'Load', 1)
 
 
 def test_variable_stress_integration_point(client):

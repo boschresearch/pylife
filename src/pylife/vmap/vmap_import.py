@@ -37,7 +37,7 @@ class VMAPImport:
     Raises
     ------
     Exception
-        If the file cannot be read an exception is raised.
+        if the file cannot be read an exception is raised.
         So far any exception from the ``h5py`` module is passed through.
     """
 
@@ -94,8 +94,8 @@ class VMAPImport:
         """
         return pd.DataFrame(
             self._file["/VMAP/GEOMETRY/%s/POINTS/MYCOORDINATES" % geometry][()],
-            columns=['x', 'y', 'z'],
-            index=self._node_index(geometry)
+            columns = ['x', 'y', 'z'],
+            index = self._node_index(geometry)
         )
 
     def make_mesh(self, geometry, state=None):
@@ -170,7 +170,7 @@ class VMAPImport:
         Raises
         ------
         APIUseError
-            If the mesh has not been initialized using ``make_mesh()``
+            if the mesh has not been initialized using ``make_mesh()``
         """
         self._check_mesh_for_filtering()
         node_set_ids = self._node_set_ids(self._geometry, node_set)
@@ -192,7 +192,7 @@ class VMAPImport:
         Raises
         ------
         APIUseError
-            If the mesh has not been initialized using ``make_mesh()``
+            if the mesh has not been initialized using ``make_mesh()``
         """
         self._check_mesh_for_filtering()
         element_set_ids = self._element_set_ids(self._geometry, element_set)
@@ -213,8 +213,7 @@ class VMAPImport:
         Raises
         ------
         APIUseError
-            If the mesh has not been initialized using ``make_mesh()``
-
+            if the mesh has not been initialized using ``make_mesh()``
 
         Examples
         --------

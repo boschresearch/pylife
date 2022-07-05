@@ -32,21 +32,21 @@ from pylife.mesh.meshsignal import PlainMesh
 
 @pd.api.extensions.register_dataframe_accessor('meshmapper')
 class Meshmapper(PlainMesh):
-    '''Mapper to map points of one mesh to another
+    """Mapper to map points of one mesh to another
 
     Notes
     -----
     The accessed DataFrame needs to be accessible by a :class:`PlainMesh`.
-    '''
+    """
     def process(self, from_df, value_key, method='linear'):
-        '''Performs the mapping
+        """Performs the mapping
 
         Parameters
         ----------
         from_df : pandas.DataFrame accessible by a :class:`PlainMesh`.
             The DataFrame that is to be mapped to the accessed one.
             Needs to have the same dimensions (2D or 3D) as the accessed one
-        '''
+        """
         crd = self._coord_keys
         from_df.plain_mesh
         newvals = interp.griddata(from_df[crd], from_df[value_key], self._obj[crd], method=method)
