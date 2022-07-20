@@ -70,7 +70,7 @@ class OdbClient:
     1       -30.0  15.0  10.0
     2       -30.0  25.0  10.0
     3       -30.0  15.0   0.0
-
+    ...
 
     Querying step names
 
@@ -103,6 +103,29 @@ class OdbClient:
     55      4           -6.695759 -17.656754  ... -0.217049  3.040078
     47      4           -0.226473   1.787100  ...  0.967435 -0.671089
     48      4           -0.226473   1.787100  ... -0.967435  0.671089
+
+
+    Oftentimes it is desirable to have the node coordinates and multiple field
+    variables in one dataframe.  This can be easily achieved by
+    :meth:`~pandas.DataFrame.join` operations.
+
+    >>> node_coordinates = client.node_coordinates('PART-1-1')
+    >>> stress = client.variable('S', 'PART-1-1', 'Load', 1)
+    >>> strain = client.variable('E', 'PART-1-1', 'Load', 1)
+    >>> node_coordinates.join(stress).join(strain)
+                           x     y     z  ...           E12           E13           E23
+    node_id element_id                    ...
+    5       1          -20.0  15.0  10.0  ... -2.741873e-11 -4.652675e-11  1.762242e-11
+    7       1          -20.0  15.0   0.0  ... -2.741873e-11  4.652675e-11 -1.762242e-11
+    3       1          -30.0  15.0   0.0  ... -2.599339e-11 -9.876550e-11 -3.946581e-17
+    1       1          -30.0  15.0  10.0  ... -2.599339e-11  9.876550e-11  3.946581e-17
+    6       1          -20.0  25.0  10.0  ... -2.689760e-11  4.578660e-11  1.880906e-11
+    ...                  ...   ...   ...  ...           ...           ...           ...
+    54      4            5.0  25.0  10.0  ... -6.076223e-11  2.308349e-11 -3.390884e-11
+    56      4           10.0  20.0  10.0  ... -5.091068e-11  2.821631e-12 -3.952102e-11
+    55      4           10.0  20.0   0.0  ... -5.091068e-11 -2.821631e-12  3.952102e-11
+    47      4            0.0  20.0   0.0  ... -5.129363e-11  1.257666e-11 -8.724152e-12
+    48      4            0.0  20.0  10.0  ... -5.129363e-11 -1.257666e-11  8.724152e-12
     """
 
     def __init__(self, odb_file, abaqus_bin=None, python_env_path=None):

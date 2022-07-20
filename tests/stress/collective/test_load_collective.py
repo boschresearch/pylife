@@ -47,6 +47,30 @@ def test_load_collective_amplitude_from_to(df, expected):
     pd.testing.assert_series_equal(df.load_collective.cycles, expected_cycles)
 
 
+def test_load_collective_amplitude_from_to_with_cycles():
+    df = pd.DataFrame([[-1., 1., 1e6], [2, -2, 2e6]])
+    df.columns = ['from', 'to', 'cycles']
+
+    expected_cycles = pd.Series([1e6, 2e6], name='cycles', index=df.index)
+    pd.testing.assert_series_equal(df.load_collective.cycles, expected_cycles)
+
+
+def test_load_collective_upper_from_to_with_cycles():
+    df = pd.DataFrame([[-1., 1., 1e6], [2, -2, 2e6]])
+    df.columns = ['from', 'to', 'cycles']
+
+    expected_upper = pd.Series([1., 2.], name='upper', index=df.index)
+    pd.testing.assert_series_equal(df.load_collective.upper, expected_upper)
+
+
+def test_load_collective_lower_from_to_with_cycles():
+    df = pd.DataFrame([[1000., 10000., 1e2], [20000., 2000., 2e2]])
+    df.columns = ['from', 'to', 'cycles']
+
+    expected_lower = pd.Series([1000., 2000.], name='lower', index=df.index)
+    pd.testing.assert_series_equal(df.load_collective.lower, expected_lower)
+
+
 @pytest.mark.parametrize('df, expected', [
     (
         pd.DataFrame(columns=[1, 2], dtype=np.float64),
@@ -141,6 +165,15 @@ def test_load_collective_from_to_scale_scalar(df, expected):
     pd.testing.assert_frame_equal(df.load_collective.scale(2.0).to_pandas(), expected)
 
 
+def test_load_collective_from_to_scale_scalar_with_cycles():
+    df = pd.DataFrame([[-1., 1., 1e6], [2, -2, 2e6]])
+    df.columns = ['from', 'to', 'cycles']
+    expected = pd.DataFrame([[-2., 2., 1e6], [4, -4, 2e6]])
+    expected.columns = ['from', 'to', 'cycles']
+
+    pd.testing.assert_frame_equal(df.load_collective.scale(2.0).to_pandas(), expected)
+
+
 @pytest.mark.parametrize('df, expected', [
     (
         pd.DataFrame(columns=[1, 2], dtype=np.float64),
@@ -158,6 +191,14 @@ def test_load_collective_from_to_scale_scalar(df, expected):
 def test_load_collective_from_to_shift_scalar(df, expected):
     df.columns = ['from', 'to']
     expected.columns = ['from', 'to']
+    pd.testing.assert_frame_equal(df.load_collective.shift(2.0).to_pandas(), expected)
+
+
+def test_load_collective_from_to_shift_scalar_with_cycles():
+    df = pd.DataFrame([[-1., 1., 1e2], [2, -2, 2e2]])
+    df.columns = ['from', 'to', 'cycles']
+    expected = pd.DataFrame([[1., 3., 1e2], [4., 0., 2e2]])
+    expected.columns = ['from', 'to', 'cycles']
     pd.testing.assert_frame_equal(df.load_collective.shift(2.0).to_pandas(), expected)
 
 
@@ -227,6 +268,14 @@ def test_load_collective_amplitude_range_mean(df, expected):
     pd.testing.assert_series_equal(df.load_collective.amplitude, expected)
 
     expected_cycles = pd.Series(1.0, name='cycles', index=df.index)
+    pd.testing.assert_series_equal(df.load_collective.cycles, expected_cycles)
+
+
+def test_load_collective_amplitude_range_mean_with_cycles():
+    df = pd.DataFrame([[2., 1., 1e6], [0.1, 0.2, 2e6]])
+    df.columns = ['range', 'mean', 'cycles']
+
+    expected_cycles = pd.Series([1e6, 2e6], name='cycles', index=df.index)
     pd.testing.assert_series_equal(df.load_collective.cycles, expected_cycles)
 
 
