@@ -101,6 +101,6 @@ def test_lifetime_calc(tb):
 
     tb.inject(
         """
-        np.testing.assert_approx_equal(fp_component, 4.23e-4, significant=3)
+        np.testing.assert_approx_equal(fp_component, 3.04e-04, significant=2)
         """
     )
