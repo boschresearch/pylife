@@ -497,8 +497,7 @@ def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
                                           n_gridpoints=n_gridpoints)
 
     # Remove NaN's at the end - should be maximum 2n
-    cleaned = poly_gridpoints.dropna(
-        axis=0, how='any', thresh=None, subset=None)
+    cleaned = poly_gridpoints.dropna(axis=0, how='any')
     cleaned.pop("id")
 
     return cleaned
