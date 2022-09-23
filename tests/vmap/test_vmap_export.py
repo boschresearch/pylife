@@ -8,7 +8,7 @@ import shutil
 import pylife.vmap as vmap
 import h5py
 import os
-import reference_data as RD
+from . import reference_data as RD
 import pylife.vmap.vmap_structures as structures
 
 
