@@ -28,9 +28,9 @@ if 'DISPLAY' not in os.environ and not sys.platform.startswith('win'):
     vdisplay = Xvfb()
     vdisplay.start()
 
-# Don't try to use C-code for the theano stuff when building the docs.
+# Don't try to use C-code for the aesara stuff when building the docs.
 # Otherwise the demo notebooks fail on readthedocs
-os.environ['THEANO_FLAGS'] = 'cxx=""'
+os.environ['AESARA_FLAGS'] = 'cxx=""'
 os.environ['PYTHONWARNINGS'] = 'ignore'
 
 import asyncio

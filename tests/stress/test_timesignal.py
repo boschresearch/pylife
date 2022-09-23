@@ -331,8 +331,7 @@ def test_select_relevant_windows2(df_gaps_prep, grid_points_gaps):
 def test_clean_timeseries2(ts_gaps, df_gaps_prep, grid_points_gaps):
     poly_gridpoints_gaps = pts._polyfit_gridpoints(
         grid_points_gaps, df_gaps_prep, order=3, verbose=False, n_gridpoints=3)
-    poly_gridpoints_gaps = poly_gridpoints_gaps.dropna(
-        axis=0, how='any', thresh=None, subset=None)
+    poly_gridpoints_gaps = poly_gridpoints_gaps.dropna(axis=0, how='any')
     poly_gridpoints_gaps.pop("id")
     exact_res = poly_gridpoints_gaps
     ts_cleaned = pts.clean_timeseries(ts_gaps, "0", window_size=5,

@@ -6,7 +6,7 @@ import pytest
 
 import pylife.vmap as vmap
 
-import reference_data as RD
+from . import reference_data as RD
 
 
 @pytest.fixture
