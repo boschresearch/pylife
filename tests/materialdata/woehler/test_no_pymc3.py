@@ -24,7 +24,7 @@ import pytest
 def test_import_bayesian():
 
     sys.modules['pymc3'] = None
-    sys.modules['theano'] = None
+    sys.modules['aesara'] = None
 
     sys.modules.pop('pylife.materialdata.woehler', None)
     sys.modules.pop('pylife.materialdata.woehler.bayesian', None)
@@ -35,4 +35,4 @@ def test_import_bayesian():
         WL.Bayesian(None)
 
     del sys.modules['pymc3']
-    del sys.modules['theano']
+    del sys.modules['aesara']
