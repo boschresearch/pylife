@@ -14,14 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import pytest
 
-import numpy as np
-import nbformat
 from testbook import testbook
-import testbook.client as TBC
+
+from IPython.core.profiledir import ProfileDir
 
 pytestmark = pytest.mark.demos
+
+
+@pytest.fixture(autouse=True, scope='session')
+def ipython_profile(tmp_path_factory):
+    tmp_path = tmp_path_factory.mktemp('ipython-dir-').as_posix()
+    ProfileDir.create_profile_dir(tmp_path)
+    old_ipython_dir = os.environ.pop('IPYTHONDIR', None)
+    os.environ['IPYTHONDIR'] = tmp_path
+    yield
+    os.environ.pop('IPYTHONDIR')
+    if old_ipython_dir is not None:
+        os.environ['IPYTHONDIR'] = old_ipython_dir
 
 
 @pytest.fixture(autouse=True)
@@ -85,7 +97,7 @@ def test_ramberg_osgood(tb):
     )
 
 
-@testbook('demos/time_series_handling.ipynb', execute=True)
+@testbook('demos/time_series_handling.ipynb', execute=True, timeout=600)
 def test_time_series_handling(tb):
     tb.inject(
         """
@@ -102,5 +114,6 @@ def test_lifetime_calc(tb):
     tb.inject(
         """
         np.testing.assert_approx_equal(fp_component, 3.04e-04, significant=2)
+        %store -d rf_dict
         """
     )
