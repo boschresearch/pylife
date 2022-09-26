@@ -10,4 +10,4 @@ call conda create -p .venv pip=20.2 pandoc setuptools_scm "python==3.9"
 
 call conda activate ./.venv
 
-call pip install -e .[testing,docs,analysis,pymc3,extras,tsfresh]
+call pip install -e .[testing,docs,analysis,extras,tsfresh]
