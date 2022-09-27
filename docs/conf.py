@@ -10,6 +10,9 @@
 import os
 import sys
 import inspect
+from IPython.core.profiledir import ProfileDir
+import tempfile
+
 import shutil
 
 # -- Path setup --------------------------------------------------------------
@@ -27,6 +30,10 @@ if 'DISPLAY' not in os.environ and not sys.platform.startswith('win'):
     from xvfbwrapper import Xvfb
     vdisplay = Xvfb()
     vdisplay.start()
+
+ipython_dir = os.path.join(tempfile.mkdtemp(prefix="pylife-nbsphinx"))
+ProfileDir.create_profile_dir(ipython_dir)
+os.environ['IPYTHONDIR'] = ipython_dir
 
 # Don't try to use C-code for the aesara stuff when building the docs.
 # Otherwise the demo notebooks fail on readthedocs
