@@ -16,6 +16,7 @@
 
 import os
 import pytest
+import unittest.mock as mock
 
 from testbook import testbook
 
@@ -28,12 +29,8 @@ pytestmark = pytest.mark.demos
 def ipython_profile(tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp('ipython-dir-').as_posix()
     ProfileDir.create_profile_dir(tmp_path)
-    old_ipython_dir = os.environ.pop('IPYTHONDIR', None)
-    os.environ['IPYTHONDIR'] = tmp_path
-    yield
-    os.environ.pop('IPYTHONDIR')
-    if old_ipython_dir is not None:
-        os.environ['IPYTHONDIR'] = old_ipython_dir
+    with mock.patch.dict(os.environ, {'IPYTHONDIR': tmp_path}):
+        yield
 
 
 @pytest.fixture(autouse=True)
