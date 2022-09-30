@@ -9,29 +9,26 @@
 
 import os
 import sys
-import inspect
 from IPython.core.profiledir import ProfileDir
 import tempfile
 
-import shutil
-
 # -- Path setup --------------------------------------------------------------
 
-__location__ = os.path.join(
-    os.getcwd(), os.path.dirname(inspect.getfile(inspect.currentframe()))
-)
+__confdir__ = os.path.dirname(__file__)
+__location__ = os.path.join(os.getcwd(), __confdir__)
+__projectdir__ = os.path.dirname(__confdir__)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.join(__location__, "../src"))
+sys.path.insert(0, os.path.join(__projectdir__, "src"))
 
 if 'DISPLAY' not in os.environ and not sys.platform.startswith('win'):
     from xvfbwrapper import Xvfb
     vdisplay = Xvfb()
     vdisplay.start()
 
-ipython_dir = os.path.join(tempfile.mkdtemp(prefix="pylife-nbsphinx"))
+ipython_dir = os.path.join(__projectdir__, "_build", "ipythondir")
 ProfileDir.create_profile_dir(ipython_dir)
 os.environ['IPYTHONDIR'] = ipython_dir
 
