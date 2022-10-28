@@ -204,18 +204,17 @@ def test_five_segment_multiple_M_sm():
     (1./3., 14./12.)
 ])
 def test_fkm_goodman_hist_range_mean(R_goal, expected):
-    rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
-    mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
+    rg = pd.IntervalIndex.from_breaks(np.linspace(0., 2., 25), closed='left')
+    mn = pd.IntervalIndex.from_breaks(np.linspace(-1./12., 23./12., 25), closed='left')
 
     mat = pd.Series(np.zeros(24*24), name='cycles',
                     index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']))
-    mat.loc[(7./6. - 1./24., 7./6.)] = 1.
-    mat.loc[(4./3. - 1./24., 2./3.)] = 3.
-    mat.loc[(2. - 1./24., 0.)] = 5.
+    mat.loc[(7./6., 7./6.)] = 1.
+    mat.loc[(4./3., 2./3.)] = 3.
+    mat.loc[(2. - 1e-9, 0.)] = 5.
 
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
     res = mat.meanstress_transform.fkm_goodman(haigh, R_goal).to_pandas()
-
     test_interval = pd.Interval(expected-1./96., expected+1./96.)
     assert res.loc[res.index.overlaps(test_interval)].sum() == 9
     assert res.loc[np.logical_not(res.index.overlaps(test_interval))].sum() == 0
@@ -228,8 +227,8 @@ def test_fkm_goodman_hist_range_mean(R_goal, expected):
     (1./3., 14./12.)
 ])
 def test_fkm_goodman_hist_from_to(R_goal, expected):
-    fr = pd.IntervalIndex.from_breaks(np.linspace(-1., 1., 49), closed='left')
-    to = pd.IntervalIndex.from_breaks(np.linspace(0, 2., 49), closed='left')
+    fr = pd.IntervalIndex.from_breaks(np.linspace(-25./24., 1., 49), closed='left')
+    to = pd.IntervalIndex.from_breaks(np.linspace(-1./24., 2., 49), closed='left')
 
     mat = pd.Series(np.zeros(48*48), name='cycles',
                     index=pd.MultiIndex.from_product([fr, to], names=['from', 'to']))
@@ -246,8 +245,8 @@ def test_fkm_goodman_hist_from_to(R_goal, expected):
 
 
 def test_meanstress_transform_additional_index():
-    fr = pd.IntervalIndex.from_breaks(np.linspace(-1., 1., 49), closed='left')
-    to = pd.IntervalIndex.from_breaks(np.linspace(0, 2., 49), closed='left')
+    fr = pd.IntervalIndex.from_breaks(np.linspace(-25./24., 1., 49), closed='left')
+    to = pd.IntervalIndex.from_breaks(np.linspace(-1./24., 2., 49), closed='left')
     node = pd.Index([1, 2, 3], name='node_id')
 
     mat = pd.Series(
@@ -272,16 +271,17 @@ def test_meanstress_transform_additional_index():
     res = mat.meanstress_transform.fkm_goodman(haigh, -1.0).to_pandas()
 
     assert set(res.index.names) == {'range', 'node_id'}
-    assert len(res) == 83*3
 
     assert res.loc[(2.0, 1)] == 9
     assert res.loc[(2.0, 2)] == 18
     assert res.loc[(2.0, 3)] == 36
 
+    assert res.sum() == 9 + 18 + 36
+    assert res.min() == 0
 
 def test_meanstress_transform_two_additional_indices():
-    fr = pd.IntervalIndex.from_breaks(np.linspace(-1., 1., 49), closed='left', name='from')
-    to = pd.IntervalIndex.from_breaks(np.linspace(0, 2., 49), closed='left', name='to')
+    fr = pd.IntervalIndex.from_breaks(np.linspace(-25./24., 1., 49), closed='left', name='from')
+    to = pd.IntervalIndex.from_breaks(np.linspace(-1./24., 2., 49), closed='left', name='to')
     node = pd.Index([1, 2], name='node_id')
     element = pd.Index([1, 2], name='element_id')
 
@@ -311,13 +311,15 @@ def test_meanstress_transform_two_additional_indices():
     res = mat.meanstress_transform.fkm_goodman(haigh, -1.0).to_pandas()
 
     assert set(res.index.names) == {'range', 'node_id', 'element_id'}
-    assert len(res) == 83*4
 
     assert res.loc[(2.0, 1, 1)] == 9
     assert res.loc[(2.0, 2, 1)] == 18
 
     assert res.loc[(2.0, 1, 2)] == 36
     assert res.loc[(2.0, 2, 2)] == 72
+
+    assert res.sum() == 9 + 18 + 36 + 72
+    assert res.min() == 0
 
 
 @pytest.mark.parametrize("R_goal, expected", [  # all calculated by pencil on paper
@@ -328,13 +330,13 @@ def test_meanstress_transform_two_additional_indices():
 ])
 def test_fkm_goodman_hist_range_mean_nonzero(R_goal, expected):
     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
-    mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
+    mn = pd.IntervalIndex.from_breaks(np.linspace(-1./12., 23./12., 25), closed='left')
 
     mat = pd.Series(np.zeros(24*24), name='cycles',
                     index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']))
     mat.loc[(7./6., 7./6.)] = 1.
     mat.loc[(4./3., 2./3.)] = 3.
-    mat.loc[(2.-1./96., 0.)] = 5.
+    mat.loc[(2. - 1e-9, 0.)] = 5.
 
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
     res = mat[mat.values > 0].meanstress_transform.fkm_goodman(haigh, R_goal).to_pandas()
@@ -370,6 +372,36 @@ def test_full_histogram():
     res = series.meanstress_transform.fkm_goodman(haigh, -1).to_pandas()
 
     assert res.sum() == series.sum()
+
+
+# import itertools
+
+# @pytest.mark.parametrize('bincount_from, bincount_to', itertools.product(*[range(1, 25), range(1, 25)]))
+# def test_full_histogram_varying_bins(bincount_from, bincount_to):
+#     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, bincount_from+1), closed='left')
+#     mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, bincount_to+1), closed='left')
+
+#     bincount_prod = bincount_from * bincount_to
+#     series = pd.Series(np.linspace(1, bincount_prod, bincount_prod, dtype=np.int32), name='cycles',
+#                        index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']))
+#     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
+#     res = series.meanstress_transform.fkm_goodman(haigh, -1).to_pandas()
+
+#     assert res.sum() == series.sum()
+
+
+# @pytest.mark.parametrize('bincount_from, bincount_to', itertools.product(*[range(1, 25), range(1, 25)]))
+# def test_full_histogram_range_mean_varying_bins(bincount_from, bincount_to):
+#     fr = pd.IntervalIndex.from_breaks(np.linspace(0, 2, bincount_from+1), closed='left')
+#     to = pd.IntervalIndex.from_breaks(np.linspace(0, 2, bincount_to+1), closed='left')
+
+#     bincount_prod = bincount_from * bincount_to
+#     series = pd.Series(np.linspace(1, bincount_prod, bincount_prod, dtype=np.int32), name='cycles',
+#                        index=pd.MultiIndex.from_product([fr, to], names=['from', 'to']))
+#     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
+#     res = series.meanstress_transform.fkm_goodman(haigh, -1).to_pandas()
+
+#     assert res.sum() == series.sum()
 
 
 @pytest.mark.parametrize("N_c, M_sigma", [  # Calculated by pencil and paper

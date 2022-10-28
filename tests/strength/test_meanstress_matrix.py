@@ -52,8 +52,8 @@ def test_meanstress_collective_empty_fkm_goodman(ms_sens):
 
 
 def test_meanstress_collective_fkm_goodman_single_ms_sens(ms_sens):
-    fr = pd.IntervalIndex.from_breaks(np.linspace(-1., 1., 49), closed='left')
-    to = pd.IntervalIndex.from_breaks(np.linspace(0, 2., 49), closed='left')
+    fr = pd.IntervalIndex.from_breaks(np.linspace(-25./24., 1., 49), closed='left')
+    to = pd.IntervalIndex.from_breaks(np.linspace(-1./24., 2., 49), closed='left')
     index = pd.MultiIndex.from_product([fr, to], names=['from', 'to'])
 
     rf = pd.Series(0.0, name='cycles', index=index)

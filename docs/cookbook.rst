@@ -25,11 +25,11 @@ pyLife Cookbook
 
    demos/hotspot_plate.nblink
    demos/stress_gradient.nblink
-   demos/local_stress_with_FE.nblink
+   demos/99-local_stress_with_FE.nblink
 
 .. toctree::
    :maxdepth: 1
    :caption: Tools
 
    demos/psd_optimizer.nblink
-   demos/time_series_handling.nblink
+   demos/01-time_series_handling.nblink

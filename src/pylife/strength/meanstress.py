@@ -412,7 +412,6 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
             self._binsize_y = self._obj.index.get_level_values('mean').length.min()
             self._remaining_names = list(filter(lambda n: n not in ['range', 'mean'], self._obj.index.names))
 
-
     def fkm_goodman(self, haigh, R_goal):
         ranges = HaighDiagram.fkm_goodman(haigh).transform(self._obj, R_goal)['range']
         return self._rebin_results(ranges).load_collective
@@ -423,11 +422,13 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
             ranges_max = ranges.max()
             binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
             bincount = int(np.ceil(ranges_max / binsize))
-            return pd.IntervalIndex.from_breaks(np.linspace(0, ranges_max, bincount), name="range")
+            return pd.IntervalIndex.from_breaks(np.linspace(0, ranges_max, bincount+1), name="range")
 
-        def aggregate(r, itvs, ranges, obj):
-            ranges = ranges.xs(tuple(r), level=list(r.index))
-            obj = obj.xs(tuple(r), level=list(r.index))
+        def aggregate_on_projection(projection, itvs, ranges, obj):
+            level_values = tuple(projection)
+            level_names = list(projection.index)
+            ranges = ranges.xs(level_values, level=level_names)
+            obj = obj.xs(level_values, level=level_names)
             sums = (
                 itvs
                 .to_series()
@@ -447,7 +448,10 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
 
         if len(self._remaining_names) > 0:
             remaining_idx = self._obj.index.to_frame(index=False).groupby(self._remaining_names).first().index
-            result = remaining_idx.to_frame(index=False).apply(lambda r: aggregate(r, intv_idx, ranges, self._obj), axis=1)
+            result = (
+                remaining_idx.to_frame(index=False)
+                .apply(lambda p: aggregate_on_projection(p, intv_idx, ranges, self._obj), axis=1)
+            )
             result.index = remaining_idx
             result = result.stack().reorder_levels(['range'] + self._remaining_names)
         else:
