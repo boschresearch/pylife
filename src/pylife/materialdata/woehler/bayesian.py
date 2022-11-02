@@ -21,7 +21,7 @@ __maintainer__ = "Johannes Mueller"
 import numpy as np
 import pandas as pd
 import aesara.tensor as tt
-import pymc3 as pm
+import pymc as pm
 
 from .elementary import Elementary
 from .likelihood import Likelihood
@@ -33,7 +33,7 @@ class Bayesian(Elementary):
     Warning
     -------
 
-    We are considering switching from pymc3 to GPyOpt as calculation engine in the
+    We are considering switching from pymc to GPyOpt as calculation engine in the
     future.  Maybe this will lead to breaking changes without new major release.
     """
 
@@ -44,7 +44,7 @@ class Bayesian(Elementary):
         that define our model) and returning a single "scalar" value (the
         log-likelihood)
 
-        http://mattpitkin.github.io/samplers-demo/pages/pymc3-blackbox-likelihood/
+        http://mattpitkin.github.io/samplers-demo/pages/pymc-blackbox-likelihood/
         """
         itypes = [tt.dvector]  # expects a vector of parameter values when called
         otypes = [tt.dscalar]  # outputs a single scalar value (the log likelihood)

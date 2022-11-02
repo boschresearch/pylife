@@ -17,22 +17,10 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
-import sys
-import pytest
 
+class Bayesian:
+    """Dummy class to raise a meaningful exception when pymc is not available."""
 
-def test_import_bayesian():
-
-    sys.modules['pymc3'] = None
-    sys.modules['aesara'] = None
-
-    sys.modules.pop('pylife.materialdata.woehler', None)
-    sys.modules.pop('pylife.materialdata.woehler.bayesian', None)
-
-    import pylife.materialdata.woehler as WL
-
-    with pytest.raises(ImportError, match=r"pip install pylife\[pymc3\]"):
-        WL.Bayesian(None)
-
-    del sys.modules['pymc3']
-    del sys.modules['aesara']
+    def __init__(self, _):
+        raise ImportError("pymc and dependencies are not installed. "
+                          "Use `pip install pylife[pymc]` to install it.")
