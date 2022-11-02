@@ -25,6 +25,8 @@ jobs:
         pip install -U setuptools setuptools_scm wheel
         pip install flake8 pytest pytest-cov
         pip install -e .[all,testing]
+        pip freeze
+        pip freeze > requirements.frozen.txt
     - name: Unit tests
       run: pytest
     - name: Notebook flow tests
