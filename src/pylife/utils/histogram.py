@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 __author__ = "Daniel Christopher Kreuter"
 __maintainer__ = "Johannes Mueller"
 
@@ -23,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 
-def combine_histogram(hist_list, method='sum'):
+def combine_histogram(hist_list, method="sum"):
     """Combine a list of histograms to one.
 
     Parameters
@@ -104,6 +110,7 @@ def combine_histogram(hist_list, method='sum'):
     At the moment, additional dimensions i.e. index level that are not histogram bins,
     are not supported.  This limitation might fall in the future.
     """
+
     def dimensions_are_consistent():
         for h in hist_list[1:]:
             if len(h.index.names) != len(hist_list[0].index.names):
@@ -226,19 +233,27 @@ def rebin_histogram(histogram, binning, nan_default=False):
         if not isinstance(histogram.index.get_level_values(name), pd.IntervalIndex):
             continue
 
-        this_binning = binning.levels[binning.names.index(name)] if isinstance(binning, pd.MultiIndex) else binning
+        this_binning = (
+            binning.levels[binning.names.index(name)]
+            if isinstance(binning, pd.MultiIndex)
+            else binning
+        )
 
         remaining_names = list(filter(lambda m: m != name, original_names))
-        histogram = (histogram
-                     .groupby(remaining_names)
-                     .apply(lambda h: _do_rebin_histogram(h.droplevel(remaining_names), this_binning, default_value)))
+        histogram = histogram.groupby(remaining_names).apply(
+            lambda h: _do_rebin_histogram(
+                h.droplevel(remaining_names), this_binning, default_value
+            )
+        )
 
     return histogram.reorder_levels(original_names)
 
 
 def _do_rebin_histogram(histogram, binning, default_value):
     def interval_overlap(reference_interval, test_interval):
-        overlap = min(reference_interval.right, test_interval.right) - max(reference_interval.left, test_interval.left)
+        overlap = min(reference_interval.right, test_interval.right) - max(
+            reference_interval.left, test_interval.left
+        )
         return overlap / test_interval.length
 
     def aggregate_hist(interval):
@@ -246,21 +261,23 @@ def _do_rebin_histogram(histogram, binning, default_value):
         if len(occupied) == 0:
             return default_value
 
-        return occupied.apply(lambda v: v.iloc[0] * interval_overlap(interval, v.name), axis=1).sum()
+        return occupied.apply(
+            lambda v: v.iloc[0] * interval_overlap(interval, v.name), axis=1
+        ).sum()
 
     def binning_of_n_bins(index, binnum):
         start = index.left.min()
         end = index.right.max()
 
         if np.isnan(start) or np.isnan(end):
-            return pd.interval_range(0., 0., 0)
+            return pd.interval_range(0.0, 0.0, 0)
 
         return pd.interval_range(start, end, binnum)
 
     def binning_does_not_cover_histogram():
         return (
-            histogram.index.right.max() > binning.right.max() or
-            histogram.index.left.min() < binning.left.min()
+            histogram.index.right.max() > binning.right.max()
+            or histogram.index.left.min() < binning.left.min()
         )
 
     if not isinstance(histogram.index, pd.IntervalIndex):
@@ -272,7 +289,10 @@ def _do_rebin_histogram(histogram, binning, default_value):
         _fail_if_binning_invalid(binning)
 
     if binning_does_not_cover_histogram():
-        warnings.warn("histogram is partly out of binning. This information will be lost!", RuntimeWarning)
+        warnings.warn(
+            "histogram is partly out of binning. This information will be lost!",
+            RuntimeWarning,
+        )
 
     if len(histogram) == 0:
         rebinned = pd.Series(0.0, index=binning)
@@ -287,11 +307,8 @@ def _do_rebin_histogram(histogram, binning, default_value):
 
 def _fail_if_binning_invalid(binning):
     def binning_is_overlapping_or_non_monotonic_increasing():
-        return (
-            len(binning) > 0
-            and (
-                not binning.is_non_overlapping_monotonic or binning.is_monotonic_decreasing
-            )
+        return len(binning) > 0 and (
+            not binning.is_non_overlapping_monotonic or binning.is_monotonic_decreasing
         )
 
     def binning_has_gaps():
@@ -299,7 +316,11 @@ def _fail_if_binning_invalid(binning):
             return False
         left = binning.left[1:]
         right = binning.right[:-1]
-        return pd.DataFrame({'l': left, 'r': right}).apply(lambda r: r.l != r.r, axis=1).any()
+        return (
+            pd.DataFrame({"l": left, "r": right})
+            .apply(lambda r: r.l != r.r, axis=1)
+            .any()
+        )
 
     if not isinstance(binning, pd.IntervalIndex):
         raise TypeError("binning argument must be a pandas.IntervalIndex.")

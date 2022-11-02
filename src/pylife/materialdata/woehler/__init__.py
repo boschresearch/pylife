@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 """A module for Wöhler curve fatigue data analysis
 
 Overview
@@ -40,25 +46,17 @@ Wöhler test.  They can be analyzed by several analyzers according to your choic
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
-from .fatigue_data import \
-    FatigueData, \
-    determine_fractures
+from .fatigue_data import FatigueData, determine_fractures
 
 from .elementary import Elementary
 from .probit import Probit
 from .maxlike import MaxLikeInf, MaxLikeFull
 
-try:
-    from .bayesian import Bayesian
-except ModuleNotFoundError:
-    from .pymc3_dummy import Bayesian
-
 __all__ = [
-    'FatigueData',
-    'determine_fractures',
-    'Elementary',
-    'Probit',
-    'MaxLikeInf',
-    'MaxLikeFull',
-    'Bayesian'
+    "FatigueData",
+    "determine_fractures",
+    "Elementary",
+    "Probit",
+    "MaxLikeInf",
+    "MaxLikeFull",
 ]

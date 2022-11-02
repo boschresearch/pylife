@@ -14,88 +14,90 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 import pandas as pd
 import numpy as np
-import scipy.stats as stats
-
-from pylife.utils.functions import scattering_range_to_std
-
-from pylife import PylifeSignal
-from pylife import DataValidator
+from local_pyLife.core import PylifeSignal
+from local_pyLife.core import DataValidator
 
 
-@pd.api.extensions.register_dataframe_accessor('fatigue_data')
+@pd.api.extensions.register_dataframe_accessor("fatigue_data")
 class FatigueData(PylifeSignal):
-    ''' class for fatigue data
+    """class for fatigue data
 
     Mandatory keys are
         * ``load`` : float, the load level
         * ``cycles`` : float, the cycles of failure or runout
         * ``fracture``: bool, ``True`` iff the test is a runout
-     '''
+    """
 
     def _validate(self):
-        self.fail_if_key_missing(['load', 'cycles', 'fracture'])
+        self.fail_if_key_missing(["load", "cycles", "fracture"])
         self._fatigue_limit = None
 
     @property
     def num_tests(self):
-        '''The number of tests'''
+        """The number of tests"""
         return self._obj.shape[0]
 
     @property
     def num_fractures(self):
-        '''The number of fractures'''
+        """The number of fractures"""
         return self.fractures.shape[0]
 
     @property
     def num_runouts(self):
-        '''The number of runouts'''
+        """The number of runouts"""
         return self.runouts.shape[0]
 
     @property
     def fractures(self):
-        '''Only the fracture tests'''
+        """Only the fracture tests"""
         return self._obj[self._obj.fracture]
 
     @property
     def runouts(self):
-        '''Only the runout tests'''
+        """Only the runout tests"""
         return self._obj[~self._obj.fracture]
 
     @property
     def load(self):
-        '''The load levels'''
+        """The load levels"""
         return self._obj.load
 
     @property
     def cycles(self):
-        '''the cycle numbers'''
+        """the cycle numbers"""
         return self._obj.cycles
 
     @property
     def fatigue_limit(self):
-        '''The start value of the load endurance limit.
+        """The start value of the load endurance limit.
 
         It is determined by searching for the lowest load level before the
         appearance of a runout data point, and the first load level where a
         runout appears.  Then the median of the two load levels is the start
         value.
-        '''
+        """
         if self._fatigue_limit is None:
             self._calc_fatigue_limit()
         return self._fatigue_limit
 
     @property
     def finite_zone(self):
-        '''All the tests with load levels above ``fatigue_limit``, i.e. the finite zone'''
+        """All the tests with load levels above ``fatigue_limit``, i.e. the finite zone"""
         if self._fatigue_limit is None:
             self._calc_fatigue_limit()
         return self._finite_zone
 
     @property
     def infinite_zone(self):
-        '''All the tests with load levels below ``fatigue_limit``, i.e. the infinite zone'''
+        """All the tests with load levels below ``fatigue_limit``, i.e. the infinite zone"""
         if self._fatigue_limit is None:
             self._calc_fatigue_limit()
         return self._infinite_zone
@@ -133,8 +135,10 @@ class FatigueData(PylifeSignal):
         """
         amps_to_consider = self.mixed_loads
 
-        if len(self.non_fractured_loads ) > 0:
-            amps_to_consider = np.concatenate((amps_to_consider, [self.non_fractured_loads.max()]))
+        if len(self.non_fractured_loads) > 0:
+            amps_to_consider = np.concatenate(
+                (amps_to_consider, [self.non_fractured_loads.max()])
+            )
 
         if len(amps_to_consider) > 0:
             self._fatigue_limit = amps_to_consider.mean()
@@ -148,17 +152,19 @@ class FatigueData(PylifeSignal):
 
     def _calc_fatigue_limit(self):
         self._calc_finite_zone()
-        self._fatigue_limit = 0.0 if len(self.runouts) == 0 else self._half_level_above_highest_runout()
+        self._fatigue_limit = (
+            0.0 if len(self.runouts) == 0 else self._half_level_above_highest_runout()
+        )
 
     def _half_level_above_highest_runout(self):
         if len(self._finite_zone) > 0:
-            return (self._finite_zone.load.min() + self.max_runout_load) / 2.
+            return (self._finite_zone.load.min() + self.max_runout_load) / 2.0
 
         return self._guess_from_second_highest_runout()
 
     def _guess_from_second_highest_runout(self):
         max_loads = np.sort(self._obj.load.unique())[-2:]
-        return max_loads[1] + (max_loads[1]-max_loads[0]) / 2.
+        return max_loads[1] + (max_loads[1] - max_loads[0]) / 2.0
 
     def _calc_finite_zone(self):
         if len(self.runouts) == 0:
@@ -171,7 +177,7 @@ class FatigueData(PylifeSignal):
 
 
 def determine_fractures(df, load_cycle_limit=None):
-    '''Adds a fracture column according to defined load cycle limit
+    """Adds a fracture column according to defined load cycle limit
 
     Parameters
     ----------
@@ -187,10 +193,10 @@ def determine_fractures(df, load_cycle_limit=None):
     -------
     df : DataFrame
         A ``DataFrame`` with the column ``fracture`` added
-    '''
-    DataValidator().fail_if_key_missing(df, ['load', 'cycles'])
+    """
+    DataValidator().fail_if_key_missing(df, ["load", "cycles"])
     if load_cycle_limit is None:
         load_cycle_limit = df.cycles.max()
     ret = df.copy()
-    ret['fracture'] = df.cycles < load_cycle_limit
+    ret["fracture"] = df.cycles < load_cycle_limit
     return ret

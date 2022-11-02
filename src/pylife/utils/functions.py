@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 """
 Utility Functions
 =================
@@ -47,7 +53,7 @@ def scattering_range_to_std(T):
 
     Inverse of ``std_to_scattering_range()``
     """
-    return 0.39015207303618954*np.log10(T)
+    return 0.39015207303618954 * np.log10(T)
 
 
 def std_to_scattering_range(std):
@@ -69,7 +75,7 @@ def std_to_scattering_range(std):
 
     Inverse of ``scattering_range_to_std()``
     """
-    return 10**(2.5631031310892007*std)
+    return 10 ** (2.5631031310892007 * std)
 
 
 def rossow_cumfreqs(N):
@@ -115,5 +121,5 @@ def rossow_cumfreqs(N):
     https://books.google.de/books?isbn=3752857722
 
     """
-    i = np.arange(1, N+1)
-    return (3.*i-1.)/(3.*N+1)
+    i = np.arange(1, N + 1)
+    return (3.0 * i - 1.0) / (3.0 * N + 1)

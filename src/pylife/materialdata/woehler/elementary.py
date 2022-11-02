@@ -14,14 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
 
 from .likelihood import Likelihood
 from .pearl_chain import PearlChainProbability
-import pylife.utils.functions as functions
-from . import FatigueData, determine_fractures
+import local_pyLife.utils.functions as functions
+from . import FatigueData
+from . import determine_fractures
 
 
 class Elementary:
@@ -60,7 +67,11 @@ class Elementary:
         elif isinstance(fatigue_data, FatigueData):
             params = fatigue_data
         else:
-            raise ValueError("fatigue_data of type {} not understood: {}".format(type(fatigue_data), fatigue_data))
+            raise ValueError(
+                "fatigue_data of type {} not understood: {}".format(
+                    type(fatigue_data), fatigue_data
+                )
+            )
         return params
 
     def analyze(self, **kwargs):
@@ -75,20 +86,22 @@ class Elementary:
         wc = self._common_analysis()
         wc = self._specific_analysis(wc, **kwargs)
         self.__calc_bic(wc)
-        wc['failure_probability'] = 0.5
+        wc["failure_probability"] = 0.5
 
         return wc
 
     def _common_analysis(self):
         self._slope, self._lg_intercept = self._fit_slope()
         TN, TS = self._pearl_chain_method()
-        return pd.Series({
-            'k_1': -self._slope,
-            'ND': self._transition_cycles(self._fd.fatigue_limit),
-            'SD': self._fd.fatigue_limit,
-            'TN': TN,
-            'TS': TS
-        })
+        return pd.Series(
+            {
+                "k_1": -self._slope,
+                "ND": self._transition_cycles(self._fd.fatigue_limit),
+                "SD": self._fd.fatigue_limit,
+                "TN": TN,
+                "TS": TS,
+            }
+        )
 
     def _specific_analysis(self, wc):
         return wc
@@ -102,7 +115,7 @@ class Elementary:
 
         Basically the lower the better the fit.
         """
-        if not hasattr(self,"_bic"):
+        if not hasattr(self, "_bic"):
             raise ValueError("BIC value undefined. Analysis has not been conducted.")
         return self._bic
 
@@ -110,14 +123,17 @@ class Elementary:
         return self._pearl_chain_estimator
 
     def __calc_bic(self, wc):
-        '''         '''
+        """ """
         param_num = 5  # SD, TS, k_1, ND, TN
-        log_likelihood = self._lh.likelihood_total(wc['SD'], wc['TS'], wc['k_1'], wc['ND'], wc['TN'])
+        log_likelihood = self._lh.likelihood_total(
+            wc["SD"], wc["TS"], wc["k_1"], wc["ND"], wc["TN"]
+        )
         self._bic = (-2 * log_likelihood) + (param_num * np.log(self._fd.num_tests))
 
     def _fit_slope(self):
-        slope, lg_intercept, _, _, _ = stats.linregress(np.log10(self._fd.fractures.load),
-                                                        np.log10(self._fd.fractures.cycles))
+        slope, lg_intercept, _, _, _ = stats.linregress(
+            np.log10(self._fd.fractures.load), np.log10(self._fd.fractures.cycles)
+        )
 
         return slope, lg_intercept
 
@@ -125,17 +141,19 @@ class Elementary:
         # FIXME Elementary means fatigue_limit == 0 -> np.inf
         if fatigue_limit == 0:
             fatigue_limit = 0.1
-        return 10**(self._lg_intercept + self._slope * (np.log10(fatigue_limit)))
+        return 10 ** (self._lg_intercept + self._slope * (np.log10(fatigue_limit)))
 
     def _pearl_chain_method(self):
-        '''
+        """
         Pearl chain method: consists of shifting the fractured data to a median load level.
         The shifted data points are assigned to a Rossow failure probability.The scatter in load-cycle
         direction can be computed from the probability net.
-        '''
-        self._pearl_chain_estimator = PearlChainProbability(self._fd.fractures, self._slope)
+        """
+        self._pearl_chain_estimator = PearlChainProbability(
+            self._fd.fractures, self._slope
+        )
 
-        TN = functions.std_to_scattering_range(1./self._pearl_chain_estimator.slope)
-        TS = TN**(1./-self._slope)
-
+        TN = functions.std_to_scattering_range(1.0 / self._pearl_chain_estimator.slope)
+        TS = TN ** (1.0 / -self._slope)
+    
         return TN, TS

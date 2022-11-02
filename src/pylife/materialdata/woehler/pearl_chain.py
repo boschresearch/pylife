@@ -14,17 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
 
 import numpy as np
 
-import pylife.utils.functions as functions
-from pylife.utils.probability_data import ProbabilityFit
+import local_pyLife.utils.functions as functions
+from local_pyLife.utils.probability_data import ProbabilityFit
 
 
 class PearlChainProbability(ProbabilityFit):
     def __init__(self, fractures, slope):
         self._normed_load = fractures.load.mean()
-        self._normed_cycles = np.sort(fractures.cycles * ((self._normed_load/fractures.load)**(slope)))
+        self._normed_cycles = np.sort(
+            fractures.cycles * ((self._normed_load / fractures.load) ** (slope))
+        )
 
         fp = functions.rossow_cumfreqs(len(self._normed_cycles))
         super().__init__(fp, self._normed_cycles)

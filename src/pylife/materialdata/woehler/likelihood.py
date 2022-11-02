@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
@@ -21,7 +27,7 @@ import numpy as np
 from scipy import stats
 
 
-from pylife.utils.functions import scattering_range_to_std, std_to_scattering_range
+from local_pyLife.utils.functions import scattering_range_to_std
 
 
 class Likelihood:
@@ -58,13 +64,15 @@ class Likelihood:
             estimate of a function is the same as minimizing the negative log likelihood of the function.
 
         """
-        return self.likelihood_finite(SD, k_1, ND, TN) + self.likelihood_infinite(SD, TS)
+        return self.likelihood_finite(SD, k_1, ND, TN) + self.likelihood_infinite(
+            SD, TS
+        )
 
     def likelihood_finite(self, SD, k_1, ND, TN):
         if not (SD > 0.0).all():
             return -np.inf
         fractures = self._fd.fractures
-        x = np.log10(fractures.cycles * ((fractures.load/SD)**k_1))
+        x = np.log10(fractures.cycles * ((fractures.load / SD) ** k_1))
         mu = np.log10(ND)
         std_log = scattering_range_to_std(TN)
         log_likelihood = np.log(stats.norm.pdf(x, mu, std_log))
@@ -95,8 +103,10 @@ class Likelihood:
         infinite_zone = self._fd.infinite_zone
         std_log = scattering_range_to_std(TS)
         t = np.logical_not(self._fd.infinite_zone.fracture).astype(np.float64)
-        likelihood = stats.norm.cdf(np.log10(infinite_zone.load/SD),  scale=abs(std_log))
-        non_log_likelihood = t+(1.-2.*t)*likelihood
+        likelihood = stats.norm.cdf(
+            np.log10(infinite_zone.load / SD), scale=abs(std_log)
+        )
+        non_log_likelihood = t + (1.0 - 2.0 * t) * likelihood
         if non_log_likelihood.eq(0.0).any():
             return -np.inf
 

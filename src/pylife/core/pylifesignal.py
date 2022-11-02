@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
@@ -88,7 +94,7 @@ class PylifeSignal(Broadcaster):
 
         """
         # TODO: better error handling
-        if len(kwargs) > 1 and hasattr(next(iter(kwargs.values())), '__iter__'):
+        if len(kwargs) > 1 and hasattr(next(iter(kwargs.values())), "__iter__"):
             obj = pd.DataFrame(kwargs)
         else:
             obj = pd.Series(kwargs)
@@ -118,7 +124,9 @@ class PylifeSignal(Broadcaster):
             return self._obj.index
         elif isinstance(self._obj, pd.DataFrame):
             return self._obj.columns
-        raise AttributeError("An accessor object needs to be either a pandas.Series or a pandas.DataFrame")
+        raise AttributeError(
+            "An accessor object needs to be either a pandas.Series or a pandas.DataFrame"
+        )
 
     def get_missing_keys(self, keys_to_check):
         """Get a list of missing keys that are needed for a self._obj object.
@@ -203,10 +211,15 @@ class PylifeSignal(Broadcaster):
     def _register_method(cls, method_name):
         def method_decorator(method):
             if method_name in cls._method_dict.keys():
-                raise ValueError("Method '%s' already registered in %s" % (method_name, cls.__name__))
+                raise ValueError(
+                    "Method '%s' already registered in %s" % (method_name, cls.__name__)
+                )
             if hasattr(cls, method_name):
-                raise ValueError("%s already has an attribute '%s'" % (cls.__name__, method_name))
+                raise ValueError(
+                    "%s already has an attribute '%s'" % (cls.__name__, method_name)
+                )
             cls._method_dict[method_name] = method
+
         return method_decorator
 
     def to_pandas(self):

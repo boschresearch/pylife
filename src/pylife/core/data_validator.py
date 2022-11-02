@@ -14,15 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
-import inspect
 import pandas as pd
 
 
 class DataValidator:
-
     def keys(self, signal):
         """Get a list of missing keys that are needed for a signal object.
 
@@ -51,7 +55,9 @@ class DataValidator:
             return signal.index
         elif isinstance(signal, pd.DataFrame):
             return signal.columns
-        raise AttributeError("An accessor object needs to be either a pandas.Series or a pandas.DataFrame")
+        raise AttributeError(
+            "An accessor object needs to be either a pandas.Series or a pandas.DataFrame"
+        )
 
     def get_missing_keys(self, signal, keys_to_check):
         """Get a list of missing keys that are needed for a signal object.
@@ -125,7 +131,4 @@ class DataValidator:
         if not missing_keys:
             return
         if msg is None:
-            stack = inspect.stack()
-            the_class = stack[2][0].f_locals['self'].__class__
-            msg = the_class.__name__ + ' must have the items %s. Missing %s.'
-        raise AttributeError(msg % (', '.join(keys_to_check), ', '.join(missing_keys)))
+            raise AttributeError("something is wrong in data_validator")

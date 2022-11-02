@@ -14,17 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 import pandas as pd
 import numpy as np
 import scipy.stats as stats
 
-from pylife.utils.functions import scattering_range_to_std
+from local_pyLife.utils.functions import scattering_range_to_std
 
-from pylife import PylifeSignal
+from local_pyLife.core import PylifeSignal
 
 
-@pd.api.extensions.register_series_accessor('woehler')
-@pd.api.extensions.register_dataframe_accessor('woehler')
+@pd.api.extensions.register_series_accessor("woehler")
+@pd.api.extensions.register_dataframe_accessor("woehler")
 class WoehlerCurve(PylifeSignal):
     """A PylifeSignal accessor for Wöhler Curve data.
 
@@ -57,26 +63,26 @@ class WoehlerCurve(PylifeSignal):
         self._validate()
 
     def _validate(self):
-        self.fail_if_key_missing(['k_1', 'ND', 'SD'])
-        self._k_2 = self._obj.get('k_2', np.inf)
+        self.fail_if_key_missing(["k_1", "ND", "SD"])
+        self._k_2 = self._obj.get("k_2", np.inf)
 
-        self._TN = self._obj.get('TN', None)
-        self._TS = self._obj.get('TS', None)
+        self._TN = self._obj.get("TN", None)
+        self._TS = self._obj.get("TS", None)
 
         if self._TN is None and self._TS is None:
             self._TN = 1.0
             self._TS = 1.0
         elif self._TS is None:
-            self._TS = np.power(self._TN, 1./self._obj.k_1)
+            self._TS = np.power(self._TN, 1.0 / self._obj.k_1)
         elif self._TN is None:
             self._TN = np.power(self._TS, self._obj.k_1)
 
-        self._failure_probability = self._obj.get('failure_probability', 0.5)
+        self._failure_probability = self._obj.get("failure_probability", 0.5)
 
-        self._obj['k_2'] = self._k_2
-        self._obj['TN'] = self._TN
-        self._obj['TS'] = self._TS
-        self._obj['failure_probability'] = self._failure_probability
+        self._obj["k_2"] = self._k_2
+        self._obj["TN"] = self._TN
+        self._obj["TS"] = self._TS
+        self._obj["failure_probability"] = self._failure_probability
 
     @property
     def SD(self):
@@ -118,14 +124,18 @@ class WoehlerCurve(PylifeSignal):
         native_ppf = stats.norm.ppf(obj.failure_probability)
         goal_ppf = stats.norm.ppf(failure_probability)
 
-        SD = np.asarray(obj.SD / 10**((native_ppf-goal_ppf)*scattering_range_to_std(obj.TS)))
-        ND = np.asarray(obj.ND / 10**((native_ppf-goal_ppf)*scattering_range_to_std(obj.TN)))
-        ND[SD != 0] *= np.power(SD[SD != 0]/obj.SD, -obj.k_1)
+        SD = np.asarray(
+            obj.SD / 10 ** ((native_ppf - goal_ppf) * scattering_range_to_std(obj.TS))
+        )
+        ND = np.asarray(
+            obj.ND / 10 ** ((native_ppf - goal_ppf) * scattering_range_to_std(obj.TN))
+        )
+        ND[SD != 0] *= np.power(SD[SD != 0] / obj.SD, -obj.k_1)
 
         transformed = obj.copy()
-        transformed['SD'] = SD
-        transformed['ND'] = ND
-        transformed['failure_probability'] = failure_probability
+        transformed["SD"] = SD
+        transformed["ND"] = ND
+        transformed["failure_probability"] = failure_probability
 
         return WoehlerCurve(transformed)
 
@@ -136,7 +146,7 @@ class WoehlerCurve(PylifeSignal):
         -------
         self
         """
-        self._obj['k_2'] = self._obj.k_1
+        self._obj["k_2"] = self._obj.k_1
         return self
 
     def miner_haibach(self):
@@ -146,7 +156,7 @@ class WoehlerCurve(PylifeSignal):
         -------
         self
         """
-        self._obj['k_2'] = 2. * self._obj.k_1 - 1.
+        self._obj["k_2"] = 2.0 * self._obj.k_1 - 1.0
         return self
 
     def cycles(self, load, failure_probability=0.5):
@@ -216,11 +226,11 @@ class WoehlerCurve(PylifeSignal):
         """
         transformed = self.transform_to_failure_probability(failure_probability)
 
-        if hasattr(load, '__iter__'):
-            if hasattr(load, 'astype'):
-                load = load.astype('float64')
+        if hasattr(load, "__iter__"):
+            if hasattr(load, "astype"):
+                load = load.astype("float64")
             else:
-                load = np.array(load).astype('float64')
+                load = np.array(load).astype("float64")
         else:
             load = float(load)
 
@@ -229,7 +239,9 @@ class WoehlerCurve(PylifeSignal):
 
         k = self._make_k(ld, wc.SD, wc)
         in_limit = np.isfinite(k)
-        cycles[in_limit] = wc.ND[in_limit] * np.power(ld[in_limit]/wc.SD[in_limit], -k[in_limit])
+        cycles[in_limit] = wc.ND[in_limit] * np.power(
+            ld[in_limit] / wc.SD[in_limit], -k[in_limit]
+        )
 
         if not isinstance(load, pd.Series):
             return cycles
@@ -258,7 +270,9 @@ class WoehlerCurve(PylifeSignal):
 
         k = self._make_k(-cyc, -wc.ND, wc)
         in_limit = np.isfinite(k)
-        load[in_limit] = wc.SD[in_limit] * np.power(cyc[in_limit]/wc.ND[in_limit], -1./k[in_limit])
+        load[in_limit] = wc.SD[in_limit] * np.power(
+            cyc[in_limit] / wc.ND[in_limit], -1.0 / k[in_limit]
+        )
 
         if not isinstance(cycles, pd.Series):
             return load

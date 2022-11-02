@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
@@ -23,14 +30,14 @@ from .true_stress_strain import *
 from .woehlercurve import WoehlerCurve
 
 __all__ = [
-    'RambergOsgood',
-    'true_stress',
-    'true_strain',
-    'true_fracture_stress',
-    'true_fracture_strain',
-    'WoehlerCurve',
-    'HookesLaw1d',
-    'HookesLaw2dPlaneStrain',
-    'HookesLaw2dPlaneStress',
-    'HookesLaw3d'
+    "RambergOsgood",
+    "true_stress",
+    "true_strain",
+    "true_fracture_stress",
+    "true_fracture_strain",
+    "WoehlerCurve",
+    "HookesLaw1d",
+    "HookesLaw2dPlaneStrain",
+    "HookesLaw2dPlaneStress",
+    "HookesLaw3d",
 ]

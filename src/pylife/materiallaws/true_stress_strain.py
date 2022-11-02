@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 __author__ = "Simone Schreijäg"
 __maintainer__ = "Johannes Mueller"
 
@@ -32,8 +38,8 @@ def true_strain(tech_strain):
     -------
     true_strain: array-like float
 
-   """
-    return np.log(1. + tech_strain)
+    """
+    return np.log(1.0 + tech_strain)
 
 
 def true_stress(tech_stress, tech_strain):
@@ -52,7 +58,7 @@ def true_stress(tech_stress, tech_strain):
     true_stress : array-like float
 
     """
-    return tech_stress * (1. + tech_strain)
+    return tech_stress * (1.0 + tech_strain)
 
 
 def true_fracture_strain(reduction_area_fracture):
@@ -69,10 +75,12 @@ def true_fracture_strain(reduction_area_fracture):
         descrivbes the calculated true fracture strain.
 
     """
-    return np.log(1./(1. - reduction_area_fracture))
+    return np.log(1.0 / (1.0 - reduction_area_fracture))
 
 
-def true_fracture_stress(fracture_force, initial_cross_section, reduction_area_fracture):
+def true_fracture_stress(
+    fracture_force, initial_cross_section, reduction_area_fracture
+):
     """
     Calculation of the true fracture stress (euqation FKM Non-linear (static assessment))
 
@@ -91,4 +99,4 @@ def true_fracture_stress(fracture_force, initial_cross_section, reduction_area_f
         calculated true fracture stress of the sample.
 
     """
-    return fracture_force/(initial_cross_section * (1. - reduction_area_fracture))
+    return fracture_force / (initial_cross_section * (1.0 - reduction_area_fracture))

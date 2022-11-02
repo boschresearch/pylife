@@ -14,16 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
-from .pylifesignal import PylifeSignal, register_method
+from .pylifesignal import PylifeSignal
 from .broadcaster import Broadcaster
 from .data_validator import DataValidator
 
 __all__ = [
-    'PylifeSignal',
-    'Broadcaster',
-    'DataValidator',
-    'register_method'
+    "PylifeSignal",
+    "Broadcaster",
+    "DataValidator",
 ]

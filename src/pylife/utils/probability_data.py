@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
 
 import numpy as np
 import scipy.stats as stats
@@ -35,12 +40,15 @@ class ProbabilityFit:
         if len(probs) != len(occurrences):
             raise ValueError("probs and occurrence arrays must have the same 1D shape.")
         if len(probs) < 2:
-            raise ValueError("Need at least two datapoints for probabilities and occurrences.")
+            raise ValueError(
+                "Need at least two datapoints for probabilities and occurrences."
+            )
         ppf = stats.norm.ppf(probs)
         self._occurrences = np.array(occurrences, dtype=np.float64)
-        self._slope, self._intercept, _, _, _ = stats.linregress(np.log10(self._occurrences), ppf)
+        self._slope, self._intercept, _, _, _ = stats.linregress(
+            np.log10(self._occurrences), ppf
+        )
         self._ppf = ppf
-
 
     @property
     def slope(self):

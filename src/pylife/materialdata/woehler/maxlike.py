@@ -13,6 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# ----------------------------------------------------
+# Matplus GmbH altered the code formatting and removed Python 
+# libraries such as Matplotlib and pandas to integrate pyLife into EDA. 
+# There are no changes in the functionality of the pyLife modules.
+# ----------------------------------------------------
+
 from .elementary import Elementary
 
 import pandas as pd
@@ -20,27 +27,32 @@ import numpy as np
 from scipy import optimize
 import warnings
 
+
 class MaxLikeInf(Elementary):
     def _specific_analysis(self, wc):
         SD, TS = self.__max_likelihood_inf_limit()
 
-        wc['SD'] = SD
-        wc['TS'] = TS
-        wc['ND'] = self._transition_cycles(SD)
+        wc["SD"] = SD
+        wc["TS"] = TS
+        wc["ND"] = self._transition_cycles(SD)
 
         return wc
 
     def __max_likelihood_inf_limit(self):
-        ''' This maximum likelihood procedure estimates the load endurance limit SD50_mali_2_param and the
+        """This maximum likelihood procedure estimates the load endurance limit SD50_mali_2_param and the
         scatter in load direction TS_mali_2_param.
         Moreover, the load cycle endurance is computed by the interesecting endurance limit line with the
         line of slope k_1
-        '''
+        """
         SD_start = self._fd.fatigue_limit
         TS_start = 1.2
 
-        var_opt = optimize.fmin(lambda p: -self._lh.likelihood_infinite(p[0], p[1]),
-                                [SD_start, TS_start], disp=False, full_output=True)
+        var_opt = optimize.fmin(
+            lambda p: -self._lh.likelihood_infinite(p[0], p[1]),
+            [SD_start, TS_start],
+            disp=False,
+            full_output=True,
+        )
 
         SD_50 = var_opt[0][0]
         TS = var_opt[0][1]
@@ -76,27 +88,42 @@ class MaxLikeFull(Elementary):
         self.Mali_5p_result: The estimated parameters computed using the optimizer.
 
         """
+
         def warn_and_fix_if_no_runouts():
             nonlocal fixed_prms
             if self._fd.num_runouts == 0:
-                warnings.warn(UserWarning("MaxLikeHood: no runouts are present in fatigue data. "
-                                          "Proceeding with SD = 0 and TS = 1 as fixed parameters. "
-                                          "This is NOT a standard evaluation!"))
+                warnings.warn(
+                    UserWarning(
+                        "MaxLikeHood: no runouts are present in fatigue data. "
+                        "Proceeding with SD = 0 and TS = 1 as fixed parameters. "
+                        "This is NOT a standard evaluation!"
+                    )
+                )
                 fixed_prms = fixed_prms.copy()
-                fixed_prms.update({'SD': 0.0, 'TS': 1.0})
+                fixed_prms.update({"SD": 0.0, "TS": 1.0})
 
         def fail_if_less_than_three_fractures():
             if self._fd.num_fractures < 3 or len(self._fd.fractured_loads) < 2:
-                raise ValueError("MaxLikeHood: need at least three fractures on two load levels.")
+                raise ValueError(
+                    "MaxLikeHood: need at least three fractures on two load levels."
+                )
 
         def warn_and_fix_if_less_than_two_mixed_levels():
             nonlocal fixed_prms
-            if len(self._fd.mixed_loads) < 2 and self._fd.num_runouts > 0 and self._fd.num_fractures > 0:
-                warnings.warn(UserWarning("MaxLikeHood: less than two mixed load levels in fatigue data."
-                                          "Proceeding by setting a predetermined scatter from the standard Wöhler curve."))
+            if (
+                len(self._fd.mixed_loads) < 2
+                and self._fd.num_runouts > 0
+                and self._fd.num_fractures > 0
+            ):
+                warnings.warn(
+                    UserWarning(
+                        "MaxLikeHood: less than two mixed load levels in fatigue data."
+                        "Proceeding by setting a predetermined scatter from the standard Wöhler curve."
+                    )
+                )
                 fixed_prms = fixed_prms.copy()
                 TN, TS = self._pearl_chain_method()
-                fixed_prms.update({'TS': TS})
+                fixed_prms.update({"TS": TS})
 
         fail_if_less_than_three_fractures()
         warn_and_fix_if_no_runouts()
@@ -107,9 +134,10 @@ class MaxLikeFull(Elementary):
             p_opt.pop(k)
 
         if not p_opt:
-            raise AttributeError('You need to leave at least one parameter empty!')
+            raise AttributeError("You need to leave at least one parameter empty!")
         var_opt = optimize.fmin(
-            self.__likelihood_wrapper, [*p_opt.values()],
+            self.__likelihood_wrapper,
+            [*p_opt.values()],
             args=([*p_opt], fixed_prms),
             full_output=True,
             disp=False,
@@ -123,21 +151,23 @@ class MaxLikeFull(Elementary):
         return self.__make_parameters(res)
 
     def __make_parameters(self, params):
-        params['SD'] = np.abs(params['SD'])
-        params['TS'] = np.abs(params['TS'])
-        params['k_1'] = np.abs(params['k_1'])
-        params['ND'] = np.abs(params['ND'])
-        params['TN'] = np.abs(params['TN'])
+        params["SD"] = np.abs(params["SD"])
+        params["TS"] = np.abs(params["TS"])
+        params["k_1"] = np.abs(params["k_1"])
+        params["ND"] = np.abs(params["ND"])
+        params["TN"] = np.abs(params["TN"])
         return params
 
     def __likelihood_wrapper(self, var_args, var_keys, fix_args):
-        ''' 1) Finds the start values to be optimized. The rest of the paramters are fixed by the user.
-            2) Calls function mali_sum_lolli to calculate the maximum likelihood of the current
-            variable states.
-        '''
+        """1) Finds the start values to be optimized. The rest of the paramters are fixed by the user.
+        2) Calls function mali_sum_lolli to calculate the maximum likelihood of the current
+        variable states.
+        """
         args = {}
         args.update(fix_args)
         args.update(zip(var_keys, var_args))
         args = self.__make_parameters(args)
 
-        return -self._lh.likelihood_total(args['SD'], args['TS'], args['k_1'], args['ND'], args['TN'])
+        return -self._lh.likelihood_total(
+            args["SD"], args["TS"], args["k_1"], args["ND"], args["TN"]
+        )
