@@ -20,8 +20,9 @@ __maintainer__ = "Johannes Mueller"
 
 import numpy as np
 import pandas as pd
-import aesara.tensor as tt
+import aesara.tensor as at
 import pymc as pm
+import bambi
 
 from .elementary import Elementary
 from .likelihood import Likelihood
@@ -37,7 +38,7 @@ class Bayesian(Elementary):
     future.  Maybe this will lead to breaking changes without new major release.
     """
 
-    class _LogLike(tt.Op):
+    class _LogLike(at.Op):
         """
         Specify what type of object will be passed and returned to the Op when it is
         called. In our case we will be passing it a vector of values (the parameters
@@ -46,8 +47,8 @@ class Bayesian(Elementary):
 
         http://mattpitkin.github.io/samplers-demo/pages/pymc-blackbox-likelihood/
         """
-        itypes = [tt.dvector]  # expects a vector of parameter values when called
-        otypes = [tt.dscalar]  # outputs a single scalar value (the log likelihood)
+        itypes = [at.dvector]  # expects a vector of parameter values when called
+        otypes = [at.dscalar]  # outputs a single scalar value (the log likelihood)
 
         def __init__(self, likelihood):
             """
@@ -84,39 +85,39 @@ class Bayesian(Elementary):
         tune = kw.pop('tune', 1000)
         random_seed = kw.pop('random_seed', None)
 
-        slope_trace = self._slope_trace(tune=tune, random_seed=random_seed, **kw)
-        TN_trace = self._TN_trace(tune=tune, random_seed=random_seed, **kw)
         SD_TS_trace = self._SD_TS_trace(tune=tune, random_seed=random_seed, **kw)
+        slope_trace = self._slope_trace(tune=tune, random_seed=random_seed, **kw)
+        slope = slope_trace.get('x').values[-1, nburn:].mean()
+        intercept = slope_trace.get('Intercept').values[-1, nburn:].mean()
 
-        slope = slope_trace.get_values('x')[nburn:].mean()
-        intercept = slope_trace.get_values('Intercept')[nburn:].mean()
-        SD = SD_TS_trace.get_values('SD')[nburn:].mean()
+        SD = SD_TS_trace.get('SD').values[-1, nburn:].mean()
         ND = np.power(10., np.log10(SD) * slope + intercept)
+
+        TN_trace = self._TN_trace(tune=tune, random_seed=random_seed, **kw)
 
         return pd.Series({
             'SD': SD,
-            'TS': SD_TS_trace.get_values('TS')[nburn:].mean(),
+            'TS': SD_TS_trace.get('TS').values[-1, nburn:].mean(),
             'ND': ND,
             'k_1': -slope,
-            'TN': TN_trace.get_values('mu')[nburn:].mean(),
+            'TN': TN_trace.get('mu').values[-1, nburn:].mean(),
         })
 
     def _slope_trace(self, chains=2, random_seed=None, tune=1000, **kw):
-        data_dict = {
+        data_dict = pd.DataFrame({
             'x': np.log10(self._fd.fractures.load),
             'y': np.log10(self._fd.fractures.cycles.to_numpy())
-        }
+        })
         with pm.Model():
-            family = pm.glm.families.StudentT()
-            pm.glm.GLM.from_formula('y ~ x', data_dict, family=family)
-            trace_robust = pm.sample(self._nsamples,
-                                     target_accept=0.99,
-                                     random_seed=random_seed,
-                                     chains=chains,
-                                     tune=tune,
-                                     **kw)
-
-            return trace_robust
+            model = bambi.Model('y ~ x', data_dict, family='t')
+            fitted = model.fit(
+                draws=self._nsamples,
+                tune=tune,
+                chains=chains,
+                random_seed=random_seed,
+                **kw
+            )
+            return fitted.posterior
 
     def _TN_trace(self, chains=3, random_seed=None, tune=1000, **kw):
         with pm.Model():
@@ -132,7 +133,7 @@ class Bayesian(Elementary):
                                  tune=tune,
                                  **kw)
 
-        return trace_TN
+        return trace_TN.posterior
 
     def _SD_TS_trace(self, chains=3, random_seed=None, tune=1000, **kw):
         loglike = self._LogLike(Likelihood(self._fd))
@@ -140,10 +141,10 @@ class Bayesian(Elementary):
         with pm.Model():
             inf_load = self._fd.infinite_zone.load
             SD = pm.Normal('SD', mu=inf_load.mean(), sigma=inf_load.std()*5)
-            TS_inv = pm.Lognormal('TS', mu=np.log10(1. / 1.1), sigma=np.log10(0.5))
+            TS_inv = pm.Lognormal('TS', mu=np.log10(1.1), sigma=0.3)
 
             # convert m and c to a tensor vector
-            var = tt.as_tensor_variable([SD, TS_inv])
+            var = at.as_tensor_variable([SD, TS_inv])
 
             pm.Potential('likelihood', loglike(var))
 
@@ -155,4 +156,4 @@ class Bayesian(Elementary):
                                     tune=tune,
                                     **kw)
 
-        return trace_SD_TS
+        return trace_SD_TS.posterior
