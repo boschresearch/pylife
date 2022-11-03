@@ -38,7 +38,7 @@ def test_four_point_detector_new_no_residuals():
     assert len(dtor.residuals) == 0
 
 class TestFourPointRandomNonPeriodicLoad(unittest.TestCase):
-    
+
     '''Four Point Rainflow Counter method can only recognize the closed cycles and
     excludes any contribution from unpaired reversals.
     '''
@@ -57,12 +57,12 @@ class TestFourPointRandomNonPeriodicLoad(unittest.TestCase):
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([2.,-1.,3.,-5.,
                                                                       4.,-4.,2.]))
-        
+
 class TestFourPointRandombyDuplicatingResidualsFromAbove(unittest.TestCase):
-    
-    '''This test case is taken from the Metal Fatigue Analysis Handbook, by Yung-Li 
+
+    '''This test case is taken from the Metal Fatigue Analysis Handbook, by Yung-Li
     Lee, Mark E. Barkey & Hong-Tae Kang. There it is stated, to obtain the Three Point
-    Rainflow Counter equivalent result from a Four PointCounter just add the residual 
+    Rainflow Counter equivalent result from a Four PointCounter just add the residual
     array obtained from the first iteration, to itself and repeat the process.'''
 
     def setUp(self):
@@ -79,7 +79,7 @@ class TestFourPointRandombyDuplicatingResidualsFromAbove(unittest.TestCase):
 
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([2,-1,3,-5,4,-4,2]))
-        
+
 
 '''Below are the same test cases from Three Point Counter Test Suite'''
 
@@ -138,7 +138,7 @@ class TestFourPointsTwoAmplitudesSplit(unittest.TestCase):
     def setUp(self):
         signal = np.array([0., 1., 0., 1., -1., 1., 0., 1., -1., 1., 0])
         self._fr = RFR.FullRecorder()
-        self._dtor = RF.ThreePointDetector(recorder=self._fr).process(signal[:4]).process(signal[4:])
+        self._dtor = RF.FourPointDetector(recorder=self._fr).process(signal[:4]).process(signal[4:])
 
     def test_values(self):
         np.testing.assert_array_equal(self._fr.values_from, np.array([1., 1., -1.]))
