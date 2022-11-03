@@ -8,8 +8,16 @@ front helps to avoid frustration later on.
 
 ## Test driven development
 
-The functionality of your contribution (functions, class methods) need to be
-tested by [pytest][pytest] testing routines.
+The functionality of your contribution (functions, class methods) needs to be
+tested by [pytest][pytest] testing routines.  Please always run the test suite
+locally before you file a pull request.  For any filed pull request the test
+suite will be run for different python versions and different operating systems
+as [GitHub action](https://github.com/boschresearch/pylife/actions).  If any of
+them fails, please update your pull request accordingly.
+
+Every bugfix or every new feature you are implementing – basically any function
+changing code – must be backed with a suitable amount of unit tests. If those
+unit tests are missing, we will have to decline your pull request.
 
 In order to achieve maintainable code we ask contributors to use test driven
 development, i. e. follow the [Three Rules of Test Driven
@@ -164,6 +172,9 @@ automatically.
 For a more detailed description of this procedure, please see
 [SubmittingPatches][] which was extracted from the Linux kernel project, and
 which is stored in an external repository.
+
+Any pull request with at least one commit missing the Signed-off-tag in the
+commit message will be automatically declined by a bot.
 
 ### Individual vs. Corporate Contributors
 
