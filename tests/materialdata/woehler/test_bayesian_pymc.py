@@ -36,10 +36,15 @@ except ModuleNotFoundError:
 from pylife.materialdata import woehler
 
 
+@pytest.fixture
+def core_num():
+    return 1 if sys.platform.startswith('win') else None
+
+
 @pytest.mark.skipif(not HAVE_PYMC_AND_BAMBI, reason="Don't have pymc")
 @mock.patch('pylife.materialdata.woehler.bayesian.pm')
 @mock.patch('pylife.materialdata.woehler.bayesian.bambi.Model')
-def test_bayesian_slope_trace(bambi_model, pm):
+def test_bayesian_slope_trace(bambi_model, pm, core_num):
     bambi_model_object = mock.MagicMock()
     bambi_model.return_value = bambi_model_object
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
@@ -53,12 +58,12 @@ def test_bayesian_slope_trace(bambi_model, pm):
     np.testing.assert_array_equal(data_dict['y'], np.log10(fd.fractures.cycles.to_numpy()))
     assert bambi_model.call_args[1]['family'] == 't'  # Consider switch to kwargs property when py3.7 is dropped
 
-    bambi_model_object.fit.assert_called_with(draws=1000, tune=1000, chains=2, random_seed=None)
+    bambi_model_object.fit.assert_called_with(draws=1000, cores=core_num, tune=1000, chains=2, random_seed=None)
 
 
 @pytest.mark.skipif(not HAVE_PYMC_AND_BAMBI, reason="Don't have pymc")
 @mock.patch('pylife.materialdata.woehler.bayesian.pm')
-def test_bayesian_TN_trace(pm):
+def test_bayesian_TN_trace(pm, core_num):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     bayes = woehler.Bayesian(fd)
     bayes._common_analysis()
@@ -81,13 +86,13 @@ def test_bayesian_TN_trace(pm):
     np.testing.assert_almost_equal(observed.mean(), expected_mu, decimal=9)
     np.testing.assert_almost_equal(observed.std(), expected_sigma, decimal=9)
 
-    pm.sample.assert_called_with(1000, target_accept=0.99, random_seed=None, chains=3, tune=1000)
+    pm.sample.assert_called_with(1000, cores=core_num, target_accept=0.99, random_seed=None, chains=3, tune=1000)
 
 
 @pytest.mark.skipif(not HAVE_PYMC_AND_BAMBI, reason="Don't have pymc")
 @mock.patch('pylife.materialdata.woehler.bayesian.at')
 @mock.patch('pylife.materialdata.woehler.bayesian.pm')
-def test_bayesian_SD_TS_trace_mock(pm, at):
+def test_bayesian_SD_TS_trace_mock(pm, at, core_num):
     def check_likelihood(l, var):
         assert var == at.as_tensor_variable.return_value
         assert isinstance(l.likelihood, woehler.likelihood.Likelihood)
@@ -114,11 +119,9 @@ def test_bayesian_SD_TS_trace_mock(pm, at):
 
     pm.Potential.assert_called_once_with('likelihood', 'foovar')
 
-    pm.sample.assert_called_with(1000, cores=1,
-                                 chains=3,
-                                 random_seed=None,
-                                 discard_tuned_samples=True,
-                                 tune=1000)
+    pm.sample.assert_called_with(
+        1000, cores=core_num, chains=3, random_seed=None, discard_tuned_samples=True, tune=1000
+    )
 
 
 @pytest.mark.skipif(not HAVE_PYMC_AND_BAMBI, reason="Don't have pymc")
@@ -161,7 +164,7 @@ def test_bayesian_mock(_slope_trace, _TN_trace, _SD_TS_trace):
 
 
 @pytest.mark.skipif(not HAVE_PYMC_AND_BAMBI, reason="Don't have pymc")
-#@pytest.mark.slow_acceptance
+@pytest.mark.slow_acceptance
 def test_bayesian_full():
     expected = pd.Series({
         'SD': 340.,

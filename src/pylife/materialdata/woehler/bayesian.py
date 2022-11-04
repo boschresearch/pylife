@@ -18,6 +18,7 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
+import sys
 import numpy as np
 import pandas as pd
 import aesara.tensor as at
@@ -112,6 +113,7 @@ class Bayesian(Elementary):
             model = bambi.Model('y ~ x', data_dict, family='t')
             fitted = model.fit(
                 draws=self._nsamples,
+                cores=self._core_num(),
                 tune=tune,
                 chains=chains,
                 random_seed=random_seed,
@@ -127,6 +129,7 @@ class Bayesian(Elementary):
             _ = pm.Normal('y', mu=mu, sigma=stdev, observed=log_N_shift)
 
             trace_TN = pm.sample(self._nsamples,
+                                 cores=self._core_num(),
                                  target_accept=0.99,
                                  random_seed=random_seed,
                                  chains=chains,
@@ -149,7 +152,7 @@ class Bayesian(Elementary):
             pm.Potential('likelihood', loglike(var))
 
             trace_SD_TS = pm.sample(self._nsamples,
-                                    cores=1,
+                                    cores=self._core_num(),
                                     chains=chains,
                                     random_seed=random_seed,
                                     discard_tuned_samples=True,
@@ -157,3 +160,6 @@ class Bayesian(Elementary):
                                     **kw)
 
         return trace_SD_TS.posterior
+
+    def _core_num(self):
+        return 1 if sys.platform.startswith('win') else None
