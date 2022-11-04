@@ -27,34 +27,36 @@ import unittest.mock as mock
 from .data import *
 
 try:
-    import aesara
     import pymc
-    HAVE_PYMC_AND_AESARA = True
+    import bambi
+    HAVE_PYMC_AND_BAMBI = True
 except ModuleNotFoundError:
-    HAVE_PYMC_AND_AESARA = False
+    HAVE_PYMC_AND_BAMBI = False
 
 from pylife.materialdata import woehler
 
 
-@pytest.mark.skipif(not HAVE_PYMC_AND_AESARA, reason="Don't have pymc")
+@pytest.mark.skipif(not HAVE_PYMC_AND_BAMBI, reason="Don't have pymc")
 @mock.patch('pylife.materialdata.woehler.bayesian.pm')
-def test_bayesian_slope_trace(pm):
+@mock.patch('pylife.materialdata.woehler.bayesian.bambi.Model')
+def test_bayesian_slope_trace(bambi_model, pm):
+    bambi_model_object = mock.MagicMock()
+    bambi_model.return_value = bambi_model_object
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     bayes = woehler.Bayesian(fd)
     bayes._nsamples = 1000
     bayes._slope_trace()
 
-    formula, data_dict = pm.glm.GLM.from_formula.call_args[0]
+    formula, data_dict = bambi_model.call_args[0]
     assert formula == 'y ~ x'
-    pd.testing.assert_series_equal(data_dict['x'], np.log10(fd.fractures.load))
+    np.testing.assert_array_equal(data_dict['x'], np.log10(fd.fractures.load))
     np.testing.assert_array_equal(data_dict['y'], np.log10(fd.fractures.cycles.to_numpy()))
-    family = pm.glm.GLM.from_formula.call_args[1]['family']  # Consider switch to kwargs property when py3.7 is dropped
-    assert family is pm.glm.families.StudentT()
+    assert bambi_model.call_args[1]['family'] == 't'  # Consider switch to kwargs property when py3.7 is dropped
 
-    pm.sample.assert_called_with(1000, target_accept=0.99, random_seed=None, chains=2, tune=1000)
+    bambi_model_object.fit.assert_called_with(draws=1000, tune=1000, chains=2, random_seed=None)
 
 
-@pytest.mark.skipif(not HAVE_PYMC_AND_AESARA, reason="Don't have pymc")
+@pytest.mark.skipif(not HAVE_PYMC_AND_BAMBI, reason="Don't have pymc")
 @mock.patch('pylife.materialdata.woehler.bayesian.pm')
 def test_bayesian_TN_trace(pm):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
@@ -82,12 +84,12 @@ def test_bayesian_TN_trace(pm):
     pm.sample.assert_called_with(1000, target_accept=0.99, random_seed=None, chains=3, tune=1000)
 
 
-@pytest.mark.skipif(not HAVE_PYMC_AND_AESARA, reason="Don't have pymc")
-@mock.patch('pylife.materialdata.woehler.bayesian.tt')
+@pytest.mark.skipif(not HAVE_PYMC_AND_BAMBI, reason="Don't have pymc")
+@mock.patch('pylife.materialdata.woehler.bayesian.at')
 @mock.patch('pylife.materialdata.woehler.bayesian.pm')
-def test_bayesian_SD_TS_trace_mock(pm, tt):
+def test_bayesian_SD_TS_trace_mock(pm, at):
     def check_likelihood(l, var):
-        assert var == tt.as_tensor_variable.return_value
+        assert var == at.as_tensor_variable.return_value
         assert isinstance(l.likelihood, woehler.likelihood.Likelihood)
         np.testing.assert_array_equal(l.likelihood._fd, fd)
         return 'foovar'
@@ -105,10 +107,10 @@ def test_bayesian_SD_TS_trace_mock(pm, tt):
 
     pm.Normal.assert_called_once_with('SD', mu=inf_load_mean, sigma=inf_load_std * 5)
     pm.Lognormal.assert_called_once()
-    np.testing.assert_approx_equal(pm.Lognormal.call_args_list[0][1]['mu'], np.log10(1. / 1.1))
-    np.testing.assert_approx_equal(pm.Lognormal.call_args_list[0][1]['sigma'], np.log10(0.5))
+    np.testing.assert_approx_equal(pm.Lognormal.call_args_list[0][1]['mu'], np.log10(1.1))
+    np.testing.assert_approx_equal(pm.Lognormal.call_args_list[0][1]['sigma'], 0.3)
 
-    tt.as_tensor_variable.assert_called_once_with([pm.Normal.return_value, pm.Lognormal.return_value])
+    at.as_tensor_variable.assert_called_once_with([pm.Normal.return_value, pm.Lognormal.return_value])
 
     pm.Potential.assert_called_once_with('likelihood', 'foovar')
 
@@ -119,11 +121,12 @@ def test_bayesian_SD_TS_trace_mock(pm, tt):
                                  tune=1000)
 
 
-@pytest.mark.skipif(not HAVE_PYMC_AND_AESARA, reason="Don't have pymc")
+@pytest.mark.skipif(not HAVE_PYMC_AND_BAMBI, reason="Don't have pymc")
 @mock.patch('pylife.materialdata.woehler.bayesian.Bayesian._SD_TS_trace')
 @mock.patch('pylife.materialdata.woehler.bayesian.Bayesian._TN_trace')
 @mock.patch('pylife.materialdata.woehler.bayesian.Bayesian._slope_trace')
 def test_bayesian_mock(_slope_trace, _TN_trace, _SD_TS_trace):
+    import xarray as xr
     expected = pd.Series({
         'SD': 100.,
         'TS': 1.12,
@@ -133,19 +136,23 @@ def test_bayesian_mock(_slope_trace, _TN_trace, _SD_TS_trace):
         'failure_probability': 0.5
     }).sort_index()
 
-    expected_slope_trace = {
-        'x': np.array([0.0, -8.0, -6.0]),
-        'Intercept': np.array([0.0, 19., 21.])
-    }
+    expected_slope_trace = xr.Dataset({
+        'x': ([0, 1], np.array([[0.0, -8.0, -6.0], [0.0, -8.0, -6.0]])),
+        'Intercept': ([0, 1], np.array([[0.0, 19., 21.], [0.0, 19., 21.]]))
+    })
 
-    expected_SD_TS_trace = {
-        'SD': np.array([0.0, 150., 50]),
-        'TS': np.array([0.0, 1.22, 1.02])
-    }
+    expected_SD_TS_trace = xr.Dataset({
+        'SD': ([0, 1], np.array([[0.0, 150., 50], [0.0, 150., 50]])),
+        'TS': ([0, 1], np.array([[0.0, 1.22, 1.02], [0.0, 1.22, 1.02]]))
+    })
 
-    _slope_trace.__call__().get_values.side_effect = lambda key: expected_slope_trace[key]
-    _TN_trace.__call__().get_values.return_value = np.array([0.0, 5.4, 5.2])
-    _SD_TS_trace.__call__().get_values.side_effect = lambda key: expected_SD_TS_trace[key]
+    expected_TN_trace = xr.Dataset({
+        'mu': ([0, 1], np.array([[0.0, 5.4, 5.2], [0.0, 5.4, 5.2]]))
+    })
+
+    _slope_trace.return_value = expected_slope_trace
+    _TN_trace.return_value = expected_TN_trace
+    _SD_TS_trace.return_value = expected_SD_TS_trace
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     wc = woehler.Bayesian(fd).analyze(nsamples=10).sort_index()
@@ -153,8 +160,8 @@ def test_bayesian_mock(_slope_trace, _TN_trace, _SD_TS_trace):
     pd.testing.assert_series_equal(wc, expected)
 
 
-@pytest.mark.skipif(not HAVE_PYMC_AND_AESARA, reason="Don't have pymc")
 @pytest.mark.slow_acceptance
+@pytest.mark.skipif(not HAVE_PYMC_AND_BAMBI, reason="Don't have pymc")
 def test_bayesian_full():
     expected = pd.Series({
         'SD': 340.,
