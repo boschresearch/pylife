@@ -160,8 +160,8 @@ def test_bayesian_mock(_slope_trace, _TN_trace, _SD_TS_trace):
     pd.testing.assert_series_equal(wc, expected)
 
 
-@pytest.mark.slow_acceptance
 @pytest.mark.skipif(not HAVE_PYMC_AND_BAMBI, reason="Don't have pymc")
+#@pytest.mark.slow_acceptance
 def test_bayesian_full():
     expected = pd.Series({
         'SD': 340.,
