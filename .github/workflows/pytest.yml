@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       MPLBACKEND: svg
-      THEANO_FLAGS: cxx=""    
+      AESARA_FLAGS: cxx="",exception_verbosity=high    
     strategy:
       fail-fast: false
       matrix:
