@@ -27,12 +27,12 @@ to university teachers to use it for education purposes.
 
 ## Status
 
-pyLife-2.0.0 has been released.  That means that for the time being we hope
+pyLife-2.0.1 has been released.  That means that for the time being we hope
 that we will not introduce *breaking* changes.  That does not mean that the
 release is stable finished and perfect.  We will do small improvements,
 especially with respect to documentation in the upcoming months and release
-them frequently as 2.0.x releases.  Once we have noticeable feature additions
-we will come up with a 2.x.0 release.  No ETA about that.
+them as 2.0.x releases.  Once we have noticeable feature additions we will come
+up with a 2.x.0 release.  No ETA about that.
 
 ## Contents
 

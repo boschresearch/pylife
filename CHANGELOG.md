@@ -6,12 +6,17 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 ## pylife-2.0.1
 
+A minor release, mostly dependency related updates and documentation
+improvements.
+
+
 ### New features
 
 * The `LoadCollective` accessor class honors the `cycles` column in the give
   `DataFrame`.  This is useful for manually created load collectives.
 
 * Support for python 3.10
+
 
 ### Bug fixes
 
@@ -22,6 +27,8 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 
 ### Other changes
+
+* Documentation improved
 
 * Switch from pymc3 to pymc version 4 for Bayesian Wöhler analysis. The
   extension is not installable via pip as the current bambi release pulls a
