@@ -23,6 +23,9 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 ### Other changes
 
-* Switch from pymc3 to pymc version 4 for Bayesian Wöhler analysis
+* Switch from pymc3 to pymc version 4 for Bayesian Wöhler analysis. The
+  extension is not installable via pip as the current bambi release pulls a
+  numpy version that is incompatible with our demandas. If you need it, please
+  install bambi manually from their current git repo and then pymc via pip.
 
 * Lift numpy version restrictions
