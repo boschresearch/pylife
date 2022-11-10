@@ -5,7 +5,7 @@ pyLife Cookbook
    :maxdepth: 1
    :caption: Life time and reliability
 
-   demos/lifetime_calc.nblink
+   demos/99-lifetime_calc.nblink
 
 .. toctree::
    :maxdepth: 1
@@ -25,7 +25,7 @@ pyLife Cookbook
 
    demos/hotspot_plate.nblink
    demos/stress_gradient.nblink
-   demos/99-local_stress_with_FE.nblink
+   demos/local_stress_with_FE.nblink
 
 .. toctree::
    :maxdepth: 1

@@ -47,6 +47,7 @@ pyLife Documentation
    :caption: News
 
    NEWS-2.0
+   CHANGELOG
 
 .. toctree::
    :maxdepth: 1

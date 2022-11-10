@@ -54,8 +54,8 @@ class FourPointDetector(AbstractDetector):
     contained within A and B, then a cycle is counted from B to C; otherwise no cycle is
     counted.
 
-    i.e, If X ≥ Y AND Z ≥ Y then a cycle exist FROM = B and TO = C
-    where, ranges X = |D–C|, Y = |C–B|, and Z = |B–A|
+    i.e, If ``X ≥ Y AND Z ≥ Y`` then a cycle exist ``FROM = B`` and ``TO = C``
+    where, ranges ``X = |D–C|``, ``Y = |C–B|``, and ``Z = |B–A|``
 
     ::
 

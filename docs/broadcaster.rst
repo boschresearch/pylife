@@ -103,7 +103,7 @@ allowable cycles are calculated:
 As is very uncommon that the load is constant all over the component like in
 the previous example we now consider an even more complex one.  Let's say we
 have a different load scenarios, which give us for every `element_id` multiple
-load `scenario`s:
+load scenarios:
 
 .. jupyter-execute::
 

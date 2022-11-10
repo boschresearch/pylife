@@ -5,3 +5,4 @@ The ``PlainMesh`` class
 	:undoc-members:
 	:members:
 	:inherited-members:
+        :noindex:

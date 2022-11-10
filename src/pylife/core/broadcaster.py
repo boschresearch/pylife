@@ -30,6 +30,7 @@ class Broadcaster:
     pandas_obj : :class:`pandas.Series` or :class:`pandas.DataFrame`
        the object of the ``Broadcaster``
 
+
     In most cases the ``Broadcaster`` class is not used directly.  The
     functionality is in most cases used by the derived class
     :class:`~pylife.PylifeSignal`.
@@ -42,7 +43,6 @@ class Broadcaster:
     See method :meth:`~pylife.Broadcaster.broadcast` documentation for details.
 
     The broadcasting is done in the following ways:
-
 
     ::
 
@@ -97,6 +97,7 @@ class Broadcaster:
                                                       |      | chi  | 2.0 |   |      | chi  | 6.0 |
                                                       |------|------|-----|   |------|------|-----|
 
+
     """
 
     def __init__(self, pandas_obj):
@@ -111,12 +112,10 @@ class Broadcaster:
         parameters : scalar, numpy array or pandas object
             The parameter to broadcast to
 
+
         Returns
         -------
         parameter, object : index aligned numerical objects
-
-
-        The
 
 
         Examples
