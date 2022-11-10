@@ -5,7 +5,7 @@ pyLife Cookbook
    :maxdepth: 1
    :caption: Life time and reliability
 
-   demos/99-lifetime_calc.nblink
+   demos/lifetime_calc.nblink
 
 .. toctree::
    :maxdepth: 1
@@ -32,4 +32,4 @@ pyLife Cookbook
    :caption: Tools
 
    demos/psd_optimizer.nblink
-   demos/01-time_series_handling.nblink
+   demos/time_series_handling.nblink

@@ -29,8 +29,23 @@ if 'DISPLAY' not in os.environ and not sys.platform.startswith('win'):
     vdisplay.start()
 
 ipython_dir = os.path.join(__projectdir__, "_build", "ipythondir")
-ProfileDir.create_profile_dir(ipython_dir)
 os.environ['IPYTHONDIR'] = ipython_dir
+
+preexecuted_notebooks = ['demos/time_series_handling.ipynb']
+
+import nbformat
+from nbconvert.preprocessors import ExecutePreprocessor
+
+if not os.path.isdir(ipython_dir):
+    ProfileDir.create_profile_dir(ipython_dir)
+
+    for fn in map(lambda fn: os.path.join(__projectdir__, fn), preexecuted_notebooks):
+        with open(fn) as f:
+            nb = nbformat.read(f, as_version=4)
+
+        ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
+        ep.preprocess(nb, {'metadata': {'path': os.path.dirname(fn)}})
+
 
 # Don't try to use C-code for the aesara stuff when building the docs.
 # Otherwise the demo notebooks fail on readthedocs
@@ -43,6 +58,7 @@ import asyncio
 # https://github.com/jupyter/nbconvert/issues/1372
 if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 
 # -- Run sphinx-apidoc -------------------------------------------------------
 # This hack is necessary since RTD does not issue `sphinx-apidoc` before running
@@ -113,7 +129,7 @@ todo_include_todos = True
 templates_path = ["_templates"]
 
 # The suffix of source filenames.
-source_suffix = [".rst", ".md", ".txt"]
+source_suffix = [".rst", ".md", ".txt", ".ipynb"]
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
