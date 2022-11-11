@@ -1,0 +1,18 @@
+name: pylife
+dependencies:
+  - python=3.10
+  - xlrd
+  - tables
+  - jupyter
+  - plotly
+  - matplotlib
+  - pyvista
+  - ipykernel
+  - pyvista
+  - itkwidgets
+  - panel
+  - ipyvtklink
+  - xvfbwrapper
+  - pip
+  - pip:
+      pylife
