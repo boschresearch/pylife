@@ -1,7 +1,8 @@
-pylife
+pylife[all]
 xlrd
 tables
 jupyter
+plotly
 matplotlib
 pyvista
 ipykernel
