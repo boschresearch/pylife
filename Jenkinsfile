@@ -1,14 +1,24 @@
 import hudson.tasks.junit.TestResultSummary
 
+// SonarQube related variable - FEEL FREE TO MODIFY
+BASE_BRANCH_NAME = "develop"
+
+// SonarQube related variables
+SONAR_PROPERTY_FILE = "sonar-project.properties"
+CURRENT_BRANCH_NAME = env.BRANCH_NAME
+PR_KEY = env.CHANGE_ID
+SONARQUBE_SERVER_ID = "SonarqubeMSO"
+
+@Library('create-jenkins-library') _
 pipeline {
     // Which Build Node?
     agent any
     // Discard the old builds and artifacts
     options {
       buildDiscarder logRotator(
-          artifactDaysToKeepStr: '30', 
-          artifactNumToKeepStr: '1', 
-          daysToKeepStr: '30', 
+          artifactDaysToKeepStr: '30',
+          artifactNumToKeepStr: '1',
+          daysToKeepStr: '30',
           numToKeepStr: '10'
         )
     }
@@ -26,7 +36,7 @@ pipeline {
                 // Running unit tests
                 bat 'batch_scripts/run_pylife_tests.bat'
             }
-        }      
+        }
         // Static code analysis with Flake8
         stage('Flake8') {
             steps {
@@ -47,7 +57,7 @@ pipeline {
             steps {
                 // JUnit Test results
                 junit 'junit.xml'
-                
+
                 //Publish
                 publishHTML target: [
                     allowMissing: false,
@@ -56,10 +66,10 @@ pipeline {
                     reportDir: 'coverage_report',
                     reportFiles: 'index.html',
                     reportName: 'Test coverage'
-                ] 
+                ]
             }
         }
-        stage ('Publish coverage report') {    
+        stage ('Publish coverage report') {
             steps{
                 script {
                     cobertura(
@@ -77,7 +87,7 @@ pipeline {
                         classCoverageTargets: '75, 75, 75',
                         methodCoverageTargets: '75, 75, 75',
                         fileCoverageTargets: '75, 75, 75',
-                    ) 
+                    )
                 }
             }
         }
@@ -87,12 +97,23 @@ pipeline {
                     allowMissing: false,
                     alwaysLinkToLastBuild: false,
                     keepAll: true,
-                    reportDir: 'doc/build/html',
+                    reportDir: 'docs/_build/',
                     reportFiles: 'index.html',
                     reportName: 'Documentation'
-                ]   
+                ]
             }
         }
+		stage ('SonarQube analysis') {
+			steps {
+				sonarScanner (
+					sonarqubeServerID: SONARQUBE_SERVER_ID, 
+					currentBranchName: CURRENT_BRANCH_NAME,
+					sonarBaseBranchName: BASE_BRANCH_NAME,
+					prKey: PR_KEY,
+					workSpacePath: env.WORKSPACE
+				)
+			}
+		}
     }
     // Post-build actions
     post {
@@ -103,11 +124,10 @@ pipeline {
                 mimeType: 'text/html',
                 subject: "[Jenkins] ${currentBuild.result}: '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
                 recipientProviders: [
-                    [$class: 'CulpritsRecipientProvider'], 
-                    [$class: 'DevelopersRecipientProvider'], 
+                    [$class: 'CulpritsRecipientProvider'],
                     [$class: 'RequesterRecipientProvider']
                 ]
             }
         }
-    }    
+    }
 }

@@ -1,0 +1,4 @@
+{
+    "path": "../../demos/hotspot_plate.ipynb",
+    "extra-media": ["../../demos/plate_with_hole.vmap"]
+}

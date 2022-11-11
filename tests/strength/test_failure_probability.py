@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 
 import numpy as np
 import numpy.random as rnd
@@ -23,15 +24,18 @@ import pylife.strength.failure_probability as FP
 
 import numpy.testing as testing
 
+
 def test_simple_load():
     pf = FP.FailureProbability(100., 5.)
     r = pf.pf_simple_load(100.)
     assert r == 0.5
 
+
 def test_norm_load():
     pf = FP.FailureProbability(100., 5.)
     r = pf.pf_norm_load(100., 1e-32)
     testing.assert_almost_equal(r, 0.5)
+
 
 def test_arbitrary_load():
     strength_median = 100.
@@ -52,3 +56,9 @@ def test_arbitrary_load():
     r = pf.pf_arbitrary_load(load, pdf)
 
     testing.assert_almost_equal(r, expected, decimal=3)
+
+
+def test_arbitrary_load_incompatible_dimensions():
+    pf = FP.FailureProbability(1.0, 0.1)
+    with pytest.raises(ValueError, match=r'Load values and pdf must have same dimensions.'):
+        pf.pf_arbitrary_load(np.array([1, 2, 3]), np.array([0.1, 0.2]))

@@ -6,7 +6,7 @@ import pytest
 
 import pylife.vmap as vmap
 
-import reference_data as RD
+from . import reference_data as RD
 
 
 @pytest.fixture
@@ -24,14 +24,19 @@ def rotsym_quad():
     return vmap.VMAPImport('tests/vmap/testfiles/rotsym_quad_lin.vmap')
 
 
+@pytest.fixture
+def beam_2d_squ_lin_and_quad():
+    return vmap.VMAPImport('tests/vmap/testfiles/beam_2d_squ_lin_and_quad.vmap')
+
+
 def assert_list_equal(l1, l2):
     assert len(l1) == len(l2)
     for e in l1:
         assert e in l2
 
 
-def test_get_geometries(beam_2d_squ):
-    assert_list_equal(beam_2d_squ.geometries(), ['1'])
+def test_get_geometries(beam_2d_squ_lin_and_quad):
+    assert_list_equal(beam_2d_squ_lin_and_quad.geometries(), ['1', '2'])
 
 
 def test_get_states(beam_2d_squ):
@@ -41,10 +46,23 @@ def test_get_states(beam_2d_squ):
 def test_get_nodes_2d(beam_2d_squ):
     pd.testing.assert_frame_equal(beam_2d_squ.nodes('1'), RD.beam_2d_squ_nodes)
 
+
 def test_make_mesh_no_set(beam_2d_squ):
     df = beam_2d_squ.make_mesh('1').to_frame()
     assert df.shape[1] == 0
     pd.testing.assert_index_equal(df.index, RD.beam_2d_squ_mesh_coords.index)
+
+
+def test_make_mesh_unknown_geometry_one_geometry(beam_2d_squ):
+    with pytest.raises(KeyError, match=re.escape("Geometry 'foo' not found. "
+                                                   "Available geometries: ['1'].")):
+        beam_2d_squ.make_mesh('foo')
+
+
+def test_make_mesh_unknown_geometry_two_geometries(beam_2d_squ_lin_and_quad):
+    with pytest.raises(KeyError, match=re.escape("Geometry 'foo' not found. "
+                                                   "Available geometries: ['1', '2'].")):
+        beam_2d_squ_lin_and_quad.make_mesh('foo')
 
 
 def test_get_make_mesh_beam_2d_sq_node_set_load(beam_2d_squ):
@@ -133,12 +151,47 @@ def test_join_variable_no_mesh(beam_2d_squ):
         beam_2d_squ.join_variable('STATE-1', 'STRESS_CAUCHY')
 
 
+def test_available_variables(beam_2d_squ_lin_and_quad):
+    np.testing.assert_array_equal(beam_2d_squ_lin_and_quad.variables('1', 'STATE-1'),
+                                  ['FORCE_CONCENTRATED', 'E', 'FORCE_REACTION', 'STRESS_CAUCHY', 'DISPLACEMENT'])
+    np.testing.assert_array_equal(beam_2d_squ_lin_and_quad.variables('1', 'STATE-2'),
+                                  ['FORCE_CONCENTRATED', 'E', 'STRESS_CAUCHY', 'DISPLACEMENT'])
+    np.testing.assert_array_equal(beam_2d_squ_lin_and_quad.variables('2', 'STATE-1'),
+                                  ['E', 'FORCE_REACTION', 'STRESS_CAUCHY', 'DISPLACEMENT'])
+
+
+def test_available_variables_unknown_geometry(beam_2d_squ_lin_and_quad):
+    with pytest.raises(KeyError, match=re.escape("Geometry")):
+        beam_2d_squ_lin_and_quad.variables('foo', 'STATE-1')
+
+
+def test_available_variables_unknown_state(beam_2d_squ_lin_and_quad):
+    with pytest.raises(KeyError, match=re.escape("State")):
+        beam_2d_squ_lin_and_quad.variables('1', 'state-foo')
+
+
+def test_available_variables_unknown_geometry_in_state(beam_2d_squ_lin_and_quad):
+    with pytest.raises(KeyError, match=re.escape("Geometry '2' not available in state 'STATE-2'.")):
+        beam_2d_squ_lin_and_quad.variables('2', 'STATE-2')
+
+
 def test_join_node_variable_displacement(beam_2d_squ):
     var_frame = beam_2d_squ.make_mesh('1').join_variable('DISPLACEMENT', 'STATE-2').to_frame()
     groups = var_frame.groupby('node_id')
     pd.testing.assert_frame_equal(groups.mean(), RD.beam_2d_squ_node_displacement)
     pd.testing.assert_frame_equal(groups.min(), RD.beam_2d_squ_node_displacement)
     pd.testing.assert_frame_equal(groups.max(), RD.beam_2d_squ_node_displacement)
+
+
+def test_join_variable_unknown_state(beam_2d_squ):
+    with pytest.raises(KeyError, match=re.escape("State 'foo' not found. "
+                                                 "Available states: ['STATE-1', 'STATE-2'].")):
+        beam_2d_squ.make_mesh('1').join_variable('DISPLACEMENT', 'foo')
+
+
+def test_join_variable_unknown_variable(beam_2d_squ):
+    with pytest.raises(KeyError, match=re.escape("Variable 'foo' not found in geometry '1', 'STATE-1'.")):
+        beam_2d_squ.make_mesh('1').join_variable('foo', 'STATE-1', column_names=['foo'])
 
 
 def test_join_element_variable_evol_no_column_name(beam_3d_hex):

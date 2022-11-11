@@ -12,15 +12,27 @@ lifetime assessment of mechanical components subject to fatigue load.
 
 ## Purpose of the project
 
-This library was originally compiled at Bosch Research to collect algorithms
-needed by different in house software projects, that deal with lifetime
-prediction and material fatigue on a component level. In order to further
-extent and scrutinize it we decided to release it as Open Source.
+This library was originally compiled at [Bosch
+Research](https://www.bosch.com/research/) to collect algorithms needed by
+different in house software projects, that deal with lifetime prediction and
+material fatigue on a component level. In order to further extent and
+scrutinize it we decided to release it as Open Source.  Read [this
+article](https://www.bosch.com/stories/bringing-open-source-to-mechanical-engineering/)
+about pyLife's origin.
 
 So we are welcoming collaboration not only from science and education but also
 from other commercial companies dealing with the topic. We commend this library
 to university teachers to use it for education purposes.
 
+
+## Status
+
+pyLife-2.0.1 has been released.  That means that for the time being we hope
+that we will not introduce *breaking* changes.  That does not mean that the
+release is stable finished and perfect.  We will do small improvements,
+especially with respect to documentation in the upcoming months and release
+them as 2.0.x releases.  Once we have noticeable feature additions we will come
+up with a 2.x.0 release.  No ETA about that.
 
 ## Contents
 
@@ -44,14 +56,11 @@ There are/will be the following subpackages:
 * `materialdata` analysis of material testing data
     * Wöhler (SN-curve) data analysis
 
+* `materiallaws` modeling material behavior
+    * Ramberg Osgood
+    * Wöhler curves
 
-## Disclaimer
-
-*pyLife is in continuous development.* We hope to keep the interfaces more or
-less stable. However depending on the practical use of pyLife in the future
-interface changes might occur. If that happens, we probably won't be able to
-put too much effort into backwards compatibility. So be prepared to react to
-deprecations.
+* `vmap` a interface to [VMAP](https://www.vmap.eu.com/)
 
 
 ## License

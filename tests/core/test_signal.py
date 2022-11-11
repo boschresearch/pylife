@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,37 +14,89 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__author__ = "Johannes Mueller"
+__maintainer__ = __author__
+
 import pytest
+import numpy as np
 import pandas as pd
 
-import pylife.core.signal as signal
-from pylife.core.data_validator import DataValidator
+from pylife.core import *
 
-foo_bar_baz = pd.DataFrame({'foo': [1.0], 'bar': [1.0], 'baz': [1.0]})
-val = DataValidator()
+foo_bar_baz = pd.DataFrame({'foo': [1.0, 1.0], 'bar': [1.0, 1.0], 'baz': [1.0, 1.0]})
 
+def test_keys_dataframe():
+    pd.testing.assert_index_equal(foo_bar_baz.test_accessor_none.keys(), pd.Index(['foo', 'bar', 'baz']))
+
+
+def test_keys_series():
+    pd.testing.assert_index_equal(foo_bar_baz.iloc[0].test_accessor_none.keys(), pd.Index(['foo', 'bar', 'baz']))
 
 def test_missing_keys_none():
-    assert val.get_missing_keys(foo_bar_baz, ['foo', 'bar']) == []
+    assert foo_bar_baz.test_accessor_none.get_missing_keys(['foo', 'bar']) == []
 
 
 def test_missing_keys_one():
-    assert val.get_missing_keys(foo_bar_baz, ['foo', 'foobar']) == ['foobar']
+    assert foo_bar_baz.test_accessor_none.get_missing_keys(['foo', 'foobar']) == ['foobar']
 
 
 def test_missing_keys_two():
-    assert set(val.get_missing_keys(foo_bar_baz, ['foo', 'foobar', 'barfoo'])) == set(['foobar', 'barfoo'])
+    assert set(foo_bar_baz.test_accessor_none.get_missing_keys(['foo', 'foobar', 'barfoo'])) == set(['foobar', 'barfoo'])
 
 
+def test_from_parameters_frame():
+    foo = [1.0, 2.0, 3.0]
+    bar = [10.0, 20.0, 30.0]
+    baz = [11.0, 12.0, 13.0]
+    accessor = AccessorNone.from_parameters(foo=foo, bar=bar, baz=baz)
+    pd.testing.assert_index_equal(accessor.keys(), pd.Index(['foo', 'bar', 'baz']))
+    expected_obj = pd.DataFrame({'foo': foo, 'bar': bar, 'baz': baz})
+    pd.testing.assert_frame_equal(accessor._obj, expected_obj)
+    assert accessor.some_property == 42
+
+
+def test_from_parameters_series_columns():
+    foo = 1.0
+    bar = 10.0
+    baz = 11.0
+    accessor = AccessorNone.from_parameters(foo=foo, bar=bar, baz=baz)
+    pd.testing.assert_index_equal(accessor.keys(), pd.Index(['foo', 'bar', 'baz']))
+    expected_obj = pd.Series({'foo': foo, 'bar': bar, 'baz': baz})
+    pd.testing.assert_series_equal(accessor._obj, expected_obj)
+    assert accessor.some_property == 42
+
+
+def test_from_parameters_series_index():
+    foo = [1.0, 2.0, 3.0]
+    accessor = AccessorOneDim.from_parameters(foo=foo)
+    pd.testing.assert_index_equal(accessor.keys(), pd.Index(['foo']))
+    expected_obj = pd.Series({'foo': foo})
+    pd.testing.assert_series_equal(accessor._obj, expected_obj)
+    assert accessor.some_property == 42
+
+
+def test_from_parameters_missing_keys():
+    foo = 1.0
+    baz = 10.0
+    with pytest.raises(AttributeError, match=r'^AccessorNone.*bar'):
+        AccessorNone.from_parameters(foo=foo, baz=baz)
+
+
+@pd.api.extensions.register_series_accessor('test_accessor_one_dim')
+class AccessorOneDim(PylifeSignal):
+    def _validate(self):
+        if not isinstance(self._obj, pd.Series):
+            raise TypeError("This accessor takes only pd.Series")
+
+    @property
+    def some_property(self):
+        return 42
+
+@pd.api.extensions.register_series_accessor('test_accessor_none')
 @pd.api.extensions.register_dataframe_accessor('test_accessor_none')
-class AccessorNone(signal.PylifeSignal):
-    def __init__(self, pandas_obj):
-        self._validator = DataValidator()
-        self._validate(pandas_obj, self._validator)
-        self._obj = pandas_obj
-
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['foo', 'bar'])
+class AccessorNone(PylifeSignal):
+    def _validate(self):
+        self.fail_if_key_missing(['foo', 'bar'])
 
     def already_here(self):
         return 23
@@ -58,35 +110,39 @@ class AccessorNone(signal.PylifeSignal):
         self._missing_attribute
 
 
+@pd.api.extensions.register_series_accessor('test_accessor_one')
 @pd.api.extensions.register_dataframe_accessor('test_accessor_one')
-class AccessorOne:
-    def __init__(self, pandas_obj):
-        self._validator = DataValidator()
-        self._validate(pandas_obj, self._validator)
-        self._obj = pandas_obj
-
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['foo', 'foobar'])
+class AccessorOne(PylifeSignal):
+    def _validate(self):
+        self.fail_if_key_missing(['foo', 'foobar'])
 
 
 @pd.api.extensions.register_dataframe_accessor('test_accessor_two')
-class AccessorTwo:
-    def __init__(self, pandas_obj):
-        self._validator = DataValidator()
-        self._validate(pandas_obj, self._validator)
-        self._obj = pandas_obj
+class AccessorTwo(PylifeSignal):
+    def _validate(self):
+        self.fail_if_key_missing(['foo', 'foobar', 'barfoo'])
 
-    def _validate(self, obj, validator):
-        validator.fail_if_key_missing(obj, ['foo', 'foobar', 'barfoo'])
+
+def test_signal_broadcast_inheritance_series():
+    assert isinstance(foo_bar_baz.loc[0].test_accessor_none, Broadcaster)
+
+
+def test_signal_broadcast_inheritance_frame():
+    assert isinstance(foo_bar_baz.test_accessor_none, Broadcaster)
 
 
 def test_fail_if_missing_keys_none():
     foo_bar_baz.test_accessor_none
 
 
-def test_fail_if_missing_keys_one():
+def test_fail_if_missing_keys_one_dataframe():
     with pytest.raises(AttributeError, match=r'^AccessorOne.*foobar'):
         foo_bar_baz.test_accessor_one
+
+
+def test_fail_if_missing_keys_one_series():
+    with pytest.raises(AttributeError, match=r'^AccessorOne.*foobar'):
+        foo_bar_baz.loc[0].test_accessor_one
 
 
 def test_fail_if_missing_keys_two():
@@ -95,12 +151,12 @@ def test_fail_if_missing_keys_two():
 
 
 def test_register_method():
-    @signal.register_method(AccessorNone, 'foo_method')
+    @register_method(AccessorNone, 'foo_method')
     def foo(df):
         return pd.DataFrame({'baz': df['foo'] + df['bar']})
 
     accessor = foo_bar_baz.test_accessor_none
-    pd.testing.assert_frame_equal(accessor.foo_method(), pd.DataFrame({'baz': [2.0]}))
+    pd.testing.assert_frame_equal(accessor.foo_method(), pd.DataFrame({'baz': [2.0, 2.0]}))
 
 
 def test_getattr_no_method():
@@ -110,7 +166,7 @@ def test_getattr_no_method():
 
 
 def test_register_method_missing_attribute():
-    @signal.register_method(AccessorNone, 'another_method')
+    @register_method(AccessorNone, 'another_method')
     def foo(df):
         return pd.DataFrame({'baz': df['foo'] + df['bar']})
 
@@ -121,17 +177,26 @@ def test_register_method_missing_attribute():
 
 def test_register_method_fail_duplicate():
     with pytest.raises(ValueError, match=r'^Method \'bar_method\' already registered in AccessorNone'):
-        @signal.register_method(AccessorNone, 'bar_method')
+        @register_method(AccessorNone, 'bar_method')
         def bar1(df):
             return pd.DataFrame({'baz': df['foo'] + df['bar']})
 
-        @signal.register_method(AccessorNone, 'bar_method')
+        @register_method(AccessorNone, 'bar_method')
         def bar2(df):
             return pd.DataFrame({'baz': df['foo'] - df['bar']})
 
 
 def test_register_method_fail_already():
     with pytest.raises(ValueError, match=r'^AccessorNone already has an attribute \'already_here\''):
-        @signal.register_method(AccessorNone, 'already_here')
+        @register_method(AccessorNone, 'already_here')
         def already_here_method(df):
             return pd.DataFrame({'baz': df['foo'] + df['bar']})
+
+
+def test_pandas_series():
+    series = foo_bar_baz.iloc[0]
+    pd.testing.assert_series_equal(series.test_accessor_none.to_pandas(), series)
+
+
+def test_pandas_frame():
+    pd.testing.assert_frame_equal(foo_bar_baz.test_accessor_none.to_pandas(), foo_bar_baz)

@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -20,10 +20,6 @@ import numpy as np
 
 
 def test_grad_constant():
-    """
-    Test of gradient computation using least square method
-    """
-    # Setup
     fkt = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
                        'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
@@ -32,22 +28,18 @@ def test_grad_constant():
                        'z': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                        'fct': fkt}).set_index(['node_id', 'element_id'])
 
-    gradient_dx = np.zeros(9)
-    gradient_dy = np.zeros(9)
+    expected = pd.DataFrame({
+        'dfct_dx': np.zeros(9),
+        'dfct_dy': np.zeros(9),
+        'dfct_dz': np.zeros(9)
+    }, index=pd.RangeIndex(1, 10, name='node_id'))
 
-    # Exercise
     grad = df.gradient.gradient_of('fct')
 
-    # Verify
-    np.testing.assert_array_almost_equal(grad['dx'], gradient_dx, decimal=1)
-    np.testing.assert_array_almost_equal(grad['dy'], gradient_dy, decimal=1)
+    pd.testing.assert_frame_equal(grad, expected)
 
 
 def test_grad_dx():
-    """
-    Test of gradient computation using least square method
-    """
-    # Setup
     fkt = [1, 4, 4, 7, 1, 1, 4, 4, 4, 4, 7, 7, 1, 4, 4, 7]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
                        'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
@@ -56,20 +48,19 @@ def test_grad_dx():
                        'z': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                        'fct': fkt})
     df = df.set_index(['node_id', 'element_id'])
-    gradient_dx = np.ones(9)*3
 
-    # Exercise
+    expected = pd.DataFrame({
+        'dfct_dx': np.full(9, 3.0),
+        'dfct_dy': np.zeros(9),
+        'dfct_dz': np.zeros(9)
+    }, index=pd.RangeIndex(1, 10, name='node_id'))
+
     grad = df.gradient.gradient_of('fct')
 
-    # Verify
-    np.testing.assert_array_almost_equal(grad['dx'], gradient_dx, decimal=1)
+    pd.testing.assert_frame_equal(grad, expected)
 
 
 def test_grad_dx_shuffle():
-    """
-    Test of gradient computation using least square method
-    """
-    # Setup
     fkt = [1, 4, 4, 7, 1, 1, 4, 4, 4, 4, 7, 7, 1, 4, 4, 7]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
                        'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
@@ -79,20 +70,19 @@ def test_grad_dx_shuffle():
                        'fct': fkt})
     df = df.set_index(['node_id', 'element_id'])
     df = df.sample(frac=1)
-    gradient_dx = np.ones(9)*3
 
-    # Exercise
+    expected = pd.DataFrame({
+        'dfct_dx': np.full(9, 3.0),
+        'dfct_dy': np.zeros(9),
+        'dfct_dz': np.zeros(9)
+    }, index=pd.RangeIndex(1, 10, name='node_id'))
+
     grad = df.gradient.gradient_of('fct')
 
-    # Verify
-    np.testing.assert_array_almost_equal(grad['dx'], gradient_dx, decimal=1)
+    pd.testing.assert_frame_equal(grad, expected)
 
 
 def test_grad_dy():
-    """
-    Test of gradient computation using least square method
-    """
-    # Setup
     fkt = [1, 1, 1, 1, 4, 4, 4, 4, 4, 4, 4, 4, 7, 7, 7, 7]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
                        'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
@@ -102,20 +92,19 @@ def test_grad_dy():
                        'fct': fkt})
     df = df.set_index(['node_id', 'element_id'])
     df = df.sample(frac=1)
-    gradient_dy = np.ones(9)*3
 
-    # Exercise
+    expected = pd.DataFrame({
+        'dfct_dx': np.zeros(9),
+        'dfct_dy': np.full(9, 3.0),
+        'dfct_dz': np.zeros(9)
+    }, index=pd.RangeIndex(1, 10, name='node_id'))
+
     grad = df.gradient.gradient_of('fct')
 
-    # Verify
-    np.testing.assert_array_almost_equal(grad['dy'], gradient_dy, decimal=1)
+    pd.testing.assert_frame_equal(grad, expected)
 
 
 def test_grad_dy_shuffle():
-    """
-    Test of gradient computation using least square method
-    """
-    # Setup
     fkt = [1, 1, 1, 1, 4, 4, 4, 4, 4, 4, 4, 4, 7, 7, 7, 7]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
                        'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
@@ -124,20 +113,19 @@ def test_grad_dy_shuffle():
                        'z': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                        'fct': fkt})
     df = df.set_index(['node_id', 'element_id'])
-    gradient_dy = np.ones(9)*3
 
-    # Exercise
+    expected = pd.DataFrame({
+        'dfct_dx': np.zeros(9),
+        'dfct_dy': np.full(9, 3.0),
+        'dfct_dz': np.zeros(9)
+    }, index=pd.RangeIndex(1, 10, name='node_id'))
+
     grad = df.gradient.gradient_of('fct')
 
-    # Verify
-    np.testing.assert_array_almost_equal(grad['dy'], gradient_dy, decimal=1)
+    pd.testing.assert_frame_equal(grad, expected)
 
 
 def test_grad_dxy_simple():
-    """
-    Test of gradient computation using least square method
-    """
-    # Setup
     fkt = [2, 6, 6, 10, 5, 5, 9, 9, 9, 9, 13, 13, 8, 12, 12, 16]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
                        'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
@@ -146,22 +134,19 @@ def test_grad_dxy_simple():
                        'z': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                        'fct': fkt})
     df = df.set_index(['node_id', 'element_id'])
-    gradient_dx = np.ones(9)*4
-    gradient_dy = np.ones(9)*3
 
-    # Exercise
+    expected = pd.DataFrame({
+        'dfct_dx': np.full(9, 4.0),
+        'dfct_dy': np.full(9, 3.0),
+        'dfct_dz': np.zeros(9)
+    }, index=pd.RangeIndex(1, 10, name='node_id'))
+
     grad = df.gradient.gradient_of('fct')
 
-    # Verify
-    np.testing.assert_array_almost_equal(grad['dx'], gradient_dx, decimal=1)
-    np.testing.assert_array_almost_equal(grad['dy'], gradient_dy, decimal=1)
+    pd.testing.assert_frame_equal(grad, expected)
 
 
 def test_grad_dxy_complex():
-    """
-    Test of gradient computation using least square method
-    """
-    # Setup
     fkt = [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
                        'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
@@ -170,22 +155,19 @@ def test_grad_dxy_complex():
                        'z': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                        'fct': fkt})
     df = df.set_index(['node_id', 'element_id'])
-    gradient_dx = np.array([1, 0, -1, 1, 0, -1,  1, 0, -1])/3
-    gradient_dy = np.array([1, 1, 1, 0,  0, 0, -1, -1, -1])/3
 
-    # Exercise
+    expected = pd.DataFrame({
+        'dfct_dx': np.array([1, 0, -1, 1, 0, -1,  1, 0, -1])/3.,
+        'dfct_dy': np.array([1, 1, 1, 0,  0, 0, -1, -1, -1])/3.,
+        'dfct_dz': np.zeros(9)
+    }, index=pd.RangeIndex(1, 10, name='node_id'))
+
     grad = df.gradient.gradient_of('fct')
 
-    # Verify
-    np.testing.assert_array_almost_equal(grad['dx'], gradient_dx, decimal=2)
-    np.testing.assert_array_almost_equal(grad['dy'], gradient_dy, decimal=2)
+    pd.testing.assert_frame_equal(grad, expected)
 
 
 def test_grad_dxy_simple_shuffle():
-    """
-    Test of gradient computation using least square method
-    """
-    # Setup
     fkt = [2, 6, 6, 10, 5, 5, 9, 9, 9, 9, 13, 13, 8, 12, 12, 16]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
                        'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
@@ -195,22 +177,20 @@ def test_grad_dxy_simple_shuffle():
                        'fct': fkt})
     df = df.set_index(['node_id', 'element_id'])
     df = df.sample(frac=1)
-    gradient_dx = np.ones(9)*4
-    gradient_dy = np.ones(9)*3
 
-    # Exercise
+    expected = pd.DataFrame({
+        'dfct_dx': np.full(9, 4.0),
+        'dfct_dy': np.full(9, 3.0),
+        'dfct_dz': np.zeros(9)
+    }, index=pd.RangeIndex(1, 10, name='node_id'))
+
     grad = df.gradient.gradient_of('fct')
 
-    # Verify
-    np.testing.assert_array_almost_equal(grad['dx'], gradient_dx, decimal=1)
-    np.testing.assert_array_almost_equal(grad['dy'], gradient_dy, decimal=1)
+    pd.testing.assert_frame_equal(grad, expected)
+
 
 
 def test_grad_dxy_complex_shuffle():
-    """
-    Test of gradient computation using least square method
-    """
-    # Setup
     fkt = [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
                        'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
@@ -220,12 +200,13 @@ def test_grad_dxy_complex_shuffle():
                        'fct': fkt})
     df = df.set_index(['node_id', 'element_id'])
     df = df.sample(frac=1)
-    gradient_dx = np.array([1, 0, -1, 1, 0, -1,  1, 0, -1])/3
-    gradient_dy = np.array([1, 1, 1, 0,  0, 0, -1, -1, -1])/3
 
-    # Exercise
+    expected = pd.DataFrame({
+        'dfct_dx': np.array([1, 0, -1, 1, 0, -1,  1, 0, -1])/3.,
+        'dfct_dy': np.array([1, 1, 1, 0,  0, 0, -1, -1, -1])/3.,
+        'dfct_dz': np.zeros(9)
+    }, index=pd.RangeIndex(1, 10, name='node_id'))
+
     grad = df.gradient.gradient_of('fct')
 
-    # Verify
-    np.testing.assert_array_almost_equal(grad['dx'], gradient_dx, decimal=2)
-    np.testing.assert_array_almost_equal(grad['dy'], gradient_dy, decimal=2)
+    pd.testing.assert_frame_equal(grad, expected)

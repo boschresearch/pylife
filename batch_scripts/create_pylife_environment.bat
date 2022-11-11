@@ -1,13 +1,13 @@
-call conda env remove -p ./_venv
+call conda env remove -p ./.venv
 
 for /f "tokens=*" %%a in ('git rev-parse --show-toplevel') do (set repo_path=%%a)
 
-set jupyter_path=%repo_path%/_venv/Scripts/jupyter
+set jupyter_path=%repo_path%/.venv/Scripts/jupyter
 
 call git config filter.jupyter_clean.clean "%jupyter_path% nbconvert --stdin --stdout --to notebook --ClearOutputPreprocessor.enabled=True"
 
-call conda env create -p _venv --file environment.yml
+call conda create -p .venv pip=20.2 pandoc setuptools_scm "python==3.9"
 
-call conda activate ./_venv
+call conda activate ./.venv
 
-call conda install pywin32
+call pip install -e .[testing,docs,analysis,pymc,extras,tsfresh]

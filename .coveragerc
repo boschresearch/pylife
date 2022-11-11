@@ -1,2 +1,29 @@
+# .coveragerc to control coverage.py
 [run]
-omit = pylife/_version.py
+branch = True
+source = pylife
+omit =
+     src/pylife/strength/helpers.py
+     src/pylife/strength/sn_curve.py
+
+[paths]
+source =
+    src/
+
+[report]
+# Regexes for lines to exclude from consideration
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain about missing debug-only code:
+    def __repr__
+    if self\.debug
+
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    if __name__ == .__main__.:

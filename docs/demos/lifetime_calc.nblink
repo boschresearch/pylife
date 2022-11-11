@@ -1,0 +1,7 @@
+{
+    "path": "../../demos/lifetime_calc.ipynb",
+    "extra-media": [
+	"../../demos/plate_with_hole.vmap",
+	"../../demos/helper_functions.py"
+    ]
+}

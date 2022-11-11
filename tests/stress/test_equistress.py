@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2022 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -114,6 +114,18 @@ def test_signed_tresca_abs_max_principal(s11, s22, s33, s12, s13, s23, signed_tr
     assert stress.shape == np.array(signed_tresca_abs_max_principal_check).shape
 
 
+@pytest.mark.parametrize("s11, s22, s33, s12, s13, s23, principals_check", [
+    (1, -2, 3, 0, 0, 0, [-2, 1, 3]),
+    (-1, -2, -5, 0, 0, 0, [-5, -2, -1]),
+    (1.12, 2.35, 3.78, -5.41, -3.57, 0.0, [-4.6068, 3.3229, 8.5339]),  # calculated with matlab
+    ([-1, 10], [-5, 50], [-2, 20], [0, 0], [0, 0], [0, 0], [[-5, -2, -1],[10, 20, 50]]),
+])
+def test_principals(s11, s22, s33, s12, s13, s23, principals_check):
+    stress = EQS.principals(s11, s22, s33, s12, s13, s23)
+    assert np.allclose(stress, principals_check)
+    assert stress.shape == np.array(principals_check).shape
+
+
 @pytest.mark.parametrize("s11, s22, s33, s12, s13, s23, abs_max_principal_check", [
     (1, -2, 3, 0, 0, 0, 3),
     (-1, -2, -5, 0, 0, 0, -5),
@@ -210,7 +222,8 @@ def test_tresca_pandas():
                            [1.12, 2.35, 3.78, -5.41, -3.57, 0.0]])
     df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
     eqs = df.equistress.tresca()
-    assert np.allclose(eqs['tresca'].to_numpy(), [5., 4., 0., 13.1407])
+    expected = pd.Series([5., 4., 0., 13.1407], name='tresca')
+    pd.testing.assert_series_equal(eqs, expected)
 
 
 def test_signed_tresca_trace_pandas():
@@ -223,7 +236,8 @@ def test_signed_tresca_trace_pandas():
                            [5, -3, -4, 0, 0, 0]])
     df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
     eqs = df.equistress.signed_tresca_trace()
-    assert np.allclose(eqs['signed_tresca_trace'].to_numpy(), [0.0, 13.1407, -13.1407, 7.315, 9., 9., -9.])
+    expected = pd.Series([0.0, 13.1407, -13.1407, 7.315, 9., 9., -9.], name='signed_tresca_trace')
+    pd.testing.assert_series_equal(eqs, expected)
 
 
 def test_signed_tresca_abs_max_principal_pandas():
@@ -237,10 +251,23 @@ def test_signed_tresca_abs_max_principal_pandas():
                            [5, 2, -6, 0, 0, 0]])
     df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
     eqs = df.equistress.signed_tresca_abs_max_principal()
-    print(eqs)
-    assert np.allclose(eqs['signed_tresca_abs_max_principal'].to_numpy(),
-                       [0.0, 13.1407, -13.1407, 7.315,  9.0,  9.0,  9.0,  -11.0])
+    expected = pd.Series([0.0, 13.1407, -13.1407, 7.315,  9.0,  9.0,  9.0,  -11.0],
+                         name='signed_tresca_abs_max_principal')
+    pd.testing.assert_series_equal(eqs, expected)
 
+
+def test_principals_pandas():
+    dummy_data = np.array([[1, -2, 3, 0, 0, 0],
+                           [-1, -2, -5, 0, 0, 0],
+                           [1.12, 2.35, 3.78, -5.41, -3.57, 0.0]])
+    df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
+    eqs = df.equistress.principals()
+    expected = pd.DataFrame({
+        'min_principal': [-2., -5., -4.6068],
+        'med_principal': [ 1., -2.,  3.3229],
+        'max_principal': [ 3., -1.,  8.5339],
+    })
+    pd.testing.assert_frame_equal(eqs, expected)
 
 def test_abs_max_principal_pandas():
     dummy_data = np.array([[1, -2, 3, 0, 0, 0],
@@ -248,7 +275,8 @@ def test_abs_max_principal_pandas():
                            [1.12, 2.35, 3.78, -5.41, -3.57, 0.0]])
     df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
     eqs = df.equistress.abs_max_principal()
-    assert np.allclose(eqs['abs_max_principal'].to_numpy(), [3.0, -5.0, 8.5339])
+    expected = pd.Series([3.0, -5.0, 8.5339], name='abs_max_principal')
+    pd.testing.assert_series_equal(eqs, expected)
 
 
 def test_max_principal_pandas():
@@ -257,7 +285,8 @@ def test_max_principal_pandas():
                            [1.12, 2.35, 3.78, -5.41, -3.57, 0.0]])
     df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
     eqs = df.equistress.max_principal()
-    assert np.allclose(eqs['max_principal'].to_numpy(), [3.0, -1.0, 8.5339])
+    expected = pd.Series([3.0, -1.0, 8.5339], name='max_principal')
+    pd.testing.assert_series_equal(eqs, expected)
 
 
 def test_min_principal_pandas():
@@ -267,7 +296,8 @@ def test_min_principal_pandas():
     df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
     df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
     eqs = df.equistress.min_principal()
-    assert np.allclose(eqs['min_principal'].to_numpy(), [-2.0, -5.0, -4.6068])
+    expected = pd.Series([-2.0, -5.0, -4.6068], name='min_principal')
+    pd.testing.assert_series_equal(eqs, expected)
 
 
 def test_mises_pandas():
@@ -276,7 +306,8 @@ def test_mises_pandas():
                            [1.12, -2.35, -3.78, -5.41, -3.57, 0.0]])
     df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
     eqs = df.equistress.mises()
-    assert np.allclose(eqs['mises'].to_numpy(), [0.0, 1.73205, 12.0452])
+    expected = pd.Series([0.0, 1.73205, 12.0452], name='mises')
+    pd.testing.assert_series_equal(eqs, expected)
 
 
 def test_signed_mises_trace_pandas():
@@ -286,7 +317,8 @@ def test_signed_mises_trace_pandas():
                            [0, 0, 0, 1, 2, 3]])
     df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
     eqs = df.equistress.signed_mises_trace()
-    assert np.allclose(eqs['signed_mises_trace'].to_numpy(), [0.0, -12.0452, 1.35834, 6.4807])
+    expected = pd.Series([0.0, -12.0452, 1.35834, 6.4807], name='signed_mises_trace')
+    pd.testing.assert_series_equal(eqs, expected)
 
 
 def test_signed_mises_abs_max_principal_pandas():
@@ -299,5 +331,5 @@ def test_signed_mises_abs_max_principal_pandas():
                            [-10, 0, 0, 0, 0, 0]])
     df = pd.DataFrame(columns=['S11', 'S22', 'S33', 'S12', 'S13', 'S23'], data=dummy_data)
     eqs = df.equistress.signed_mises_abs_max_principal()
-    assert np.allclose(eqs['signed_mises_abs_max_principal'].to_numpy(),
-                       [0.0, -12.0452, 1.35834, 6.4807, 17.0587, 17.3494, -10.0])
+    expected = pd.Series([0.0, -12.0452, 1.35834, 6.4807, 17.0587, 17.3494, -10.0], name='signed_mises_abs_max_principal')
+    pd.testing.assert_series_equal(eqs, expected)

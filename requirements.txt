@@ -1,8 +1,0 @@
-numpy
-scipy
-pandas
-cython
-mystic
-pymc3
-matplotlib
-h5py

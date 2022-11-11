@@ -6,19 +6,25 @@ the GitHub issues tracking system prior to any code development to coordinate
 with the pyLife development team early in the process. Coordinating up
 front helps to avoid frustration later on.
 
-Your contribution must be licensed under the Apache-2.0 license, the license
-used by this project.
-
 ## Test driven development
-The functionality of your contribution (functions, class methods) need to be
-tested by [pytest][pytest] testing routines.
+
+The functionality of your contribution (functions, class methods) needs to be
+tested by [pytest][pytest] testing routines.  Please always run the test suite
+locally before you file a pull request.  For any filed pull request the test
+suite will be run for different python versions and different operating systems
+as [GitHub action](https://github.com/boschresearch/pylife/actions).  If any of
+them fails, please update your pull request accordingly.
+
+Every bugfix or every new feature you are implementing – basically any function
+changing code – must be backed with a suitable amount of unit tests. If those
+unit tests are missing, we will have to decline your pull request.
 
 In order to achieve maintainable code we ask contributors to use test driven
 development, i. e. follow the [Three Rules of Test Driven
-Development](https://medium.com/@rrugamba/3-laws-of-tdd-58b5ec46a998):
+Development][rrugamba]:
 
 1. Do not change production code without writing a failing unit test
-   first. Cleanups and refactorings a not changes in that sense.
+   first. Cleanups and refactorings are not changes in that sense.
 2. Write only enough test code as is sufficient to fail.
 3. Only write or change minimal production code as is sufficient to make the
    failing test pass.
@@ -33,13 +39,33 @@ lines. In order to have your contribution merged to main line following guide
 lines should be met.
 
 ### Docstrings
+
 Document your public API classes, methods, functions and attributes using numpy
 style docstings unless the naming is *really* self-explanatory.
 
 ### Comments
+
 Use as little comments as possible. The code along with docstrings should be
 expressive enough. Remove any commented code lines before issuing your pull
 request.
+
+## Making commits
+
+### Configure your git client
+
+Please configure your identity in your git client appropriately. From the git
+command line you can do that using
+
+```sh
+git config user.name <Your Name>
+git config user.email <your-email@...>
+```
+
+### Writing good commit messages
+
+Please consider following the [commit guidelines][CGL] when writing your commit
+message. We will not enforce this, but we would appreciate if you
+do. [Here][git-commit] is a good read why this makes sense.
 
 ## Branching and pull requests
 
@@ -53,8 +79,15 @@ the following prefixes.
 * `bugfix/` for bugfixes, that do not change the API
 * `feature/` if a new feature is added
 * `doc/` if documentation is added or improved
-* `cleanup/` if code is cleaned or refactured without changing the feature set
+* `cleanup/` if code is cleaned or refactored without changing the behavior
 
+If your branch does not fit any of those, you can also come up with another
+appropriate prefix.
+
+## License
+
+Your contribution must be licensed under the Apache-2.0 license, the license
+used by this project.
 
 ## Add / retain copyright notices
 
@@ -65,48 +98,58 @@ copyright holders.
 
 ## Sign your work
 
-This project tracks patch provenance and licensing using a modified Developer
-Certificate of Origin (DCO; from [OSDL][DCO]) and Signed-off-by tags initially
-developed by the Linux kernel project.
+This project tracks patch provenance and licensing using the Developer
+Certificate of Origin 1.1 (DCO) from [developercertificate.org][DCO] and
+Signed-off-by tags initially developed by the Linux kernel project.
 
-```
-pyLife Developer's Certificate of Origin.  Version 1.0
+```text
+Developer Certificate of Origin
+Version 1.1
+
+Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
+1 Letterman Drive
+Suite D4700
+San Francisco, CA, 94129
+
+Everyone is permitted to copy and distribute verbatim copies of this
+license document, but changing it is not allowed.
+
+
+Developer's Certificate of Origin 1.1
 
 By making a contribution to this project, I certify that:
 
 (a) The contribution was created in whole or in part by me and I
-    have the right to submit it under the "Apache License, Version 2.0"
-    ("Apache-2.0"); or
+    have the right to submit it under the open source license
+    indicated in the file; or
 
-(b) The contribution is based upon previous work that is covered by
-    an appropriate open source license and I have the right under
-    that license to submit that work with modifications, whether
-    created in whole or in part by me, under the Apache-2.0 license;
-    or
+(b) The contribution is based upon previous work that, to the best
+    of my knowledge, is covered under an appropriate open source
+    license and I have the right under that license to submit that
+    work with modifications, whether created in whole or in part
+    by me, under the same open source license (unless I am
+    permitted to submit under a different license), as indicated
+    in the file; or
 
 (c) The contribution was provided directly to me by some other
-    person who certified (a) or (b) and I have not modified it.
+    person who certified (a), (b) or (c) and I have not modified
+    it.
 
 (d) I understand and agree that this project and the contribution
     are public and that a record of the contribution (including all
-    metadata and personal information I submit with it, including my
-    sign-off) is maintained indefinitely and may be redistributed
-    consistent with this project and the requirements of the Apache-2.0
-    license or any open source license(s) involved, where they are
-    relevant.
-
-(e) I am granting the contribution to this project under the terms of
-    Apache-2.0.
-
-    http://www.apache.org/licenses/LICENSE-2.0
+    personal information I submit with it, including my sign-off) is
+    maintained indefinitely and may be redistributed consistent with
+    this project or the open source license(s) involved.
 ```
 
 With the sign-off in a commit message you certify that you authored the patch
 or otherwise have the right to submit it under an open source license. The
-procedure is simple: To certify above pyLife Developer's Certificate of
-Origin 1.0 for your contribution just append a line
+procedure is simple: To certify above Developer's Certificate of
+Origin 1.1 for your contribution just append a line
 
-    Signed-off-by: Random J Developer <random@developer.example.org>
+```text
+Signed-off-by: Random J Developer <random@developer.example.org>
+```
 
 to every commit message using your real name or your pseudonym and a valid
 email address.
@@ -116,9 +159,22 @@ automatically sign the commit by running the git-commit command with the `-s`
 option.  There may be multiple sign-offs if more than one developer was
 involved in authoring the contribution.
 
+Another option to automatically add the `Signed-off-by:` is to once use the
+command
+
+```sh
+git config core.hooksPath .githooks
+```
+
+in your pyLife working directory. This will then add the `Signed-off-by:` line
+automatically.
+
 For a more detailed description of this procedure, please see
 [SubmittingPatches][] which was extracted from the Linux kernel project, and
 which is stored in an external repository.
+
+Any pull request with at least one commit missing the Signed-off-tag in the
+commit message will be automatically declined by a bot.
 
 ### Individual vs. Corporate Contributors
 
@@ -150,6 +206,12 @@ holder(s) to the [NOTICE](NOTICE) file as part of your contribution.
 
 [pytest]: https://pytest.org
 
-[DCO]: http://web.archive.org/web/20070306195036/http://osdlab.org/newsroom/press_releases/2004/2004_05_24_dco.html
+[rrugamba]: https://medium.com/@rrugamba/3-laws-of-tdd-58b5ec46a998
+
+[CGL]: https://www.git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project#_commit_guidelines
+
+[git-commit]: https://chris.beams.io/posts/git-commit/
+
+[DCO]: https://developercertificate.org/
 
 [SubmittingPatches]: https://github.com/wking/signed-off-by/blob/7d71be37194df05c349157a2161c7534feaf86a4/Documentation/SubmittingPatches
