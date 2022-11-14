@@ -10,4 +10,4 @@ workflows.
 
    demos/woehler_curve.nblink
    demos/load_collective.nblink
-   demos/stress-strength.nblink
+   demos/stress_strength.nblink
