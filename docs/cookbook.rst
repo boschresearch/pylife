@@ -1,6 +1,16 @@
 pyLife Cookbook
 ===============
 
+The pyLife Cookbook aggregates some demo notebooks that show how pyLife is
+meant to be used for some use cases.  Here find the statically rendered HTML
+pages.  The notebook files are available in the ``/demos`` `directory
+<https://github.com/boschresearch/pylife/tree/develop/demos>`_ of
+pyLife's codebase.
+
+If you want to try out the notebooks without installing anything on your
+computer, you can use `MyBinder
+<https://mybinder.org/v2/gh/boschresearch/pylife/develop?labpath=demos%2Findex.ipynb>`_.
+
 .. toctree::
    :maxdepth: 1
    :caption: Life time and reliability
