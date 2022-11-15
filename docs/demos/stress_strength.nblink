@@ -1,0 +1,4 @@
+{
+    "path": "../../demos/stress_strength.ipynb",
+    "extra-media": ["../../demos/plate_with_hole.vmap"]
+}
