@@ -1,6 +1,6 @@
 # pyLife – a general library for fatigue and reliability
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/boschresearch/pylife/develop?filepath=demos%2Findex.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/boschresearch/pylife/develop?labpath=demos%2Findex.ipynb)
 [![Documentation Status](https://readthedocs.org/projects/pylife/badge/?version=latest)](https://pylife.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/pylife)](https://pypi.org/project/pylife/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pylife)
