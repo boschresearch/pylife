@@ -4,6 +4,13 @@ In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
 
+## pylife-2.0.2
+
+Minor bugfix release
+
+* Fix bug for detection of Abaqus binaries in odbserver
+
+
 ## pylife-2.0.1
 
 A minor release, mostly dependency related updates and documentation
