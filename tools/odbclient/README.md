@@ -36,14 +36,6 @@ pip install pylife-odbclient
   to install the server.
 
 
-Once there are released versions the installation will be easier.
-
-* Install the server using `pip install pylife-odbserver` in a python-2.0
-  environment that is usable from the current Abaqus python engine.
-
-* Install the client package using `pip install pylife-odbclient`.
-
-
 ## Usage
 
 Usually you only will see the `OdbClient` class interface when you access an
