@@ -90,11 +90,11 @@ def test_bayesian_TN_trace(pm, core_num):
 
 
 @pytest.mark.skipif(not HAVE_PYMC_AND_BAMBI, reason="Don't have pymc")
-@mock.patch('pylife.materialdata.woehler.bayesian.at')
+@mock.patch('pylife.materialdata.woehler.bayesian.pt')
 @mock.patch('pylife.materialdata.woehler.bayesian.pm')
-def test_bayesian_SD_TS_trace_mock(pm, at, core_num):
+def test_bayesian_SD_TS_trace_mock(pm, pt, core_num):
     def check_likelihood(l, var):
-        assert var == at.as_tensor_variable.return_value
+        assert var == pt.as_tensor_variable.return_value
         assert isinstance(l.likelihood, woehler.likelihood.Likelihood)
         np.testing.assert_array_equal(l.likelihood._fd, fd)
         return 'foovar'
@@ -115,7 +115,7 @@ def test_bayesian_SD_TS_trace_mock(pm, at, core_num):
     np.testing.assert_approx_equal(pm.Lognormal.call_args_list[0][1]['mu'], np.log10(1.1))
     np.testing.assert_approx_equal(pm.Lognormal.call_args_list[0][1]['sigma'], 0.3)
 
-    at.as_tensor_variable.assert_called_once_with([pm.Normal.return_value, pm.Lognormal.return_value])
+    pt.as_tensor_variable.assert_called_once_with([pm.Normal.return_value, pm.Lognormal.return_value])
 
     pm.Potential.assert_called_once_with('likelihood', 'foovar')
 
