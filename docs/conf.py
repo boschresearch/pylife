@@ -47,9 +47,9 @@ if not os.path.isdir(ipython_dir):
         ep.preprocess(nb, {'metadata': {'path': os.path.dirname(fn)}})
 
 
-# Don't try to use C-code for the aesara stuff when building the docs.
+# Don't try to use C-code for the pytensor stuff when building the docs.
 # Otherwise the demo notebooks fail on readthedocs
-os.environ['AESARA_FLAGS'] = 'cxx=""'
+os.environ['PYTENSOR_FLAGS'] = 'cxx=""'
 os.environ['PYTHONWARNINGS'] = 'ignore'
 
 import asyncio

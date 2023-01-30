@@ -21,7 +21,7 @@ __maintainer__ = "Johannes Mueller"
 import sys
 import numpy as np
 import pandas as pd
-import aesara.tensor as at
+import pytensor.tensor as pt
 import pymc as pm
 import bambi
 
@@ -39,7 +39,7 @@ class Bayesian(Elementary):
     future.  Maybe this will lead to breaking changes without new major release.
     """
 
-    class _LogLike(at.Op):
+    class _LogLike(pt.Op):
         """
         Specify what type of object will be passed and returned to the Op when it is
         called. In our case we will be passing it a vector of values (the parameters
@@ -48,8 +48,8 @@ class Bayesian(Elementary):
 
         http://mattpitkin.github.io/samplers-demo/pages/pymc-blackbox-likelihood/
         """
-        itypes = [at.dvector]  # expects a vector of parameter values when called
-        otypes = [at.dscalar]  # outputs a single scalar value (the log likelihood)
+        itypes = [pt.dvector]  # expects a vector of parameter values when called
+        otypes = [pt.dscalar]  # outputs a single scalar value (the log likelihood)
 
         def __init__(self, likelihood):
             """
@@ -147,7 +147,9 @@ class Bayesian(Elementary):
             TS_inv = pm.Lognormal('TS', mu=np.log10(1.1), sigma=0.3)
 
             # convert m and c to a tensor vector
-            var = at.as_tensor_variable([SD, TS_inv])
+            print(type(SD))
+            print(type(TS_inv))
+            var = pt.as_tensor_variable([SD, TS_inv])
 
             pm.Potential('likelihood', loglike(var))
 
