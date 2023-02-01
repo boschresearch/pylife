@@ -205,7 +205,7 @@ class Broadcaster:
         if self._obj.index.names == [None] and isinstance(self._obj, pd.Series):
             df = pd.DataFrame(index=parameter.index, columns=self._obj.index)
             for c in self._obj.index:
-                df.loc[:, c] = self._obj[c]
+                df[c] = self._obj[c]
             return parameter, df
 
         return self._broadcast_frame_to_frame(parameter, droplevel)
