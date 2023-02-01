@@ -21,7 +21,7 @@ beam_2d_squ_nodes = pd.DataFrame(
                    [5., 30., 0.],
                    [10., 30., 0.]]),
     columns=['x', 'y', 'z'],
-    index=pd.Index(np.arange(1, 19), name="node_id")
+    index=pd.Index(np.arange(1, 19), name="node_id", dtype=np.int32)
 )
 
 beam_2d_squ_mesh_index = pd.MultiIndex.from_arrays(
