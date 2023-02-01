@@ -406,7 +406,7 @@ class VMAPImport:
         index_np = np.empty((2, length), dtype=np.int64)
 
         i = 0
-        for element_id, node_ids in connectivity.iteritems():
+        for element_id, node_ids in connectivity.items():
             i_next = i + node_ids.shape[0]
             index_np[0, i:i_next] = element_id
             index_np[1, i:i_next] = node_ids
