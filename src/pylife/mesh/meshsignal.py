@@ -239,7 +239,7 @@ class Mesh(PlainMesh):
             return connectivity, count.apply(lambda c: element_types_dict[c][1]).to_numpy()
 
         def first_order_points(connectivity):
-            points = self._obj.groupby('node_id', sort=False).first()[self._coord_keys]
+            points = self._obj.groupby('node_id', sort=True).first()[self._coord_keys]
             nodes = pd.Series([nd for element in connectivity.values for nd in element], name='node_id').unique()
             selection = points.index.isin(nodes)
             return points[selection]
