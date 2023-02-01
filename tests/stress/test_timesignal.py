@@ -262,7 +262,6 @@ def test_polyfit_gridpoints1(grid_points, poly_gridpoints):
     exact_res = grid_points
     exact_res["time"] = exact_res.index.values
     pd.testing.assert_frame_equal(exact_res, poly_gridpoints)
-    return poly_gridpoints
 
 
 # %%
