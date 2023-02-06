@@ -1,0 +1,5 @@
+/* workaround readthedocs/sphinx_rtd_theme#1301 */
+
+dl.py.property {
+    display: block !important;
+}
