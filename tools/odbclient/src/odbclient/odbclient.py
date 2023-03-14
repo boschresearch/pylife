@@ -147,8 +147,8 @@ class OdbClient:
         self._wait_for_server_ready_sign()
 
     def _gulp_lock_file_warning(self):
-        self._proc.stdout.readline()
-        self._proc.stdout.readline()
+            self._proc.stdout.readline()
+            self._proc.stdout.readline()
 
     def _wait_for_server_ready_sign(self):
         def wait_for_input(stdout, queue):
@@ -416,10 +416,6 @@ class OdbClient:
 
             raise OdbServerError(error_message.decode('ascii'))
 
-    def _fail_if_instance_invalid(self, instance_name):
-        if instance_name not in self.instance_names() and instance_name != '':
-            raise KeyError("Invalid instance name '%s'." % instance_name)
-
 
 def _ascii(fcn, args):
     if isinstance(args, list):
@@ -442,7 +438,16 @@ def _decode(arg):
 def _guess_abaqus_bin():
     if sys.platform == 'win32':
         return _guess_abaqus_bin_windows()
-    return shutil.which('abaqus')
+    else:
+        print("linux")
+        shell_alias = shutil.which('abaqus')
+        print("shell_alias")
+        if shell_alias == "":
+            guess = r"/share/hpc_apps/abaqus/2020.HF10/commands/abaqus"
+            if os.path.exists(guess):
+                return guess
+        
+        return shell_alias
 
 
 def _guess_abaqus_bin_windows():
@@ -450,13 +455,20 @@ def _guess_abaqus_bin_windows():
         r"C:/Program Files/SIMULIA/2018/AbaqusCAE/win_b64/code/bin/ABQLauncher.exe",
         r"C:/Program Files/SIMULIA/2020/EstProducts/win_b64/code/bin/ABQLauncher.exe",
         r"C:/Program Files/SIMULIA/2020/Products/win_b64/code/bin/ABQLauncher.exe",
-        r"C:/Program Files/SIMULIA/2021/EstProducts/win_b64/code/bin/ABQLauncher.exe",
     ]
     for guess in guesses:
         if os.path.exists(guess):
             return guess
     return None
 
+def _guess_abaqus_bin_linux():
+   guesses = [
+       r"/share/hpc_apps/abaqus/2020.HF10/commands/abaqus",
+       r"/share/hpc_apps/abaqus/2019.HF12/Commands/abaqus",
+       r"/share/hpc_apps/abaqus/2021.HF8/commands/abaqus",
+       r"/share/hpc_apps/abaqus/2020.HF10/commands/abaqus",
+       r"/share/hpc_apps/abaqus/2020.HF10/commands/abaqus",
+   ]
 
 def _guess_pythonpath(python_env_path):
     python_env_path = _guess_python_env_path(python_env_path)
@@ -469,7 +481,8 @@ def _guess_pythonpath(python_env_path):
 
 
 def _guess_python_env_path(python_env_path):
-    cand = python_env_path or os.path.join(os.environ['HOME'], '.conda', 'envs', 'odbserver')
+    cand = python_env_path or os.path.join(os.environ['HOME'], '.conda', 'envs', 'odbserver') \
+        or os.path.join('usr', 'local', 'anaconda', 'odbserver')
     if os.path.exists(cand):
         return cand
     return None

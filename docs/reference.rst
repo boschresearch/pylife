@@ -31,6 +31,7 @@ Strength
    strength/meanstress
    strength/failure_probability
    strength/miner
+   strength/fkm_nonlinear
 
 Materiallaws
 ------------

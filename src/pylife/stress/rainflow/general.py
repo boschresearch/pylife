@@ -34,7 +34,7 @@ def find_turns(samples):
     Returns
     -------
     index : 1D numpy.ndarray
-        the indeces where sample has a turning point
+        the indices where sample has a turning point
     turns : 1D numpy.ndarray
         the values of the turning points
 
@@ -94,6 +94,8 @@ def find_turns(samples):
     samples, nans = clean_nans(samples)
 
     diffs = np.diff(samples)
+
+    # find indices where /\ or \/
     peak_turns = diffs[:-1] * diffs[1:] < 0.0
 
     index = np.where(np.logical_or(peak_turns, plateau_turns(diffs)))[0] + 1
@@ -140,6 +142,7 @@ class AbstractDetector(metaclass=ABCMeta):
         self._head_index = 0
         self._residual_index = np.array([0], dtype=np.int64)
         self._residuals = np.array([])
+        self._is_flushing_enabled = False
 
     @property
     def residuals(self):
@@ -160,13 +163,48 @@ class AbstractDetector(metaclass=ABCMeta):
         return self._recorder
 
     @abstractmethod
-    def process(self, samples):
+    def process(self, samples, flush=False):
         """Process a sample chunk.
 
         Parameters
         ----------
         samples : array_like, shape (N, )
             The samples to be processed
+
+        flush : bool
+            Whether to flush the cached values at the end.
+
+            If ``flush=False``, the last value of a load sequence is
+            cached for a subsequent call to ``process``, because it may or may
+            not be a turning point of the sequence, which is only decided
+            when the next data point arrives.
+
+            Setting ``flush=True`` forces processing of the last value.
+            When ``process`` is called again afterwards with new data,
+            two increasing or decreasing values in a row might have been
+            processed, as opposed to only turning points of the sequence.
+
+            Example:
+            a)
+                process([1, 2], flush=False)  # processes 1
+                process([3, 1], flush=True)   # processes 3, 1
+                -> processed sequence is [1,3,1], only turning points
+
+            b)
+                process([1, 2], flush=True)   # processes 1, 2
+                process([3, 1], flush=True)   # processes 3, 1
+                -> processed sequence is [1,2,3,1], "," is not a turning point
+
+            c)
+                process([1, 2])   # processes 1
+                process([3, 1])   # processes 3
+                -> processed sequence is [1,3], end ("1") is missing
+
+            d)
+                process([1, 2])   # processes 1
+                process([3, 1])   # processes 3
+                flush()           # process 1
+                -> processed sequence is [1,3,1]
 
         Returns
         -------
@@ -176,16 +214,94 @@ class AbstractDetector(metaclass=ABCMeta):
         Notes
         -----
         Must be implemented by subclasses.
+
+        See also
+        --------
+        :func:`flush()`
         """
+
         return self
 
-    def _new_turns(self, samples):
-        """Provide new turning points for the next chunk.
+    def flush(self, samples=[]):
+        """
+        Flush all remaining cached values from previous calls of ``process``.
+        Process all the given values until the end, leaving no cached values.
+
+        If ``process`` is called instead of ``flush``, the last value of a
+        load sequence is cached for a subsequent call to ``process``,
+        because it may or may not be a turning point of the sequence.
+
+        Using ``flush`` forces processing of the last value. This may not be
+        the desired effect as multiple increasing or decreasing values in a
+        row could occur, instead of processing only turning points.
+
+        Examples:
+        a)
+            process([1, 2])     # processes 1
+            flush([3, 1])       # processes 3, 1
+            -> processed sequence is [1,3,1]: only turning points
+
+        b)
+            flush([1, 2])       # processes 1, 2
+            flush([3, 1])       # processes 3, 1
+            -> processed sequence is [1,2,3,1]: the "2" is not a turning point
+
+        c)
+            process([1, 2])   # processes 1
+            process([3, 1])   # processes 3
+            -> processed sequence is [1,3]: the last value is missing
+
+        d)
+            process([1, 2])   # processes 1
+            process([3, 1])   # processes 3
+            flush()           # process 1
+            -> processed sequence is [1,3,1]: last value processed as a result
+            of ``flush``
+
 
         Parameters
         ----------
-        samples : 1-D array of float
+        samples : array_like, shape (N, )
+            The samples to be processed
+
+        Returns
+        -------
+        self : AbstractDetector
+            The ``self`` object so that processing can be chained
+
+        Notes
+        -----
+        This method is equivalent to ``process(samples, flush=True)``.
+
+
+        """
+        return self.process(samples, flush=True)
+
+    def _new_turns(self, samples, flush=False, preserve_start=False):
+        """Provide new turning points for the next chunk.
+        This method can handle samples as both 1-D arrays and multi-dimensional
+        DataFrames.
+
+        Parameters
+        ----------
+        samples : 1-D array of float or pandas DataFrame
             The samples of the chunk to be processed
+
+        flush : bool
+            Whether to flush the values at the end, i.e., not keep a tail.
+
+        preserve_start : bool
+            If the beginning of the sequence should be preserved. If this is 
+            False, only turning points are extracted, for example:
+                _new_turns([1, 2, 1])   # -> 2
+                _new_turns([0, 1])      # -> 1
+            If ``preserve_start`` is True, the first point is also added, even
+            though it is not a turn point:
+                _new_turns([1, 2, 1], preserve_start=True)   # -> 1, 2
+                _new_turns([0, 1], preserve_start=True)      # -> 0, 1
+
+            This option has no effect if there are samples left over
+            from a previous call with flush=False.
 
         Returns
         -------
@@ -201,20 +317,143 @@ class AbstractDetector(metaclass=ABCMeta):
         point of the chunk are stored and prepended to the samples of the next
         call.
         """
+
+        if isinstance(samples, pd.Series):
+            samples = samples.to_numpy()
+
+        assert isinstance(samples, np.ndarray) or isinstance(samples, pd.DataFrame)
+
+        # if we have samples left from the last call, disable option preserve_start
+        if len(self._sample_tail) > 0:
+            preserve_start = False
+            
+        _is_multiple_assessment_points = False
+        if type(samples) == pd.core.frame.DataFrame:
+            _is_multiple_assessment_points = True
+
+            # convert to list 
+            samples = [df.reset_index(drop=True) for _,df in samples.groupby("load_step")]
+
         sample_len = len(samples)
-        samples = np.concatenate((self._sample_tail, samples))
-        turn_index, turn_values = find_turns(samples)
+
+        # prepend samples from previous call
+        if isinstance(samples, np.ndarray):
+            samples = np.concatenate((self._sample_tail, samples))
+        else:
+            if len(samples) == 0:
+                samples = list(self._sample_tail)
+            elif len(self._sample_tail) == 0:
+                pass
+            else:
+                samples = list(self._sample_tail) + samples
+
+        # get indices and values of new turns in the current samples
+        if _is_multiple_assessment_points:
+            turn_index, turn_values = self._find_turns_multiple_assessment_points(samples)
+        else:
+            turn_index, turn_values = find_turns(samples)
+
+        # if turns were found
         if turn_index.size > 0:
             old_sample_tail_length = len(self._sample_tail)
+
+            # store new tail of samples that were not considered in this call
             self._sample_tail = samples[turn_index[-1]:]
             turn_index += self._head_index - old_sample_tail_length
+        
         else:
+            # if no turns were found, store all samples as new tail
             self._sample_tail = samples
 
         self._head_index += sample_len
 
+        # handle flush parameter
+        if flush and len(self._sample_tail) > 0:
+
+            turn_index = np.concatenate((turn_index, [self._head_index-1]))
+
+            if isinstance(turn_values, np.ndarray):
+                turn_values = np.concatenate((turn_values, [self._sample_tail[-1]]))
+            else:
+                turn_values.append(self._sample_tail[-1])
+
+            self._sample_tail = [self._sample_tail[-1]]
+
+        # handle preserve_start parameter
+        if preserve_start:
+            if turn_index.size > 0:
+                if turn_index[0] > 0:
+                    
+                    # prepend first sample to results
+                    turn_index = np.insert(turn_index, 0, 0)
+
+                    if isinstance(turn_values, np.ndarray):
+                        turn_values = np.insert(turn_values, 0, samples[0])
+                    else:
+                        turn_values.insert(0, samples[0])
+
         return turn_index, turn_values
 
+    def _find_turns_multiple_assessment_points(self, samples):
+
+        # extract the representative samples for the first node
+        samples_of_first_node = np.array([sample.iloc[0].values for sample in samples]).flatten() 
+        turn_index, _ = find_turns(samples_of_first_node)
+
+        # the selected samples are a list of DataFrames. Each DataFrame contains the values for all nodes
+        selected_samples = [samples[index] for index in turn_index]
+
+        return turn_index, selected_samples
+
+
+    def _new_turns_multiple_assessment_points(self, samples, flush=False, preserve_start=False):
+        """Provide new turning points for the next chunk. This function
+        is used when the assessment considers multiple points at once.
+        The function is called from `_new_turns`.
+
+        Parameters
+        ----------
+        samples : pandas DataFrame
+            The samples of the chunk to be processed, has to be a DataFrame
+            with a MultiIndex of "load_step" and "node_id".
+
+        flush : bool
+            Whether to flush the values at the end, i.e., not keep a tail.
+
+        preserve_start : bool
+            If the beginning of the sequence should be preserved. If this is 
+            False, only turning points are extracted, for example:
+                _new_turns([1, 2, 1])   # -> 2
+                _new_turns([0, 1])      # -> 1
+            If ``preserve_start`` is True, the first point is also added, even
+            though it is not a turn point:
+                _new_turns([1, 2, 1], preserve_start=True)   # -> 1, 2
+                _new_turns([0, 1], preserve_start=True)      # -> 0, 1
+
+        Returns
+        -------
+        turn_index : 1-D array of int
+            The global index of the turning points of the chunk to be processed
+        turn_values : list of pandas DataFrame's
+            The values of the turning points as data frames.
+        """
+
+        assert type(samples[0]) == pd.core.frame.DataFrame
+        assert samples[0].index.names == ["load_step", "node_id"]
+
+        # extract the representative samples for the first node
+        first_node_id = samples.index.get_level_values("node_id")[0]
+        samples_of_first_node = samples[samples.index.get_level_values("node_id") == first_node_id].to_numpy().flatten()
+
+        previous_head_index = self._head_index
+
+        turn_index, _ = self._new_turns(samples_of_first_node, flush, preserve_start)
+
+        # the selected samples are a list of DataFrames. Each DataFrame contains the values for all nodes
+        selected_samples = [samples[samples.index.get_level_values("load_step") == index-previous_head_index].reset_index(drop=True) \
+                            for index in turn_index]
+
+        return turn_index, selected_samples
 
 class AbstractRecorder:
     """A common base class for rainflow recorders.

@@ -253,3 +253,104 @@ def test_loopvalue_rainflow_recorder_histogram_one_non_zero(value_from, value_to
 
     histogram = fr.histogram()
     pd.testing.assert_series_equal(histogram, pd.Series(expected_histogram.flatten(), index=expected_index))
+
+# fkm nonlinear recorder
+def test_fkm_nonlinear_recorder_record_two_values():
+    a1, a2, b1, b2, c1, c2, d1, d2, e1, e2, f1, f2 = 23., 42.,  46., 84.,  2.5, -2.2,  4.8, 2.3,  4.5, -0.2,  1.8, 0.3
+    g1, g2 = 1, 2
+    h1, h2 = 4, 5
+    fr = RFR.FKMNonlinearRecorder()
+
+    # arguments: loads_min, loads_max, S_min, S_max, epsilon_min, epsilon_max, epsilon_min_LF, epsilon_max_LF,
+    # is_closed_hysteresis, is_zero_mean_stress_and_strain, run_index, debug_output
+    fr.record_values_fkm_nonlinear([a1], [b1], [c1], [d1], [e1], [f1], [g1], [h1], [False], [False], 1, [""])
+    fr.record_values_fkm_nonlinear([a2], [b2], [c2], [d2], [e2], [f2], [g2], [h2], [True], [False], 2, [""])
+    fr.record_values_fkm_nonlinear([a2], [b2], [c2], [d2], [e2], [f2], [g2], [h2], [True], [True], 2, [""])
+
+    np.testing.assert_array_equal(fr.loads_min, [a1, a2, a2])
+    np.testing.assert_array_equal(fr.loads_max, [b1, b2, b2])
+    np.testing.assert_array_equal(fr.S_min, [c1, c2, c2])
+    np.testing.assert_array_equal(fr.S_max, [d1, d2, d2])
+    np.testing.assert_array_equal(fr.R, [c1/d1, c2/d2, -1])
+    np.testing.assert_array_equal(fr.epsilon_min, [e1, e2, e2])
+    np.testing.assert_array_equal(fr.epsilon_max, [f1, f2, f2])
+    np.testing.assert_array_equal(fr.S_a, [0.5*(d1-c1), 0.5*(d2-c2), 0.5*(d2-c2)])
+    np.testing.assert_array_equal(fr.S_m, [0.5*(d1+c1), 0.5*(d2+c2), 0])
+    np.testing.assert_array_equal(fr.epsilon_a, [0.5*(f1-e1), 0.5*(f2-e2), 0.5*(f2-e2)])
+    np.testing.assert_array_equal(fr.epsilon_m, [0.5*(f1+e1), 0.5*(f2+e2), 0])
+    np.testing.assert_array_equal(fr.collective["epsilon_min_LF"], [g1, g2, g2])
+    np.testing.assert_array_equal(fr.collective["epsilon_max_LF"], [h1, h2, h2])
+    np.testing.assert_array_equal(fr.is_closed_hysteresis, [False, True, True])
+    np.testing.assert_array_equal(fr.collective["is_zero_mean_stress_and_strain"], [False, False, True])
+    np.testing.assert_array_equal(fr.collective["run_index"], [1, 2, 2])
+
+
+def test_fkm_nonlinear_recorder_empty_collective_default():
+    fr = RFR.FKMNonlinearRecorder()
+    
+    # create appropriate empty MultiIndex
+    index = pd.MultiIndex.from_product([[],[]], names=["hysteresis_index","assessment_point_index"])
+    index = index.set_levels([index.levels[1].astype(int)], level=[1])
+    
+    expected = pd.DataFrame(
+        index=index,
+        data={
+            'loads_min': [],
+            'loads_max': [],
+            'S_min': [],
+            'S_max': [],
+            'R': [],
+            'epsilon_min': [],
+            'epsilon_max': [],
+            "S_a": [],
+            "S_m": [],
+            "epsilon_a": [],
+            "epsilon_m": [],
+            "epsilon_min_LF": [],
+            "epsilon_max_LF": [],
+            "is_closed_hysteresis": [],
+            "is_zero_mean_stress_and_strain": [],
+            "run_index": [],
+            "debug_output": []
+        }
+    )
+    
+    pd.testing.assert_frame_equal(fr.collective, expected)
+
+
+def test_fkm_nonlinear_recorder_two_non_zero_collective():
+    a1, a2, b1, b2, c1, c2, d1, d2, e1, e2, f1, f2 = 23., 42.,  46., 84.,  2.5, -2.2,  4.8, 2.3,  0.5, -0.2,  1.8, 0.3
+    g1, g2 = 1, 2
+    h1, h2 = 4, 5
+    fr = RFR.FKMNonlinearRecorder()
+    
+    # arguments: loads_min, loads_max, S_min, S_max, epsilon_min, epsilon_max, epsilon_min_LF, epsilon_max_LF,
+    # is_closed_hysteresis, is_zero_mean_stress_and_strain, run_index, debug_output
+    fr.record_values_fkm_nonlinear([a1], [b1], [c1], [d1], [e1], [f1], [g1], [h1], [False], [False], 1, [""])
+    fr.record_values_fkm_nonlinear([a2], [b2], [c2], [d2], [e2], [f2], [g2], [h2], [True], [False], 2, [""])
+    fr.record_values_fkm_nonlinear([a2], [b2], [c2], [d2], [e2], [f2], [g2], [h2], [True], [True], 2, [""])
+
+    expected = pd.DataFrame(
+        index=pd.MultiIndex.from_product([[0,1,2],[0]],names=["hysteresis_index","assessment_point_index"]),
+        data={
+            'loads_min': [a1, a2, a2],
+            'loads_max': [b1, b2, b2],
+            'S_min': [c1, c2, c2],
+            'S_max': [d1, d2, d2],
+            'R': [c1/d1, c2/d2, -1],
+            'epsilon_min': [e1, e2, e2],
+            'epsilon_max': [f1, f2, f2],
+            "S_a": [0.5*(d1-c1), 0.5*(d2-c2), 0.5*(d2-c2)],
+            "S_m": [0.5*(d1+c1), 0.5*(d2+c2), 0],
+            "epsilon_a": [0.5*(f1-e1), 0.5*(f2-e2), 0.5*(f2-e2)],
+            "epsilon_m": [0.5*(f1+e1), 0.5*(f2+e2), 0],
+            "epsilon_min_LF": [g1, g2, g2],
+            "epsilon_max_LF": [h1, h2, h2],
+            "is_closed_hysteresis": [False, True, True],
+            "is_zero_mean_stress_and_strain": [False, False, True],
+            "run_index": [1, 2, 2],
+            "debug_output": ["", "", ""],
+        }
+    )
+
+    pd.testing.assert_frame_equal(fr.collective, expected)

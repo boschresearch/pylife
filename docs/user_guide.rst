@@ -40,7 +40,7 @@ now these are
 Analyzing load collectives and stresses
 ---------------------------------------
 
-These modules perform basic operations on time signals as well as more complpex
+These modules perform basic operations on time signals as well as more complex
 things as rainflow counting.
 
 * :mod:`pylife.stress.collective` – facilities to handle load collectives
@@ -54,9 +54,12 @@ things as rainflow counting.
 Lifetime assessment of components
 ---------------------------------
 
-Calculate lifetime, failure probabilities, nominal endurance limits of
-components based on load collective and material data.
+Calculate lifetime, failure probabilities, endurance limits of
+components based on load sequences and material data.
 
+* :mod:`pylife.strength.fkm_nonlinear.assessment_nonlinear_standard` – Local strain concept / FKM guideline nonlinear
+
+See also the tutorial about :doc:`FKM nonlinear <tutorials/fkm_nonlinear>`.
 
 Mesh operations
 ---------------
