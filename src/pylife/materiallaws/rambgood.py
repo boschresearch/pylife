@@ -30,9 +30,9 @@ class RambergOsgood:
     E : float
         Young's Modulus
     K : float
-        The strength coefficient
+        The strength coefficient, usually named `K'` or ``K_prime`̀  in FKM nonlinear related formulas.
     n : float
-        The strain hardening coefficient
+        The strain hardening coefficient, usually named `n'` or ``n_prime`̀  in FKM nonlinear related formulas.
 
     Notes
     -----

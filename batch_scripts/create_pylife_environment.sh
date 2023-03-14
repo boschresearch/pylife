@@ -2,10 +2,10 @@
 
 
 if [[ `uname` = Linux ]] ; then
-    JUPYTER=`git rev-parse --show-toplevel`/_venv/bin/jupyter
+    JUPYTER=`git rev-parse --show-toplevel`/.venv/bin/jupyter
     . $ANACONDA_HOME/etc/profile.d/conda.sh
 else
-    JUPYTER=`git rev-parse --show-toplevel`/_venv/Scripts/jupyter
+    JUPYTER=`git rev-parse --show-toplevel`/.venv/Scripts/jupyter
     eval "$('/c/Program Files/Anaconda3/Scripts/conda.exe' 'shell.bash' 'hook')"
 fi
 
@@ -14,9 +14,9 @@ git config filter.jupyter_clean.clean \
     --stdin --stdout --to notebook --ClearOutputPreprocessor.enabled=True"
 
 
-conda env create -p _venv --file environment.yml
+conda env create -p .venv --file environment.yml
 
-conda activate ./_venv
+conda activate ./.venv
 
 if [[ `uname` != Linux ]] ; then
     conda install pywin32

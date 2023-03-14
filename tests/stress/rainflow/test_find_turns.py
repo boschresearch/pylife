@@ -178,7 +178,6 @@ def test_find_turns_flat_signal():
     np.testing.assert_array_equal(index, expected_index)
     np.testing.assert_array_equal(values, expected_values)
 
-
 @pytest.mark.parametrize('null', [None, np.nan, pd.NaT, float("nan"), pd.NA])
 def test_find_turns_nan_next_to_turns_nan_after_turn(null):
     samples = np.array([0.0, 1.0, null, 0.0, null, 1.0])
@@ -189,7 +188,6 @@ def test_find_turns_nan_next_to_turns_nan_after_turn(null):
         index, values = RF.find_turns(samples)
     np.testing.assert_array_equal(index, expected_index)
     np.testing.assert_array_equal(values, expected_values)
-
 
 @pytest.mark.parametrize('null', [None, np.nan, pd.NaT, float("nan"), pd.NA])
 def test_find_turns_nan_next_to_turns_nan_before_turns(null):
