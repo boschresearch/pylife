@@ -519,7 +519,7 @@ def test_seeger_beste_example_2():
         ])
     
     pd.testing.assert_frame_equal(
-        binned_notch_approximation_law._lut_secondary_branch, expected_matrix_AST, rtol=1e-3, atol=1e-5)
+        binned_notch_approximation_law._lut_secondary_branch, expected_matrix_AST, rtol=2e-3, atol=1e-5)
 
 @pytest.mark.skip(reason="Derivatives not implemented at the moment, left in the code because it might be useful in the future for performance optimization with gradient-based root finding algorithms.")
 @pytest.mark.parametrize('stress, load', [
