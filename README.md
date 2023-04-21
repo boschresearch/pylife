@@ -24,7 +24,7 @@ So we are welcoming collaboration not only from science and education but also
 from other commercial companies dealing with the topic. We commend this library
 to university teachers to use it for education purposes.
 
-The company [Viktor](https://viktor.ai) has setup a [web application for Wöhler
+The company [Viktor](https://viktor.ai) has set up a [web application for Wöhler
 test analysis](https://cloud.viktor.ai/public/wohler-fatigue-test-analysis)
 based on pyLife code.
 
