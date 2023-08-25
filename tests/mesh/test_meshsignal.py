@@ -97,9 +97,8 @@ def test_vtk_grid_return_types():
     mi = pd.MultiIndex.from_tuples([(1, 17), (1, 23), (1, 3)], names=['element_id', 'node_id'])
     df = pd.DataFrame([[0., 0.], [0., 2.], [2., 0.], ], columns=['x', 'y'], index=mi)
 
-    offset, cells, cell_types, points = df.mesh.vtk_data()
+    cells, cell_types, points = df.mesh.vtk_data()
 
-    assert isinstance(offset, np.ndarray)
     assert isinstance(cells, np.ndarray)
     assert isinstance(cell_types, np.ndarray)
     assert isinstance(points, np.ndarray)
@@ -132,7 +131,7 @@ def test_vtk_grid_2d_tri_lin():
     ]
     expected_cell_types = [5, 5]  # VTK_TRIANGLE
 
-    offset, cells, cell_types, points = df.mesh.vtk_data()
+    cells, cell_types, points = df.mesh.vtk_data()
 
     np.testing.assert_allclose(expected_cells, cells)
     np.testing.assert_allclose(expected_points, points)
@@ -172,7 +171,7 @@ def test_vtk_grid_2d_tri_quad():
     ]
     expected_cell_types = [5, 5]  # VTK_TRIANGLE
 
-    offset, cells, cell_types, points = df.mesh.vtk_data()
+    cells, cell_types, points = df.mesh.vtk_data()
 
     np.testing.assert_allclose(expected_cells, cells)
     np.testing.assert_allclose(expected_points, points)
@@ -210,7 +209,7 @@ def test_vtk_grid_2d_squ_lin():
     ]
     expected_cell_types = [9, 9]  # VTK_QUAD
 
-    offset, cells, cell_types, points = df.mesh.vtk_data()
+    cells, cell_types, points = df.mesh.vtk_data()
 
     np.testing.assert_allclose(expected_cells, cells)
     np.testing.assert_allclose(expected_points, points)
@@ -256,7 +255,7 @@ def test_vtk_grid_2d_squ_quad():
     ]
     expected_cell_types = [9, 9]  # VTK_QUAD
 
-    offset, cells, cell_types, points = df.mesh.vtk_data()
+    cells, cell_types, points = df.mesh.vtk_data()
 
     np.testing.assert_allclose(expected_cells, cells)
     np.testing.assert_allclose(expected_points, points)
@@ -287,7 +286,6 @@ def test_vtk_grid_3d_hex_lin():
         [1., 0., 0.],
     ], columns=['x', 'y', 'z'], index=mi)
 
-    expected_offset = [0, 9]
     expected_cells = [
         8, 4, 5, 7, 6, 0, 1, 3, 2,
         8, 8, 9, 11, 10, 4, 5, 7, 6
@@ -308,9 +306,8 @@ def test_vtk_grid_3d_hex_lin():
         [2., 1., 0.],
     ]
 
-    offset, cells, cell_types, points = df.mesh.vtk_data()
+    cells, cell_types, points = df.mesh.vtk_data()
 
-#    np.testing.assert_allclose(expected_offset, offset)
     np.testing.assert_allclose(expected_cells, cells)
     np.testing.assert_allclose(expected_points, points)
     np.testing.assert_allclose(expected_cell_types, cell_types)
@@ -371,7 +368,6 @@ def test_vtk_grid_3d_hex_quad():
         [2., 1., 2.],
     ], columns=['x', 'y', 'z'], index=mi)
 
-    expected_offset = [0, 9]
     expected_cell_types = [12, 12]  # VTK_HEXAHEDRON
     expected_cells = [
         8, 4, 6, 2, 0, 5, 7, 3, 1,
@@ -392,9 +388,8 @@ def test_vtk_grid_3d_hex_quad():
         [4., 2., 0.],  # 11
     ]
 
-    offset, cells, cell_types, points = df.mesh.vtk_data()
+    cells, cell_types, points = df.mesh.vtk_data()
 
-#    np.testing.assert_allclose(expected_offset, offset)
     np.testing.assert_allclose(expected_cell_types, cell_types)
     np.testing.assert_allclose(expected_cells, cells)
     np.testing.assert_allclose(expected_points, points)
@@ -417,7 +412,6 @@ def test_vtk_grid_3d_tet_lin():
         [2., 0., 2.],  # 2
     ], columns=['x', 'y', 'z'], index=mi)
 
-    expected_offset = [0, 5]
     expected_cells = [
         4, 3, 4, 2, 0,
         4, 3, 4, 2, 1
@@ -431,9 +425,8 @@ def test_vtk_grid_3d_tet_lin():
         [4., 2., 2.], # 4
     ]
 
-    offset, cells, cell_types, points = df.mesh.vtk_data()
+    cells, cell_types, points = df.mesh.vtk_data()
 
-#    np.testing.assert_allclose(expected_offset, offset)
     np.testing.assert_allclose(expected_cells, cells)
     np.testing.assert_allclose(expected_points, points)
     np.testing.assert_allclose(expected_cell_types, cell_types)
@@ -470,7 +463,6 @@ def test_vtk_grid_3d_tet_quad():
         [0., 0., 0.],
     ], columns=['x', 'y', 'z'], index=mi)
 
-    expected_offset = [0, 5]
     expected_cells = [
         4, 3, 4, 2, 0,
         4, 3, 4, 2, 1
@@ -484,9 +476,8 @@ def test_vtk_grid_3d_tet_quad():
         [4., 2., 2.], # 4
     ]
 
-    offset, cells, cell_types, points = df.mesh.vtk_data()
+    cells, cell_types, points = df.mesh.vtk_data()
 
-    #np.testing.assert_allclose(expected_offset, offset)
     np.testing.assert_allclose(expected_cells, cells)
     np.testing.assert_allclose(expected_points, points)
     np.testing.assert_allclose(expected_cell_types, cell_types)
@@ -514,7 +505,6 @@ def test_vtk_grid_3d_wedge_lin():
 
     ], columns=['x', 'y', 'z'], index=mi)
 
-    expected_offset = [0, 5]
     expected_cells = [
         6, 4, 5, 3, 0, 6, 7,
         6, 4, 5, 1, 0, 6, 2
@@ -531,9 +521,8 @@ def test_vtk_grid_3d_wedge_lin():
         [2., 2., 2.]   # 7
     ]
 
-    offset, cells, cell_types, points = df.mesh.vtk_data()
+    cells, cell_types, points = df.mesh.vtk_data()
 
-#    np.testing.assert_allclose(expected_offset, offset)
     np.testing.assert_allclose(expected_cells, cells)
     np.testing.assert_allclose(expected_points, points)
     np.testing.assert_allclose(expected_cell_types, cell_types)
@@ -580,7 +569,6 @@ def test_vtk_grid_3d_wedge_quad():
         [8., 8., 8.],
     ], columns=['x', 'y', 'z'], index=mi)
 
-    expected_offset = [0, 5]
     expected_cells = [
         6, 4, 5, 3, 0, 6, 7,
         6, 4, 5, 1, 0, 6, 2
@@ -597,9 +585,8 @@ def test_vtk_grid_3d_wedge_quad():
         [2., 2., 2.]   # 7
     ]
 
-    offset, cells, cell_types, points = df.mesh.vtk_data()
+    cells, cell_types, points = df.mesh.vtk_data()
 
-#    np.testing.assert_allclose(expected_offset, offset)
     np.testing.assert_allclose(expected_cells, cells)
     np.testing.assert_allclose(expected_points, points)
     np.testing.assert_allclose(expected_cell_types, cell_types)
@@ -632,7 +619,6 @@ def test_vtk_grid():
         [2., 4., 2., 37.5],  # 11
     ], columns=['x', 'y', 'z', 'mises'], index=mi)
 
-    expected_offset = np.array([0, 9, 16])
     expected_cells = [
         8, 0, 1, 3, 2, 4, 5, 7, 6,
         6, 1, 8, 5, 2, 9, 6,
@@ -653,7 +639,7 @@ def test_vtk_grid():
     ])
     expected_cell_types = [12, 13, 10]
 
-    offset, cells, cell_types, points = df.mesh.vtk_data()
+    cells, cell_types, points = df.mesh.vtk_data()
 
     np.testing.assert_allclose(expected_cells, cells)
     np.testing.assert_allclose(expected_points, points)
