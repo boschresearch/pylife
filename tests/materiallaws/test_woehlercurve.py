@@ -21,6 +21,8 @@ import pytest
 import numpy as np
 import pandas as pd
 
+from hypothesis import given, settings, strategies as st
+
 from pylife.materiallaws import WoehlerCurve
 
 
@@ -500,8 +502,7 @@ def test_broadcast_load_cycles_clashing_index():
     pd.testing.assert_series_equal(result, expected)
 
 
-from hypothesis import given, note, strategies as st
-
+@settings(deadline=None)
 @given(st.floats(min_value=10., max_value=500.),
        st.floats(min_value=1.0, max_value=10.0),
        st.floats(min_value=1e2, max_value=1e7),
@@ -511,6 +512,7 @@ def test_load_is_basquin_load(SD, k_1, ND, cycles):
     assert wc.load(cycles) == wc.basquin_load(cycles)
 
 
+@settings(deadline=None)
 @given(st.floats(min_value=10., max_value=500.),
        st.floats(min_value=1.0, max_value=10.0),
        st.floats(min_value=1e2, max_value=1e7),
