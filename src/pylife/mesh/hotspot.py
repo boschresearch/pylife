@@ -83,15 +83,13 @@ class HotSpot(meshsignal.Mesh):
         new_hotspot = pd.Series(False, self._obj.index)
         new_hotspot[max_index] = True
 
-        sl = pd.IndexSlice
-
         new_entries = True
         while new_entries:
             new_entries = False
             new_nodes_idx = remaining[new_hotspot].index.get_level_values('node_id')
             new_elems_idx = remaining[new_hotspot].index.get_level_values('element_id')
-            new_nodes = remaining.loc[sl[new_nodes_idx, :]] ^ new_hotspot
-            new_elems = remaining.loc[sl[:, new_elems_idx]] ^ new_hotspot
+            new_nodes = remaining.loc[remaining.index.isin(new_nodes_idx, level='node_id')] ^ new_hotspot
+            new_elems = remaining.loc[remaining.index.isin(new_elems_idx, level='element_id')] ^ new_hotspot
             if new_nodes.any():
                 new_entries = True
                 new_hotspot[new_nodes] = True

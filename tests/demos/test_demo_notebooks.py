@@ -48,7 +48,7 @@ def test_hotspot_plate(tb):
         first_hotspot = mesh[mesh['hotspot'] == 1]
         pd.testing.assert_index_equal(
             first_hotspot.index,
-            pd.MultiIndex.from_tuples([(456, 5)], names=['element_id', 'node_id'])
+            pd.MultiIndex.from_tuples([(456, 5), (456, 6433)], names=['element_id', 'node_id'])
         )
         """
     )
