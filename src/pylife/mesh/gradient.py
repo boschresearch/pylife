@@ -51,10 +51,9 @@ class Gradient(Mesh):
     def _find_neighbor(self):
         self.neighbors = {}
 
-        sl = pd.IndexSlice
         for node, df in self._obj.groupby('node_id'):
             elidx = df.index.get_level_values('element_id')
-            nodes = self._obj.loc[sl[:, elidx], :].index.get_level_values('node_id').to_numpy()
+            nodes = self._obj.loc[self._obj.index.isin(elidx, level='element_id')].index.get_level_values('node_id').to_numpy()
             self.neighbors[node] = np.setdiff1d(np.unique(nodes), [node])
 
     def _calc_lst_sqr(self):
