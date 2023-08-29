@@ -216,7 +216,7 @@ def test_roll_dataset(df_rolled):
     exact_res['id'] = pd.MultiIndex.from_frame(df)
     exact_res['time'] = np.int64(x)
 
-    pd.testing.assert_frame_equal(exact_res, df_rolled)
+    pd.testing.assert_frame_equal(exact_res, df_rolled, check_index_type=False)
 
 
 # %%

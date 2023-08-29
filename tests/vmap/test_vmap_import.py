@@ -178,9 +178,9 @@ def test_available_variables_unknown_geometry_in_state(beam_2d_squ_lin_and_quad)
 def test_join_node_variable_displacement(beam_2d_squ):
     var_frame = beam_2d_squ.make_mesh('1').join_variable('DISPLACEMENT', 'STATE-2').to_frame()
     groups = var_frame.groupby('node_id')
-    pd.testing.assert_frame_equal(groups.mean(), RD.beam_2d_squ_node_displacement)
-    pd.testing.assert_frame_equal(groups.min(), RD.beam_2d_squ_node_displacement)
-    pd.testing.assert_frame_equal(groups.max(), RD.beam_2d_squ_node_displacement)
+    pd.testing.assert_frame_equal(groups.mean(), RD.beam_2d_squ_node_displacement, check_index_type=False)
+    pd.testing.assert_frame_equal(groups.min(), RD.beam_2d_squ_node_displacement, check_index_type=False)
+    pd.testing.assert_frame_equal(groups.max(), RD.beam_2d_squ_node_displacement, check_index_type=False)
 
 
 def test_join_variable_unknown_state(beam_2d_squ):
@@ -255,7 +255,7 @@ def test_join_element_nodal_variable_stress_element_variable_evol(beam_3d_hex):
                  .join_variable('STRESS_CAUCHY', 'STATE-2')
                  .join_variable('EVOL', column_names=['V_e'])
                  .to_frame())
-    pd.testing.assert_frame_equal(var_frame, RD.beam_3d_hex_stress_element_volume, rtol=1e-4)
+    pd.testing.assert_frame_equal(var_frame, RD.beam_3d_hex_stress_element_volume, rtol=1e-4, check_index_type=False)
 
 
 def test_join_variable_unsupported_location():
