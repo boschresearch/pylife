@@ -54,6 +54,20 @@ def test_odbclient_node_coordinates(client):
     pd.testing.assert_frame_equal(client.node_coordinates('PART-1-1'), expected)
 
 
+def test_odbclient_node_ids(client):
+    result = client.node_ids('FIX', 'PART-1-1')
+    expected = pd.Index([1, 2, 3, 4, 22, 27, 31, 32], dtype='int64', name='node_id')
+
+    pd.testing.assert_index_equal(result, expected)
+
+
+def test_odbclient_element_ids(client):
+    result = client.element_ids('FIX', 'PART-1-1')
+    expected = pd.Index([1], dtype='int64', name='element_id')
+
+    pd.testing.assert_index_equal(result, expected)
+
+
 def test_odbclient_node_coordinates_invalid_instance_name(client):
     with pytest.raises(KeyError, match="Invalid instance name 'nonexistent'."):
         client.node_coordinates('nonexistent')
@@ -120,9 +134,15 @@ def test_variable_names(client):
 
 
 def test_variable_stress_element_nodal(client):
-    expected = pd.read_csv('tests/stress_element_nodal.csv',
-                           index_col=['node_id', 'element_id'])
+    expected = pd.read_csv('tests/stress_element_nodal.csv', index_col=['node_id', 'element_id'])
     result = client.variable('S', 'PART-1-1', 'Load', 1)
+
+    pd.testing.assert_frame_equal(result, expected)
+
+
+def test_variable_evol(client):
+    result = client.variable('EVOL', 'PART-1-1', 'Load', 1)
+    expected = pd.DataFrame({'EVOL': [1000.]}, index=pd.Index([1, 2, 3, 4], name='element_id'))
 
     pd.testing.assert_frame_equal(result, expected)
 
