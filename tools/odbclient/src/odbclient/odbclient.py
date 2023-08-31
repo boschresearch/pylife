@@ -221,7 +221,7 @@ class OdbClient:
         """
         index, connectivity = self._query('get_connectivity', (instance_name, elset_name))
         return pd.DataFrame({'connectivity': connectivity},
-                            index=pd.Int64Index(index, name='element_id'))
+                            index=pd.Index(index, name='element_id', dtype=np.int64))
 
     def nset_names(self, instance_name=''):
         """Query the available node set names.
@@ -257,7 +257,7 @@ class OdbClient:
             The node ids as :class:`pandas.Index`
         """
         node_ids = self._query('get_node_set', (instance_name, nset_name))
-        return pd.Index(node_ids, name='node_id')
+        return pd.Index(node_ids, name='node_id', dtype=np.int64)
 
     def elset_names(self, instance_name=''):
         """Query the available element set names.
@@ -293,7 +293,7 @@ class OdbClient:
             The element ids as :class:`pandas.Index`
         """
         element_ids = self._query('get_element_set', (instance_name, elset_name))
-        return pd.Int64Index(element_ids, name='element_id')
+        return pd.Index(element_ids, name='element_id', dtype=np.int64)
 
     def step_names(self):
         """Query the step names from the odb file.
@@ -367,9 +367,9 @@ class OdbClient:
 
         index_labels = _ascii(_decode, index_labels)
         if len(index_labels) > 1:
-            index = pd.DataFrame(index_data, columns=index_labels).set_index(index_labels).index
+            index = pd.DataFrame(index_data, columns=index_labels, dtype=np.int64).set_index(index_labels).index
         else:
-            index = pd.Int64Index(index_data[:, 0], name=index_labels[0])
+            index = pd.Index(index_data[:, 0], name=index_labels[0], dtype=np.int64)
 
         column_names = _ascii(_decode, labels)
         return pd.DataFrame(values, index=index, columns=column_names)
