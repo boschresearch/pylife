@@ -33,7 +33,7 @@ computer, you can use `MyBinder
    :maxdepth: 1
    :caption: FEM based methods
 
-   demos/hotspot_plate.nblink
+   demos/hotspot_beam.nblink
    demos/stress_gradient.nblink
    demos/local_stress_with_FE.nblink
 
