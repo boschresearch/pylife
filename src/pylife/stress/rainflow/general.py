@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2022 - for information on the respective copyright owner
+# Copyright (c) 2019-2023 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -515,7 +515,7 @@ class AbstractRecorder:
 
         return chunk_num, global_index - chunk_index[chunk_num]
 
-    def record_values(self, values_from, values_to):
+    def record_values(self, values_from, values_to):  # pragma: no cover
         """Report hysteresis loop values to the recorder.
 
         Parameters
@@ -533,7 +533,7 @@ class AbstractRecorder:
         """
         pass
 
-    def record_index(self, indeces_from, indeces_to):
+    def record_index(self, indeces_from, indeces_to):  # pragma: no cover
         """Record hysteresis loop index to the recorder.
 
         Parameters

@@ -24,10 +24,14 @@ So we are welcoming collaboration not only from science and education but also
 from other commercial companies dealing with the topic. We commend this library
 to university teachers to use it for education purposes.
 
+The company [Viktor](https://viktor.ai) has set up a [web application for Wöhler
+test analysis](https://cloud.viktor.ai/public/wohler-fatigue-test-analysis)
+based on pyLife code.
+
 
 ## Status
 
-pyLife-2.0.1 has been released.  That means that for the time being we hope
+pyLife-2.0.3 has been released.  That means that for the time being we hope
 that we will not introduce *breaking* changes.  That does not mean that the
 release is stable finished and perfect.  We will do small improvements,
 especially with respect to documentation in the upcoming months and release

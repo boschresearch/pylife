@@ -1,5 +1,4 @@
-
-# Copyright (c) 2019-2022 - for information on the respective copyright owner
+# Copyright (c) 2019-2023 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -201,7 +200,7 @@ class FKMNonlinearRecorder(AbstractRecorder):
         """1-D numpy array containing the mean stresses of the recorded hystereses,
         which are usually computed as ``(S_min + S_max) / 2``.
         Only for hystereses resulting from Memory 3, the FKM nonlinear document defines ``S_m``
-        to be zero (eq. 2.9-52). This is indicated by ``_is_zero_mean_stress_and_strain=True`̀ . 
+        to be zero (eq. 2.9-52). This is indicated by ``_is_zero_mean_stress_and_strain=True`̀ .
         For these hystereses, this function returns 0 instead of ``(S_min + S_max) / 2``. """
         return np.where(self.is_zero_mean_stress_and_strain, \
                         0, 0.5 * (np.array(self._S_min) + np.array(self._S_max)))
@@ -215,27 +214,27 @@ class FKMNonlinearRecorder(AbstractRecorder):
     def epsilon_m(self):
         """1-D numpy array containing the mean strain of the recorded hystereses,
         which are usually computed as ``(epsilon_min + epsilon_max) / 2``.
-        Only for hystereses resulting from Memory 3, the FKM nonlinear document defines ``epsilon_m`` 
-        to be zero (eq. 2.9-53). This is indicated by ``_is_zero_mean_stress_and_strain=True`̀ . 
+        Only for hystereses resulting from Memory 3, the FKM nonlinear document defines ``epsilon_m``
+        to be zero (eq. 2.9-53). This is indicated by ``_is_zero_mean_stress_and_strain=True`̀ .
         For these hystereses, this function returns 0 instead of ``(epsilon_min + epsilon_max) / 2``. """
         return np.where(self.is_zero_mean_stress_and_strain, \
                         0, 0.5 * (np.array(self._epsilon_min) + np.array(self._epsilon_max)))
 
     def _get_for_every_node(self, boolean_array):
-        
+
         # number of points, i.e., number of values for every load step
         m = len(self._S_min[0])
-        
+
         # bring the array of boolean values to the right shape
         # numeric_array contains only 0s and 1s for False and True
         numeric_array = np.array(boolean_array).reshape(-1,1).dot(np.ones((1,m)))
-        
+
         # transform the array to boolean type
         return np.where(numeric_array == 1, True, False)
 
-    @property 
+    @property
     def is_zero_mean_stress_and_strain(self):
-        
+
         # if the assessment is performed for multiple points at once
         if len(self._S_min) > 0 and type(self._S_min[0]) == pd.core.series.Series:
             return self._get_for_every_node(self._is_zero_mean_stress_and_strain)
@@ -246,13 +245,13 @@ class FKMNonlinearRecorder(AbstractRecorder):
     def R(self):
         """1-D numpy array containing the stress relation of the recorded hystereses,
         which are usually computed as ``S_min / S_max``.
-        Only for hystereses resulting from Memory 3, the FKM nonlinear document defines ``R = -1`` 
-        (eq. 2.9-54). This is indicated by ``_is_zero_mean_stress_and_strain=True`̀ . 
+        Only for hystereses resulting from Memory 3, the FKM nonlinear document defines ``R = -1``
+        (eq. 2.9-54). This is indicated by ``_is_zero_mean_stress_and_strain=True`̀ .
         For these hystereses, this function returns -1 instead of ``S_min / S_max``, which may be different. """
-        
+
         return np.where(self.is_zero_mean_stress_and_strain, \
                         -1, np.array(self._S_min) / np.array(self._S_max))
-        
+
     @property
     def is_closed_hysteresis(self):
         """1-D bool array indicating whether the row corresponds to a closed hysteresis or
@@ -268,34 +267,34 @@ class FKMNonlinearRecorder(AbstractRecorder):
     def collective(self):
         """The overall collective recorded as :class:`pandas.DataFrame`.
 
-        The load values are given in the columns ``loads_min``, and ``loads_max`` 
+        The load values are given in the columns ``loads_min``, and ``loads_max``
         for consistency with other recoders.
         Stress and strain values for the hystereses are given in the columns
         ``S_min``, ``S_max``, and  ``epsilon_min``, ``epsilon_max``, respectively.
-        The column ``is_closed_hysteresis`` indicates whether the row corresponds 
-        to a closed hysteresis or was recorded as a memory 3 hysteresis, 
+        The column ``is_closed_hysteresis`` indicates whether the row corresponds
+        to a closed hysteresis or was recorded as a memory 3 hysteresis,
         which counts only half the damage in the FKM nonlinear procedure.
-        The columns ``epsilon_min_LF`` and ``epsilon_max_LF`` describe the minimum 
-        and maximum seen value of epsilon in the entire load history, up to the 
+        The columns ``epsilon_min_LF`` and ``epsilon_max_LF`` describe the minimum
+        and maximum seen value of epsilon in the entire load history, up to the
         current hysteresis. These values may be lower (min) or higher (max) than
-        the min/max values of the previously recorded hysteresis as they also 
+        the min/max values of the previously recorded hysteresis as they also
         take into account parts of the stress-strain diagram curve that
         are not part of hystereses.
-        
+
         The resulting DataFrame will have a MultiIndex with levels "hysteresis_index"
         and "assessment_point_index", both counting from 0 upwards. The nodes of a mesh
         are, thus, mapped to the index sequence 0,1,..., even if the
         node_id starts, e.g., with 1.
         """
-        
+
         # if the assessment is performed for multiple points at once
         if len(self._S_min) > 0 and type(self._S_min[0]) == pd.core.series.Series:
-            
+
             n_hystereses = self.R.shape[0]
             n_nodes = self.R.shape[1]
-            
+
             index = pd.MultiIndex.from_product([range(n_hystereses), range(n_nodes)], names=["hysteresis_index", "assessment_point_index"])
-            
+
             return pd.DataFrame(
                 index=index,
                 data={
@@ -316,7 +315,7 @@ class FKMNonlinearRecorder(AbstractRecorder):
                     "is_zero_mean_stress_and_strain": self.is_zero_mean_stress_and_strain.flatten(),
                     "run_index": np.array(self._run_index).reshape(-1,1).dot(np.ones((1,n_nodes))).flatten().astype(int),
                 })
-            
+
         else:
             # if the assessment is performed by a single point
             n_hystereses = len(self._S_min)
@@ -325,15 +324,15 @@ class FKMNonlinearRecorder(AbstractRecorder):
             # determine load
             loads_min = self._loads_min
             loads_max = self._loads_max
-            
+
             if len(self._loads_min) == 0 or len(self._loads_max) == 0:
                 loads_min = [np.nan]*n_hystereses
                 loads_max = [np.nan]*n_hystereses
-                
+
             return pd.DataFrame(
                 index=index,
                 data={
-                    "loads_min": loads_min, 
+                    "loads_min": loads_min,
                     "loads_max": loads_max,
                     "S_min": self._S_min,
                     "S_max": self._S_max,
@@ -352,11 +351,11 @@ class FKMNonlinearRecorder(AbstractRecorder):
                     "debug_output": self._debug_output
             })
 
-    def record_values_fkm_nonlinear(self, loads_min, loads_max, S_min, S_max, epsilon_min, epsilon_max, 
+    def record_values_fkm_nonlinear(self, loads_min, loads_max, S_min, S_max, epsilon_min, epsilon_max,
                       epsilon_min_LF, epsilon_max_LF,
                       is_closed_hysteresis, is_zero_mean_stress_and_strain, run_index, debug_output):
         """Record the loop values."""
-        
+
         if loads_min:
             self._loads_min += loads_min
         if loads_max:
@@ -369,9 +368,9 @@ class FKMNonlinearRecorder(AbstractRecorder):
         self._epsilon_max_LF += epsilon_max_LF
         self._is_closed_hysteresis += is_closed_hysteresis
         self._is_zero_mean_stress_and_strain += is_zero_mean_stress_and_strain
-        
+
         if len(debug_output) == 0:
             debug_output = [""] * len(S_min)
         self._debug_output += debug_output
-        
+
         self._run_index += [run_index] * len(S_min)

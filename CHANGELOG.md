@@ -4,6 +4,22 @@ In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
 
+## pylife-2.0.4
+
+Minor bugfix release
+
+* switch to vtk > 9
+* fix two index bugs in gradient.py and hotspot.py
+* support for python 3.11
+* pandas-2.0 compliant
+
+
+## pylife-2.0.3
+
+A minor release, mostly dependency related updates and documentation
+improvements.
+
+
 ## pylife-2.0.2
 
 Minor bugfix release

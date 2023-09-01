@@ -23,6 +23,15 @@ Comment:   The component itself is not part of pyLife,
            PyScaffold as templates and the adjusted versions shipped with
            pyLife.
 
+
+In the official pyLife docs https://pylife.readthedocs.org various artifacts
+(fonts, css, JavaScripts) from the Sphinx RTD Theme are used.  Those are not
+part of pyLife, neither are thy shipped along with the pyLife code base,
+neither with packages.  They are only used to present the documentation.  To
+find out about what artifacts these are and about their licenses we refer to
+the developers of the Sphinx RTD Theme: https://sphinx-rtd-theme.readthedocs.io
+
+
 --------------------------------------------------------------------------
 License for PyScaffold
 --------------------------------------------------------------------------

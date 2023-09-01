@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2022 - for information on the respective copyright owner
+# Copyright (c) 2019-2023 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -38,27 +38,27 @@ def change_workingdir_dir(monkeypatch):
     monkeypatch.chdir('demos')
 
 
-@testbook('demos/hotspot_plate.ipynb')
-def test_hotspot_plate(tb):
+@testbook('demos/hotspot_beam.ipynb')
+def test_hotspot_beam(tb):
     with tb.patch('pyvista.Plotter'):
         tb.execute()
 
     tb.inject(
         """
         first_hotspot = mesh[mesh['hotspot'] == 1]
-        pd.testing.assert_index_equal(
-            first_hotspot.index,
-            pd.MultiIndex.from_tuples([(456, 5)], names=['element_id', 'node_id'])
-        )
+        assert len(first_hotspot) == 1296
         """
     )
     tb.inject(
         """
         second_hotspot = mesh[mesh['hotspot'] == 2]
-        pd.testing.assert_index_equal(
-            second_hotspot.index,
-            pd.MultiIndex.from_tuples([(2852, 9)], names=['element_id', 'node_id'])
-        )
+        assert len(second_hotspot) == 1504
+        """
+    )
+    tb.inject(
+        """
+        third_hotspot = mesh[mesh['hotspot'] == 3]
+        assert len(third_hotspot) == 160
         """
     )
 

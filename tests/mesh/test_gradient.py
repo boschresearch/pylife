@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2022 - for information on the respective copyright owner
+# Copyright (c) 2019-2023 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -57,6 +57,26 @@ def test_grad_dx():
                         'fct': fkt})
     df = df.set_index(['node_id', 'element_id'])
 
+    expected = pd.DataFrame({
+        'dfct_dx': np.full(9, 3.0),
+        'dfct_dy': np.zeros(9),
+        'dfct_dz': np.zeros(9)
+    }, index=pd.RangeIndex(1, 10, name='node_id'))
+
+    grad = df.gradient.gradient_of('fct')
+
+    pd.testing.assert_frame_equal(grad, expected)
+
+
+def test_grad_dx_flipped_index_levels():
+    fkt = [1, 4, 4, 7, 1, 1, 4, 4, 4, 4, 7, 7, 1, 4, 4, 7]
+    df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
+                       'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
+                       'x': [0, 1, 1, 2, 0, 0, 1, 1, 1, 1, 2, 2, 0, 1, 1, 2],
+                       'y': [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2],
+                       'z': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                       'fct': fkt})
+    df = df.set_index(['element_id', 'node_id'])
     expected = pd.DataFrame({
         'dfct_dx': np.full(9, 3.0),
         'dfct_dy': np.zeros(9),

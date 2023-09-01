@@ -1,0 +1,4 @@
+{
+    "path": "../../demos/hotspot_beam.ipynb",
+    "extra-media": ["../../demos/two_notched_beam.vmap"]
+}

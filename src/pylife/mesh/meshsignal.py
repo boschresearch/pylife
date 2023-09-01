@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2022 - for information on the respective copyright owner
+# Copyright (c) 2019-2023 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -248,9 +248,7 @@ class Mesh(PlainMesh):
         points = first_order_points(connectivity)
         cells = cells_with_lengths(points.index, connectivity)
 
-        offsets = np.array([])  # (groups.aggregate(lambda nds: nds.shape[0]+1).cumsum()-groups.count()-1).to_numpy()
-
-        return offsets, cells, cell_types, points.to_numpy()
+        return cells, cell_types, points.to_numpy()
 
     _element_types_2d = {
         # Resolve number of nodes of element to number of first order nodes and vtk element type
