@@ -290,7 +290,7 @@ def test_fkm_nonlinear_recorder_empty_collective_default():
     
     # create appropriate empty MultiIndex
     index = pd.MultiIndex.from_product([[],[]], names=["hysteresis_index","assessment_point_index"])
-    index = index.set_levels([index.levels[1].astype(int)], level=[1])
+    index = index.set_levels([index.levels[1].astype(np.int64)], level=[1])
     
     expected = pd.DataFrame(
         index=index,
