@@ -186,10 +186,13 @@ class Surface3D(Mesh):
         d = df_at_surface.merge(df_at_surface, on="element_id", how="left", suffixes=["_n0", "_n1"])
         d = d[d["node_id_n0"] != d["node_id_n1"]]
 
-        p0 = d.groupby(["element_id", "node_id_n0"]).nth(0)
-        p1 = d.groupby(["element_id", "node_id_n0"]).nth(1)
+        p0 = d.groupby(["element_id", "node_id_n0"], group_keys=True).nth(0)
+        p1 = d.groupby(["element_id", "node_id_n0"], group_keys=True).nth(1)
+        d2 = d.groupby(["element_id", "node_id_n0"], group_keys=True).first()
 
-        d2 = d.groupby(["element_id", "node_id_n0"]).first()
+        p0 = p0.reset_index().set_index(["element_id", "node_id_n0"])
+        p1 = p1.reset_index().set_index(["element_id", "node_id_n0"])
+        d2 = d2.reset_index().set_index(["element_id", "node_id_n0"])
 
         d2["node_id_p1"] = p0["node_id_n1"]
         d2["x_p1"] = p0["x_n0_n1"]

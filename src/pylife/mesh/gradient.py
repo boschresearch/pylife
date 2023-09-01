@@ -380,17 +380,22 @@ class Gradient3D(Mesh):
         df = self._obj[["x", "y", "z", value_key]].reorder_levels(["element_id", "node_id"]).sort_index(level="element_id", sort_remaining=False)
 
         # apply the function which computes the gradient to every element separately
-        df_grad = df.groupby("element_id").apply(self._compute_gradient)
+        df_grad = df.groupby("element_id", group_keys=False).apply(self._compute_gradient)
 
         # compile the resulting DataFrame
-        result = pd.DataFrame(index=df.index, copy=True, data={
+        print(df.index.shape)
+        print(df_grad.shape)
+        result = pd.DataFrame(copy=True, data={
             f"d{value_key}_dx": df_grad.grad_x,
             f"d{value_key}_dy": df_grad.grad_y,
             f"d{value_key}_dz": df_grad.grad_z,
         })
+        print(self._obj)
 
         # remove "element_id" index in multi-index
         result = result.reset_index(level=0, drop=True)
+        print(result)
 
+#        return result
         # remove duplicate indices, keep the first node
         return result[~result.index.duplicated(keep='first')]
