@@ -596,7 +596,7 @@ class Binned:
             load = load.fillna(0)
             sign = sign.fillna(0)
             
-            index = self._lut_primary_branch.load.searchsorted(np.abs(load))-1   # "-1", transform to zero-based indices
+            index = self._lut_primary_branch.load.searchsorted(np.abs(load.values))-1   # "-1", transform to zero-based indices
     
             # raise error if requested load is higher than initialized maximum absolute load
             if np.any(index+1 >= len(self._lut_primary_branch)):
@@ -669,7 +669,7 @@ class Binned:
             load = load.fillna(0)
             sign = sign.fillna(0)
             
-            index = self._lut_primary_branch.load.searchsorted(np.abs(load))-1   # "-1", transform to zero-based indices
+            index = self._lut_primary_branch.load.searchsorted(np.abs(load.values))-1   # "-1", transform to zero-based indices
     
             # raise error if requested load is higher than initialized maximum absolute load
             if np.any(index+1 >= len(self._lut_primary_branch)):
@@ -743,7 +743,7 @@ class Binned:
             delta_load = delta_load.fillna(0)
             sign = sign.fillna(0)
             
-            index = self._lut_secondary_branch.delta_load.searchsorted(np.abs(delta_load))-1   # "-1", transform to zero-based indices
+            index = self._lut_secondary_branch.delta_load.searchsorted(np.abs(delta_load.values))-1   # "-1", transform to zero-based indices
     
             # raise error if requested load is higher than initialized maximum absolute load
             if np.any(index+1 >= len(self._lut_secondary_branch)):
@@ -819,7 +819,7 @@ class Binned:
             delta_load = delta_load.fillna(0)
             sign = sign.fillna(0)
             
-            index = self._lut_secondary_branch.delta_load.searchsorted(np.abs(delta_load))-1   # "-1", transform to zero-based indices
+            index = self._lut_secondary_branch.delta_load.searchsorted(np.abs(delta_load.values))-1   # "-1", transform to zero-based indices
     
             # raise error if requested load is higher than initialized maximum absolute load
             if np.any(index+1 >= len(self._lut_secondary_branch)):
