@@ -4,7 +4,8 @@ dependencies:
   - pip
   - pip:
       - pylife[all]
-      - pyvista
+      - pyvista[all,jupyter]
+      - trame<3
       - panel
       - plotly
       - xvfbwrapper
