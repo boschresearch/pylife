@@ -17,6 +17,16 @@
 __author__ = "Benjamin Maier" 
 __maintainer__ = __author__
 
-import pylife.strength.fkm_nonlinear.constants
-import pylife.strength.fkm_nonlinear.parameter_calculations
-import pylife.strength.fkm_nonlinear.assessment_nonlinear_standard
+from .assessment_nonlinear_standard import perform_fkm_nonlinear_assessment
+from .constants import get_constants_for_material_group
+from .damage_calculator import DamageCalculatorPRAM
+from .damage_calculator import DamageCalculatorPRAJ
+from .damage_calculator_praj_miner import DamageCalculatorPRAJMinerElementary
+
+__all__ = [
+    'perform_fkm_nonlinear_assessment',
+    'get_constants_for_material_group',
+    'DamageCalculatorPRAM',
+    'DamageCalculatorPRAJ',
+    'DamageCalculatorPRAJMinerElementary'
+]

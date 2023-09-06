@@ -22,6 +22,7 @@ from .hookeslaw import *
 from .true_stress_strain import *
 from .woehlercurve import WoehlerCurve
 
+
 __all__ = [
     'RambergOsgood',
     'true_stress',
@@ -32,5 +33,5 @@ __all__ = [
     'HookesLaw1d',
     'HookesLaw2dPlaneStrain',
     'HookesLaw2dPlaneStress',
-    'HookesLaw3d'
+    'HookesLaw3d',
 ]

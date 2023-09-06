@@ -88,7 +88,8 @@ from .general import find_turns, AbstractDetector, AbstractRecorder
 from .threepoint import ThreePointDetector
 from .fourpoint import FourPointDetector
 from .fkm import FKMDetector
-from .recorders import LoopValueRecorder, FullRecorder
+from .fkm_nonlinear import FKMNonlinearDetector, FKMNonlinearHysteresisPlotter
+from .recorders import LoopValueRecorder, FullRecorder, FKMNonlinearRecorder
 
 from .compat import RainflowCounterThreePoint, RainflowCounterFKM
 
@@ -101,6 +102,9 @@ __all__ = [
     'FKMDetector',
     'LoopValueRecorder',
     'FullRecorder',
+    'FKMNonlinearRecorder',
+    'FKMNonlinearDetector', 
+    'FKMNonlinearHysteresisPlotter',
     'RainflowCounterThreePoint',
     'RainflowCounterFKM',
 ]
