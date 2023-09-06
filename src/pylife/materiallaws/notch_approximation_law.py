@@ -23,7 +23,64 @@ import pandas as pd
 
 import pylife.materiallaws.rambgood
 
-class ExtendedNeuber(pylife.materiallaws.notch_approximation_law_base.NotchApproximationLawBase):
+class NotchApproximationLawBase:
+    """This is a base class for any notch approximation law, e.g., the extended Neuber and the Seeger-Beste laws.
+    
+    It initializes the internal variables used by the derived classes and provides getters and setters.
+    """
+    
+    def __init__(self, E, K, n, K_p=None):
+        self._E = E
+        self._K = K
+        self._n = n
+        self._K_p = K_p 
+        
+        self._ramberg_osgood_relation = pylife.materiallaws.rambgood.RambergOsgood(E, K, n)
+    
+    @property
+    def E(self):
+        '''Get Young's Modulus'''
+        return self._E
+
+    @property
+    def K(self):
+        '''Get the strength coefficient'''
+        return self._K
+
+    @property
+    def n(self):
+        '''Get the strain hardening coefficient'''
+        return self._n
+
+    @property
+    def K_p(self):
+        '''Get the shape factor (de: Traglastformzahl)'''
+        return self._K_p
+
+    @property
+    def ramberg_osgood_relation(self):
+        '''Get the ramberg osgood relation object
+        '''
+        return self._ramberg_osgood_relation
+
+    @K_p.setter
+    def K_p(self, value):
+        """Set the shape factor value K_p  (de: Traglastformzahl)"""
+        self._K_p = value
+
+    @K.setter
+    def K_prime(self, value):
+        """Set the strain hardening coefficient"""
+        self._K = value
+        self._ramberg_osgood_relation = pylife.materiallaws.rambgood.RambergOsgood(self._E, self._K, self._n)
+
+    @K.setter
+    def K(self, value):
+        """Set the strain hardening coefficient"""
+        self.K_prime = value
+
+
+class ExtendedNeuber(NotchApproximationLawBase):
     r'''Implementation of the extended Neuber notch approximation material relation.
 
     This notch approximation law is used for the P_RAM damage parameter in the FKM

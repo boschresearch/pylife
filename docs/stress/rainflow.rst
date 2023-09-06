@@ -17,7 +17,6 @@ Detectors
    rainflow/threepointdetector
    rainflow/fourpointdetector
    rainflow/fkmdetector
-   rainflow/fkm_nonlinear_detector
 
 
 Recorders
@@ -29,16 +28,10 @@ Recorders
    rainflow/loopvaluerecorder
    rainflow/fullrecorder
    rainflow/abstractrecorder
-   rainflow/fkm_nonlinear_recorder
 
 
 Utility functions
 .................
-
-.. toctree::
-   :maxdepth: 1
-
-   rainflow/fkm_nonlinear_hysteresis_plotter
 
 .. autofunction:: pylife.stress.rainflow.find_turns
 

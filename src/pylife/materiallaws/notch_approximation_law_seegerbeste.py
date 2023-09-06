@@ -19,11 +19,13 @@ __maintainer__ = __author__
 
 import numpy as np
 from scipy import optimize
+import pandas as pd
 import warnings
 
-import pylife.materiallaws.notch_approximation_law_base
+import pylife.materiallaws.rambgood
+import pylife.materiallaws.notch_approximation_law
 
-class SeegerBeste(pylife.materiallaws.notch_approximation_law_base.NotchApproximationLawBase):
+class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximationLawBase):
     r'''Implementation of the Seeger-Beste notch approximation material relation.
     
     This notch approximation law is used for the P_RAJ damage parameter in the FKM

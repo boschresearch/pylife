@@ -18,17 +18,14 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 from .meshsignal import PlainMesh, Mesh
-from .gradient import Gradient, Gradient3D
+from .gradient import Gradient
 from .hotspot import HotSpot
 from .meshmapping import Meshmapper
-from .surface import Surface3D
 
 __all__ = [
     'PlainMesh',
     'Mesh',
     'Gradient',
     'HotSpot',
-    'Meshmapper',
-    'Gradient3D',
-    'Surface3D'
+    'Meshmapper'
 ]
