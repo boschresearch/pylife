@@ -101,31 +101,31 @@ To access the data items of a class we used to use getter and setter
 functions. A better and more modern way is python's `@property` decorator.
 ```python
 class ExampleClass:
-	def __init__(self):
-		self._foo = 23
-		self._bar = 42
-		self._sum = None
+    def __init__(self):
+        self._foo = 23
+        self._bar = 42
+        self._sum = None
 
     @property
     def foo(self):
-		''' getter functions have the name of the accessed data item
-		'''
-		return self._foo
+        ''' getter functions have the name of the accessed data item
+        '''
+        return self._foo
 
     @foo.setter
-	def foo(self, v):
-		''' setter functions have the name of the accessed data item prefixed
-			with `set_`
-		'''
-		if v < 0: # sanity check
-			raise Exception("Value for foo must be >= 0")
-		self._foo = v
+    def foo(self, v):
+        ''' setter functions have the name of the accessed data item prefixed
+            with `set_`
+        '''
+        if v < 0: # sanity check
+            raise Exception("Value for foo must be >= 0")
+        self._foo = v
 
-	def calc_sum_of_foo_and_bar(self):
-		'''	class methods whose name does not imply that they return data
-			should not return anything.
-		'''
-		self._sum = self._foo + self._bar
+    def calc_sum_of_foo_and_bar(self):
+        ''' class methods whose name does not imply that they return data
+            should not return anything.
+        '''
+        self._sum = self._foo + self._bar
 ```
 
 The old style getter and setter function like `set_foo(self, new_foo)`are still
@@ -147,14 +147,14 @@ like:
 ```python
 class Foo:
 
-	def __init__(self):
-		self.public_variable = 'bar'
-		self._private_variable = 'baz'
+    def __init__(self):
+        self.public_variable = 'bar'
+        self._private_variable = 'baz'
 
-	def public_method(self):
-	...
+    def public_method(self):
+    ...
 
-	def _private_method(self):
+    def _private_method(self):
 ```
 
 ### Object orientation
@@ -197,60 +197,60 @@ the code more readable, because the new function has a name.
 
 ```python
 def some_function(data, parameters):
-	... # a bunch of code
-	... # over several lines
-	... # hard to figure out
-	... # what it is doing
-	if parameters['use_method_1']:
+    ... # a bunch of code
+    ... # over several lines
+    ... # hard to figure out
+    ... # what it is doing
+    if parameters['use_method_1']:
         ... # a bunch of code
-		... # over several lines
-		... # hard to figure out
-		... # what it is doing
-	else:
-		... # a bunch of code
-		... # over several lines
-		... # hard to figure out
-		... # what it is doing
-	... # a bunch of code
-	... # over several lines
-	... # hard to figure out
-	... # what it is doing
+        ... # over several lines
+        ... # hard to figure out
+        ... # what it is doing
+    else:
+        ... # a bunch of code
+        ... # over several lines
+        ... # hard to figure out
+        ... # what it is doing
+    ... # a bunch of code
+    ... # over several lines
+    ... # hard to figure out
+    ... # what it is doing
 ```
 
 *Good* example
 
 ```python
 def prepare(data, parameters):
-	... # a bunch of code
-	... # over several lines
-	... # easily understandable
-	... # by the function's name
+    ... # a bunch of code
+    ... # over several lines
+    ... # easily understandable
+    ... # by the function's name
 
 def cleanup(data, parameters):
-	... # a bunch of code
-	... # over several lines
-	... # easily understandable
-	... # by the function's name
+    ... # a bunch of code
+    ... # over several lines
+    ... # easily understandable
+    ... # by the function's name
 
 def method_1(data):
-	... # a bunch of code
-	... # over several lines
-	... # easily understandable
-	... # by the function's name
+    ... # a bunch of code
+    ... # over several lines
+    ... # easily understandable
+    ... # by the function's name
 
 def other_method(data):
-	... # a bunch of code
-	... # over several lines
-	... # easily understandable
-	... # by the function's name
+    ... # a bunch of code
+    ... # over several lines
+    ... # easily understandable
+    ... # by the function's name
 
 def some_function(data, parameters):
-	prepare(data, parameters)
-	if parameters['use_method_1']:
-		method_1(data)
-	else:
-		other_method(data)
-	cleanup(data, parameters)
+    prepare(data, parameters)
+    if parameters['use_method_1']:
+        method_1(data)
+    else:
+        other_method(data)
+    cleanup(data, parameters)
 ```
 
 
