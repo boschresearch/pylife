@@ -34,9 +34,10 @@ the test coverage.
 
 ## Coding style
 
-Please do consult the [CODINGSTYLE](CODINGSTYLE.md) file for codingstyle guide
-lines. In order to have your contribution merged to main line following guide
-lines should be met.
+Please do consult the
+[codingstyle](https://pylife.readthedocs.io/en/stable/CODINGSTYLE.html) file
+for codingstyle guide lines. In order to have your contribution merged to main
+line following guide lines should be met.
 
 ### Docstrings
 
