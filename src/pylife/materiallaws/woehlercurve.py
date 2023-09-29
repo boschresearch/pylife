@@ -129,25 +129,38 @@ class WoehlerCurve(PylifeSignal):
 
         return WoehlerCurve(transformed)
 
+    def miner_original(self):
+        """Set k_2 to inf according Miner Original method (k_2 = inf).
+
+        Returns
+        -------
+        modified copy of self
+        """
+        new = self._obj.copy()
+        new['k_2'] =  np.inf
+        return self.__class__(new)
+
     def miner_elementary(self):
         """Set k_2 to k_1 according Miner Elementary method (k_2 = k_1).
 
         Returns
         -------
-        self
+        modified copy of self
         """
-        self._obj['k_2'] = self._obj.k_1
-        return self
+        new = self._obj.copy()
+        new['k_2'] =  self._obj.k_1
+        return self.__class__(new)
 
     def miner_haibach(self):
         """Set k_2 to value according Miner Haibach method (k_2 = 2 * k_1 - 1).
 
         Returns
         -------
-        self
+        modified copy of self
         """
-        self._obj['k_2'] = 2. * self._obj.k_1 - 1.
-        return self
+        new = self._obj.copy()
+        new['k_2'] = 2. * self._obj.k_1 - 1.
+        return self.__class__(new)
 
     def cycles(self, load, failure_probability=0.5):
         """Calculate the cycles numbers from loads.
@@ -214,16 +227,14 @@ class WoehlerCurve(PylifeSignal):
         cycles : numpy.ndarray
             The cycle numbers at which the component fails for the given `load` values
         """
+        def ensure_float_to_prevent_int_overflow(load):
+            if isinstance(load, pd.Series):
+                return pd.Series(load, dtype=np.float64)
+            return np.asarray(load, dtype=np.float64)
+
         transformed = self.transform_to_failure_probability(failure_probability)
 
-        if hasattr(load, '__iter__'):
-            if hasattr(load, 'astype'):
-                load = load.astype('float64')
-            else:
-                load = np.array(load).astype('float64')
-        else:
-            load = float(load)
-
+        load = ensure_float_to_prevent_int_overflow(load)
         ld, wc = transformed.broadcast(load)
         cycles = np.full_like(ld, np.inf)
 
