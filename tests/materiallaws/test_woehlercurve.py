@@ -436,14 +436,24 @@ def test_woehler_miner_original(wc_data):
     assert wc_data.woehler.k_2 == np.inf
 
 
-def test_woehler_miner(wc_data):
+def test_woehler_miner_elementary(wc_data):
     assert wc_data.woehler.miner_elementary().k_2 == wc_data.k_1
     assert wc_data.woehler.miner_elementary().to_pandas().k_2 == wc_data.k_1
+
+
+def test_woehler_miner_elementary_new_object(wc_data):
+    orig = wc_data.woehler
+    assert orig.miner_elementary() is not orig
 
 
 def test_woehler_miner_haibach(wc_data):
     assert wc_data.woehler.miner_haibach().k_2 == 13.0
     assert wc_data.woehler.miner_haibach().to_pandas().k_2 == 13.0
+
+
+def test_woehler_miner_haibach_new_object(wc_data):
+    orig = wc_data.woehler
+    assert orig.miner_haibach() is not orig
 
 
 def test_woehler_to_pandas(wc_data):

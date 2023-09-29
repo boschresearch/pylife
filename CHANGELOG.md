@@ -4,6 +4,17 @@ In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
 
+## since pylife-2.0.4
+
+### Breaking changes
+
+* Non-destructive miner modifiers of `WoehlerCurve`
+
+  The methods `WoehlerCurve.miner_elementary()` and
+  `WoehlerCurve.miner_haibach()` now return modified copies of the original
+  WoehlerCurve object, rather than modifying the original.
+
+
 ## pylife-2.0.4
 
 Minor bugfix release

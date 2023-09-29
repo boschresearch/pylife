@@ -134,20 +134,22 @@ class WoehlerCurve(PylifeSignal):
 
         Returns
         -------
-        self
+        modified copy of self
         """
-        self._obj['k_2'] = self._obj.k_1
-        return self
+        new = self._obj.copy()
+        new['k_2'] =  self._obj.k_1
+        return self.__class__(new)
 
     def miner_haibach(self):
         """Set k_2 to value according Miner Haibach method (k_2 = 2 * k_1 - 1).
 
         Returns
         -------
-        self
+        modified copy of self
         """
-        self._obj['k_2'] = 2. * self._obj.k_1 - 1.
-        return self
+        new = self._obj.copy()
+        new['k_2'] = 2. * self._obj.k_1 - 1.
+        return self.__class__(new)
 
     def cycles(self, load, failure_probability=0.5):
         """Calculate the cycles numbers from loads.
