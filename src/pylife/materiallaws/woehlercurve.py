@@ -129,6 +129,17 @@ class WoehlerCurve(PylifeSignal):
 
         return WoehlerCurve(transformed)
 
+    def miner_original(self):
+        """Set k_2 to inf according Miner Original method (k_2 = inf).
+
+        Returns
+        -------
+        modified copy of self
+        """
+        new = self._obj.copy()
+        new['k_2'] =  np.inf
+        return self.__class__(new)
+
     def miner_elementary(self):
         """Set k_2 to k_1 according Miner Elementary method (k_2 = k_1).
 

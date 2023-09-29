@@ -432,8 +432,18 @@ def test_woehler_pf_given(wc_data):
     assert wc.woehler.failure_probability == 0.1
 
 
-def test_woehler_miner_original(wc_data):
+def test_woehler_miner_original_as_default(wc_data):
     assert wc_data.woehler.k_2 == np.inf
+
+
+def test_woehler_miner_original_as_request(wc_data):
+    wc_data['k_2'] = wc_data.k_1
+    assert wc_data.woehler.miner_original().k_2 == np.inf
+
+
+def test_woehler_miner_original_new_object(wc_data):
+    orig = wc_data.woehler
+    assert orig.miner_original() is not orig
 
 
 def test_woehler_miner_elementary(wc_data):

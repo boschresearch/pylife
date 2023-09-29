@@ -6,6 +6,10 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 ## since pylife-2.0.4
 
+### New features
+
+* Introduce `WoehlerCurve.miner_original()`
+
 ### Breaking changes
 
 * Non-destructive miner modifiers of `WoehlerCurve`
