@@ -383,8 +383,6 @@ class Gradient3D(Mesh):
         df_grad = df.groupby("element_id", group_keys=False).apply(self._compute_gradient)
 
         # compile the resulting DataFrame
-        print(df.index.shape)
-        print(df_grad.shape)
         result = pd.DataFrame(copy=True, data={
             f"d{value_key}_dx": df_grad.grad_x,
             f"d{value_key}_dy": df_grad.grad_y,
