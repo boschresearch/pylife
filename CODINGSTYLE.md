@@ -108,23 +108,23 @@ class ExampleClass:
 
     @property
     def foo(self):
-        ''' getter functions have the name of the accessed data item
-        '''
+        """ getter functions have the name of the accessed data item
+        """
         return self._foo
 
     @foo.setter
     def foo(self, v):
-        ''' setter functions have the name of the accessed data item prefixed
+        """ setter functions have the name of the accessed data item prefixed
             with `set_`
-        '''
+        """
         if v < 0: # sanity check
             raise Exception("Value for foo must be >= 0")
         self._foo = v
 
     def calc_sum_of_foo_and_bar(self):
-        ''' class methods whose name does not imply that they return data
+        """ class methods whose name does not imply that they return data
             should not return anything.
-        '''
+        """
         self._sum = self._foo + self._bar
 ```
 
@@ -286,10 +286,10 @@ some value `c`. But what is it that you are doing?
 Now the *good* example:
 ```python
 def hypot(triangle):
-    ''' Calculates the hypotenuse of a triangle using the law of cosines
+    """Calculate the hypotenuse of a triangle using the law of cosines
 
     https://en.wikipedia.org/wiki/Law_of_cosines
-    '''
+    """
     a = triangle.a
     b = triangle.b
     gamma = triangle.gamma
