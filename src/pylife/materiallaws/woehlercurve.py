@@ -227,16 +227,14 @@ class WoehlerCurve(PylifeSignal):
         cycles : numpy.ndarray
             The cycle numbers at which the component fails for the given `load` values
         """
+        def ensure_float_to_prevent_int_overflow(load):
+            if isinstance(load, pd.Series):
+                return pd.Series(load, dtype=np.float64)
+            return np.asarray(load, dtype=np.float64)
+
         transformed = self.transform_to_failure_probability(failure_probability)
 
-        if hasattr(load, '__iter__'):
-            if hasattr(load, 'astype'):
-                load = load.astype('float64')
-            else:
-                load = np.array(load).astype('float64')
-        else:
-            load = float(load)
-
+        load = ensure_float_to_prevent_int_overflow(load)
         ld, wc = transformed.broadcast(load)
         cycles = np.full_like(ld, np.inf)
 
