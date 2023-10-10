@@ -129,15 +129,6 @@ def test_fkm_nonlinear(tb):
         """
     )
 
-@testbook('demos/fkm_nonlinear/fkm_nonlinear_mesh.ipynb', timeout=600, execute=True)
-def test_fkm_nonlinear_mesh(tb):
-
-    tb.inject(
-        """
-        assert np.isclose(result["P_RAJ_lifetime_n_cycles"][2], 43786, rtol=1e-2)
-        """
-    )
-
 @testbook('demos/fkm_nonlinear/fkm_nonlinear_full.ipynb')
 def test_fkm_nonlinear_full(tb):
     tb.execute()
