@@ -151,33 +151,66 @@ class Surface3D(Mesh):
         return df3
 
     def is_at_surface(self):
-        ''' Determines the points that are close to the surface
+        ''' Determines for every point in the mesh if it is at the mesh's surface.
 
-        Parameters
-        ----------
-        value_key : str
-            The key of the value that forms the gradient. Needs to be found in ``df``
+        Example usage:
+        
+        .. code::
+        
+            # df_mesh is a pandas DataFrame with columns "x", "y", "z" and 
+            # one row per node, indexed by a mult-index with levels
+            # "element_id" and "node_id".
+            is_at_surface_1 = df_mesh.surface_3D.is_at_surface()
+
+            # The result will be a series with values 0 or 1 for every node
+
+        .. note::
+            This function is slow for large meshes. A better approach would be
+            to determine surface nodes in the commercial solver (Abaqus, Ansys).
 
         Returns
         -------
-        gradient : pd.DataFrame
-            A table describing the gradient indexed by ``node_id``.
-            The keys for the components of the gradients are
-            ``['d{value_key}_dx', 'd{value_key}_dy', 'd{value_key}_dz']``.
+        is_at_surface : pd.Series
+            A series with the same index as the given DataFrame, indicating 
+            whether the node is at a surface of the component or not.
         '''
         assert "x" in self._obj
         assert "y" in self._obj
         assert "z" in self._obj
 
         # extract only the needed columns, order and sort multi-index
-
-
-
         result = self._determine_is_at_surface()
 
         return result["is_at_surface"]
         
     def is_at_surface_with_normals(self):
+        ''' Determines for every point in the mesh if it is at the mesh's surface,
+        additionally calculate the outward normals.
+
+        Example usage:
+        
+        .. code::
+        
+            # df_mesh is a pandas DataFrame with columns "x", "y", "z" and 
+            # one row per node, indexed by a mult-index with levels
+            # "element_id" and "node_id".
+            is_at_surface_2 = df_mesh.surface_3D.is_at_surface_with_normals()
+
+            # The result will be a DataFrame with values 0 or 1 for every node
+
+        .. note::
+            This function is slow for large meshes. A better approach would be
+            to determine surface nodes in the commercial solver (Abaqus, Ansys).
+
+        Returns
+        -------
+        is_at_surface : pd.Series
+            A DataFrame with the same index as the given DataFrame and columns
+            "is_at_surface", "normal_x", "normal_y", "normal_z".
+            The column is_at_surface determines whether the node is at a surface
+            of the component or not. If at the surface, the other columns specify
+            the outward normal vector at this point.
+        '''
 
         df = self._determine_is_at_surface()
 
