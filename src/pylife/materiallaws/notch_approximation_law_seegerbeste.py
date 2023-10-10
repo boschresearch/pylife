@@ -86,7 +86,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         
         # bad conditioned problem for stress approximately 0 (divide by 0), use factor 1 instead
         # convert data from int to float
-        if type(load) is not float:
+        if not isinstance(load, float):
             load = load.astype(float)
         # factor = load / stress, avoid division by 0
         factor = np.divide(load, stress, out=np.ones_like(load), where=stress!=0)
@@ -100,7 +100,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         (pi/2*(L/Sigma-1/k_p-1))
 
         '''
-        if type(load) is not float:
+        if not isinstance(load, float):
             load = load.astype(float)
         factor = np.divide(load, stress, out=np.ones_like(load), where=stress!=0)
         return (np.pi/2)*((factor-1)/(self._K_p-1))
@@ -120,7 +120,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
 
         '''
         # convert stress value to float
-        if type(stress) is not float:
+        if not isinstance(stress, float):
             stress = stress.astype(float)
         factor = np.divide(stress, load, out=np.ones_like(stress), where=load!=0)
         
@@ -153,7 +153,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         
         # bad conditioned problem for delta_stress approximately 0 (divide by 0), use factor 1 instead
         # convert data from int to float
-        if type(delta_load) is not float:
+        if not isinstance(delta_load, float):
             delta_load = delta_load.astype(float)
         # factor = load / stress, avoid division by 0
         factor = np.divide(delta_load, delta_stress, out=np.ones_like(delta_load), where=delta_stress!=0)
@@ -167,7 +167,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         (pi/2*(delta_L/delta_Sigma-1/k_p-1))
 
         '''
-        if type(delta_load) is not float:
+        if not isinstance(delta_load, float):
             delta_load = delta_load.astype(float)
         factor = np.divide(delta_load, delta_stress, out=np.ones_like(delta_load), where=delta_stress!=0)
         return (np.pi/2)*((factor-1)/(self._K_p-1))
@@ -186,7 +186,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         <=>  1/(delta_L/delta_Sigma - 2) < k_p <= 1/(delta_L/delta_Sigma - 1)
 
         '''
-        if type(delta_stress) is not float:
+        if not isinstance(delta_stress, float):
             delta_stress = delta_stress.astype(float)
         factor = np.divide(delta_stress, delta_load, out=np.ones_like(delta_stress), where=delta_load!=0)
         
@@ -317,7 +317,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             The resulting strain
         '''
     
-        if type(stress) is not float:
+        if not isinstance(stress, float):
             stress = stress.astype(float)
             
         return self._ramberg_osgood_relation.strain(stress)
@@ -430,7 +430,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             The resulting strain
         '''
         
-        if type(delta_stress) is not float:
+        if not isinstance(delta_stress, float):
             delta_stress = delta_stress.astype(float)
             
         return self._ramberg_osgood_relation.delta_strain(delta_stress)

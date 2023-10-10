@@ -328,7 +328,7 @@ class AbstractDetector(metaclass=ABCMeta):
             preserve_start = False
             
         _is_multiple_assessment_points = False
-        if type(samples) == pd.core.frame.DataFrame:
+        if isinstance(samples, pd.DataFrame):
             _is_multiple_assessment_points = True
 
             # convert to list 
@@ -438,7 +438,7 @@ class AbstractDetector(metaclass=ABCMeta):
             The values of the turning points as data frames.
         """
 
-        assert type(samples[0]) == pd.core.frame.DataFrame
+        assert isinstance(samples[0], pd.DataFrame)
         assert samples[0].index.names == ["load_step", "node_id"]
 
         # extract the representative samples for the first node

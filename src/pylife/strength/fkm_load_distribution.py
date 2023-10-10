@@ -213,7 +213,7 @@ class FKMLoadSequence(PylifeSignal):
         """
         
         # if the load sequence is a pd.Series
-        if type(self._obj) == pd.core.series.Series:
+        if isinstance(self._obj, pd.Series):
             L_max = max(abs(self._obj))
             
         # if the load sequence is a pd.DataFrame

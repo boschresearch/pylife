@@ -236,7 +236,7 @@ class FKMNonlinearRecorder(AbstractRecorder):
     def is_zero_mean_stress_and_strain(self):
         
         # if the assessment is performed for multiple points at once
-        if len(self._S_min) > 0 and type(self._S_min[0]) == pd.core.series.Series:
+        if len(self._S_min) > 0 and isinstance(self._S_min[0], pd.Series):
             return self._get_for_every_node(self._is_zero_mean_stress_and_strain)
         else:
             return self._is_zero_mean_stress_and_strain
@@ -258,7 +258,7 @@ class FKMNonlinearRecorder(AbstractRecorder):
         was recorded as a memory 3 hysteresis, which counts only half the damage in the FKM nonlinear procedure."""
 
         # if the assessment is performed for multiple points at once
-        if len(self._S_min) > 0 and type(self._S_min[0]) == pd.core.series.Series:
+        if len(self._S_min) > 0 and isinstance(self._S_min[0], pd.Series):
             return self._get_for_every_node(self._is_closed_hysteresis)
         else:
             return self._is_closed_hysteresis
@@ -288,8 +288,8 @@ class FKMNonlinearRecorder(AbstractRecorder):
         """
         
         # if the assessment is performed for multiple points at once
-        if len(self._S_min) > 0 and type(self._S_min[0]) == pd.core.series.Series:
-            
+        if len(self._S_min) > 0 and isinstance(self._S_min[0], pd.Series):
+
             n_hystereses = self.R.shape[0]
             n_nodes = self.R.shape[1]
             

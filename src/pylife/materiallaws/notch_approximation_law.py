@@ -140,7 +140,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         
         # bad conditioned problem for stress approximately 0 (divide by 0), use factor 1 instead
         # convert data from int to float
-        if type(load) is not float:
+        if not isinstance(load, float):
             load = load.astype(float)
         # factor = load / stress, avoid division by 0
         factor = np.divide(load, stress, out=np.ones_like(load), where=stress!=0)
@@ -195,7 +195,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         
         # bad conditioned problem for delta_stress approximately 0 (divide by 0), use factor 1 instead
         # convert data from int to float
-        if type(delta_load) is not float:
+        if not isinstance(delta_load, float):
             delta_load = delta_load.astype(float)
         # factor = load / stress, avoid division by 0
         factor = np.divide(delta_load, delta_stress, out=np.ones_like(delta_load), where=delta_stress!=0)
@@ -276,6 +276,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         '''Calculate the stress of the primary path in the stress-strain diagram at a given 
         elastic-plastic stress (load), from a FE computation.
         This is done by solving for the root of f(sigma) in eq. 2.5-45 of FKM nonlinear.
+
 
         Parameters
         ----------
@@ -463,7 +464,7 @@ class Binned:
         
             
         # for multiple assessment points at once use a DataFrame with MultiIndex
-        if type(self._maximum_absolute_load) == pd.core.frame.DataFrame:
+        if isinstance(self._maximum_absolute_load, pd.DataFrame):
             assert self._maximum_absolute_load.index.name == "node_id"
             
             self._create_bins_multiple_assessment_points()
@@ -560,12 +561,12 @@ class Binned:
         
     @property
     def ramberg_osgood_relation(self):
-        '''Get the ramberg osgood relation object
+        '''The ramberg osgood relation object
         '''
         return self._notch_approximation_law.ramberg_osgood_relation
 
     def stress(self, load, rtol=1e-5, tol=1e-6):
-        '''Get the stress of the primary path in the stress-strain diagram at a given load
+        '''The stress of the primary path in the stress-strain diagram at a given load
         by using the value of the look-up table.
         
         .. note::
@@ -592,7 +593,7 @@ class Binned:
         sign = np.sign(load)
             
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if type(load) == pd.core.frame.DataFrame and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+        if isinstance(load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
             
             # the lut is a DataFrame with MultiIndex with levels class_index and node_id
             
@@ -665,7 +666,7 @@ class Binned:
         sign = np.sign(load)
         
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if type(load) == pd.core.frame.DataFrame and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+        if isinstance(load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
             
             # the lut is a DataFrame with MultiIndex with levels class_index and node_id
             
@@ -745,7 +746,7 @@ class Binned:
         sign = np.sign(delta_load)
         
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if type(delta_load) == pd.core.frame.DataFrame and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+        if isinstance(delta_load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
             
             # the lut is a DataFrame with MultiIndex with levels class_index and node_id
             
@@ -821,7 +822,7 @@ class Binned:
         sign = np.sign(delta_load)
         
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if type(delta_load) == pd.core.frame.DataFrame and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+        if isinstance(delta_load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
             
             # the lut is a DataFrame with MultiIndex with levels class_index and node_id
             

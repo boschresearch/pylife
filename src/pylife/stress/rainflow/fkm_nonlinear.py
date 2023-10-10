@@ -25,14 +25,14 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         
         @property
         def load_representative(self):
-            if type(self._load) == pd.core.frame.DataFrame:
+            if isinstance(self._load, pd.DataFrame):
                 return self._load.iloc[0].values[0]
             else:
                 return self._load
         
         @property
         def strain_representative(self):
-            if type(self._strain) == pd.core.frame.DataFrame:
+            if isinstance(self._strain, pd.DataFrame):
                 return self._strain.iloc[0].values[0]
             else:
                 return self._strain
@@ -46,7 +46,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             return self._strain
         
         def __str__(self):
-            if type(self._load) == pd.core.series.Series or type(self._load) == pd.core.frame.DataFrame:
+            if isinstance(self._load, pd.Series) or isinstance(self._load, pd.DataFrame):
                 if self._stress is None:
                     if self._load is None:
                         return "()"
@@ -624,7 +624,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         or the node from the first assessment point if multiple points are 
         considered at once."""
 
-        if type(current_load) == pd.core.frame.DataFrame:
+        if isinstance(current_load, pd.DataFrame):
             current_load_representative = current_load.iloc[0].values[0]
         else:
             current_load_representative = current_load
@@ -637,7 +637,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         if self._is_load_sequence_start:
             self._is_load_sequence_start = False
             
-            if type(load_turning_points) != np.ndarray:
+            if not isinstance(load_turning_points, np.ndarray):
                 # properly initialize self._epsilon_min_LF and self._epsilon_max_LF
                 first_sample = samples[samples.index.get_level_values("load_step") == 0].reset_index(drop=True)
 
