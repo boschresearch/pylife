@@ -39,27 +39,27 @@ class NotchApproximationLawBase:
     
     @property
     def E(self):
-        '''Get Young's Modulus'''
+        '''Young's Modulus'''
         return self._E
 
     @property
     def K(self):
-        '''Get the strength coefficient'''
+        '''the strength coefficient'''
         return self._K
 
     @property
     def n(self):
-        '''Get the strain hardening coefficient'''
+        '''the strain hardening coefficient'''
         return self._n
 
     @property
     def K_p(self):
-        '''Get the shape factor (de: Traglastformzahl)'''
+        '''the shape factor (de: Traglastformzahl)'''
         return self._K_p
 
     @property
     def ramberg_osgood_relation(self):
-        '''Get the ramberg osgood relation object
+        '''the Ramberg-Osgood relation object, i.e., an object of type RambergOsgood
         '''
         return self._ramberg_osgood_relation
 
