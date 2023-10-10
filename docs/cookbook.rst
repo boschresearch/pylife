@@ -18,11 +18,8 @@ computer, you can use `MyBinder
    demos/lifetime_calc.nblink
    demos/fkm_nonlinear.nblink
    demos/fkm_nonlinear_full.nblink
-   demos/surface_layer_roughness.nblink
-   demos/surface_layer_roughness_full.nblink
-   demos/surface_layer_roughness_explain.nblink
 
-See also the tutorials about :doc:`FKM nonlinear <tutorials/fkm_nonlinear>` and the :doc:`roughness & surface layer extension <tutorials/fkm_nonlinear_roughness_surface_layer>`.
+See also the tutorials about :doc:`FKM nonlinear <tutorials/fkm_nonlinear>`.
 
 .. toctree::
    :maxdepth: 1
