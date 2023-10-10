@@ -108,6 +108,169 @@ class ExtendedNeuber(NotchApproximationLawBase):
 
     '''
     
+    def stress(self, load, *, rtol=1e-4, tol=1e-4):
+        '''Calculate the stress of the primary path in the stress-strain diagram at a given 
+        elastic-plastic stress (load), from a FE computation.
+        This is done by solving for the root of f(sigma) in eq. 2.5-45 of FKM nonlinear.
+
+
+        Parameters
+        ----------
+        load : array-like float
+            The elastic von Mises stress from a linear elastic FEA.
+            In the FKM nonlinear document, this is also called load "L", because it is derived
+            from a load-time series. Note that this value is scaled to match the actual loading
+            in the assessment, it equals the FEM solution times the transfer factor.
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the stress gets solved, 
+            by default 1e-4
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the stress gets solved, 
+            by default 1e-4
+
+        Returns
+        -------
+        stress : array-like float
+            The resulting elastic-plastic stress according to the notch-approximation law.
+        '''
+        stress = optimize.newton(func=self._stress_implicit, x0=load, fprime=self._d_stress_implicit, \
+            args=([load]), rtol=rtol, tol=tol, maxiter=20)
+        return stress
+        
+    def strain(self, stress, load):
+        '''Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
+        The formula is given by eq. 2.5-42 of FKM nonlinear.
+        load / stress * self._K_p * e_star
+
+        Parameters
+        ----------
+        stress : array-like float
+            The stress
+        load : array-like float
+            The load
+            
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        '''
+        
+        return self._ramberg_osgood_relation.strain(stress)
+   
+    def load(self, stress, rtol=1e-4, tol=1e-4):
+        '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
+        from the elastic-plastic stress as from the notch approximation.
+        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
+
+        This method is the inverse operation of "stress", i.e., L = load(stress(L)) and S = stress(load(stress)).
+
+        Parameters
+        ----------
+        stress : array-like float
+            The elastic-plastic stress as computed by the notch approximation
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the load gets solved, 
+            by default 1e-4
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the load gets solved, 
+            by default 1e-4
+
+        Returns
+        -------
+        load : array-like float
+            The resulting load or lienar-elastic stress. 
+            
+        '''
+        
+        # self._stress_implicit(stress) = 0
+        # f(sigma) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star) = 0
+        # =>   sigma/E + (sigma/K')^(1/n') =  (L/sigma * K_p * e_star)
+        # =>   (sigma/E + (sigma/K')^(1/n')) /  K_p * sigma =  L *  e_star(L)
+        # <=> self._ramberg_osgood_relation.strain(stress) / self._K_p * stress = L * e_star(L)
+        
+        load = optimize.newton(func=self._load_implicit, x0=stress, fprime=self._d_load_implicit, \
+            args=([stress]), rtol=rtol, tol=tol, maxiter=20)
+        return load
+        
+    def stress_secondary_branch(self, delta_load, rtol=1e-4, tol=1e-4):
+        '''Calculate the stress on secondary branches in the stress-strain diagram at a given 
+        elastic-plastic stress (load), from a FE computation.
+        This is done by solving for the root of f(sigma) in eq. 2.5-46 of FKM nonlinear.
+
+        Parameters
+        ----------
+        delta_load : array-like float
+            The load increment of the hysteresis
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the stress gets solved, 
+            by default 1e-4
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the stress gets solved, 
+            by default 1e-4
+
+        Returns
+        -------
+        delta_stress : array-like float
+            The resulting stress increment within the hysteresis
+        '''
+        delta_stress = optimize.newton(func=self._stress_secondary_implicit, x0=delta_load, \
+            fprime=self._d_stress_secondary_implicit, args=([delta_load]), rtol=rtol, tol=tol, maxiter=20)
+        return delta_stress
+        
+    def strain_secondary_branch(self, delta_stress, delta_load):
+        '''Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
+        The formula is given by eq. 2.5-46 of FKM nonlinear.
+
+        Parameters
+        ----------
+        delta_sigma : array-like float
+            The stress increment
+        delta_load : array-like float
+            The load increment
+            
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        '''
+        
+        return self._ramberg_osgood_relation.delta_strain(delta_stress)
+
+    def load_secondary_branch(self, delta_stress, rtol=1e-4, tol=1e-4):
+        '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
+        from the elastic-plastic stress as from the notch approximation.
+        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
+
+        This method is the inverse operation of "stress", i.e., L = load(stress(L)) and S = stress(load(stress)).
+
+        Parameters
+        ----------
+        delta_stress : array-like float
+            The increment of the elastic-plastic stress as computed by the notch approximation
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the stress gets solved, 
+            by default 1e-4
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the stress gets solved, 
+            by default 1e-4
+
+        Returns
+        -------
+        delta_load : array-like float
+            The resulting load or lienar-elastic stress. 
+            
+        '''
+        
+        # self._stress_implicit(stress) = 0
+        # f(sigma) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star) = 0
+        # =>   sigma/E + (sigma/K')^(1/n') =  (L/sigma * K_p * e_star)
+        # =>   (sigma/E + (sigma/K')^(1/n')) /  K_p * sigma =  L *  e_star(L)
+        # <=> self._ramberg_osgood_relation.strain(stress) / self._K_p * stress = L * e_star(L)
+        
+        delta_load = optimize.newton(func=self._load_secondary_implicit, x0=delta_stress, fprime=self._d_load_secondary_implicit, \
+            args=([delta_stress]), rtol=rtol, tol=tol, maxiter=20)
+        return delta_load
+        
     def _e_star(self, load):
         """Compute the plastic corrected strain term e^{\ast} from the Neuber approximation 
         (eq. 2.5-43 in FKM nonlinear)
@@ -272,169 +435,6 @@ class ExtendedNeuber(NotchApproximationLawBase):
         return -1/delta_stress * self.K_p * self._delta_e_star(delta_load) \
             - delta_load/delta_stress * self.K_p * self._d_delta_e_star(delta_load)
         
-    def stress(self, load, *, rtol=1e-4, tol=1e-4):
-        '''Calculate the stress of the primary path in the stress-strain diagram at a given 
-        elastic-plastic stress (load), from a FE computation.
-        This is done by solving for the root of f(sigma) in eq. 2.5-45 of FKM nonlinear.
-
-
-        Parameters
-        ----------
-        load : array-like float
-            The elastic von Mises stress from a linear elastic FEA.
-            In the FKM nonlinear document, this is also called load "L", because it is derived
-            from a load-time series. Note that this value is scaled to match the actual loading
-            in the assessment, it equals the FEM solution times the transfer factor.
-        rtol : float, optional
-            The relative tolerance to which the implicit formulation of the stress gets solved, 
-            by default 1e-4
-        tol : float, optional
-            The absolute tolerance to which the implicit formulation of the stress gets solved, 
-            by default 1e-4
-
-        Returns
-        -------
-        stress : array-like float
-            The resulting elastic-plastic stress according to the notch-approximation law.
-        '''
-        stress = optimize.newton(func=self._stress_implicit, x0=load, fprime=self._d_stress_implicit, \
-            args=([load]), rtol=rtol, tol=tol, maxiter=20)
-        return stress
-        
-    def strain(self, stress, load):
-        '''Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
-        The formula is given by eq. 2.5-42 of FKM nonlinear.
-        load / stress * self._K_p * e_star
-
-        Parameters
-        ----------
-        stress : array-like float
-            The stress
-        load : array-like float
-            The load
-            
-        Returns
-        -------
-        strain : array-like float
-            The resulting strain
-        '''
-        
-        return self._ramberg_osgood_relation.strain(stress)
-   
-    def load(self, stress, rtol=1e-4, tol=1e-4):
-        '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
-        from the elastic-plastic stress as from the notch approximation.
-        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
-
-        This method is the inverse operation of "stress", i.e., L = load(stress(L)) and S = stress(load(stress)).
-
-        Parameters
-        ----------
-        stress : array-like float
-            The elastic-plastic stress as computed by the notch approximation
-        rtol : float, optional
-            The relative tolerance to which the implicit formulation of the load gets solved, 
-            by default 1e-4
-        tol : float, optional
-            The absolute tolerance to which the implicit formulation of the load gets solved, 
-            by default 1e-4
-
-        Returns
-        -------
-        load : array-like float
-            The resulting load or lienar-elastic stress. 
-            
-        '''
-        
-        # self._stress_implicit(stress) = 0
-        # f(sigma) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star) = 0
-        # =>   sigma/E + (sigma/K')^(1/n') =  (L/sigma * K_p * e_star)
-        # =>   (sigma/E + (sigma/K')^(1/n')) /  K_p * sigma =  L *  e_star(L)
-        # <=> self._ramberg_osgood_relation.strain(stress) / self._K_p * stress = L * e_star(L)
-        
-        load = optimize.newton(func=self._load_implicit, x0=stress, fprime=self._d_load_implicit, \
-            args=([stress]), rtol=rtol, tol=tol, maxiter=20)
-        return load
-        
-    def stress_secondary_branch(self, delta_load, rtol=1e-4, tol=1e-4):
-        '''Calculate the stress on secondary branches in the stress-strain diagram at a given 
-        elastic-plastic stress (load), from a FE computation.
-        This is done by solving for the root of f(sigma) in eq. 2.5-46 of FKM nonlinear.
-
-        Parameters
-        ----------
-        delta_load : array-like float
-            The load increment of the hysteresis
-        rtol : float, optional
-            The relative tolerance to which the implicit formulation of the stress gets solved, 
-            by default 1e-4
-        tol : float, optional
-            The absolute tolerance to which the implicit formulation of the stress gets solved, 
-            by default 1e-4
-
-        Returns
-        -------
-        delta_stress : array-like float
-            The resulting stress increment within the hysteresis
-        '''
-        delta_stress = optimize.newton(func=self._stress_secondary_implicit, x0=delta_load, \
-            fprime=self._d_stress_secondary_implicit, args=([delta_load]), rtol=rtol, tol=tol, maxiter=20)
-        return delta_stress
-        
-    def strain_secondary_branch(self, delta_stress, delta_load):
-        '''Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
-        The formula is given by eq. 2.5-46 of FKM nonlinear.
-
-        Parameters
-        ----------
-        delta_sigma : array-like float
-            The stress increment
-        delta_load : array-like float
-            The load increment
-            
-        Returns
-        -------
-        strain : array-like float
-            The resulting strain
-        '''
-        
-        return self._ramberg_osgood_relation.delta_strain(delta_stress)
-
-    def load_secondary_branch(self, delta_stress, rtol=1e-4, tol=1e-4):
-        '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
-        from the elastic-plastic stress as from the notch approximation.
-        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
-
-        This method is the inverse operation of "stress", i.e., L = load(stress(L)) and S = stress(load(stress)).
-
-        Parameters
-        ----------
-        delta_stress : array-like float
-            The increment of the elastic-plastic stress as computed by the notch approximation
-        rtol : float, optional
-            The relative tolerance to which the implicit formulation of the stress gets solved, 
-            by default 1e-4
-        tol : float, optional
-            The absolute tolerance to which the implicit formulation of the stress gets solved, 
-            by default 1e-4
-
-        Returns
-        -------
-        delta_load : array-like float
-            The resulting load or lienar-elastic stress. 
-            
-        '''
-        
-        # self._stress_implicit(stress) = 0
-        # f(sigma) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star) = 0
-        # =>   sigma/E + (sigma/K')^(1/n') =  (L/sigma * K_p * e_star)
-        # =>   (sigma/E + (sigma/K')^(1/n')) /  K_p * sigma =  L *  e_star(L)
-        # <=> self._ramberg_osgood_relation.strain(stress) / self._K_p * stress = L * e_star(L)
-        
-        delta_load = optimize.newton(func=self._load_secondary_implicit, x0=delta_stress, fprime=self._d_load_secondary_implicit, \
-            args=([delta_stress]), rtol=rtol, tol=tol, maxiter=20)
-        return delta_load
-        
 class Binned:
     """Binning for notch approximation laws, as described in FKM nonlinear 2.5.8.2, p.55. 
     The implicitly defined stress function of the notch approximation law is precomputed 
@@ -458,109 +458,6 @@ class Binned:
         self._maximum_absolute_load = maximum_absolute_load
         self._number_of_bins = number_of_bins
         self._create_bins()
-        
-    def _create_bins(self):
-        """Initialize the lookup tables by precomputing the notch approximation law values.
-        """
-        # for multiple assessment points at once use a DataFrame with MultiIndex
-        if isinstance(self._maximum_absolute_load, pd.DataFrame):
-            assert self._maximum_absolute_load.index.name == "node_id"
-            
-            self._create_bins_multiple_assessment_points()
-            
-        # for a single assessment point use the standard data structure
-        else:
-            self._create_bins_single_assessment_point()
-        
-        
-    def _create_bins_single_assessment_point(self):
-        """Initialize the lookup tables by precomputing the notch approximation law values,
-        for the case of scalar variables, i.e., only a single assessment point."""
-        
-        # create look-up table (lut) for the primary branch values, named PFAD in FKM nonlinear
-        self._lut_primary_branch = pd.DataFrame(0, 
-            index=pd.Index(np.arange(1, self._number_of_bins+1), name="class_index"),
-            columns=["load", "strain", "stress"])
-        
-        
-        self._lut_primary_branch.load \
-            = self._lut_primary_branch.index/self._number_of_bins * self._maximum_absolute_load
-        
-        self._lut_primary_branch.stress \
-            = self._notch_approximation_law.stress(self._lut_primary_branch.load)
-        
-        self._lut_primary_branch.strain \
-            = self._notch_approximation_law.strain(
-                self._lut_primary_branch.stress, self._lut_primary_branch.load)
-        
-        # create look-up table (lut) for the secondary branch values, named AST in FKM nonlinear
-        # Note that this time, we used twice the number of entries with the same bin width.
-        self._lut_secondary_branch = pd.DataFrame(0, 
-            index=pd.Index(np.arange(1, 2*self._number_of_bins+1), name="class_index"),
-            columns=["delta_load", "delta_strain", "delta_stress"])
-        
-        self._lut_secondary_branch.delta_load \
-            = self._lut_secondary_branch.index/self._number_of_bins * self._maximum_absolute_load
-        
-        self._lut_secondary_branch.delta_stress \
-            = self._notch_approximation_law.stress_secondary_branch(self._lut_secondary_branch.delta_load)
-        
-        self._lut_secondary_branch.delta_strain \
-            = self._notch_approximation_law.strain_secondary_branch(
-                self._lut_secondary_branch.delta_stress, self._lut_secondary_branch.delta_load)
-        
-    def _create_bins_multiple_assessment_points(self):
-        """Initialize the lookup tables by precomputing the notch approximation law values,
-        for the case of vector-valued variables caused by an assessment on multiple points at once."""
-        
-        # name column "max_abs_load"
-        self._maximum_absolute_load.rename(columns={self._maximum_absolute_load.columns[0]: "max_abs_load"}, inplace=True)
-        
-        # create look-up table (lut) for the primary branch values, named PFAD in FKM nonlinear
-        index = pd.MultiIndex.from_product([np.arange(1, self._number_of_bins+1), self._maximum_absolute_load.index],
-                                           names = ["class_index", "node_id"])
-        
-        self._lut_primary_branch = pd.DataFrame(0, index=index, columns=["load", "strain", "stress"])
-        
-        # create cartesian product of class index and max load
-        a = pd.DataFrame({"class_index": np.arange(1, self._number_of_bins+1)})
-        class_index_with_max_load = a.merge(self._maximum_absolute_load, how='cross')
-        
-        # calculate load of each bin
-        load = class_index_with_max_load.class_index.astype(float)/self._number_of_bins * class_index_with_max_load.max_abs_load 
-        load.index = index
-        self._lut_primary_branch.load = load
-        
-        self._lut_primary_branch.stress \
-            = self._notch_approximation_law.stress(self._lut_primary_branch.load)
-        
-        self._lut_primary_branch.strain \
-            = self._notch_approximation_law.strain(
-                self._lut_primary_branch.stress, self._lut_primary_branch.load)
-        
-        # ----------------
-        # create look-up table (lut) for the secondary branch values, named AST in FKM nonlinear
-        # Note that this time, we used twice the number of entries with the same bin width.
-        index = pd.MultiIndex.from_product([np.arange(1, 2*self._number_of_bins+1), self._maximum_absolute_load.index],
-                                           names = ["class_index", "node_id"])
-        
-        self._lut_secondary_branch = pd.DataFrame(0, index=index, columns=["delta_load", "delta_strain", "delta_stress"])
-        
-        # create cartesian product of class index and max load
-        a = pd.DataFrame({"class_index": np.arange(1, 2*self._number_of_bins+1)})
-        class_index_with_max_load = a.merge(self._maximum_absolute_load, how='cross')
-        
-        # calculate load of each bin
-        delta_load = class_index_with_max_load.class_index.astype(float)/self._number_of_bins * class_index_with_max_load.max_abs_load 
-        delta_load.index = index
-        self._lut_secondary_branch.delta_load = delta_load
-        
-        self._lut_secondary_branch.delta_stress \
-            = self._notch_approximation_law.stress_secondary_branch(self._lut_secondary_branch.delta_load)
-        
-        self._lut_secondary_branch.delta_strain \
-            = self._notch_approximation_law.strain_secondary_branch(
-                self._lut_secondary_branch.delta_stress, self._lut_secondary_branch.delta_load)
         
     @property
     def ramberg_osgood_relation(self):
@@ -722,8 +619,7 @@ class Binned:
                 raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
                                  f" but a higher absolute load value of |{load}| is requested (in strain()).")
             
-            return sign * self._lut_primary_branch.iloc[index+1].strain     # "+1", because the next higher class is used
-        
+            return sign * self._lut_primary_branch.iloc[index+1].strain     # "+1", because the next higher class is used 
         
     def stress_secondary_branch(self, delta_load, rtol=1e-5, tol=1e-6):
         '''Get the stress on secondary branches in the stress-strain diagram at a given load
@@ -880,3 +776,105 @@ class Binned:
             
             return sign * self._lut_secondary_branch.iloc[index+1].delta_strain     # "-1", transform to zero-based indices
     
+    def _create_bins(self):
+        """Initialize the lookup tables by precomputing the notch approximation law values.
+        """
+        # for multiple assessment points at once use a DataFrame with MultiIndex
+        if isinstance(self._maximum_absolute_load, pd.DataFrame):
+            assert self._maximum_absolute_load.index.name == "node_id"
+            
+            self._create_bins_multiple_assessment_points()
+            
+        # for a single assessment point use the standard data structure
+        else:
+            self._create_bins_single_assessment_point()
+        
+    def _create_bins_single_assessment_point(self):
+        """Initialize the lookup tables by precomputing the notch approximation law values,
+        for the case of scalar variables, i.e., only a single assessment point."""
+        
+        # create look-up table (lut) for the primary branch values, named PFAD in FKM nonlinear
+        self._lut_primary_branch = pd.DataFrame(0, 
+            index=pd.Index(np.arange(1, self._number_of_bins+1), name="class_index"),
+            columns=["load", "strain", "stress"])
+        
+        
+        self._lut_primary_branch.load \
+            = self._lut_primary_branch.index/self._number_of_bins * self._maximum_absolute_load
+        
+        self._lut_primary_branch.stress \
+            = self._notch_approximation_law.stress(self._lut_primary_branch.load)
+        
+        self._lut_primary_branch.strain \
+            = self._notch_approximation_law.strain(
+                self._lut_primary_branch.stress, self._lut_primary_branch.load)
+        
+        # create look-up table (lut) for the secondary branch values, named AST in FKM nonlinear
+        # Note that this time, we used twice the number of entries with the same bin width.
+        self._lut_secondary_branch = pd.DataFrame(0, 
+            index=pd.Index(np.arange(1, 2*self._number_of_bins+1), name="class_index"),
+            columns=["delta_load", "delta_strain", "delta_stress"])
+        
+        self._lut_secondary_branch.delta_load \
+            = self._lut_secondary_branch.index/self._number_of_bins * self._maximum_absolute_load
+        
+        self._lut_secondary_branch.delta_stress \
+            = self._notch_approximation_law.stress_secondary_branch(self._lut_secondary_branch.delta_load)
+        
+        self._lut_secondary_branch.delta_strain \
+            = self._notch_approximation_law.strain_secondary_branch(
+                self._lut_secondary_branch.delta_stress, self._lut_secondary_branch.delta_load)
+        
+    def _create_bins_multiple_assessment_points(self):
+        """Initialize the lookup tables by precomputing the notch approximation law values,
+        for the case of vector-valued variables caused by an assessment on multiple points at once."""
+        
+        # name column "max_abs_load"
+        self._maximum_absolute_load.rename(columns={self._maximum_absolute_load.columns[0]: "max_abs_load"}, inplace=True)
+        
+        # create look-up table (lut) for the primary branch values, named PFAD in FKM nonlinear
+        index = pd.MultiIndex.from_product([np.arange(1, self._number_of_bins+1), self._maximum_absolute_load.index],
+                                           names = ["class_index", "node_id"])
+        
+        self._lut_primary_branch = pd.DataFrame(0, index=index, columns=["load", "strain", "stress"])
+        
+        # create cartesian product of class index and max load
+        a = pd.DataFrame({"class_index": np.arange(1, self._number_of_bins+1)})
+        class_index_with_max_load = a.merge(self._maximum_absolute_load, how='cross')
+        
+        # calculate load of each bin
+        load = class_index_with_max_load.class_index.astype(float)/self._number_of_bins * class_index_with_max_load.max_abs_load 
+        load.index = index
+        self._lut_primary_branch.load = load
+        
+        self._lut_primary_branch.stress \
+            = self._notch_approximation_law.stress(self._lut_primary_branch.load)
+        
+        self._lut_primary_branch.strain \
+            = self._notch_approximation_law.strain(
+                self._lut_primary_branch.stress, self._lut_primary_branch.load)
+        
+        # ----------------
+        # create look-up table (lut) for the secondary branch values, named AST in FKM nonlinear
+        # Note that this time, we used twice the number of entries with the same bin width.
+        index = pd.MultiIndex.from_product([np.arange(1, 2*self._number_of_bins+1), self._maximum_absolute_load.index],
+                                           names = ["class_index", "node_id"])
+        
+        self._lut_secondary_branch = pd.DataFrame(0, index=index, columns=["delta_load", "delta_strain", "delta_stress"])
+        
+        # create cartesian product of class index and max load
+        a = pd.DataFrame({"class_index": np.arange(1, 2*self._number_of_bins+1)})
+        class_index_with_max_load = a.merge(self._maximum_absolute_load, how='cross')
+        
+        # calculate load of each bin
+        delta_load = class_index_with_max_load.class_index.astype(float)/self._number_of_bins * class_index_with_max_load.max_abs_load 
+        delta_load.index = index
+        self._lut_secondary_branch.delta_load = delta_load
+        
+        self._lut_secondary_branch.delta_stress \
+            = self._notch_approximation_law.stress_secondary_branch(self._lut_secondary_branch.delta_load)
+        
+        self._lut_secondary_branch.delta_strain \
+            = self._notch_approximation_law.strain_secondary_branch(
+                self._lut_secondary_branch.delta_stress, self._lut_secondary_branch.delta_load)
+        

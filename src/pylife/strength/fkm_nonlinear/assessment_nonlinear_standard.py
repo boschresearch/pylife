@@ -30,6 +30,193 @@ import pylife.strength.fkm_nonlinear.parameter_calculations as parameter_calcula
     (FKM non-linear guideline 2019)
 '''
 
+def perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, calculate_P_RAM=True, calculate_P_RAJ=True):
+    r"""Perform the lifetime assessment according to FKM nonlinear, using the damage parameters P_RAM and/or P_RAJ.
+    The assessment can be done for a load sequence on a single point or for multiple points at once, e.g., a FEM mesh.
+    If multiple points at once are used, it is assumed that the load sequences at all nodes are scaled versions of each
+    other.
+    
+    For an assessment with multiple points at once, the relative stress gradient G can be either specified to be constant
+    or it can have a different value at every point.
+    
+    The FKM nonlinear guideline defines three possible methods to consider the statistical distribution of the load:
+    
+        1. a normal distribution with given standard deviation, $s_L$
+        2. a logarithmic-normal distribution with given standard deviation $LSD_s$
+        3. an unknown distribution, use the constant factor :math:`\gamma_L=1.1` for $P_L = 2.5\%$ 
+            or :math:`\gamma_L=1` for $P_L = 50\%$ or 
+        
+    If the ``assessment_parameters`̀  contain a value for ``s_L``, the first approach is used (normal distribution).
+    Else, if the ``assessment_parameters`̀  contain a value for ``LSD_s``, the second approach is used (log-normal distribution).
+    Else, if only ``P_L`̀  is given a scaling with the according factor is used. The statistical assessment can be skipped
+    by settings P_A = 0.5 and P_L = 50.
+    
+    Parameters
+    ----------
+    assessment_parameters : pandas Series
+        The parameters that specify the material and the assessment problem. The following parameters are required:
+            
+        * ``MatGroupFKM``: string, one of {``Steel``, ``SteelCast``, ``Al_wrought``}. Specifies the considered material group.
+        * ``FinishingFKM``: string, one of {``none``}, the type of surface finishing (Surface finishing types are not implemented for FKM nonlinear).
+        * ``R_m``: float [MPa], ultimate tensile strength (de: Zugfestigkeit). 
+            Note that this value can also be estimated from a pre-product nominal value, as described in the FKM document.
+        * ``K_RP``: float, [-], surface roughness factor, set to 1 for polished surfaces or determine from the given diagrams included in the FKM document.
+        * ``R_z``: float [um], average roughness (de: mittlere Rauheit), only required if K_RP is not specified directly
+        * ``P_A``: float. Specifies the failure probability for the assessment (de: auszulegende Ausfallwahrscheinlichkeit).
+            Note that any value for P_A in (0,1) is possible, not just the fixed values that are defined in the FKM nonlinear
+            guideline
+            Set to 0.5 to disable statistical assessment, e.g., to simulate cyclic experiments.
+        * ``beta``: float, damage index, specify this as an alternative to ``P_A``.
+        * ``P_L``: float, [%],  one of {̀ `2.5``%, ``50``%}, probability of occurence of the specified load sequence
+            (de: Auftretenswahrscheinlilchkeit der Lastfolge). Usually set to 50 to disable statistical assessment for the 
+            load.
+        * ``s_L``: float (optional), [MPa] standard deviation of Gaussian distribution for the statistical distribution of the load
+        * ``LSD_s``: float (optional), [MPa] standard deviation of the lognormal distribution for the statistical distribution of the load
+        * `̀ c``, float, [MPa/N] factor from reference load with which FE simulation was obtained to computed equivalent stress
+            (de: Übertragungsfaktor Vergleichsspannung zu Referenzlast im Nachweispunkt) c = sigma_V / L_REF
+        * ̀ `A_sigma``: float, [mm^2] highly loaded surface area of the component (de: Hochbeanspruchte Oberfläche des Bauteils)
+        * ``A_ref``: float, [mm^2] (de: Hochbeanspruchte Oberfläche eines Referenzvolumens), usually set to 500
+        * ``G``: float, [mm^-1] relative stress gradient (de: bezogener Spannungsgradient).
+            This value can be either a constant value or a pandas Series with different values for every node.
+            If a Series is used, the order of the G values in the Series has to match the order of the assessment points in the load sequence.
+            The actual values of the index are irrelevant.
+            
+            Note that the relative stress gradient can be computed as follows:
+
+                .. code::
+                    
+                    grad = pyLife_mesh.gradient_3D.gradient_of('mises')
+                    
+                    # compute the absolute stress gradient
+                    grad["abs_grad"] = np.linalg.norm(grad, axis = 1)
+                    pylife_mesh = pylife_mesh.join(grad, sort=False)
+                    
+                    # compute scaled stress gradient (bezogener Spannungsgradient)
+                    pylife_mesh["G"] = pylife_mesh.abs_grad / pylife_mesh.mises
+            
+            To add the value of G to the ``assessment_parameters``, do the following:
+                
+                .. code::
+                        
+                    # remove element_id
+                    G = pylife_mesh['G'].droplevel("element_id")
+                    
+                    # remove duplicate node entries
+                    G = G[~G.index.duplicated(keep="first")].sort_index()
+                    
+                    assessment_parameters["G"] = G
+            
+        * ``K_p``: float, [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1). 
+            Note that Seeger-Beste and P_RAJ only work for K_p > 1.
+        * ``n_bins``: int, optional (default: 200) number of bins or classes for P_RAJ computation. A larger value gives more accurate results but longer runtimes.
+    load_sequence : pandas Series
+        A sequential list of loads that are applied to the component. If the assessment should be done for
+        a single points, this is simply a pandas Series. For multiple points at once, it should be a pandas
+        DataFrame with a two-level MultiIndex with fields "load_step" and "node_id". 
+        The load_step describes the point in time of the sequence and must be consecutive starting from 0.
+        The node_id identifies the assessment point or mesh node in every load step. The data frame contains
+        only one column with the stress at every node. The relation between the loads at every nodes 
+        has to be constant over the load steps, i.e., the load sequences at the nodes are scaled versions
+        of each other.
+        
+        An example is given below:
+            
+        .. code::
+                
+                                  S_v
+            load_step   node_id     
+            0           1         -51.135208
+                        2         28.023306
+                        3         30.012435
+                        4         -11.698302
+                        5         287.099222
+            ...         ...       ...
+                        14614     287.099222
+            1           1         -51.135208
+            ...         ...       ...            
+            7           1         -51.135208
+            ...         ...       ...            
+                        14610     -113.355076
+                        14611     -43.790024
+                        14612     -99.422582
+                        14613     -77.195496
+                        14614     -90.303717
+                       
+    calculate_P_RAM : bool (optional)
+        Whether to use the P_RAM damage parameter for the assessment. Default: True.
+    calculate_P_RAJ : bool (optional)
+        Whether to use the P_RAJ damage parameter for the assessment. Default: True.
+
+    Returns
+    -------
+    result : pandas Series
+        The asssessment result containing at least the following items:
+            
+        * ``P_RAM_is_life_infinite``: (bool) whether we have infinite life (de: Dauerfestigkeit)
+        * ``P_RAM_lifetime_n_cycles``: (float) lifetime in number of cycles
+        * ``P_RAM_lifetime_n_times_load_sequence``: (float) lifetime how often the full load sequence can be applied
+        * ``P_RAJ_is_life_infinite`` (bool) whether we have infinite life (de: Dauerfestigkeit)
+        * ``P_RAJ_lifetime_n_cycles``: (float) lifetime in number of cycles
+        * ``P_RAJ_lifetime_n_times_load_sequence``: (float) lifetime how often the full load sequence can be applied
+
+        The result dict contains even more entries which are for further information and debugging purposes, such as 
+        woehler curve objects and collective tables.
+
+        If P_A is set to 0.5 and P_L is set to 50, i.e., no statistical assessment is specified, and if the load sequence
+        is scalar (i.e., not for an entire FEM mesh), the result contains the following additional values:
+
+        * ``P_RAM_lifetime_N_1ppm``, ``P_RAM_lifetime_N_10``, ``P_RAM_lifetime_N_50̀ `, ``P_RAM_lifetime_N_90``: (float)
+            lifetimes in numbers of cycles,
+            for P_A = 1ppm = 1e-6, 10%, 50%, and 90%, according to the assessment defined in the FKM nonlinear
+            guideline. Note that the guideline does not yield a log-normal distributed lifetime. 
+            Furthermore, the value of ``P_RAM_lifetime_N_50̀ ` is lower than the calculated lifetime 
+            ``P_RAM_lifetime_n_cycles``, because it contains a safety factor even for P_A = 50%.
+
+        * ``P_RAM_N_max_bearable``: (function) A python function 
+            ``N_max_bearable(P_A, clip_gamma=False)``
+            that calculates the maximum number of cycles
+            the component can withstand with the given failure probability.
+            The parameter ``clip_gamma`` specifies whether the scaling factor gamma_M
+            will be at least 1.1 (P_RAM) or 1.2 (P_RAJ), as defined 
+            in eq. (2.5-38) (PRAM) / eq. (2.8-38) (PRAJ).
+
+            Note that it holds ``P_RAM_lifetime_N_10`` = P_RAM_N_max_bearable(0.1), 
+            and analogously for the variables for 1ppm, 50%, and 90%.
+
+        * ``P_RAM_failure_probability``: (function) A python function,
+            ``failure_probability(N)`` that calculates the failure probability for a
+            given number of cycles.
+    """
+    
+    # check that gradient G is in the correct format
+    _assert_G_is_in_correct_format(assessment_parameters)
+    _check_K_p_is_in_range(assessment_parameters)
+
+    scaled_load_sequence = _scale_load_sequence_according_to_probability(assessment_parameters, load_sequence)
+    scaled_load_sequence = _scale_load_sequence_by_c_factor(assessment_parameters, scaled_load_sequence)
+
+    assessment_parameters = _calculate_local_parameters(assessment_parameters)
+
+    assessment_parameters, component_woehler_curve_P_RAM, component_woehler_curve_P_RAJ \
+        = _compute_component_woehler_curves(assessment_parameters)
+
+    maximum_absolute_load = _get_maximum_absolute_load(assessment_parameters, scaled_load_sequence)
+
+    result = {}
+    
+    # HCM rainflow counting and damage computation for P_RAM
+    if calculate_P_RAM:
+        result = _compute_lifetimes_P_RAM(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAM, maximum_absolute_load)
+
+    # HCM rainflow counting and damage computation for P_RAJ
+    if calculate_P_RAJ:
+        result = _compute_lifetimes_P_RAJ(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAJ, maximum_absolute_load)
+
+    # additional quantities
+    result["assessment_parameters"] = assessment_parameters
+    
+    return result
+
 def _assert_G_is_in_correct_format(assessment_parameters):
     """Check that the related stress gradient G is given in the correct format,
     either as a single float or as a pandas Series with values for each node
@@ -53,7 +240,6 @@ def _check_K_p_is_in_range(assessment_parameters):
     if assessment_parameters.K_p == 1:
         print("Note, K_p is set to 1 which means only P_RAM can be calculated. "
             f"To use P_RAJ set K_p > 1, e.g. try K_p = 1.001.")
-
 
 def _scale_load_sequence_according_to_probability(assessment_parameters, load_sequence):
     """Scales the given load sequence according to one of three methods defined in the FKM nonlinear guideline.
@@ -436,191 +622,4 @@ def _compute_lifetimes_P_RAM(assessment_parameters, result, scaled_load_sequence
     result = _compute_lifetimes_for_failure_probabilities_RAM(assessment_parameters, result, damage_calculator)
 
     result = _store_additional_objects_in_result_RAM(result, recorder, damage_calculator, component_woehler_curve_P_RAM, detector, detector_1st)
-    return result
-
-def perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, calculate_P_RAM=True, calculate_P_RAJ=True):
-    r"""Perform the lifetime assessment according to FKM nonlinear, using the damage parameters P_RAM and/or P_RAJ.
-    The assessment can be done for a load sequence on a single point or for multiple points at once, e.g., a FEM mesh.
-    If multiple points at once are used, it is assumed that the load sequences at all nodes are scaled versions of each
-    other.
-    
-    For an assessment with multiple points at once, the relative stress gradient G can be either specified to be constant
-    or it can have a different value at every point.
-    
-    The FKM nonlinear guideline defines three possible methods to consider the statistical distribution of the load:
-    
-        1. a normal distribution with given standard deviation, $s_L$
-        2. a logarithmic-normal distribution with given standard deviation $LSD_s$
-        3. an unknown distribution, use the constant factor :math:`\gamma_L=1.1` for $P_L = 2.5\%$ 
-            or :math:`\gamma_L=1` for $P_L = 50\%$ or 
-        
-    If the ``assessment_parameters`̀  contain a value for ``s_L``, the first approach is used (normal distribution).
-    Else, if the ``assessment_parameters`̀  contain a value for ``LSD_s``, the second approach is used (log-normal distribution).
-    Else, if only ``P_L`̀  is given a scaling with the according factor is used. The statistical assessment can be skipped
-    by settings P_A = 0.5 and P_L = 50.
-    
-    Parameters
-    ----------
-    assessment_parameters : pandas Series
-        The parameters that specify the material and the assessment problem. The following parameters are required:
-            
-        * ``MatGroupFKM``: string, one of {``Steel``, ``SteelCast``, ``Al_wrought``}. Specifies the considered material group.
-        * ``FinishingFKM``: string, one of {``none``}, the type of surface finishing (Surface finishing types are not implemented for FKM nonlinear).
-        * ``R_m``: float [MPa], ultimate tensile strength (de: Zugfestigkeit). 
-            Note that this value can also be estimated from a pre-product nominal value, as described in the FKM document.
-        * ``K_RP``: float, [-], surface roughness factor, set to 1 for polished surfaces or determine from the given diagrams included in the FKM document.
-        * ``R_z``: float [um], average roughness (de: mittlere Rauheit), only required if K_RP is not specified directly
-        * ``P_A``: float. Specifies the failure probability for the assessment (de: auszulegende Ausfallwahrscheinlichkeit).
-            Note that any value for P_A in (0,1) is possible, not just the fixed values that are defined in the FKM nonlinear
-            guideline
-            Set to 0.5 to disable statistical assessment, e.g., to simulate cyclic experiments.
-        * ``beta``: float, damage index, specify this as an alternative to ``P_A``.
-        * ``P_L``: float, [%],  one of {̀ `2.5``%, ``50``%}, probability of occurence of the specified load sequence
-            (de: Auftretenswahrscheinlilchkeit der Lastfolge). Usually set to 50 to disable statistical assessment for the 
-            load.
-        * ``s_L``: float (optional), [MPa] standard deviation of Gaussian distribution for the statistical distribution of the load
-        * ``LSD_s``: float (optional), [MPa] standard deviation of the lognormal distribution for the statistical distribution of the load
-        * `̀ c``, float, [MPa/N] factor from reference load with which FE simulation was obtained to computed equivalent stress
-            (de: Übertragungsfaktor Vergleichsspannung zu Referenzlast im Nachweispunkt) c = sigma_V / L_REF
-        * ̀ `A_sigma``: float, [mm^2] highly loaded surface area of the component (de: Hochbeanspruchte Oberfläche des Bauteils)
-        * ``A_ref``: float, [mm^2] (de: Hochbeanspruchte Oberfläche eines Referenzvolumens), usually set to 500
-        * ``G``: float, [mm^-1] relative stress gradient (de: bezogener Spannungsgradient).
-            This value can be either a constant value or a pandas Series with different values for every node.
-            If a Series is used, the order of the G values in the Series has to match the order of the assessment points in the load sequence.
-            The actual values of the index are irrelevant.
-            
-            Note that the relative stress gradient can be computed as follows:
-
-                .. code::
-                    
-                    grad = pyLife_mesh.gradient_3D.gradient_of('mises')
-                    
-                    # compute the absolute stress gradient
-                    grad["abs_grad"] = np.linalg.norm(grad, axis = 1)
-                    pylife_mesh = pylife_mesh.join(grad, sort=False)
-                    
-                    # compute scaled stress gradient (bezogener Spannungsgradient)
-                    pylife_mesh["G"] = pylife_mesh.abs_grad / pylife_mesh.mises
-            
-            To add the value of G to the ``assessment_parameters``, do the following:
-                
-                .. code::
-                        
-                    # remove element_id
-                    G = pylife_mesh['G'].droplevel("element_id")
-                    
-                    # remove duplicate node entries
-                    G = G[~G.index.duplicated(keep="first")].sort_index()
-                    
-                    assessment_parameters["G"] = G
-            
-        * ``K_p``: float, [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1). 
-            Note that Seeger-Beste and P_RAJ only work for K_p > 1.
-        * ``n_bins``: int, optional (default: 200) number of bins or classes for P_RAJ computation. A larger value gives more accurate results but longer runtimes.
-    load_sequence : pandas Series
-        A sequential list of loads that are applied to the component. If the assessment should be done for
-        a single points, this is simply a pandas Series. For multiple points at once, it should be a pandas
-        DataFrame with a two-level MultiIndex with fields "load_step" and "node_id". 
-        The load_step describes the point in time of the sequence and must be consecutive starting from 0.
-        The node_id identifies the assessment point or mesh node in every load step. The data frame contains
-        only one column with the stress at every node. The relation between the loads at every nodes 
-        has to be constant over the load steps, i.e., the load sequences at the nodes are scaled versions
-        of each other.
-        
-        An example is given below:
-            
-        .. code::
-                
-                                  S_v
-            load_step   node_id     
-            0           1         -51.135208
-                        2         28.023306
-                        3         30.012435
-                        4         -11.698302
-                        5         287.099222
-            ...         ...       ...
-                        14614     287.099222
-            1           1         -51.135208
-            ...         ...       ...            
-            7           1         -51.135208
-            ...         ...       ...            
-                        14610     -113.355076
-                        14611     -43.790024
-                        14612     -99.422582
-                        14613     -77.195496
-                        14614     -90.303717
-                       
-    calculate_P_RAM : bool (optional)
-        Whether to use the P_RAM damage parameter for the assessment. Default: True.
-    calculate_P_RAJ : bool (optional)
-        Whether to use the P_RAJ damage parameter for the assessment. Default: True.
-
-    Returns
-    -------
-    result : pandas Series
-        The asssessment result containing at least the following items:
-            
-        * ``P_RAM_is_life_infinite``: (bool) whether we have infinite life (de: Dauerfestigkeit)
-        * ``P_RAM_lifetime_n_cycles``: (float) lifetime in number of cycles
-        * ``P_RAM_lifetime_n_times_load_sequence``: (float) lifetime how often the full load sequence can be applied
-        * ``P_RAJ_is_life_infinite`` (bool) whether we have infinite life (de: Dauerfestigkeit)
-        * ``P_RAJ_lifetime_n_cycles``: (float) lifetime in number of cycles
-        * ``P_RAJ_lifetime_n_times_load_sequence``: (float) lifetime how often the full load sequence can be applied
-
-        The result dict contains even more entries which are for further information and debugging purposes, such as 
-        woehler curve objects and collective tables.
-
-        If P_A is set to 0.5 and P_L is set to 50, i.e., no statistical assessment is specified, and if the load sequence
-        is scalar (i.e., not for an entire FEM mesh), the result contains the following additional values:
-
-        * ``P_RAM_lifetime_N_1ppm``, ``P_RAM_lifetime_N_10``, ``P_RAM_lifetime_N_50̀ `, ``P_RAM_lifetime_N_90``: (float)
-            lifetimes in numbers of cycles,
-            for P_A = 1ppm = 1e-6, 10%, 50%, and 90%, according to the assessment defined in the FKM nonlinear
-            guideline. Note that the guideline does not yield a log-normal distributed lifetime. 
-            Furthermore, the value of ``P_RAM_lifetime_N_50̀ ` is lower than the calculated lifetime 
-            ``P_RAM_lifetime_n_cycles``, because it contains a safety factor even for P_A = 50%.
-
-        * ``P_RAM_N_max_bearable``: (function) A python function 
-            ``N_max_bearable(P_A, clip_gamma=False)``
-            that calculates the maximum number of cycles
-            the component can withstand with the given failure probability.
-            The parameter ``clip_gamma`` specifies whether the scaling factor gamma_M
-            will be at least 1.1 (P_RAM) or 1.2 (P_RAJ), as defined 
-            in eq. (2.5-38) (PRAM) / eq. (2.8-38) (PRAJ).
-
-            Note that it holds ``P_RAM_lifetime_N_10`` = P_RAM_N_max_bearable(0.1), 
-            and analogously for the variables for 1ppm, 50%, and 90%.
-
-        * ``P_RAM_failure_probability``: (function) A python function,
-            ``failure_probability(N)`` that calculates the failure probability for a
-            given number of cycles.
-    """
-    
-    # check that gradient G is in the correct format
-    _assert_G_is_in_correct_format(assessment_parameters)
-    _check_K_p_is_in_range(assessment_parameters)
-
-    scaled_load_sequence = _scale_load_sequence_according_to_probability(assessment_parameters, load_sequence)
-    scaled_load_sequence = _scale_load_sequence_by_c_factor(assessment_parameters, scaled_load_sequence)
-
-    assessment_parameters = _calculate_local_parameters(assessment_parameters)
-
-    assessment_parameters, component_woehler_curve_P_RAM, component_woehler_curve_P_RAJ \
-        = _compute_component_woehler_curves(assessment_parameters)
-
-    maximum_absolute_load = _get_maximum_absolute_load(assessment_parameters, scaled_load_sequence)
-
-    result = {}
-    
-    # HCM rainflow counting and damage computation for P_RAM
-    if calculate_P_RAM:
-        result = _compute_lifetimes_P_RAM(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAM, maximum_absolute_load)
-
-    # HCM rainflow counting and damage computation for P_RAJ
-    if calculate_P_RAJ:
-        result = _compute_lifetimes_P_RAJ(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAJ, maximum_absolute_load)
-
-    # additional quantities
-    result["assessment_parameters"] = assessment_parameters
-    
     return result

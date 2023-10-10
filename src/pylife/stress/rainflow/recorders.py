@@ -374,3 +374,15 @@ class FKMNonlinearRecorder(AbstractRecorder):
         self._debug_output += debug_output
         
         self._run_index += [run_index] * len(S_min)
+
+    def _get_for_every_node(self, boolean_array):
+
+        # number of points, i.e., number of values for every load step
+        m = len(self._S_min[0])
+
+        # bring the array of boolean values to the right shape
+        # numeric_array contains only 0s and 1s for False and True
+        numeric_array = np.array(boolean_array).reshape(-1,1).dot(np.ones((1,m)))
+
+        # transform the array to boolean type
+        return np.where(numeric_array == 1, True, False)

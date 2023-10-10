@@ -106,108 +106,6 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         self._strain_values = []
         self._n_strain_values_first_run = 0
         
-        
-    def _proceed_on_primary_branch(self, current_point):
-        """Follow the primary branch (de: Erstbelastungskurve) of a notch approximation material curve.
-
-        Parameters
-        ----------
-        previous_point : _HCM_Point
-            The starting point in the stress-strain diagram where to begin to follow the primary branch.
-        current_point : _HCM_Point
-            The end point until where to follow the primary branch. This variable only needs to have the load value.
-
-        Returns
-        -------
-        current_point : _HCM_Point
-            The initially given current point, but with  updated values of stress and strain.
-
-        """
-        sigma = self._notch_approximation_law.stress(current_point.load)
-        epsilon = self._notch_approximation_law.strain(sigma, current_point.load)
-        
-        current_point._stress = sigma
-        current_point._strain = epsilon
-        
-        
-        # log point for later plotting
-        self._hcm_point_history.append(("primary", current_point, self._hysteresis_index))
-        
-        return current_point
-    
-    def _proceed_on_secondary_branch(self, previous_point, current_point):
-        """Follow the secondary branch of a notch approximation material curve.
-
-        Parameters
-        ----------
-        previous_point : _HCM_Point
-            The starting point in the stress-strain diagram where to begin to follow the primary branch.
-        current_point : _HCM_Point
-            The end point until where to follow the primary branch. This variable only needs to have the load value.
-
-        Returns
-        -------
-        current_point : _HCM_Point
-            The initially given current point, but with  updated values of stress and strain.
-
-        """
-        delta_L = current_point.load - previous_point.load   # as described in FKM nonlinear
-        
-        delta_sigma = self._notch_approximation_law.stress_secondary_branch(delta_L)
-        delta_epsilon = self._notch_approximation_law.strain_secondary_branch(delta_sigma, delta_L)
-        
-        current_point._stress = previous_point._stress + delta_sigma
-        current_point._strain = previous_point._strain + delta_epsilon
-        
-        # log point for later plotting
-        self._hcm_point_history.append(("secondary", current_point, self._hysteresis_index))
-        
-        return current_point
-    
-    def _adjust_samples_and_flush_for_hcm_first_run(self, samples):
-        
-        # convert from Series to np.array
-        if isinstance(samples, pd.Series):
-            samples = samples.to_numpy()
-
-        # prepend zero
-        if isinstance(samples, np.ndarray):
-            samples = np.concatenate([[0], samples])
-        
-        elif isinstance(samples, pd.DataFrame):
-            
-            # get the index with all node_id`s
-            node_id_index = samples.groupby("node_id").first().index
-
-            # create a new sample with 0 load for all nodes
-            multi_index = pd.MultiIndex.from_product([[0], node_id_index], names=["load_step","node_id"])
-            first_sample = pd.DataFrame(index=multi_index, data=[0]*len(multi_index), columns=samples.columns)
-
-            # increase the load_step index value by one for all samples
-            samples_without_index = samples.reset_index()
-            samples_without_index.load_step += 1
-            samples = samples_without_index.set_index(["load_step", "node_id"])
-
-            # prepend the new zero load sample
-            samples = pd.concat([first_sample, samples], axis=0)
-
-        # determine first, second and last samples
-        scalar_samples = samples
-
-        if isinstance(samples, pd.DataFrame):
-            # convert to list 
-            scalar_samples = [df.iloc[0].values[0] for _,df in samples.groupby("load_step")]
-
-
-        scalar_samples_twice = np.concatenate([scalar_samples, scalar_samples])
-        turn_indices,_ = pylife.stress.rainflow.general.find_turns(scalar_samples_twice)
-
-        flush = True
-        if len(scalar_samples)-1 not in turn_indices:
-            flush = False
-        
-        return samples, flush
-
     def process_hcm_first(self, samples):
         """Perform the HCM algorithm for the first time.
         This processes the given samples accordingly, only considering
@@ -340,6 +238,198 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             run_index=self._run_index, debug_output=_debug_output)
         
         return self
+
+    @property
+    def strain_values(self):
+        """
+        Get the strain values of the turning points in the stress-strain diagram.
+        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
+
+        Returns
+        -------
+        list of float
+           The strain values of the turning points that are visited during the HCM algorithm. 
+        """
+        
+        return np.array(self._strain_values)
+
+    @property
+    def strain_values_first_run(self):
+        """
+        Get the strain values of the turning points in the stress-strain diagram, for the first run of the HCM algorithm.
+        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
+
+        Returns
+        -------
+        list of float
+           The strain values of the turning points that are visited during the first run of the HCM algorithm. 
+        """
+        
+        return np.array(self._strain_values[:self._n_strain_values_first_run])
+
+    @property
+    def strain_values_second_run(self):
+        """
+        Get the strain values of the turning points in the stress-strain diagram, for the second and any further run of the HCM algorithm.
+        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
+
+        Returns
+        -------
+        list of float
+           The strain values of the turning points that are visited during the second run of the HCM algorithm. 
+        """
+        
+        return np.array(self._strain_values[self._n_strain_values_first_run:])
+
+    def interpolated_stress_strain_data(self, n_points_per_branch=100, only_hystereses=False):
+        """Return points on the traversed hysteresis curve, mainly intended for plotting.
+        The curve including all hystereses, primary and secondary branches is sampled
+        at a fixed number of points within each hysteresis branch.
+        These points can be used for plotting.
+        
+        The intended use is to generate plots as follows:
+            
+        .. code:: python
+        
+            fkm_nonlinear_detector.process_hcm_first(...)
+            sampling_parameter = 100    # choose larger for smoother plot or smaller for lower runtime
+            strain_values_primary, stress_values_primary, _, strain_values_secondary, stress_values_secondary, _ \
+                = fkm_nonlinear_detector.interpolated_stress_strain_data(sampling_parameter)
+            
+            plt.plot(strain_values_primary, stress_values_primary, "g-", lw=3)
+            plt.plot(strain_values_secondary, stress_values_secondary, "b-.", lw=1)
+
+        Parameters
+        ----------
+        n_points_per_branch : int, optional
+            How many sampling points to use per hysteresis branch, default 100.
+            A larger value values means smoother curves but longer runtime.
+
+        only_hystereses : bool, optional
+            Default ``False``. If only graphs of the closed hystereses should be output.
+            Note that this does not work for hysteresis that have multiple smaller hysterseses included.
+
+        Returns
+        -------
+        strain_values_primary, stress_values_primary, hysteresis_index_primary, \
+        strain_values_secondary, stress_values_secondary, hysteresis_index_secondary
+            Lists of strains and stresses of the points on the stress-strain curve, 
+            separately for primary and secondary branches. The lists contain nan values whenever the
+            curve of the *same* branch is discontinuous. This allows to plot the entire curve
+            with different colors for primary and secondary branches.
+            
+            The entries in hysteresis_index_primary and hysteresis_index_secondary are the row 
+            indices into the collective DataFrame returned by the recorder. This allows, e.g.,
+            to separate the output of multiple runs of the HCM algorithm or to plot the traversed
+            paths on the stress-strain diagram for individual steps of the algorithm.
+
+        """
+        
+        assert n_points_per_branch >= 2
+
+        plotter = FKMNonlinearHysteresisPlotter(self._hcm_point_history, self._ramberg_osgood_relation)
+        return plotter.interpolated_stress_strain_data(n_points_per_branch, only_hystereses)
+        
+    def _proceed_on_primary_branch(self, current_point):
+        """Follow the primary branch (de: Erstbelastungskurve) of a notch approximation material curve.
+
+        Parameters
+        ----------
+        previous_point : _HCM_Point
+            The starting point in the stress-strain diagram where to begin to follow the primary branch.
+        current_point : _HCM_Point
+            The end point until where to follow the primary branch. This variable only needs to have the load value.
+
+        Returns
+        -------
+        current_point : _HCM_Point
+            The initially given current point, but with  updated values of stress and strain.
+
+        """
+        sigma = self._notch_approximation_law.stress(current_point.load)
+        epsilon = self._notch_approximation_law.strain(sigma, current_point.load)
+        
+        current_point._stress = sigma
+        current_point._strain = epsilon
+        
+        
+        # log point for later plotting
+        self._hcm_point_history.append(("primary", current_point, self._hysteresis_index))
+        
+        return current_point
+    
+    def _proceed_on_secondary_branch(self, previous_point, current_point):
+        """Follow the secondary branch of a notch approximation material curve.
+
+        Parameters
+        ----------
+        previous_point : _HCM_Point
+            The starting point in the stress-strain diagram where to begin to follow the primary branch.
+        current_point : _HCM_Point
+            The end point until where to follow the primary branch. This variable only needs to have the load value.
+
+        Returns
+        -------
+        current_point : _HCM_Point
+            The initially given current point, but with  updated values of stress and strain.
+
+        """
+        delta_L = current_point.load - previous_point.load   # as described in FKM nonlinear
+        
+        delta_sigma = self._notch_approximation_law.stress_secondary_branch(delta_L)
+        delta_epsilon = self._notch_approximation_law.strain_secondary_branch(delta_sigma, delta_L)
+        
+        current_point._stress = previous_point._stress + delta_sigma
+        current_point._strain = previous_point._strain + delta_epsilon
+        
+        # log point for later plotting
+        self._hcm_point_history.append(("secondary", current_point, self._hysteresis_index))
+        
+        return current_point
+    
+    def _adjust_samples_and_flush_for_hcm_first_run(self, samples):
+        
+        # convert from Series to np.array
+        if isinstance(samples, pd.Series):
+            samples = samples.to_numpy()
+
+        # prepend zero
+        if isinstance(samples, np.ndarray):
+            samples = np.concatenate([[0], samples])
+        
+        elif isinstance(samples, pd.DataFrame):
+            
+            # get the index with all node_id`s
+            node_id_index = samples.groupby("node_id").first().index
+
+            # create a new sample with 0 load for all nodes
+            multi_index = pd.MultiIndex.from_product([[0], node_id_index], names=["load_step","node_id"])
+            first_sample = pd.DataFrame(index=multi_index, data=[0]*len(multi_index), columns=samples.columns)
+
+            # increase the load_step index value by one for all samples
+            samples_without_index = samples.reset_index()
+            samples_without_index.load_step += 1
+            samples = samples_without_index.set_index(["load_step", "node_id"])
+
+            # prepend the new zero load sample
+            samples = pd.concat([first_sample, samples], axis=0)
+
+        # determine first, second and last samples
+        scalar_samples = samples
+
+        if isinstance(samples, pd.DataFrame):
+            # convert to list 
+            scalar_samples = [df.iloc[0].values[0] for _,df in samples.groupby("load_step")]
+
+
+        scalar_samples_twice = np.concatenate([scalar_samples, scalar_samples])
+        turn_indices,_ = pylife.stress.rainflow.general.find_turns(scalar_samples_twice)
+
+        flush = True
+        if len(scalar_samples)-1 not in turn_indices:
+            flush = False
+        
+        return samples, flush
 
     def _perform_hcm_algorithm(self, samples, recording_lists, largest_point, previous_load, iz, ir, load_max_seen, load_turning_points):
         """Perform the entire HCM algorithm for all load samples, 
@@ -645,97 +735,6 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 self._epsilon_min_LF *= pd.Series(1, index=np.arange(n_nodes))
                 self._epsilon_max_LF *= pd.Series(1, index=np.arange(n_nodes))
 
-    @property
-    def strain_values(self):
-        """
-        Get the strain values of the turning points in the stress-strain diagram.
-        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
-
-        Returns
-        -------
-        list of float
-           The strain values of the turning points that are visited during the HCM algorithm. 
-        """
-        
-        return np.array(self._strain_values)
-
-    @property
-    def strain_values_first_run(self):
-        """
-        Get the strain values of the turning points in the stress-strain diagram, for the first run of the HCM algorithm.
-        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
-
-        Returns
-        -------
-        list of float
-           The strain values of the turning points that are visited during the first run of the HCM algorithm. 
-        """
-        
-        return np.array(self._strain_values[:self._n_strain_values_first_run])
-
-    @property
-    def strain_values_second_run(self):
-        """
-        Get the strain values of the turning points in the stress-strain diagram, for the second and any further run of the HCM algorithm.
-        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
-
-        Returns
-        -------
-        list of float
-           The strain values of the turning points that are visited during the second run of the HCM algorithm. 
-        """
-        
-        return np.array(self._strain_values[self._n_strain_values_first_run:])
-
-    def interpolated_stress_strain_data(self, n_points_per_branch=100, only_hystereses=False):
-        """Return points on the traversed hysteresis curve, mainly intended for plotting.
-        The curve including all hystereses, primary and secondary branches is sampled
-        at a fixed number of points within each hysteresis branch.
-        These points can be used for plotting.
-        
-        The intended use is to generate plots as follows:
-            
-        .. code:: python
-        
-            fkm_nonlinear_detector.process_hcm_first(...)
-            sampling_parameter = 100    # choose larger for smoother plot or smaller for lower runtime
-            strain_values_primary, stress_values_primary, _, strain_values_secondary, stress_values_secondary, _ \
-                = fkm_nonlinear_detector.interpolated_stress_strain_data(sampling_parameter)
-            
-            plt.plot(strain_values_primary, stress_values_primary, "g-", lw=3)
-            plt.plot(strain_values_secondary, stress_values_secondary, "b-.", lw=1)
-
-        Parameters
-        ----------
-        n_points_per_branch : int, optional
-            How many sampling points to use per hysteresis branch, default 100.
-            A larger value values means smoother curves but longer runtime.
-
-        only_hystereses : bool, optional
-            Default ``False``. If only graphs of the closed hystereses should be output.
-            Note that this does not work for hysteresis that have multiple smaller hysterseses included.
-
-        Returns
-        -------
-        strain_values_primary, stress_values_primary, hysteresis_index_primary, \
-        strain_values_secondary, stress_values_secondary, hysteresis_index_secondary
-            Lists of strains and stresses of the points on the stress-strain curve, 
-            separately for primary and secondary branches. The lists contain nan values whenever the
-            curve of the *same* branch is discontinuous. This allows to plot the entire curve
-            with different colors for primary and secondary branches.
-            
-            The entries in hysteresis_index_primary and hysteresis_index_secondary are the row 
-            indices into the collective DataFrame returned by the recorder. This allows, e.g.,
-            to separate the output of multiple runs of the HCM algorithm or to plot the traversed
-            paths on the stress-strain diagram for individual steps of the algorithm.
-
-        """
-        
-        assert n_points_per_branch >= 2
-
-        plotter = FKMNonlinearHysteresisPlotter(self._hcm_point_history, self._ramberg_osgood_relation)
-        return plotter.interpolated_stress_strain_data(n_points_per_branch, only_hystereses)
-        
 class FKMNonlinearHysteresisPlotter:
 
     def __init__(self, hcm_point_history, ramberg_osgood_relation):

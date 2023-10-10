@@ -87,72 +87,6 @@ class DamageCalculatorPRAM:
         # compute number of cycles until damage sum is 1
         self._n_cycles_until_damage = self._collective["cumulative_damage"].groupby("assessment_point_index").apply(lambda array: np.searchsorted(array, 1))
         
-    def _initialize_collective_index(self):
-        """Assert that the variable `self._collective` contains the proper index
-        and columns. If the collective does not contain any MultiIndex (or any index at all),
-        create the appropriate MultiIndex"""
-        
-        # if assessment is done for multiple points at once, work with a multi-indexed data frame
-        if not isinstance(self._collective.index, pd.MultiIndex):
-            n_hystereses = len(self._collective)
-            self._collective.index = pd.MultiIndex.from_product([range(n_hystereses), [0]], names=["hysteresis_index", "assessment_point_index"])
-            
-        # assert that the index contains the two columns "hysteresis_index" and "assessment_point_index"
-        assert self._collective.index.names == ["hysteresis_index", "assessment_point_index"]
-     
-        assert "P_RAM" in self._collective
-        assert "is_closed_hysteresis" in self._collective
-        assert "run_index" in self._collective
-     
-        # store some statistics about the DataFrame
-        self._n_hystereses = self._collective.groupby("assessment_point_index")["S_min"].count().values[0]
-        self._n_hystereses_run_2 = self._collective[self._collective["run_index"]==2].groupby("assessment_point_index")["S_min"].count().values[0]
-
-    def _initialize_P_RAM_Z_index(self):
-        """Properly initialize P_RAM_Z if it was computed individually for every node because of a stress gradient field G.
-        In such a case, add the proper multi-index with levels "hysteresis_index", "assessment_point_index" such that
-        the Series is compatible with self._collective.
-        """
-        # if P_RAM_Z is a series without multi-index
-        if isinstance(self._P_RAM_Z, pd.Series):    
-            if not isinstance(self._P_RAM_Z.index, pd.MultiIndex):
-                
-                n_hystereses = len(self._collective.index.get_level_values("hysteresis_index").unique())
-                self._P_RAM_Z = pd.Series(
-                    data = (np.ones([n_hystereses,1]) * np.array([self._P_RAM_Z])).flatten(),
-                    index = self._collective.index)
-                       
-    def _fill_with_default_for_missing_assessment_points(self, df, default_value):
-        """Add rows to a series df that are not yet there, such that the result has
-        a row for every assessment point. Example:
-        
-        * input ``df``: 
-
-            .. code::
-            
-                assessment_point_index
-                0    0.312183
-                2    0.312183
-                Name: stddev_log_N, dtype: float64
-
-        * default value: 5
-        * result:
-
-            .. code::
-            
-                assessment_point_index
-                0    0.312183
-                1    5.000000
-                2    0.312183
-                Name: stddev_log_N, dtype: float64
-        """        
-        assessment_point_index = self._collective.index.get_level_values("assessment_point_index").unique()
-        series_with_all_rows = pd.Series(np.nan, index=assessment_point_index, name="a")
-
-        result = pd.concat([df, series_with_all_rows],axis=1)[df.name]
-        result = result.fillna(default_value)
-        return result
-
     @property
     def collective(self):
         return self._collective
@@ -299,6 +233,72 @@ class DamageCalculatorPRAM:
 
         return N_max_bearable, failure_probability
 
+    def _initialize_collective_index(self):
+        """Assert that the variable `self._collective` contains the proper index
+        and columns. If the collective does not contain any MultiIndex (or any index at all),
+        create the appropriate MultiIndex"""
+        
+        # if assessment is done for multiple points at once, work with a multi-indexed data frame
+        if not isinstance(self._collective.index, pd.MultiIndex):
+            n_hystereses = len(self._collective)
+            self._collective.index = pd.MultiIndex.from_product([range(n_hystereses), [0]], names=["hysteresis_index", "assessment_point_index"])
+            
+        # assert that the index contains the two columns "hysteresis_index" and "assessment_point_index"
+        assert self._collective.index.names == ["hysteresis_index", "assessment_point_index"]
+     
+        assert "P_RAM" in self._collective
+        assert "is_closed_hysteresis" in self._collective
+        assert "run_index" in self._collective
+     
+        # store some statistics about the DataFrame
+        self._n_hystereses = self._collective.groupby("assessment_point_index")["S_min"].count().values[0]
+        self._n_hystereses_run_2 = self._collective[self._collective["run_index"]==2].groupby("assessment_point_index")["S_min"].count().values[0]
+
+    def _initialize_P_RAM_Z_index(self):
+        """Properly initialize P_RAM_Z if it was computed individually for every node because of a stress gradient field G.
+        In such a case, add the proper multi-index with levels "hysteresis_index", "assessment_point_index" such that
+        the Series is compatible with self._collective.
+        """
+        # if P_RAM_Z is a series without multi-index
+        if isinstance(self._P_RAM_Z, pd.Series):    
+            if not isinstance(self._P_RAM_Z.index, pd.MultiIndex):
+                
+                n_hystereses = len(self._collective.index.get_level_values("hysteresis_index").unique())
+                self._P_RAM_Z = pd.Series(
+                    data = (np.ones([n_hystereses,1]) * np.array([self._P_RAM_Z])).flatten(),
+                    index = self._collective.index)
+                       
+    def _fill_with_default_for_missing_assessment_points(self, df, default_value):
+        """Add rows to a series df that are not yet there, such that the result has
+        a row for every assessment point. Example:
+        
+        * input ``df``: 
+
+            .. code::
+            
+                assessment_point_index
+                0    0.312183
+                2    0.312183
+                Name: stddev_log_N, dtype: float64
+
+        * default value: 5
+        * result:
+
+            .. code::
+            
+                assessment_point_index
+                0    0.312183
+                1    5.000000
+                2    0.312183
+                Name: stddev_log_N, dtype: float64
+        """        
+        assessment_point_index = self._collective.index.get_level_values("assessment_point_index").unique()
+        series_with_all_rows = pd.Series(np.nan, index=assessment_point_index, name="a")
+
+        result = pd.concat([df, series_with_all_rows],axis=1)[df.name]
+        result = result.fillna(default_value)
+        return result
+
 
 class DamageCalculatorPRAJ:
     """This class performs the lifetime assessment according to the FKM nonlinear assessment.
@@ -377,6 +377,112 @@ class DamageCalculatorPRAJ:
         
         self._x_bar = (2 + self._xbar_minus_2)
         
+    @property
+    def collective(self):
+        return self._collective
+                                      
+    @property
+    def P_RAJ_max(self):
+        """The maximum P_RAJ damage parameter value of the second run of the HCM algorithm.
+        If this value is lower than the fatigue strength limit, the component has infinite life.
+        The method ``compute_damage`` needs to be called beforehand."""
+        
+        # get maximum damage parameter
+        if isinstance(self._collective.index, pd.MultiIndex):
+            P_RAJ_max = self._collective.loc[self._collective["run_index"]==2, "P_RAJ"].groupby("assessment_point_index").max()
+        else:
+            P_RAJ_max = self._collective.loc[self._collective["run_index"]==2, "P_RAJ"].max()
+        
+        return P_RAJ_max.squeeze()
+    
+    @property
+    def is_life_infinite(self):
+        """Whether the component has infinite life.
+        The method ``compute_damage`` needs to be called beforehand."""
+        
+        result = self.P_RAJ_max <= self._component_woehler_curve_P_RAJ.fatigue_strength_limit
+        return result.squeeze()
+    
+    @property
+    def lifetime_n_times_load_sequence(self):
+        """The number of times the whole load sequence can be traversed until failure.
+        The method ``compute_damage`` needs to be called beforehand."""
+        
+        # If damage sum of D=1 is reached before end of second run of HCM algorithm, set lifetime_n_times_load_sequence to 0.
+        # Else the value is x + 1
+        result = np.where(self._n_cycles_until_damage < self._n_hystereses,
+                          0,
+                          self._x_bar)
+        return result.squeeze() 
+        
+    @property
+    def lifetime_n_cycles(self):
+        """The number of load cycles (as defined in the load collective) until failure.
+        The method ``compute_damage`` needs to be called beforehand."""
+        
+        # if damage sum of D=1 is reached before end of second run of HCM algorithm
+        lifetime = np.where(self._n_cycles_until_damage < self._n_hystereses, 
+                            self._n_cycles_until_damage,        
+                            self._N_bar)
+    
+        return lifetime.squeeze()
+     
+    def get_lifetime_functions(self):
+        """Return two python functions that can be used for detailed probabilistic assessment.
+
+        The first function, ``N_max_bearable(P_A, clip_gamma=False)``, 
+        calculates the maximum number of cycles
+        that the component can withstand with the given failure probability.
+        The parameter ``clip_gamma`` specifies whether the scaling factor gamma_M
+        will be at least 1.1 (P_RAM) or 1.2 (P_RAJ), as defined 
+        in eq. (2.5-38) (PRAM) / eq. (2.8-38) (PRAJ)        The second function, ``failure_probability(N)``, calculates the failure probability for a
+        given number of cycles.
+
+        Parameters
+        ----------
+        assessment_parameters : pd.Series
+            The assessment parameters, only the material group is required to determine the respective
+            f_2,5% constant.
+
+        Returns
+        -------
+        N_max_bearable
+            python function, ``N_max_bearable(P_A)``
+        failure_probability
+            python function, ``failure_probability(N)``
+        """
+        
+        constants = pylife.strength.fkm_nonlinear.constants.get_constants_for_material_group(self._assessment_parameters)
+        f_25 = constants.f_25percent_material_woehler_RAJ
+        slope_woehler = abs(1/self._component_woehler_curve_P_RAJ.d)
+        lifetime_n_cycles = self.lifetime_n_cycles
+
+        def N_max_bearable(P_A, clip_gamma=False):
+            beta = pylife.strength.fkm_nonlinear.parameter_calculations.compute_beta(P_A)
+            log_gamma_M = (0.8*beta - 2)*0.155
+            
+            # Note that the FKM nonlinear guideline defines a cap at 1.2 for P_RAJ.
+            if clip_gamma:
+                log_gamma_M = max(log_gamma_M, np.log10(1.2))
+            
+            reduction_factor_P = np.log10(f_25) - log_gamma_M
+            reduction_factor_N = reduction_factor_P * slope_woehler
+
+            return lifetime_n_cycles * 10**(reduction_factor_N)
+
+        def failure_probability(N):
+
+            result = scipy.optimize.minimize_scalar(
+                lambda x: (N_max_bearable(x) - N) ** 2, 
+                bounds=[1e-9, 1-1e-9], method='bounded', options={'xatol': 1e-10})
+
+            if result.success:
+                return result.x
+            else:
+                return 0
+
+        return N_max_bearable, failure_probability
+
     def _initialize_collective_index(self):
         """Assert that the variable `self._collective` contains the proper index
         and columns. If the collective does not contain any MultiIndex (or any index at all),
@@ -576,108 +682,3 @@ class DamageCalculatorPRAJ:
                                                     np.inf),
                                            0)
     
-    @property
-    def collective(self):
-        return self._collective
-                                      
-    @property
-    def P_RAJ_max(self):
-        """The maximum P_RAJ damage parameter value of the second run of the HCM algorithm.
-        If this value is lower than the fatigue strength limit, the component has infinite life.
-        The method ``compute_damage`` needs to be called beforehand."""
-        
-        # get maximum damage parameter
-        if isinstance(self._collective.index, pd.MultiIndex):
-            P_RAJ_max = self._collective.loc[self._collective["run_index"]==2, "P_RAJ"].groupby("assessment_point_index").max()
-        else:
-            P_RAJ_max = self._collective.loc[self._collective["run_index"]==2, "P_RAJ"].max()
-        
-        return P_RAJ_max.squeeze()
-    
-    @property
-    def is_life_infinite(self):
-        """Whether the component has infinite life.
-        The method ``compute_damage`` needs to be called beforehand."""
-        
-        result = self.P_RAJ_max <= self._component_woehler_curve_P_RAJ.fatigue_strength_limit
-        return result.squeeze()
-    
-    @property
-    def lifetime_n_times_load_sequence(self):
-        """The number of times the whole load sequence can be traversed until failure.
-        The method ``compute_damage`` needs to be called beforehand."""
-        
-        # If damage sum of D=1 is reached before end of second run of HCM algorithm, set lifetime_n_times_load_sequence to 0.
-        # Else the value is x + 1
-        result = np.where(self._n_cycles_until_damage < self._n_hystereses,
-                          0,
-                          self._x_bar)
-        return result.squeeze() 
-        
-    @property
-    def lifetime_n_cycles(self):
-        """The number of load cycles (as defined in the load collective) until failure.
-        The method ``compute_damage`` needs to be called beforehand."""
-        
-        # if damage sum of D=1 is reached before end of second run of HCM algorithm
-        lifetime = np.where(self._n_cycles_until_damage < self._n_hystereses, 
-                            self._n_cycles_until_damage,        
-                            self._N_bar)
-    
-        return lifetime.squeeze()
-     
-    def get_lifetime_functions(self):
-        """Return two python functions that can be used for detailed probabilistic assessment.
-
-        The first function, ``N_max_bearable(P_A, clip_gamma=False)``, 
-        calculates the maximum number of cycles
-        that the component can withstand with the given failure probability.
-        The parameter ``clip_gamma`` specifies whether the scaling factor gamma_M
-        will be at least 1.1 (P_RAM) or 1.2 (P_RAJ), as defined 
-        in eq. (2.5-38) (PRAM) / eq. (2.8-38) (PRAJ)        The second function, ``failure_probability(N)``, calculates the failure probability for a
-        given number of cycles.
-
-        Parameters
-        ----------
-        assessment_parameters : pd.Series
-            The assessment parameters, only the material group is required to determine the respective
-            f_2,5% constant.
-
-        Returns
-        -------
-        N_max_bearable
-            python function, ``N_max_bearable(P_A)``
-        failure_probability
-            python function, ``failure_probability(N)``
-        """
-        
-        constants = pylife.strength.fkm_nonlinear.constants.get_constants_for_material_group(self._assessment_parameters)
-        f_25 = constants.f_25percent_material_woehler_RAJ
-        slope_woehler = abs(1/self._component_woehler_curve_P_RAJ.d)
-        lifetime_n_cycles = self.lifetime_n_cycles
-
-        def N_max_bearable(P_A, clip_gamma=False):
-            beta = pylife.strength.fkm_nonlinear.parameter_calculations.compute_beta(P_A)
-            log_gamma_M = (0.8*beta - 2)*0.155
-            
-            # Note that the FKM nonlinear guideline defines a cap at 1.2 for P_RAJ.
-            if clip_gamma:
-                log_gamma_M = max(log_gamma_M, np.log10(1.2))
-            
-            reduction_factor_P = np.log10(f_25) - log_gamma_M
-            reduction_factor_N = reduction_factor_P * slope_woehler
-
-            return lifetime_n_cycles * 10**(reduction_factor_N)
-
-        def failure_probability(N):
-
-            result = scipy.optimize.minimize_scalar(
-                lambda x: (N_max_bearable(x) - N) ** 2, 
-                bounds=[1e-9, 1-1e-9], method='bounded', options={'xatol': 1e-10})
-
-            if result.success:
-                return result.x
-            else:
-                return 0
-
-        return N_max_bearable, failure_probability

@@ -113,14 +113,6 @@ all_constants = pd.DataFrame({
     }
 })
 
-def _set_f_25percent(assessment_parameters, resulting_constants):
-    """Choose the appropriate value for the safety factor f_25%"""
-
-    resulting_constants["f_25percent_material_woehler_RAM"] \
-        = resulting_constants["f_25percent_material_woehler_FKM_nonlinear_RAM"]
-    resulting_constants["f_25percent_material_woehler_RAJ"] \
-        = resulting_constants["f_25percent_material_woehler_FKM_nonlinear_RAJ"]
-    
 def get_constants_for_material_group(assessment_parameters):
     """
     Retrieve the constants for one of the three material groups that are defined in FKM nonlinear.
@@ -153,3 +145,12 @@ def get_constants_for_material_group(assessment_parameters):
     _set_f_25percent(assessment_parameters, resulting_constants)
 
     return resulting_constants
+
+def _set_f_25percent(assessment_parameters, resulting_constants):
+    """Choose the appropriate value for the safety factor f_25%"""
+
+    resulting_constants["f_25percent_material_woehler_RAM"] \
+        = resulting_constants["f_25percent_material_woehler_FKM_nonlinear_RAM"]
+    resulting_constants["f_25percent_material_woehler_RAJ"] \
+        = resulting_constants["f_25percent_material_woehler_FKM_nonlinear_RAJ"]
+    

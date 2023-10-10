@@ -51,6 +51,10 @@ class P_RAM:
         
         self._compute_values()
         
+    @property
+    def collective(self):
+        return self._collective
+         
     def _compute_values(self):
         """Compute the P_RAM damage parameter according to FKM nonlinear.
         """
@@ -78,11 +82,7 @@ class P_RAM:
         
         # delete temporary columns
         self._collective.drop(columns = ["discriminant", "k"], inplace=True)
-        
-    @property
-    def collective(self):
-        return self._collective
-           
+          
 class P_RAJ:
     
     def __init__(self, collective, assessment_parameters, component_woehler_curve_P_RAJ):
@@ -160,7 +160,10 @@ class P_RAJ:
             self._P_RAJ_D_0.reset_index(drop=True, inplace=True)
             
         self._compute_values()
-         
+               
+    @property
+    def collective(self):
+
     def _compute_values(self):
         """Compute the P_RAJ damage parameter according to FKM nonlinear.
         """
@@ -262,8 +265,7 @@ class P_RAJ:
         #P_RAJ_D = pd.Series(self._P_RAJ_D_0)
 
         return a_0, delta_J_eff_th, P_RAJ_D
-        
-        
+           
     def _compute_crack_opening_loop(self):
         """compute crack opening strain with history (chapter 2.8.9.3, chapter 2.9.8.1 is better)"""
         
@@ -553,7 +555,5 @@ class P_RAJ:
                 self._assessment_parameters.P_RAJ_klass_max = self._calculate_P_RAJ(delta_stress, delta_strain)
                 
                     
-                
-    @property
-    def collective(self):
+          
         return self._collective

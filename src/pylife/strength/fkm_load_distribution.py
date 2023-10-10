@@ -94,66 +94,6 @@ class FKMLoadSequence(PylifeSignal):
         mesh.fkm_load_sequence.scaled_by_constant(2)
     '''
         
-    def _validate(self):
-        if len(self._obj) == 0:
-            raise AttributeError("Load series is empty.")
-            
-    def _validate_parameters(self, input_parameters, required_parameters):
-        
-        for required_parameter in required_parameters:
-            if required_parameter not in input_parameters:
-                raise ValueError(f"Given parameters have to include \"{required_parameter}\".")
-
-    def _get_beta(self, input_parameters):
-        """
-        Compute a scaling factor for assessing a load sequence for a given failure probability,
-        for details, refer to the FKM nonlinear document.
-
-        The beta factors are also described in "A. Fischer. Bestimmung modifizierter Teilsicherheitsbeiwerte zur semiprobabilistischen
-        Bemessung von Stahlbetonkonstruktionen im Bestand. TU Kaiserslautern, 2010"
-
-        Parameters
-        ----------
-        input_parameters : pd.Series
-            The set of assessment parameters, has to contain the assessment failure probability ``input_parameters.P_A``.
-            This variable has to be one of {1e-7, 1e-6, 1e-5, 7.2e-5, 1e-3, 2.3e-1, 0.5}.
-
-        Raises
-        ------
-        ValueError
-            If the given failure probability has an invalid value.
-
-        Returns
-        -------
-        float
-            The value of the beta parameter.
-
-        """
-        
-        if np.isclose(input_parameters.P_A, 1e-7):
-            return 5.20
-        
-        elif np.isclose(input_parameters.P_A, 1e-6):
-            return 4.75
-        
-        elif np.isclose(input_parameters.P_A, 1e-5):
-            return 4.27
-        
-        elif np.isclose(input_parameters.P_A, 7.2e-5):
-            return 3.8
-        
-        elif np.isclose(input_parameters.P_A, 1e-3):
-            return 3.09
-        
-        elif np.isclose(input_parameters.P_A, 2.3e-1):
-            return 0.739
-        
-        elif np.isclose(input_parameters.P_A, 0.5):
-            return 0
-        
-        else:
-            raise ValueError(f"P_A={input_parameters.P_A} has to be one of "+"{1e-7, 1e-6, 1e-5, 7.2e-5, 1e-3, 2.3e-1, 0.5}.")
-    
     def scaled_by_constant(self, gamma_L):
         """
         Scales the load sequence by the given constant gamma_L. This method basically computes
@@ -243,6 +183,66 @@ class FKMLoadSequence(PylifeSignal):
         
         return float(L_max)
         
+    def _validate(self):
+        if len(self._obj) == 0:
+            raise AttributeError("Load series is empty.")
+            
+    def _validate_parameters(self, input_parameters, required_parameters):
+        
+        for required_parameter in required_parameters:
+            if required_parameter not in input_parameters:
+                raise ValueError(f"Given parameters have to include \"{required_parameter}\".")
+
+    def _get_beta(self, input_parameters):
+        """
+        Compute a scaling factor for assessing a load sequence for a given failure probability,
+        for details, refer to the FKM nonlinear document.
+
+        The beta factors are also described in "A. Fischer. Bestimmung modifizierter Teilsicherheitsbeiwerte zur semiprobabilistischen
+        Bemessung von Stahlbetonkonstruktionen im Bestand. TU Kaiserslautern, 2010"
+
+        Parameters
+        ----------
+        input_parameters : pd.Series
+            The set of assessment parameters, has to contain the assessment failure probability ``input_parameters.P_A``.
+            This variable has to be one of {1e-7, 1e-6, 1e-5, 7.2e-5, 1e-3, 2.3e-1, 0.5}.
+
+        Raises
+        ------
+        ValueError
+            If the given failure probability has an invalid value.
+
+        Returns
+        -------
+        float
+            The value of the beta parameter.
+
+        """
+        
+        if np.isclose(input_parameters.P_A, 1e-7):
+            return 5.20
+        
+        elif np.isclose(input_parameters.P_A, 1e-6):
+            return 4.75
+        
+        elif np.isclose(input_parameters.P_A, 1e-5):
+            return 4.27
+        
+        elif np.isclose(input_parameters.P_A, 7.2e-5):
+            return 3.8
+        
+        elif np.isclose(input_parameters.P_A, 1e-3):
+            return 3.09
+        
+        elif np.isclose(input_parameters.P_A, 2.3e-1):
+            return 0.739
+        
+        elif np.isclose(input_parameters.P_A, 0.5):
+            return 0
+        
+        else:
+            raise ValueError(f"P_A={input_parameters.P_A} has to be one of "+"{1e-7, 1e-6, 1e-5, 7.2e-5, 1e-3, 2.3e-1, 0.5}.")
+    
 
 @pd.api.extensions.register_dataframe_accessor("fkm_safety_normal_from_stddev")
 @pd.api.extensions.register_series_accessor("fkm_safety_normal_from_stddev")

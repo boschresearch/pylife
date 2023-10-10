@@ -65,6 +65,201 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             used, which is a bit slower but arrives at a correct solution.
     '''
     
+    def stress(self, load, rtol=1e-4, tol=1e-4):
+        '''Calculate the stress of the primary path in the stress-strain diagram at a given 
+        elastic-plastic stress (load), from a FE computation.
+        This is done by solving for the root of f(sigma) in eq. 2.8-42 of FKM nonlinear.
+
+        The secant method is used which does not rely on a derivative and has good numerical stability properties,
+        but is slower than Newton's method. The algorithm is implemented in scipy for multiple values at once.
+        The documentation states that this is faster for more than ~100 entries than a simple loop over the
+        individual values.
+        
+        We employ the scipy function on all items in the given array at once.
+        Usually, some of them fail and we recompute the value of the failed items afterwards.
+        Calling the Newton method on a scalar function somehow always converges, while calling
+        the Newton method with same initial conditions on the same values, but with multiple at once, fails sometimes.
+
+        Parameters
+        ----------
+        load : array-like float
+            The load
+            
+        Returns
+        -------
+        stress : array-like float
+            The resulting stress
+        '''
+        # initial value as given by correction document to FKM nonlinear
+        x0 = load * (1 - (1 - 1/self._K_p)/1000)
+        
+        # suppress the divergence warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            stress = optimize.newton(func=self._stress_implicit, x0=x0, \
+                args=([load]), rtol=rtol, tol=tol, full_output=True, maxiter=50)
+        
+        # only for multiple points at once, if some points diverged
+        if hasattr(stress[1], "iloc") and sum(stress[1]) < len(stress[1]):
+            stress = self._stress_fix_not_converged_values(stress, load, x0, rtol, tol)
+
+        return stress[0]
+           
+    def strain(self, stress, load):
+        '''Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
+        The formula is given by eq. 2.8-39 of FKM nonlinear.
+        load / stress * self._K_p * e_star
+
+        Parameters
+        ----------
+        stress : array-like float
+            The stress
+        load : array-like float
+            The load
+            
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        '''
+    
+        if not isinstance(stress, float):
+            stress = stress.astype(float)
+            
+        return self._ramberg_osgood_relation.strain(stress)
+      
+    def load(self, stress, rtol=1e-4, tol=1e-4):
+        '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
+        from the elastic-plastic stress as from the notch approximation.
+        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
+
+        This method is the inverse operation of "stress", i.e., L = load(stress(L)) and S = stress(load(stress)).
+        
+        Note that this method is only implemented for the scalar case, as the  FKM nonlinear surface layer & roughness
+        also only handles the scalar case with one assessment point at once, not with entire meshes.
+
+        Parameters
+        ----------
+        stress : array-like float
+            The elastic-plastic stress as computed by the notch approximation
+            
+        Returns
+        -------
+        load : array-like float
+            The resulting load or linear elastic stress. 
+            
+        '''
+
+        x0 = stress / (1 - (1 - 1/self._K_p)/1000)
+    
+        # suppress the divergence warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            load = optimize.newton(func=self._load_implicit, x0=x0, \
+                args=([stress]), rtol=rtol, tol=tol, maxiter=50)
+        
+        return load
+               
+    def stress_secondary_branch(self, delta_load, rtol=1e-4, tol=1e-4):
+        '''Calculate the stress on secondary branches in the stress-strain diagram at a given 
+        elastic-plastic stress (load), from a FE computation.
+        This is done by solving for the root of f(sigma) in eq. 2.8-43 of FKM nonlinear.
+
+        Parameters
+        ----------
+        delta_load : array-like float
+            The load increment of the hysteresis
+            
+        Returns
+        -------
+        delta_stress : array-like float
+            The resulting stress increment within the hysteresis
+            
+        Todo
+        ----
+
+        In the future, we can evaluate the runtime performance and try a Newton method instead
+        of the currently used secant method to speed up the computation.
+
+        .. code::
+            
+            fprime=self._d_stress_secondary_implicit_numeric
+
+        '''
+            
+        # initial value as given by correction document to FKM nonlinear
+        x0 = delta_load * (1 - (1 - 1/self._K_p)/1000)
+        
+        # suppress the divergence warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            delta_stress = optimize.newton(func=self._stress_secondary_implicit, x0=x0, \
+                args=([delta_load]), rtol=rtol, tol=tol, full_output=True, maxiter=50)
+
+        # only for multiple points at once, if some points diverged
+        if hasattr(delta_stress[1], "iloc") and sum(delta_stress[1]) < len(delta_stress[1]):
+            delta_stress = self._stress_secondary_fix_not_converged_values(delta_stress, delta_load, x0, rtol, tol)
+    
+        return delta_stress[0]
+          
+    def strain_secondary_branch(self, delta_stress, delta_load):
+        '''Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
+        The formula is given by eq. 2.8-43 of FKM nonlinear.
+
+        Parameters
+        ----------
+        delta_sigma : array-like float
+            The stress increment
+        delta_load : array-like float
+            The load increment
+            
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        '''
+        
+        if not isinstance(delta_stress, float):
+            delta_stress = delta_stress.astype(float)
+            
+        return self._ramberg_osgood_relation.delta_strain(delta_stress)
+
+    def load_secondary_branch(self, delta_stress, rtol=1e-4, tol=1e-4):
+        '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
+        from the elastic-plastic stress as from the notch approximation.
+        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
+
+        This method is the inverse operation of "stress", i.e., L = load(stress(L)) and S = stress(load(stress)).
+
+        Note that this method is only implemented for the scalar case, as the  FKM nonlinear surface layer & roughness
+        also only handles the scalar case with one assessment point at once, not with entire meshes.
+        
+        Parameters
+        ----------
+        delta_stress : array-like float
+            The increment of the elastic-plastic stress as computed by the notch approximation
+            
+        Returns
+        -------
+        delta_load : array-like float
+            The resulting load or linear elastic stress. 
+            
+        '''
+
+        x0 = delta_stress / (1 - (1 - 1/self._K_p)/1000)
+        
+        # suppress the divergence warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            delta_load = optimize.newton(func=self._load_secondary_implicit, x0=x0, \
+                args=([delta_stress]), rtol=rtol, tol=tol, maxiter=20)
+
+        return delta_load
+            
     def _e_star(self, load):
         """Compute the plastic corrected strain term e^{\ast} from the Neuber approximation 
         (eq. 2.5-43 in FKM nonlinear)
@@ -222,7 +417,6 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         h = 1e-4
         return (self._stress_secondary_implicit(delta_stress+h, delta_load) - self._stress_secondary_implicit(delta_stress-h, delta_load)) / (2*h)
     
-
     def _load_implicit(self, load, stress):
          """Compute the implicit function of the stress, f(sigma),
          as a function of the load,
@@ -243,47 +437,6 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
          
         return self._stress_secondary_implicit(delta_stress, delta_load)
      
-    def stress(self, load, rtol=1e-4, tol=1e-4):
-        '''Calculate the stress of the primary path in the stress-strain diagram at a given 
-        elastic-plastic stress (load), from a FE computation.
-        This is done by solving for the root of f(sigma) in eq. 2.8-42 of FKM nonlinear.
-
-        The secant method is used which does not rely on a derivative and has good numerical stability properties,
-        but is slower than Newton's method. The algorithm is implemented in scipy for multiple values at once.
-        The documentation states that this is faster for more than ~100 entries than a simple loop over the
-        individual values.
-        
-        We employ the scipy function on all items in the given array at once.
-        Usually, some of them fail and we recompute the value of the failed items afterwards.
-        Calling the Newton method on a scalar function somehow always converges, while calling
-        the Newton method with same initial conditions on the same values, but with multiple at once, fails sometimes.
-
-        Parameters
-        ----------
-        load : array-like float
-            The load
-            
-        Returns
-        -------
-        stress : array-like float
-            The resulting stress
-        '''
-        # initial value as given by correction document to FKM nonlinear
-        x0 = load * (1 - (1 - 1/self._K_p)/1000)
-        
-        # suppress the divergence warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-
-            stress = optimize.newton(func=self._stress_implicit, x0=x0, \
-                args=([load]), rtol=rtol, tol=tol, full_output=True, maxiter=50)
-        
-        # only for multiple points at once, if some points diverged
-        if hasattr(stress[1], "iloc") and sum(stress[1]) < len(stress[1]):
-            stress = self._stress_fix_not_converged_values(stress, load, x0, rtol, tol)
-
-        return stress[0]
-        
     def _stress_fix_not_converged_values(self, stress, load, x0, rtol, tol):
         '''For the values that did not converge in the previous vectorized call to optimize.newton,
         call optimize.newton again on the scalar value. This usually finds the correct solution.'''
@@ -298,106 +451,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             if result[1].converged:
                 stress[0].iloc[index_diverged] = result[0]
         return stress
-            
-    def strain(self, stress, load):
-        '''Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
-        The formula is given by eq. 2.8-39 of FKM nonlinear.
-        load / stress * self._K_p * e_star
-
-        Parameters
-        ----------
-        stress : array-like float
-            The stress
-        load : array-like float
-            The load
-            
-        Returns
-        -------
-        strain : array-like float
-            The resulting strain
-        '''
-    
-        if not isinstance(stress, float):
-            stress = stress.astype(float)
-            
-        return self._ramberg_osgood_relation.strain(stress)
-      
-    def load(self, stress, rtol=1e-4, tol=1e-4):
-        '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
-        from the elastic-plastic stress as from the notch approximation.
-        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
-
-        This method is the inverse operation of "stress", i.e., L = load(stress(L)) and S = stress(load(stress)).
-        
-        Note that this method is only implemented for the scalar case, as the  FKM nonlinear surface layer & roughness
-        also only handles the scalar case with one assessment point at once, not with entire meshes.
-
-        Parameters
-        ----------
-        stress : array-like float
-            The elastic-plastic stress as computed by the notch approximation
-            
-        Returns
-        -------
-        load : array-like float
-            The resulting load or linear elastic stress. 
-            
-        '''
-
-        x0 = stress / (1 - (1 - 1/self._K_p)/1000)
-    
-        # suppress the divergence warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-
-            load = optimize.newton(func=self._load_implicit, x0=x0, \
-                args=([stress]), rtol=rtol, tol=tol, maxiter=50)
-        
-        return load
-               
-    def stress_secondary_branch(self, delta_load, rtol=1e-4, tol=1e-4):
-        '''Calculate the stress on secondary branches in the stress-strain diagram at a given 
-        elastic-plastic stress (load), from a FE computation.
-        This is done by solving for the root of f(sigma) in eq. 2.8-43 of FKM nonlinear.
-
-        Parameters
-        ----------
-        delta_load : array-like float
-            The load increment of the hysteresis
-            
-        Returns
-        -------
-        delta_stress : array-like float
-            The resulting stress increment within the hysteresis
-            
-        Todo
-        ----
-
-        In the future, we can evaluate the runtime performance and try a Newton method instead
-        of the currently used secant method to speed up the computation.
-
-        .. code::
-            
-            fprime=self._d_stress_secondary_implicit_numeric
-
-        '''
-            
-        # initial value as given by correction document to FKM nonlinear
-        x0 = delta_load * (1 - (1 - 1/self._K_p)/1000)
-        
-        # suppress the divergence warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-
-            delta_stress = optimize.newton(func=self._stress_secondary_implicit, x0=x0, \
-                args=([delta_load]), rtol=rtol, tol=tol, full_output=True, maxiter=50)
-
-        # only for multiple points at once, if some points diverged
-        if hasattr(delta_stress[1], "iloc") and sum(delta_stress[1]) < len(delta_stress[1]):
-            delta_stress = self._stress_secondary_fix_not_converged_values(delta_stress, delta_load, x0, rtol, tol)
-    
-        return delta_stress[0]
-
+         
     def _stress_secondary_fix_not_converged_values(self, delta_stress, delta_load, x0, rtol, tol):
         '''For the values that did not converge in the previous vectorized call to optimize.newton,
         call optimize.newton again on the scalar value. This usually finds the correct solution.'''
@@ -412,59 +466,4 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             if result[1].converged:
                 delta_stress[0].iloc[index_diverged] = result[0]
         return delta_stress
-                      
-    def strain_secondary_branch(self, delta_stress, delta_load):
-        '''Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
-        The formula is given by eq. 2.8-43 of FKM nonlinear.
-
-        Parameters
-        ----------
-        delta_sigma : array-like float
-            The stress increment
-        delta_load : array-like float
-            The load increment
-            
-        Returns
-        -------
-        strain : array-like float
-            The resulting strain
-        '''
-        
-        if not isinstance(delta_stress, float):
-            delta_stress = delta_stress.astype(float)
-            
-        return self._ramberg_osgood_relation.delta_strain(delta_stress)
-
-    def load_secondary_branch(self, delta_stress, rtol=1e-4, tol=1e-4):
-        '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
-        from the elastic-plastic stress as from the notch approximation.
-        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
-
-        This method is the inverse operation of "stress", i.e., L = load(stress(L)) and S = stress(load(stress)).
-
-        Note that this method is only implemented for the scalar case, as the  FKM nonlinear surface layer & roughness
-        also only handles the scalar case with one assessment point at once, not with entire meshes.
-        
-        Parameters
-        ----------
-        delta_stress : array-like float
-            The increment of the elastic-plastic stress as computed by the notch approximation
-            
-        Returns
-        -------
-        delta_load : array-like float
-            The resulting load or linear elastic stress. 
-            
-        '''
-
-        x0 = delta_stress / (1 - (1 - 1/self._K_p)/1000)
-        
-        # suppress the divergence warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-
-            delta_load = optimize.newton(func=self._load_secondary_implicit, x0=x0, \
-                args=([delta_stress]), rtol=rtol, tol=tol, maxiter=20)
-
-        return delta_load
             
