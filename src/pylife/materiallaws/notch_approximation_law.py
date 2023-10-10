@@ -272,7 +272,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         return -1/delta_stress * self.K_p * self._delta_e_star(delta_load) \
             - delta_load/delta_stress * self.K_p * self._d_delta_e_star(delta_load)
         
-    def stress(self, load, rtol=1e-4, tol=1e-4):
+    def stress(self, load, *, rtol=1e-4, tol=1e-4):
         '''Calculate the stress of the primary path in the stress-strain diagram at a given 
         elastic-plastic stress (load), from a FE computation.
         This is done by solving for the root of f(sigma) in eq. 2.5-45 of FKM nonlinear.
