@@ -284,7 +284,13 @@ class ExtendedNeuber(NotchApproximationLawBase):
             In the FKM nonlinear document, this is also called load "L", because it is derived
             from a load-time series. Note that this value is scaled to match the actual loading
             in the assessment, it equals the FEM solution times the transfer factor.
-            
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the stress gets solved, 
+            by default 1e-4
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the stress gets solved, 
+            by default 1e-4
+
         Returns
         -------
         stress : array-like float
@@ -325,7 +331,13 @@ class ExtendedNeuber(NotchApproximationLawBase):
         ----------
         stress : array-like float
             The elastic-plastic stress as computed by the notch approximation
-            
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the load gets solved, 
+            by default 1e-4
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the load gets solved, 
+            by default 1e-4
+
         Returns
         -------
         load : array-like float
@@ -352,7 +364,13 @@ class ExtendedNeuber(NotchApproximationLawBase):
         ----------
         delta_load : array-like float
             The load increment of the hysteresis
-            
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the stress gets solved, 
+            by default 1e-4
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the stress gets solved, 
+            by default 1e-4
+
         Returns
         -------
         delta_stress : array-like float
@@ -392,7 +410,13 @@ class ExtendedNeuber(NotchApproximationLawBase):
         ----------
         delta_stress : array-like float
             The increment of the elastic-plastic stress as computed by the notch approximation
-            
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the stress gets solved, 
+            by default 1e-4
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the stress gets solved, 
+            by default 1e-4
+
         Returns
         -------
         delta_load : array-like float
@@ -552,7 +576,13 @@ class Binned:
         ----------
         load : array-like float
             The load, either a scalar value or a pandas DataFrame with RangeIndex (no named index)
-            
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the stress gets solved.
+            In this case for the `Binning` class, the parameter is not used.
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the stress gets solved.
+            In this case for the `Binning` class, the parameter is not used.
+
         Returns
         -------
         stress : array-like float
@@ -699,6 +729,12 @@ class Binned:
         ----------
         delta_load : array-like float
             The load increment of the hysteresis
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the stress gets solved.
+            In this case for the `Binning` class, the parameter is not used.
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the stress gets solved.
+            In this case for the `Binning` class, the parameter is not used.
             
         Returns
         -------
@@ -770,7 +806,7 @@ class Binned:
 
         Parameters
         ----------
-        delta_sigma : array-like float
+        delta_stress : array-like float
             The stress increment
         delta_load : array-like float
             The load increment
