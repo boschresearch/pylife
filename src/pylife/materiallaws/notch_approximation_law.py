@@ -454,15 +454,14 @@ class Binned:
     """
     
     def __init__(self, notch_approximation_law, maximum_absolute_load, number_of_bins=100):
-        
         self._notch_approximation_law = notch_approximation_law
         self._maximum_absolute_load = maximum_absolute_load
         self._number_of_bins = number_of_bins
         self._create_bins()
         
     def _create_bins(self):
-        
-            
+        """Initialize the lookup tables by precomputing the notch approximation law values.
+        """
         # for multiple assessment points at once use a DataFrame with MultiIndex
         if isinstance(self._maximum_absolute_load, pd.DataFrame):
             assert self._maximum_absolute_load.index.name == "node_id"
@@ -475,6 +474,8 @@ class Binned:
         
         
     def _create_bins_single_assessment_point(self):
+        """Initialize the lookup tables by precomputing the notch approximation law values,
+        for the case of scalar variables, i.e., only a single assessment point."""
         
         # create look-up table (lut) for the primary branch values, named PFAD in FKM nonlinear
         self._lut_primary_branch = pd.DataFrame(0, 
@@ -509,6 +510,8 @@ class Binned:
                 self._lut_secondary_branch.delta_stress, self._lut_secondary_branch.delta_load)
         
     def _create_bins_multiple_assessment_points(self):
+        """Initialize the lookup tables by precomputing the notch approximation law values,
+        for the case of vector-valued variables caused by an assessment on multiple points at once."""
         
         # name column "max_abs_load"
         self._maximum_absolute_load.rename(columns={self._maximum_absolute_load.columns[0]: "max_abs_load"}, inplace=True)
