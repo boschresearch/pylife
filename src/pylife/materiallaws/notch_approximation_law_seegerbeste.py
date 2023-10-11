@@ -88,7 +88,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
                 args=([load]), rtol=rtol, tol=tol, full_output=True, maxiter=50)
         
         # only for multiple points at once, if some points diverged
-        if hasattr(stress[1], "iloc") and sum(stress[1]) < len(stress[1]):
+        if sum(stress[1]) < len(stress[1]):
             stress = self._stress_fix_not_converged_values(stress, load, x0, rtol, tol)
 
         return stress[0]
@@ -187,7 +187,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
                 args=([delta_load]), rtol=rtol, tol=tol, full_output=True, maxiter=50)
 
         # only for multiple points at once, if some points diverged
-        if hasattr(delta_stress[1], "iloc") and sum(delta_stress[1]) < len(delta_stress[1]):
+        if sum(delta_stress[1]) < len(delta_stress[1]):
             delta_stress = self._stress_secondary_fix_not_converged_values(delta_stress, delta_load, x0, rtol, tol)
     
         return delta_stress[0]
@@ -436,7 +436,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
                 args=([load[index_diverged]]), rtol=rtol, tol=tol, full_output=True, maxiter=50)
             
             if result[1].converged:
-                stress[0].iloc[index_diverged] = result[0]
+                stress[0][index_diverged] = result[0]
         return stress
          
     def _stress_secondary_fix_not_converged_values(self, delta_stress, delta_load, x0, rtol, tol):
@@ -451,6 +451,6 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
                         args=([delta_load[index_diverged]]), rtol=rtol, tol=tol, full_output=True, maxiter=50)
                    
             if result[1].converged:
-                delta_stress[0].iloc[index_diverged] = result[0]
+                delta_stress[0][index_diverged] = result[0]
         return delta_stress
             
