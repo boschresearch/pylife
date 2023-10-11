@@ -130,7 +130,7 @@ class RambergOsgood:
         sign_x = np.sign(x)
         return abs_x, sign_x
 
-    def stress(self, strain, rtol=1e-5, tol=1e-6):
+    def stress(self, strain, *, rtol=1e-5, tol=1e-6):
         '''Calculate the stress for a given strain
 
         Parameters

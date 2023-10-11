@@ -52,7 +52,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
     The equation implemented is described in the FKM nonlinear reference, chapter 2.8.7.
     '''
     
-    def stress(self, load, rtol=1e-4, tol=1e-4):
+    def stress(self, load, *, rtol=1e-4, tol=1e-4):
         '''Calculate the stress of the primary path in the stress-strain diagram at a given 
         elastic-plastic stress (load), from a FE computation.
         This is done by solving for the root of f(sigma) in eq. 2.8-42 of FKM nonlinear.
@@ -116,7 +116,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             
         return self._ramberg_osgood_relation.strain(stress)
       
-    def load(self, stress, rtol=1e-4, tol=1e-4):
+    def load(self, stress, *, rtol=1e-4, tol=1e-4):
         '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
         from the elastic-plastic stress as from the notch approximation.
         This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
@@ -149,7 +149,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         
         return load
                
-    def stress_secondary_branch(self, delta_load, rtol=1e-4, tol=1e-4):
+    def stress_secondary_branch(self, delta_load, *, rtol=1e-4, tol=1e-4):
         '''Calculate the stress on secondary branches in the stress-strain diagram at a given 
         elastic-plastic stress (load), from a FE computation.
         This is done by solving for the root of f(sigma) in eq. 2.8-43 of FKM nonlinear.
@@ -214,7 +214,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             
         return self._ramberg_osgood_relation.delta_strain(delta_stress)
 
-    def load_secondary_branch(self, delta_stress, rtol=1e-4, tol=1e-4):
+    def load_secondary_branch(self, delta_stress, *, rtol=1e-4, tol=1e-4):
         '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
         from the elastic-plastic stress as from the notch approximation.
         This backward step is needed for the pfp FKM nonlinear surface layer & roughness.

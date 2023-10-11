@@ -157,7 +157,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         
         return self._ramberg_osgood_relation.strain(stress)
    
-    def load(self, stress, rtol=1e-4, tol=1e-4):
+    def load(self, stress, *, rtol=1e-4, tol=1e-4):
         '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
         from the elastic-plastic stress as from the notch approximation.
         This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
@@ -192,7 +192,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
             args=([stress]), rtol=rtol, tol=tol, maxiter=20)
         return load
         
-    def stress_secondary_branch(self, delta_load, rtol=1e-4, tol=1e-4):
+    def stress_secondary_branch(self, delta_load, *, rtol=1e-4, tol=1e-4):
         '''Calculate the stress on secondary branches in the stress-strain diagram at a given 
         elastic-plastic stress (load), from a FE computation.
         This is done by solving for the root of f(sigma) in eq. 2.5-46 of FKM nonlinear.
@@ -236,7 +236,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         
         return self._ramberg_osgood_relation.delta_strain(delta_stress)
 
-    def load_secondary_branch(self, delta_stress, rtol=1e-4, tol=1e-4):
+    def load_secondary_branch(self, delta_stress, *, rtol=1e-4, tol=1e-4):
         '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
         from the elastic-plastic stress as from the notch approximation.
         This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
@@ -465,7 +465,7 @@ class Binned:
         '''
         return self._notch_approximation_law.ramberg_osgood_relation
 
-    def stress(self, load, rtol=1e-5, tol=1e-6):
+    def stress(self, load, *, rtol=1e-5, tol=1e-6):
         '''The stress of the primary path in the stress-strain diagram at a given load
         by using the value of the look-up table.
         
@@ -621,7 +621,7 @@ class Binned:
             
             return sign * self._lut_primary_branch.iloc[index+1].strain     # "+1", because the next higher class is used 
         
-    def stress_secondary_branch(self, delta_load, rtol=1e-5, tol=1e-6):
+    def stress_secondary_branch(self, delta_load, *, rtol=1e-5, tol=1e-6):
         '''Get the stress on secondary branches in the stress-strain diagram at a given load
         by using the value of the look-up table.
 
