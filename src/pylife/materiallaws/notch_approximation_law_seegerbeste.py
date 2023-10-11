@@ -50,19 +50,6 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
     Notes
     -----
     The equation implemented is described in the FKM nonlinear reference, chapter 2.8.7.
-    
-    
-    Remarks/ Bug issues from 25.03.2022 (CR/AMP4-Bucher):
-        - Newton approximation including derivatives does not result in correct values --> stresses way too high (reason unknown)
-        - The derivatives itself should be correct (tested in file "fkm_nonlinear_HCM2")
-        - Therefore the Newton appriximation is done without derivatives currently
-        - However it is preferred to do it with derivatives due to performance issues
-        - The calculation of strains and secondary strains is done using Neuber-formula
-        - The calculation with the u-term (right hand side of formula 2.8.43) does not lead to the same result 
-        - The last term L/Sigma*kp*e was also included, but did not fix the problem
-        - 07/2022: we think the underlying function is simply not smooth enough to employ 
-            a gradient based Newton scheme. Instead, the gradient-less secant method is
-            used, which is a bit slower but arrives at a correct solution.
     '''
     
     def stress(self, load, rtol=1e-4, tol=1e-4):
