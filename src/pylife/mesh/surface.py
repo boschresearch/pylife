@@ -27,7 +27,7 @@ from .meshsignal import Mesh
 
 @pd.api.extensions.register_dataframe_accessor('surface_3D')
 class Surface3D(Mesh):
-    '''Determines nodes at the surface in a 3D mesh that was imported from Ansys or Abaqus.
+    '''Determines nodes at the surface in a 3D mesh.
     It also computes the outward normal vectors of the surface.
     
     Raises
