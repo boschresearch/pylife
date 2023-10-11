@@ -163,6 +163,7 @@ class P_RAJ:
                
     @property
     def collective(self):
+        return self._collective
 
     def _compute_values(self):
         """Compute the P_RAJ damage parameter according to FKM nonlinear.
@@ -554,6 +555,3 @@ class P_RAJ:
                 # eq. (2.9-125)
                 self._assessment_parameters.P_RAJ_klass_max = self._calculate_P_RAJ(delta_stress, delta_strain)
                 
-                    
-          
-        return self._collective
