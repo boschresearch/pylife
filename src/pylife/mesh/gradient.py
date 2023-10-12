@@ -258,20 +258,20 @@ class Gradient3D(Mesh):
             Note that their derivatives are constant, thus, no dependency on node_index.
             """
             # ansatz functions for tetrahedron:
-            # phi0: 1 - xi1 - xi2 - xi3
-            # phi1: xi1
-            # phi2: xi2
-            # phi3: xi3
-            
+            #   phi0: 1 - xi1 - xi2 - xi3
+            #   phi1: xi1
+            #   phi2: xi2
+            #   phi3: xi3
+            # derivatives:
+            #   ∂phi_0/∂ξ_j: -1 for all j
+            #   ∂phi_1/∂ξ_0: 1, ∂phi1/∂ξ_j = 0 for j=1,2
+            #   ∂phi_2/∂ξ_1: 1, ∂phi1/∂ξ_j = 0 for j=0,2
+            #   ∂phi_3/∂ξ_2: 1, ∂phi1/∂ξ_j = 0 for j=0,1
+
             if a == 0:
                 return -1
-            elif a == 1:
-                return 1 if j == 0 else 0
-            elif a == 2:
-                return 1 if j == 1 else 0
-            elif a == 3:
-                return 1 if j == 2 else 0
-            
+            return 1 if j == a - 1 else 0
+
         self._dphi_a_dxi_j = dphi_a_dxi_j
 
     def _compute_gradient_simplex_single_node(self, node_index, nodal_values, Jinv):
