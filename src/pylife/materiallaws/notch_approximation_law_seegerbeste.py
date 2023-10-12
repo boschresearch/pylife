@@ -84,8 +84,13 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
 
-            stress = optimize.newton(func=self._stress_implicit, x0=x0, \
-                args=([load]), rtol=rtol, tol=tol, full_output=True, maxiter=50)
+            stress = optimize.newton(
+                func=self._stress_implicit,
+                x0=x0,
+                args=([load]),
+                full_output=True,
+                rtol=rtol, tol=tol, maxiter=50
+            )
         
             # Now, `stress` is a tuple, either
             #    (value, info_object) for scalar values,
@@ -148,8 +153,12 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
 
-            load = optimize.newton(func=self._load_implicit, x0=x0, \
-                args=([stress]), rtol=rtol, tol=tol, maxiter=50)
+            load = optimize.newton(
+                func=self._load_implicit,
+                x0=x0,
+                args=([stress]),
+                rtol=rtol, tol=tol, maxiter=50
+            )
         
         return load
                
@@ -187,8 +196,13 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
 
-            delta_stress = optimize.newton(func=self._stress_secondary_implicit, x0=x0, \
-                args=([delta_load]), rtol=rtol, tol=tol, full_output=True, maxiter=50)
+            delta_stress = optimize.newton(
+                func=self._stress_secondary_implicit,
+                x0=x0,
+                args=([delta_load]),
+                full_output=True,
+                rtol=rtol, tol=tol, maxiter=50
+            )
 
             # Now, `delta_stress` is a tuple, either
             #    (value, info_object) for scalar values,
@@ -250,8 +264,12 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
 
-            delta_load = optimize.newton(func=self._load_secondary_implicit, x0=x0, \
-                args=([delta_stress]), rtol=rtol, tol=tol, maxiter=20)
+            delta_load = optimize.newton(
+                func=self._load_secondary_implicit,
+                x0=x0,
+                args=([delta_stress]), 
+                rtol=rtol, tol=tol, maxiter=20
+            )
 
         return delta_load
             
@@ -444,8 +462,13 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         for index_diverged in indices_diverged:
             x0_diverged = x0_array[index_diverged]
             load_diverged = load_array[index_diverged]
-            result = optimize.newton(func=self._stress_implicit, x0=x0_diverged, \
-                args=([load_diverged]), rtol=rtol, tol=tol, full_output=True, maxiter=50)
+            result = optimize.newton(
+                func=self._stress_implicit,
+                x0=x0_diverged,
+                args=([load_diverged]),
+                full_output=True, 
+                rtol=rtol, tol=tol, maxiter=50
+            )
             
             if result[1].converged:
                 stress[0][index_diverged] = result[0]
@@ -463,8 +486,13 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         for index_diverged in indices_diverged:
             x0_diverged = x0_array[index_diverged]
             delta_load_diverged = delta_load_array[index_diverged]
-            result = optimize.newton(func=self._stress_secondary_implicit, x0=x0_diverged, \
-                        args=([delta_load_diverged]), rtol=rtol, tol=tol, full_output=True, maxiter=50)
+            result = optimize.newton(
+                func=self._stress_secondary_implicit,
+                x0=x0_diverged,
+                args=([delta_load_diverged]),
+                full_output=True, 
+                rtol=rtol, tol=tol, maxiter=50
+            )
                    
             if result[1].converged:
                 delta_stress[0][index_diverged] = result[0]

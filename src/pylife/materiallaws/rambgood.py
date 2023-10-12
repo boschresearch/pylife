@@ -153,7 +153,12 @@ class RambergOsgood:
         strain = np.asarray(strain)
         abs_strain, sign_strain = self._get_abs_sign(strain)
         stress0 = self._E * abs_strain
-        abs_stress = optimize.newton(func=residuum, x0=stress0, fprime=dresiduum, rtol=rtol, tol=tol)
+        abs_stress = optimize.newton(
+            func=residuum,
+            x0=stress0,
+            fprime=dresiduum, 
+            rtol=rtol, tol=tol
+        )
         return abs_stress * sign_strain
 
     def tangential_compliance(self, stress):

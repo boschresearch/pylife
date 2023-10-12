@@ -133,8 +133,13 @@ class ExtendedNeuber(NotchApproximationLawBase):
         stress : array-like float
             The resulting elastic-plastic stress according to the notch-approximation law.
         '''
-        stress = optimize.newton(func=self._stress_implicit, x0=load, fprime=self._d_stress_implicit, \
-            args=([load]), rtol=rtol, tol=tol, maxiter=20)
+        stress = optimize.newton(
+            func=self._stress_implicit, 
+            x0=load, 
+            fprime=self._d_stress_implicit,
+            args=([load]), 
+            rtol=rtol, tol=tol, maxiter=20
+        )
         return stress
         
     def strain(self, stress, load):
@@ -188,8 +193,13 @@ class ExtendedNeuber(NotchApproximationLawBase):
         # =>   (sigma/E + (sigma/K')^(1/n')) /  K_p * sigma =  L *  e_star(L)
         # <=> self._ramberg_osgood_relation.strain(stress) / self._K_p * stress = L * e_star(L)
         
-        load = optimize.newton(func=self._load_implicit, x0=stress, fprime=self._d_load_implicit, \
-            args=([stress]), rtol=rtol, tol=tol, maxiter=20)
+        load = optimize.newton(
+            func=self._load_implicit,
+            x0=stress,
+            fprime=self._d_load_implicit,
+            args=([stress]),
+            rtol=rtol, tol=tol, maxiter=20
+        )
         return load
         
     def stress_secondary_branch(self, delta_load, *, rtol=1e-4, tol=1e-4):
@@ -213,8 +223,13 @@ class ExtendedNeuber(NotchApproximationLawBase):
         delta_stress : array-like float
             The resulting stress increment within the hysteresis
         '''
-        delta_stress = optimize.newton(func=self._stress_secondary_implicit, x0=delta_load, \
-            fprime=self._d_stress_secondary_implicit, args=([delta_load]), rtol=rtol, tol=tol, maxiter=20)
+        delta_stress = optimize.newton(
+            func=self._stress_secondary_implicit,
+            x0=delta_load,
+            fprime=self._d_stress_secondary_implicit,
+            args=([delta_load]),
+            rtol=rtol, tol=tol, maxiter=20
+        )
         return delta_stress
         
     def strain_secondary_branch(self, delta_stress, delta_load):
@@ -267,8 +282,13 @@ class ExtendedNeuber(NotchApproximationLawBase):
         # =>   (sigma/E + (sigma/K')^(1/n')) /  K_p * sigma =  L *  e_star(L)
         # <=> self._ramberg_osgood_relation.strain(stress) / self._K_p * stress = L * e_star(L)
         
-        delta_load = optimize.newton(func=self._load_secondary_implicit, x0=delta_stress, fprime=self._d_load_secondary_implicit, \
-            args=([delta_stress]), rtol=rtol, tol=tol, maxiter=20)
+        delta_load = optimize.newton(
+            func=self._load_secondary_implicit,
+            x0=delta_stress,
+            fprime=self._d_load_secondary_implicit,
+            args=([delta_stress]),
+            rtol=rtol, tol=tol, maxiter=20
+        )
         return delta_load
         
     def _e_star(self, load):
