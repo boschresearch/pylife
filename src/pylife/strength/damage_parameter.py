@@ -9,9 +9,12 @@ import pylife.materiallaws.rambgood
 import pylife.strength.woehler_fkm_nonlinear
 
 class P_RAM:
+    """This class implements the damage parameter P_RAM according to guideline FKM nonlinear.
+    The resulting values are added to the collective in a new column, which can be retrieved by the ``.collective`` accessor.
+    """
     
     def __init__(self, collective, assessment_parameters):
-        """Initialize the P_RAM object and compute the damage paramater P_RAM according to FKM nonlinear.
+        """Initialize the P_RAM object and compute the damage parameter P_RAM according to FKM nonlinear.
         The resulting values are added to the collective, which can be retrieved by the ``.collective`` accessor.
 
         Parameters
@@ -84,9 +87,12 @@ class P_RAM:
         self._collective.drop(columns = ["discriminant", "k"], inplace=True)
           
 class P_RAJ:
+    """This class implements the damage parameter P_RAJ according to guideline FKM nonlinear.
+    The resulting values are added to the collective in a new column, which can be retrieved by the ``.collective`` accessor.
+    """
     
     def __init__(self, collective, assessment_parameters, component_woehler_curve_P_RAJ):
-        """Initialize the P_RAJ object and compute the damage paramater P_RAJ according to FKM nonlinear.
+        """Initialize the P_RAJ object and compute the damage parameter P_RAJ according to FKM nonlinear.
         The resulting values are added to the collective, which can be retrieved by the ``.collective`` accessor.
 
         Parameters
