@@ -453,7 +453,6 @@ class P_RAJ:
                 if np.isnan(row.S_min):
                     return np.nan
                 
-                #print(f"optimize S_max: {row.S_max}, epsilon_max: {row.epsilon_max}, epsilon_open: {row.epsilon_open}")
                 return scipy.optimize.newton(f, 
                                              x0=row.S_min, 
                                              args=(row.S_max, row.epsilon_max, row.epsilon_open), 
