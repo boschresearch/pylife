@@ -120,11 +120,11 @@ def calculate_material_woehler_parameters_P_RAM(assessment_parameters_):
     """
     assessment_parameters = assessment_parameters_.copy()
     
-    # select set of constants according to given material group
-    constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
-    
     assert "P_A" in assessment_parameters
     assert "R_m" in assessment_parameters
+    
+    # select set of constants according to given material group
+    constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
     
     # add an empty "notes" entry in assessment_parameters
     if "notes" not in assessment_parameters:
@@ -193,11 +193,11 @@ def calculate_material_woehler_parameters_P_RAJ(assessment_parameters_):
     """
     assessment_parameters = assessment_parameters_.copy()
     
-    # select set of constants according to given material group
-    constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
-    
     assert "P_A" in assessment_parameters
     assert "R_m" in assessment_parameters
+    
+    # select set of constants according to given material group
+    constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
     
     # add an empty "notes" entry in assessment_parameters
     if "notes" not in assessment_parameters:
@@ -523,13 +523,13 @@ def calculate_nonlocal_parameters(assessment_parameters_):
     """
     assessment_parameters = assessment_parameters_.copy()
     
-    # select set of constants according to given material group
-    constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
-    
     assert "A_ref" in assessment_parameters
     assert "A_sigma" in assessment_parameters
     assert "G" in assessment_parameters
     assert "R_m" in assessment_parameters
+    
+    # select set of constants according to given material group
+    constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
     
     # calculate statistic coefficient, eq. (2.5-28)
     assessment_parameters["n_st"] = (assessment_parameters.A_ref / assessment_parameters.A_sigma) \
@@ -584,9 +584,6 @@ def calculate_roughness_parameter(assessment_parameters_):
     """
     assessment_parameters = assessment_parameters_.copy()
     
-    # select set of constants according to given material group
-    constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
-    
     # if K_RP is already set (e.g., manually set to 1), do nothing
     if "K_RP" in assessment_parameters:
         print(f"The parameter `K_RP` is already set to {assessment_parameters.K_RP}, not using the FKM formula.")
@@ -594,6 +591,9 @@ def calculate_roughness_parameter(assessment_parameters_):
     
     assert "R_m" in assessment_parameters
     assert "R_z" in assessment_parameters
+    
+    # select set of constants according to given material group
+    constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
     
     # calculate roughness factor, eq. (2.5-37)
     if assessment_parameters.R_z > 1:
