@@ -219,29 +219,17 @@ class FKMLoadSequence(PylifeSignal):
 
         """
         
-        if np.isclose(input_parameters.P_A, 1e-7):
-            return 5.20
+        # list of predefined P_A and beta values
+        P_A_beta_list = [(1e-7, 5.20), (1e-6, 4.75), (1e-5, 4.27), (7.2e-5, 3.8), (1e-3, 3.09), (2.3e-1, 0.739), (0.5, 0)]
+
+        # check if given P_A values is close to any of the tabulated predefined values
+        for P_A, beta in P_A_beta_list:
+            if np.isclose(input_parameters.P_A, P_A):
+                return beta
         
-        elif np.isclose(input_parameters.P_A, 1e-6):
-            return 4.75
-        
-        elif np.isclose(input_parameters.P_A, 1e-5):
-            return 4.27
-        
-        elif np.isclose(input_parameters.P_A, 7.2e-5):
-            return 3.8
-        
-        elif np.isclose(input_parameters.P_A, 1e-3):
-            return 3.09
-        
-        elif np.isclose(input_parameters.P_A, 2.3e-1):
-            return 0.739
-        
-        elif np.isclose(input_parameters.P_A, 0.5):
-            return 0
-        
-        else:
-            raise ValueError(f"P_A={input_parameters.P_A} has to be one of "+"{1e-7, 1e-6, 1e-5, 7.2e-5, 1e-3, 2.3e-1, 0.5}.")
+        # raise error if the given P_A value is not among the known ones
+        P_A_list = [str(P_A) for P_A,_ in P_A_beta_list]
+        raise ValueError(f"P_A={input_parameters.P_A} has to be one of "+"{"+", ".join(P_A_list)+"}.")
     
 
 @pd.api.extensions.register_dataframe_accessor("fkm_safety_normal_from_stddev")
