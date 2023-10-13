@@ -29,7 +29,18 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
     """
 
     class _HCM_Point:
-        """A point in the stress-strain diagram on which the HCM algorithm operates on"""
+        """A point in the stress-strain diagram on which the HCM algorithm operates on.
+        
+        .. note::
+            For an assessment for multiple points (FEM mesh nodes) at once, 
+            we assume that the load time series for the different points are
+            multiples of each other. In consequence, the hysteresis graph in
+            the stress-strain diagram follows the same sequence of primary and 
+            secondary paths for every assessment point. 
+            It suffices to consider a single point to find out when a hysteresis
+            gets closed and when to reach the primary path etc. However, the actual 
+            stress/strain values will be computed individually for every point.
+        """
         
         def __init__(self, load=None, strain=None, stress=None):
             self._load = load
@@ -509,10 +520,8 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
     def _hcm_process_sample(self, current_point, recording_lists, largest_point, iz, ir, load_max_seen, current_load_representative):
         """ Process one sample in the HCM algorithm, i.e., one load value """
 
-        continue_inner_loop = True
-        while continue_inner_loop:
+        while True:
             # iz = len(self._residuals)
-              
             if iz == ir:
                 previous_point = self._residuals[-1]
                     
@@ -520,74 +529,74 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 if np.abs(current_load_representative) > load_max_seen+1e-12:
                     # case a) i., "Memory 3"
                     current_point = self._handle_case_a_i(current_point, previous_point, largest_point, recording_lists, 
-                                                              current_load_representative, load_max_seen)
+                                                          current_load_representative, load_max_seen)
                     ir += 1
                     
                 else:
                     current_point = self._handle_case_a_ii(load_max_seen, current_load_representative, current_point, previous_point)
 
                 # end the inner loop and fetch the next load from the load sequence
-                continue_inner_loop = False
+                break
             
-            elif iz < ir:
+            if iz < ir:
                 # branch is fully part of the initial curve, case "Memory 1"
                 current_point = self._handle_case_b(current_point)
                 
                 # do not further process this load
-                continue_inner_loop = False
-            elif iz > ir:
-                previous_point_0 = self._residuals[-2]
-                previous_point_1 = self._residuals[-1]
-                    
-                # is the current load extent smaller than the last one?
-                current_load_extent = np.abs(current_load_representative-previous_point_1.load_representative)
-                previous_load_extent = np.abs(previous_point_1.load_representative-previous_point_0.load_representative)
-                if current_load_extent < previous_load_extent-1e-12:
-                    current_point = self._handle_case_c_i(current_point, previous_point_0, previous_point_1)
+                break
 
-                    # continue with the next load value
-                    continue_inner_loop = False
-                        
-                else:
-                    # no -> we have a new hysteresis
-                    self._handle_case_c_ii(recording_lists, previous_point_0, previous_point_1)
-                        
-                    iz -= 2
-        
-                    # if the points of the hysteresis lie fully inside the seen range of loads, i.e.,
-                    # the turn points are smaller than the maximum turn point so far
-                    # (this happens usually in the second run of the HCM algorithm)
-                    if np.abs(previous_point_0.load_representative) < load_max_seen-1e-12 and np.abs(previous_point_1.load_representative) < load_max_seen-1e-12:
-                        # case "Memory 2", "c) ii B"
-                        # the primary branch is not yet reached, continue processing residual loads, potentially
-                        # closing even more hysteresis
-                        
-                        continue_inner_loop = True
-                        self._hcm_message += ","
-                            
-                        # add a discontinuity marker
-                        self._hcm_point_history.append(("discontinuity", None, self._hysteresis_index))
-                        
-                    else:
-                        # case "Memory 1", "c) ii A"
-                        # The last hysteresis saw load values equal to the previous maximum. 
-                        # (Higher values cannot happen here.)
-                        # The load curve follows again the primary path.
-                        # No further hystereses can be closed, continue with the next load value.
-                        # Previously, iz was decreased by 2 and will be increased by 1 at the end of this loop ,
-                        # effectively `iz = iz - 1` as described on p.70
-                        
-                        continue_inner_loop = False
-                            
-                        # Proceed on primary path for the rest, which was not part of the closed hysteresis
-                        current_point = self._proceed_on_primary_branch(current_point)
-                            
-                        # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
-                        self._strain_values.append(current_point.strain)
-                        
-                        # count number of strain values in the first run of the HCM algorithm
-                        if self._run_index == 1:
-                            self._n_strain_values_first_run += 1
+            # here we have iz > ir:
+            previous_point_0 = self._residuals[-2]
+            previous_point_1 = self._residuals[-1]
+                
+            # is the current load extent smaller than the last one?
+            current_load_extent = np.abs(current_load_representative-previous_point_1.load_representative)
+            previous_load_extent = np.abs(previous_point_1.load_representative-previous_point_0.load_representative)
+            
+            # yes
+            if current_load_extent < previous_load_extent-1e-12:
+                current_point = self._handle_case_c_i(current_point, previous_point_0, previous_point_1)
+
+                # continue with the next load value
+                break
+                
+            # no -> we have a new hysteresis
+            self._handle_case_c_ii(recording_lists, previous_point_0, previous_point_1)
+                
+            iz -= 2
+
+            # if the points of the hysteresis lie fully inside the seen range of loads, i.e.,
+            # the turn points are smaller than the maximum turn point so far
+            # (this happens usually in the second run of the HCM algorithm)
+            if np.abs(previous_point_0.load_representative) < load_max_seen-1e-12 and np.abs(previous_point_1.load_representative) < load_max_seen-1e-12:
+                # case "Memory 2", "c) ii B"
+                # the primary branch is not yet reached, continue processing residual loads, potentially
+                # closing even more hysteresis
+                
+                self._hcm_message += ","
+                    
+                # add a discontinuity marker
+                self._hcm_point_history.append(("discontinuity", None, self._hysteresis_index))
+                continue
+            
+            # case "Memory 1", "c) ii A"
+            # The last hysteresis saw load values equal to the previous maximum. 
+            # (Higher values cannot happen here.)
+            # The load curve follows again the primary path.
+            # No further hystereses can be closed, continue with the next load value.
+            # Previously, iz was decreased by 2 and will be increased by 1 at the end of this loop ,
+            # effectively `iz = iz - 1` as described on p.70
+            
+            # Proceed on primary path for the rest, which was not part of the closed hysteresis
+            current_point = self._proceed_on_primary_branch(current_point)
+                
+            # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
+            self._strain_values.append(current_point.strain)
+            
+            # count number of strain values in the first run of the HCM algorithm
+            if self._run_index == 1:
+                self._n_strain_values_first_run += 1
+            break
 
         return current_point, iz, ir
 
