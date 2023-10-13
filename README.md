@@ -4,7 +4,7 @@
 [![Documentation Status](https://readthedocs.org/projects/pylife/badge/?version=latest)](https://pylife.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/pylife)](https://pypi.org/project/pylife/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pylife)
-[![testsuite](https://github.com/boschresearch/pylife/workflows/testsuite/badge.svg)](https://github.com/boschresearch/pylife/actions?query=workflow%3Atestsuite)
+[![Testsuite](https://github.com/boschresearch/pylife/actions/workflows/pytest.yml/badge.svg)](https://github.com/boschresearch/pylife/actions/workflows/pytest.yml)
 
 pyLife is an Open Source Python library for state of the art algorithms used in
 lifetime assessment of mechanical components subject to fatigue load.

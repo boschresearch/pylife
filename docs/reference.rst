@@ -4,14 +4,14 @@ pyLife Reference
 General
 -------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    general/signal
 
 Stress
 ------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    stress/index
    stress/equistress
@@ -25,7 +25,7 @@ Stress
 Strength
 --------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    strength/fatigue
    strength/meanstress
@@ -41,7 +41,7 @@ Strength
 Materiallaws
 ------------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    materiallaws/hookeslaw
    materiallaws/rambgood
@@ -52,7 +52,7 @@ Materiallaws
 Materialdata
 ------------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    materialdata/woehler
 
@@ -60,7 +60,7 @@ Materialdata
 Mesh utilities
 --------------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    mesh/meshsignal
    mesh/hotspot
@@ -72,7 +72,7 @@ Mesh utilities
 VMAP Interface
 --------------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    vmap/vmap.rst
    vmap/vmap_import.rst
@@ -81,7 +81,7 @@ VMAP Interface
 Utils
 -----
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    utils/functions
    utils/histogram
