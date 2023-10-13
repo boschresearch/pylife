@@ -1041,23 +1041,25 @@ class FKMNonlinearHysteresisPlotter:
         self._hcm_point_history = []
 
         for (type, hcm_point, hysteresis_index) in old_hcm_point_history:
-            if type == "primary":
-                if previous_point.stress < 0 and hcm_point.stress > 0:
-                    intermediate_point = FKMNonlinearDetector._HCM_Point(strain=largest_abs_strain, stress=largest_abs_stress_seen)
-                    self._hcm_point_history.append(("secondary", intermediate_point, hysteresis_index))
-                    self._hcm_point_history.append(("primary", hcm_point, hysteresis_index))
-                
-                elif previous_point.stress > 0 and hcm_point.stress < 0:
-                    intermediate_point = FKMNonlinearDetector._HCM_Point(strain=-largest_abs_strain, stress=-largest_abs_stress_seen)
-                    self._hcm_point_history.append(("secondary", intermediate_point, hysteresis_index))
-                    self._hcm_point_history.append(("primary", hcm_point, hysteresis_index))
-                else:
-                    self._hcm_point_history.append((type, hcm_point, hysteresis_index))
+            if type != "primary":
+                self._hcm_point_history.append((type, hcm_point, hysteresis_index))
+                previous_point = hcm_point
+                continue
 
-                if abs(hcm_point.stress) > largest_abs_stress_seen:
-                    largest_abs_stress_seen = abs(hcm_point.stress)
-                    largest_abs_strain = abs(hcm_point.strain)
+            if previous_point.stress * hcm_point.stress < 0:
+                sign = np.sign(hcm_point.stress)
+                intermediate_point = FKMNonlinearDetector._HCM_Point(
+                    strain=sign*largest_abs_strain, stress=sign*largest_abs_stress_seen
+                )
+                self._hcm_point_history.append(("secondary", intermediate_point, hysteresis_index))
+                self._hcm_point_history.append(("primary", hcm_point, hysteresis_index))
             else:
                 self._hcm_point_history.append((type, hcm_point, hysteresis_index))
 
+            if abs(hcm_point.stress) > largest_abs_stress_seen:
+                largest_abs_stress_seen = abs(hcm_point.stress)
+                largest_abs_strain = abs(hcm_point.strain)
+
             previous_point = hcm_point
+
+
