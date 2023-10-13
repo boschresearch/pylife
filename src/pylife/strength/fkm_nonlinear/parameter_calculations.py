@@ -40,8 +40,6 @@ import pylife.strength.fkm_nonlinear.constants
     (FKM non-linear guideline 2019)
 '''
 
-RM_OR_HV_REQUIRED_ERROR = RuntimeError("R_m required")
-
 def calculate_cyclic_assessment_parameters(assessment_parameters_):
     """Calculate the values of :math:`n', K'`, and :math:`E`, used to 
     describe the cyclic material behavior (Sec. 2.5.3 of FKM nonlinear).
@@ -72,6 +70,7 @@ def calculate_cyclic_assessment_parameters(assessment_parameters_):
 
     """
     assessment_parameters = assessment_parameters_.copy()
+    assert "R_m" in assessment_parameters
     
     # select set of constants according to given material group
     constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
@@ -80,16 +79,11 @@ def calculate_cyclic_assessment_parameters(assessment_parameters_):
     assessment_parameters["n_prime"] = constants.n_prime
     assessment_parameters["E"] = constants.E
     
-    # for standard FKM nonlinear, R_m is used to estimate material data    
-    if "R_m" in assessment_parameters:
-        
-        # compute K' according to eq. (2.5-13)
-        assessment_parameters["K_prime"] = constants.a_sigma * assessment_parameters.R_m ** constants.b_sigma \
-            / (np.minimum(constants.epsilon_grenz, constants.a_epsilon * assessment_parameters.R_m ** constants.b_epsilon)) \
-                ** constants.n_prime
-    
-    else:
-        raise RM_OR_HV_REQUIRED_ERROR 
+    # for FKM nonlinear, R_m is used to estimate material data    
+    # compute K' according to eq. (2.5-13)
+    assessment_parameters["K_prime"] = constants.a_sigma * assessment_parameters.R_m ** constants.b_sigma \
+        / (np.minimum(constants.epsilon_grenz, constants.a_epsilon * assessment_parameters.R_m ** constants.b_epsilon)) \
+            ** constants.n_prime
     
     return assessment_parameters
 
@@ -130,27 +124,23 @@ def calculate_material_woehler_parameters_P_RAM(assessment_parameters_):
     constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
     
     assert "P_A" in assessment_parameters
+    assert "R_m" in assessment_parameters
     
     # add an empty "notes" entry in assessment_parameters
     if "notes" not in assessment_parameters:
         assessment_parameters["notes"] = ""
 
-    # for standard FKM nonlinear, R_m is used to estimate material data    
-    if "R_m" in assessment_parameters:
-    
-        # computations for P_RAM
-        # compute sampling point "Z" according to eq. (2.5-22)
-        assessment_parameters["P_RAM_Z_WS"] = constants.a_PZ_RAM \
-            * assessment_parameters.R_m ** constants.b_PZ_RAM
-        
-        # compute sampling point "D" according to eq. (2.5-23)
-        assessment_parameters["P_RAM_D_WS"] = constants.a_PD_RAM \
-            * assessment_parameters.R_m ** constants.b_PD_RAM 
-            
-    else: 
+    # for standard FKM nonlinear, R_m is used to estimate material data  
 
-        raise RM_OR_HV_REQUIRED_ERROR
+    # computations for P_RAM
+    # compute sampling point "Z" according to eq. (2.5-22)
+    assessment_parameters["P_RAM_Z_WS"] = constants.a_PZ_RAM \
+        * assessment_parameters.R_m ** constants.b_PZ_RAM
     
+    # compute sampling point "D" according to eq. (2.5-23)
+    assessment_parameters["P_RAM_D_WS"] = constants.a_PD_RAM \
+        * assessment_parameters.R_m ** constants.b_PD_RAM 
+        
     # depending on P_A, add the factor f_2.5%, as described in eqs. (2.5-22), (2.5-23)
     if np.isclose(assessment_parameters.P_A, 0.5):
 
@@ -207,25 +197,23 @@ def calculate_material_woehler_parameters_P_RAJ(assessment_parameters_):
     constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
     
     assert "P_A" in assessment_parameters
+    assert "R_m" in assessment_parameters
     
     # add an empty "notes" entry in assessment_parameters
     if "notes" not in assessment_parameters:
         assessment_parameters["notes"] = ""
         
-    # for standard FKM nonlinear, R_m is used to estimate material data    
-    if "R_m" in assessment_parameters:
+    # for standard FKM nonlinear, R_m is used to estimate material data   
+
+    # computations for P_RAJ
+    # compute first sampling point for N=1 according to eq. (2.8-20), (2.9-12)
+    assessment_parameters["P_RAJ_Z_WS"] = constants.a_PZ_RAJ \
+        * assessment_parameters.R_m ** constants.b_PZ_RAJ
     
-        # computations for P_RAJ
-        # compute first sampling point for N=1 according to eq. (2.8-20), (2.9-12)
-        assessment_parameters["P_RAJ_Z_WS"] = constants.a_PZ_RAJ \
-            * assessment_parameters.R_m ** constants.b_PZ_RAJ
+    # compute second sampling point, the infinite life threshold according to eq. (2.8-21), note the error in (2.9-13) (should be P_RAJ,D,WS)
+    assessment_parameters["P_RAJ_D_WS"] = constants.a_PD_RAJ \
+        * assessment_parameters.R_m ** constants.b_PD_RAJ
         
-        # compute second sampling point, the infinite life threshold according to eq. (2.8-21), note the error in (2.9-13) (should be P_RAJ,D,WS)
-        assessment_parameters["P_RAJ_D_WS"] = constants.a_PD_RAJ \
-            * assessment_parameters.R_m ** constants.b_PD_RAJ
-            
-    else:
-        raise RM_OR_HV_REQUIRED_ERROR
     
     # depending on P_A, add the factor f_2.5%, as described in eqs. (2.5-22), (2.5-23)
     if np.isclose(assessment_parameters.P_A, 0.5):
@@ -541,20 +529,14 @@ def calculate_nonlocal_parameters(assessment_parameters_):
     assert "A_ref" in assessment_parameters
     assert "A_sigma" in assessment_parameters
     assert "G" in assessment_parameters
+    assert "R_m" in assessment_parameters
     
     # calculate statistic coefficient, eq. (2.5-28)
     assessment_parameters["n_st"] = (assessment_parameters.A_ref / assessment_parameters.A_sigma) \
         ** (1 / constants.k_st)
     
-    # determine R_m from HV, if not given directly
-    if "R_m" in assessment_parameters:
-        R_m = assessment_parameters.R_m
-
-    else: 
-        raise RM_OR_HV_REQUIRED_ERROR
-
     # eq. (2.5-32)
-    k_ = 5 * assessment_parameters.n_st + R_m / constants.R_m_bm \
+    k_ = 5 * assessment_parameters.n_st + assessment_parameters.R_m / constants.R_m_bm \
         * np.sqrt((7.5 + np.sqrt(assessment_parameters.G)) / (1 + 0.2*np.sqrt(assessment_parameters.G)))
     
     # eq. (2.5-31)
@@ -615,15 +597,8 @@ def calculate_roughness_parameter(assessment_parameters_):
     
     # calculate roughness factor, eq. (2.5-37)
     if assessment_parameters.R_z > 1:
-        
-        if "R_m" in assessment_parameters:
-            R_m = assessment_parameters.R_m
-
-        else: 
-            raise RM_OR_HV_REQUIRED_ERROR
-
         assessment_parameters["K_RP"] = (1 - constants.a_RP * np.log10(assessment_parameters.R_z) \
-            * np.log10(2 * R_m / constants.R_m_N_min)) ** constants.b_RP
+            * np.log10(2 * assessment_parameters.R_m / constants.R_m_N_min)) ** constants.b_RP
     
     else:
         assessment_parameters["K_RP"] = 1.
