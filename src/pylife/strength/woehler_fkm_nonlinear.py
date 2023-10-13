@@ -53,10 +53,14 @@ class WoehlerCurvePRAM(PylifeSignal):
         self.fail_if_key_missing(['P_RAM_Z', 'P_RAM_D', 'd_1', 'd_2'])
 
         is_not_nan = ~np.isnan(self._obj.P_RAM_Z)
-        assert np.all(np.where(is_not_nan, self._obj.P_RAM_Z, 1) > np.where(is_not_nan, self._obj.P_RAM_D, 0)), \
-            f"P_RAM_Z ({self._obj.P_RAM_Z}) has to be larger than P_RAM_D ({self._obj.P_RAM_D})!"
-        assert self._obj.d_1 < 0, f"d_1 ({self._obj.d_1}) has to be negative!"
-        assert self._obj.d_2 < 0, f"d_2 ({self._obj.d_2}) has to be negative!"
+        if not np.all(np.where(is_not_nan, self._obj.P_RAM_Z, 1) > np.where(is_not_nan, self._obj.P_RAM_D, 0)):
+            raise ValueError(f"P_RAM_Z ({self._obj.P_RAM_Z}) has to be larger than P_RAM_D ({self._obj.P_RAM_D})!")
+        
+        if self._obj.d_1 >= 0:
+            raise ValueError(f"d_1 ({self._obj.d_1}) has to be negative!")
+        
+        if self._obj.d_2 >= 0:
+            raise ValueError(f"d_2 ({self._obj.d_2}) has to be negative!")
 
     def get_woehler_curve_minimum_lifetime(self):
         """If this woehler curve is vectorized, i.e., holds values for multiple assessment points at once, 
@@ -200,10 +204,11 @@ class WoehlerCurvePRAJ(PylifeSignal):
         self.fail_if_key_missing(['P_RAJ_Z', 'P_RAJ_D_0', 'd_RAJ'])
 
         is_not_nan = ~np.isnan(self._obj.P_RAJ_Z)
-        assert np.all(np.where(is_not_nan, self._obj.P_RAJ_Z, 1) > np.where(is_not_nan, self._obj.P_RAJ_D_0, 0)), \
-            f"P_RAJ_Z ({self._obj.P_RAJ_Z}) has to be larger than P_RAJ_D_0 ({self._obj.P_RAJ_D_0})!"
+        if not np.all(np.where(is_not_nan, self._obj.P_RAJ_Z, 1) > np.where(is_not_nan, self._obj.P_RAJ_D_0, 0)):
+            raise ValueError(f"P_RAJ_Z ({self._obj.P_RAJ_Z}) has to be larger than P_RAJ_D_0 ({self._obj.P_RAJ_D_0})!")
         
-        assert self._obj.d_RAJ < 0, f"d_RAJ ({self._obj.d_RAJ}) has to be negative!"
+        if self._obj.d_RAJ >= 0:
+            raise ValueError(f"d_RAJ ({self._obj.d_RAJ}) has to be negative!")
 
     def update_P_RAJ_D(self, P_RAJ_D):
         """This method is used to update the fatigue strength P_RAJ_D, which is stored in this woehler curve.

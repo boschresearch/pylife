@@ -145,7 +145,7 @@ def test_woehler_curve_P_RAM_exceptions(P_RAM_Z, P_RAM_D, d_1, d_2):
         "d_2": d_2
     })
 
-    with pytest.raises(AssertionError, match="has to be"):
+    with pytest.raises(ValueError, match="has to be"):
         component_woehler_curve_P_RAM = assessment_parameters.woehler_P_RAM
 
 # ---------- P_RAJ --------------
@@ -254,5 +254,5 @@ def test_woehler_curve_P_RAJ_exceptions(P_RAJ_Z, P_RAJ_D_0, d_RAJ):
         "d_RAJ": d_RAJ
     })
 
-    with pytest.raises(AssertionError, match="has to be"):
+    with pytest.raises(ValueError, match="has to be"):
         component_woehler_curve_P_RAJ = assessment_parameters.woehler_P_RAJ
