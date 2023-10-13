@@ -625,7 +625,9 @@ def compute_beta(P_A):
     sigma = 1
     result = scipy.optimize.root(lambda x: abs(scipy.stats.norm.cdf(x, 0, sigma)-P_A), x0=-0.6, tol=1e-10)
 
-    assert result.success
+    if not result.success:
+        raise RuntimeError(f"Could not compute the value of beta for P_A={P_A}, "
+                           "the optimizer did not find a solution.")
     
     return -result.x[0] / sigma
 

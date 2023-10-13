@@ -23,6 +23,30 @@ import pandas as pd
 import numpy as np
 
 @pytest.mark.parametrize(
+    "P_A, expected_beta", [
+    (1e-10, 6.3613409),
+    (1e-5, 4.26489),
+    (5e-5, 3.890591),
+    (1e-2, 2.326347),
+    (0.5, 0),
+    (0.75, -0.674489),
+    (0.9, -1.281551),
+    (1-1e-10, -6.36134),
+])
+def test_compute_beta_success(P_A, expected_beta):
+    beta = pylife.strength.fkm_nonlinear.parameter_calculations.compute_beta(P_A)
+    assert np.isclose(beta, expected_beta)
+
+@pytest.mark.parametrize("P_A", [-1,0,1,2])
+def test_compute_beta_fails(P_A):
+
+    expected_error_message = f"Could not compute the value of beta for P_A={P_A}, " \
+        "the optimizer did not find a solution."
+    with pytest.raises(RuntimeError, match=expected_error_message):
+        pylife.strength.fkm_nonlinear.parameter_calculations.compute_beta(P_A)
+
+
+@pytest.mark.parametrize(
     "MatGroupFKM, R_m, K_prime, n_prime", [
     ("Steel", 1000., 2058.867, 0.187),
     ("Steel", 1500., 3252.742, 0.187),
