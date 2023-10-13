@@ -291,7 +291,6 @@ class TestHCMExample2(unittest.TestCase):
         
         # wrap the notch approximation law by a binning class, which precomputes the values
         maximum_absolute_load = max(abs(signal))
-        #print(f"signal: {signal}, maximum_absolute_load: {maximum_absolute_load}")
         
         extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
             extended_neuber, maximum_absolute_load, 100)

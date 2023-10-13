@@ -109,9 +109,6 @@ class DamageCalculatorPRAM:
         
         # y/x = d, 1/d = x/y
         
-        #print(f"P_RAM_max: \n{self.P_RAM_max}")
-        #print(f"fatigue_strength_limit: \n{self._component_woehler_curve_P_RAM.fatigue_strength_limit}")
-
         fatigue_strength_limit = self._component_woehler_curve_P_RAM.fatigue_strength_limit
         
         # remove any given index of fatigue_strength_limit which results from the assessment_parameters.G parameter
