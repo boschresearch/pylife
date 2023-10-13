@@ -143,7 +143,6 @@ def for_material_group(assessment_parameters):
     .. note::
         
         The constants for all material groups can be accessed as ``pylife.strength.fkm_nonlinear.all_constants``.
-        s
     """
     
     # select set of constants according to given material group
@@ -154,15 +153,10 @@ def for_material_group(assessment_parameters):
 
     resulting_constants = all_constants[material_group]
 
-    _set_f_25percent(assessment_parameters, resulting_constants)
-
-    return resulting_constants
-
-def _set_f_25percent(assessment_parameters, resulting_constants):
-    """Choose the appropriate value for the safety factor f_25%"""
-
+    # Rename the key for the safety factor f_25%
     resulting_constants["f_25percent_material_woehler_RAM"] \
         = resulting_constants["f_25percent_material_woehler_FKM_nonlinear_RAM"]
     resulting_constants["f_25percent_material_woehler_RAJ"] \
         = resulting_constants["f_25percent_material_woehler_FKM_nonlinear_RAJ"]
     
+    return resulting_constants
