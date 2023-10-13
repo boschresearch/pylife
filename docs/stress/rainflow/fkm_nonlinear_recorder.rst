@@ -1,5 +1,5 @@
 The ``FKMNonlinearRecorder`` class
-######################################
+##################################
 
 .. autoclass:: pylife.stress.rainflow.recorders.FKMNonlinearRecorder
     :members:

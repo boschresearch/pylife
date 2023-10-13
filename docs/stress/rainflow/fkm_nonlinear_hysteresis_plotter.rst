@@ -1,5 +1,5 @@
 The ``FKMNonlinearHysteresisPlotter`` class
-##############################################
+###########################################
 
 .. autoclass:: pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearHysteresisPlotter
     :members:

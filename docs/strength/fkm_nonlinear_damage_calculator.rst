@@ -1,5 +1,7 @@
-The ``DamageCalculatorPRAM``, ``DamageCalculatorPRAJ``, and ``DamageCalculatorPRAJMinerElementary`` classes
-###########################################################################################################
+The classes for damage calculation
+##################################
+
+The classes are ``DamageCalculatorPRAM``, ``DamageCalculatorPRAJ``, and ``DamageCalculatorPRAJMinerElementary``.
 
 .. autoclass:: pylife.strength.fkm_nonlinear.damage_calculator.DamageCalculatorPRAM
 	:undoc-members:
