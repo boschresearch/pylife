@@ -58,7 +58,7 @@ class P_RAM:
         self._assessment_parameters = assessment_parameters
         
         # select set of constants according to given material group
-        self._constants = pylife.strength.fkm_nonlinear.constants.get_constants_for_material_group(assessment_parameters)
+        self._constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
         
         # check if collective contains required columns
         assert "S_a" in self._collective.columns
@@ -149,7 +149,7 @@ class P_RAJ:
         self._P_RAJ_D_0 = self._component_woehler_curve_P_RAJ.fatigue_strength_limit
         
         # select set of constants according to given material group
-        self._constants = pylife.strength.fkm_nonlinear.constants.get_constants_for_material_group(assessment_parameters)
+        self._constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
         
         # check if collective contains required columns
         assert "S_a" in self._collective.columns

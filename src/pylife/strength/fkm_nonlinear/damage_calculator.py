@@ -192,7 +192,7 @@ class DamageCalculatorPRAM:
             python function, ``failure_probability(N)``
         """
         
-        constants = pylife.strength.fkm_nonlinear.constants.get_constants_for_material_group(assessment_parameters)
+        constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
 
         f_25 = constants.f_25percent_material_woehler_RAM
         
@@ -452,7 +452,7 @@ class DamageCalculatorPRAJ:
             python function, ``failure_probability(N)``
         """
         
-        constants = pylife.strength.fkm_nonlinear.constants.get_constants_for_material_group(self._assessment_parameters)
+        constants = pylife.strength.fkm_nonlinear.constants.for_material_group(self._assessment_parameters)
         f_25 = constants.f_25percent_material_woehler_RAJ
         slope_woehler = abs(1/self._component_woehler_curve_P_RAJ.d)
         lifetime_n_cycles = self.lifetime_n_cycles
