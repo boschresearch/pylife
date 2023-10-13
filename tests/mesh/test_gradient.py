@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__author__ = "Benjamin Maier"
+__maintainer__ = __author__
+
 import pylife.mesh.gradient
 import pandas as pd
 import numpy as np

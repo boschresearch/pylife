@@ -1,11 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jan 26 15:43:10 2022
-
-@author: MBE7RNG
-"""
-
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2023 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -20,6 +13,7 @@ Created on Wed Jan 26 15:43:10 2022
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 r'''Scale up a load sequence to incorporate safety factors for FKM
 nonlinear lifetime assessment.
 
