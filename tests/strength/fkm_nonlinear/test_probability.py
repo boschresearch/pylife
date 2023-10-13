@@ -134,7 +134,6 @@ def test_probability_P_A():
     # P_RAJ, P_A: 0.005623413251903491, 803.4837691850523, expected: 798.4717410139905 (error: -0.6277026366264371
     
 
-
 def test_failure_probability():
 
     # calculate with P_A = 50% with functions 
@@ -173,6 +172,7 @@ def test_failure_probability():
         
         assert np.isclose(P_RAM_failure_probability(P_RAM_N_max_bearable(P_A)), P_A)
         assert np.isclose(P_RAJ_failure_probability(P_RAJ_N_max_bearable(P_A)), P_A)
+
 
 @pytest.mark.parametrize('P_A', [
     0.49,

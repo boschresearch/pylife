@@ -102,6 +102,7 @@ class P_RAM:
         
         # delete temporary columns
         self._collective.drop(columns = ["discriminant", "k"], inplace=True)
+    
           
 class P_RAJ:
     """This class implements the damage parameter P_RAJ according to guideline FKM nonlinear.

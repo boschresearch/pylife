@@ -528,6 +528,7 @@ def test_extended_neuber_example_2():
     pd.testing.assert_frame_equal(
         binned_notch_approximation_law._lut_secondary_branch, expected_matrix_AST, rtol=1e-3, atol=1e-5)
 
+
 @pytest.mark.parametrize('stress, load', [
     (22, 42),
     (40, 40),

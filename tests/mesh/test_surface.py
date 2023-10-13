@@ -22,6 +22,7 @@ import pandas as pd
 import numpy as np
 import pytest
 
+
 def spherical_mesh(n_elements_phi = 6, n_elements_theta = 4, n_elements_r = 3, offset = np.array([1,2,3])):
     
     coordinates = []
@@ -75,6 +76,7 @@ def spherical_mesh(n_elements_phi = 6, n_elements_theta = 4, n_elements_r = 3, o
                         'z': z_list}).set_index(['node_id', 'element_id'])
 
     return df, is_at_surface_list
+
 
 @pytest.mark.parametrize('n_elements_phi, n_elements_theta, n_elements_r, offset', [
     (3, 3, 3, np.array([0,0,0])),

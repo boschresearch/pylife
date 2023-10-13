@@ -89,6 +89,7 @@ def test_tendency_roughness():
         previous_N_P_RAM = N_P_RAM
         previous_N_P_RAJ = N_P_RAJ
 
+
 def test_tendency_ultimate_tensile_strength():
     
     assessment_parameters = pd.Series({
@@ -140,6 +141,7 @@ def test_tendency_ultimate_tensile_strength():
         previous_N_P_RAM = N_P_RAM
         previous_N_P_RAJ = N_P_RAJ
            
+
 def test_tendency_G():
     
     assessment_parameters = pd.Series({
@@ -191,6 +193,7 @@ def test_tendency_G():
         previous_N_P_RAM = N_P_RAM
         previous_N_P_RAJ = N_P_RAJ
                 
+
 def test_tendency_A_sigma():
     
     assessment_parameters = pd.Series({

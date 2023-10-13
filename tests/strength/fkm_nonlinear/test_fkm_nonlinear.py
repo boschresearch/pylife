@@ -100,6 +100,7 @@ def test_material_constants():
     pd.testing.assert_series_equal(df_to_test.loc["a_M",:], df_reference.loc["a_M",["Steel", "SteelCast", "Al_wrought"]], check_names=False)
     pd.testing.assert_series_equal(df_to_test.loc["b_M",:], df_reference.loc["b_M",["Steel", "SteelCast", "Al_wrought"]], check_names=False)
     
+
 def test_computation_functions_1():
     """Example 2.10.2, "Welle mit V-Kerbe", p.138 """
     
@@ -184,6 +185,7 @@ def test_computation_functions_1():
 
     pd.testing.assert_series_equal(assessment_parameters_reference, assessment_parameters, rtol=5e-3)
     
+
 def test_computation_functions_2():
     """Example 2.10.2, "Welle mit V-Kerbe", p.138 """
     
@@ -268,6 +270,7 @@ def test_computation_functions_2():
 
     pd.testing.assert_series_equal(assessment_parameters_reference, assessment_parameters, rtol=1e-3)
     
+
 @pytest.mark.parametrize("P_A,expected_gamma_M_RAM,expected_gamma_M_RAJ", [
     (0.5, 1, 1),
     (2.3e-1, 1.1, 1.2),
@@ -301,6 +304,7 @@ def test_calculate_component_woehler_parameters_P_RAM(P_A, expected_gamma_M_RAM,
     assert np.isclose(assessment_parameters["gamma_M_RAJ"], expected_gamma_M_RAJ, rtol=0.05)
     assert np.isclose(assessment_parameters["f_RAJ"], assessment_parameters["gamma_M_RAJ"] / (1.1*1.1*0.8*0.8), rtol=0.05)
 
+
 @pytest.mark.parametrize(
     "K_p", [1.0-1e-5, 0.0, 0.9, -1.0]
 )
@@ -317,7 +321,8 @@ def test_Kp_range(K_p):
         result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard\
             .perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
             calculate_P_RAM=True, calculate_P_RAJ=True)
-    
+
+
 @pytest.mark.parametrize(
     "G", ["1", "2", pd.DataFrame([3.0, 3.0]), pd.Series([4], index=pd.MultiIndex.from_arrays([[0]]))]
 )
@@ -334,7 +339,8 @@ def test_G_wrong_format(G):
         result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard\
             .perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
             calculate_P_RAM=True, calculate_P_RAJ=True)
-    
+
+
 def test_assessment_single_point_1():
     
     # this is example 2.7.1, 2.10.1 "akademisches Beispiel" in the FKM nonlinear document
@@ -372,7 +378,8 @@ def test_assessment_single_point_1():
     assert result["P_RAJ_is_life_infinite"] == False
     assert np.isclose(result["P_RAJ_lifetime_n_cycles"], 54868, rtol=1e-2)      # 31000 in FKM document (probably rounded), calculation with given (wrong) formulas of document: 30948
     assert np.isclose(result["P_RAJ_lifetime_n_times_load_sequence"], 7737*54868/30948, rtol=1e-2)      # calculation with given (wrong) formulas of document: 7737
-    
+
+
 def test_assessment_single_point_2():
     
     # this is the example 2.7.2, 2.10.2 "Welle mit V-Kerbe" in the FKM nonlinear document
@@ -410,7 +417,8 @@ def test_assessment_single_point_2():
     assert result["P_RAJ_is_life_infinite"] == False
     assert np.isclose(result["P_RAJ_lifetime_n_cycles"], 1500, rtol=2e-2)      # 722 in FKM document, calculation with given (wrong) formulas of document: 722
     assert np.isclose(result["P_RAJ_lifetime_n_times_load_sequence"], 80/722*1500, rtol=2e-2)       # 80 in FKM document
-    
+
+
 def test_assessment_single_point_3_infinite_life():
     
     # this is example 2.7.1, 2.10.1 "akademisches Beispiel" in the FKM nonlinear document
@@ -445,6 +453,7 @@ def test_assessment_single_point_3_infinite_life():
 
     assert result["P_RAM_is_life_infinite"] == True
     assert result["P_RAJ_is_life_infinite"] == True
+
 
 def test_assessment_multiple_points_p_ram():
     
@@ -518,7 +527,8 @@ def test_assessment_multiple_points_p_ram():
         assert result[i]["P_RAM_is_life_infinite"] == result_multiple["P_RAM_is_life_infinite"][i]
         assert np.isclose(result[i]["P_RAM_lifetime_n_cycles"], result_multiple["P_RAM_lifetime_n_cycles"][i])
         assert np.isclose(result[i]["P_RAM_lifetime_n_times_load_sequence"], result_multiple["P_RAM_lifetime_n_times_load_sequence"][i]) 
-    
+
+
 def test_assessment_multiple_points_p_raj():
         
     # this is example 2.7.1, 2.10.1 "akademisches Beispiel" in the FKM nonlinear document,
@@ -592,6 +602,7 @@ def test_assessment_multiple_points_p_raj():
         assert np.isclose(result[i]["P_RAJ_lifetime_n_cycles"], result_multiple["P_RAJ_lifetime_n_cycles"][i])
         assert np.isclose(result[i]["P_RAJ_lifetime_n_times_load_sequence"], result_multiple["P_RAJ_lifetime_n_times_load_sequence"][i])
         assert np.isclose(result[i]["P_RAJ_miner_lifetime_n_times_load_sequence"], result_multiple["P_RAJ_miner_lifetime_n_times_load_sequence"][i])
+
 
 def test_assessment_multiple_points_p_ram_with_spatially_varying_gradient():
     
@@ -671,7 +682,8 @@ def test_assessment_multiple_points_p_ram_with_spatially_varying_gradient():
         assert result[i]["P_RAM_is_life_infinite"] == result_multiple["P_RAM_is_life_infinite"][i]
         assert np.isclose(result[i]["P_RAM_lifetime_n_cycles"], result_multiple["P_RAM_lifetime_n_cycles"][i])
         assert np.isclose(result[i]["P_RAM_lifetime_n_times_load_sequence"], result_multiple["P_RAM_lifetime_n_times_load_sequence"][i]) 
-    
+
+
 def test_assessment_multiple_points_p_raj_with_spatially_varying_gradient():
         
     # this is example 2.7.1, 2.10.1 "akademisches Beispiel" in the FKM nonlinear document,
@@ -752,6 +764,7 @@ def test_assessment_multiple_points_p_raj_with_spatially_varying_gradient():
         assert np.isclose(result[i]["P_RAJ_lifetime_n_times_load_sequence"], result_multiple["P_RAJ_lifetime_n_times_load_sequence"][i])
         assert np.isclose(result[i]["P_RAJ_miner_lifetime_n_times_load_sequence"], result_multiple["P_RAJ_miner_lifetime_n_times_load_sequence"][i])
 
+
 @pytest.mark.parametrize(
     'load_sequence', [
     (pd.Series([200, 600, 1000, 200, 60, 1200])),
@@ -830,6 +843,7 @@ def test_comparison_P_RAM_woehler(load_sequence):
     print(f"D1: {D1}, D2: {D2}, n2: {n2}, N: {N}",  result["P_RAM_lifetime_n_cycles"])
 
     assert np.isclose(N, result["P_RAM_lifetime_n_cycles"])
+    
     
 @pytest.mark.parametrize(
     'load_sequence', [
@@ -960,6 +974,7 @@ def test_trailing_zero_has_no_effect():
     assert np.isclose(result1["P_RAJ_lifetime_n_cycles"], result2["P_RAJ_lifetime_n_cycles"])
     assert np.isclose(result1["P_RAJ_lifetime_n_times_load_sequence"], result2["P_RAJ_lifetime_n_times_load_sequence"])
 
+
 def test_middle_zero_has_no_effect():
     
     # this is example 2.7.1, 2.10.1 "akademisches Beispiel" in the FKM nonlinear document
@@ -1009,6 +1024,7 @@ def test_middle_zero_has_no_effect():
     assert result1["P_RAJ_is_life_infinite"] == result2["P_RAJ_is_life_infinite"]
     assert np.isclose(result1["P_RAJ_lifetime_n_cycles"], result2["P_RAJ_lifetime_n_cycles"])
     assert np.isclose(result1["P_RAJ_lifetime_n_times_load_sequence"], result2["P_RAJ_lifetime_n_times_load_sequence"])
+
 
 def test_direction_of_constant_amplitude():
     # this is example 2.7.1, 2.10.1 "akademisches Beispiel" in the FKM nonlinear document

@@ -22,6 +22,7 @@ import pytest
 import pandas as pd
 import numpy as np
 
+
 @pytest.mark.parametrize(
     "P_A, expected_beta", [
     (1e-10, 6.3613409),
@@ -36,6 +37,7 @@ import numpy as np
 def test_compute_beta_success(P_A, expected_beta):
     beta = pylife.strength.fkm_nonlinear.parameter_calculations.compute_beta(P_A)
     assert np.isclose(beta, expected_beta)
+
 
 @pytest.mark.parametrize("P_A", [-1,0,1,2])
 def test_compute_beta_fails(P_A):
@@ -67,6 +69,7 @@ def test_calculate_cyclic_assessment_parameters_Rm(MatGroupFKM, R_m, K_prime, n_
     assert np.isclose(result["K_prime"], K_prime, atol=1e-15, rtol=1e-6)
     assert result["n_prime"] == n_prime
 
+
 @pytest.mark.parametrize(
     "MatGroupFKM, R_m, P_A, P_RAM_Z_WS, P_RAM_D_WS, d_1, d_2", [
     ("Steel", 1000., 1e-5, 819.00, 335.02, -0.302, -0.197),
@@ -95,6 +98,7 @@ def test_calculate_material_woehler_parameters_P_RAM_Rm(MatGroupFKM, R_m, P_A, P
     assert result["d_1"] == d_1 
     assert result["d_2"] == d_2
     
+
 @pytest.mark.parametrize(
     "MatGroupFKM, R_m, P_A, P_RAJ_Z_WS, P_RAJ_D_WS, d_RAJ", [
     ("Steel", 300., 1e-5, 433.67, 0.0897, -0.63),

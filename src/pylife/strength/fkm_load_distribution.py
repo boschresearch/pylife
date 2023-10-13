@@ -413,7 +413,6 @@ class FKMLoadDistributionLognormal(FKMLoadSequence):
         return self.scaled_by_constant(gamma_L)
     
     
-
 @pd.api.extensions.register_dataframe_accessor("fkm_safety_blanket")
 @pd.api.extensions.register_series_accessor("fkm_safety_blanket")
 class FKMLoadDistributionBlanket(FKMLoadSequence):

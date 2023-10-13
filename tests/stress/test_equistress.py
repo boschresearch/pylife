@@ -269,6 +269,7 @@ def test_principals_pandas():
     })
     pd.testing.assert_frame_equal(eqs, expected)
 
+
 def test_abs_max_principal_pandas():
     dummy_data = np.array([[1, -2, 3, 0, 0, 0],
                            [-1, -2, -5, 0, 0, 0],

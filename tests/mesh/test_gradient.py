@@ -242,7 +242,8 @@ def test_grad_dxy_complex_shuffle():
 
     pd.testing.assert_frame_equal(grad, expected)
 
-# ---- gradient 2
+
+# ---- gradient_3D
 def test_gradient_3D_constant():
     fkt = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
@@ -322,6 +323,7 @@ def test_gradient_3D_dy():
 
     pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
 
+
 def test_gradient_3D_dxy():
     fkt_x = np.array([1, 4, 4, 1, 1, 4, 4, 1, 4, 7, 7, 4, 4, 7, 7, 4, 1, 4, 4, 1, 1, 4, 4, 1, 4, 7, 7, 4, 4, 7, 7, 4]) # x: 1 4 7, y: 1 5 9
     fkt_y = np.array([1, 1, 5, 5, 1, 1, 5, 5, 1, 1, 5, 5, 1, 1, 5, 5, 5, 5, 9, 9, 5, 5, 9, 9, 5, 5, 9, 9, 5, 5, 9, 9])
@@ -343,6 +345,7 @@ def test_gradient_3D_dxy():
     grad = df.gradient_3D.gradient_of('fct').sort_index()
 
     pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
+
 
 def test_gradient_3D_dxyz_8nodes():
     
@@ -375,6 +378,7 @@ def test_gradient_3D_dxyz_8nodes():
 
     pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
 
+
 def test_gradient_3D_dxyz_16nodes():
     
     df = pd.DataFrame({ 'element_id': [1, 1, 1, 1, 1, 1, 1, 1]*2,
@@ -405,6 +409,7 @@ def test_gradient_3D_dxyz_16nodes():
     grad = df.gradient_3D.gradient_of('fct').sort_index()
 
     pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
+
 
 def test_gradient_3D_dxyz_20nodes():
     
@@ -437,6 +442,7 @@ def test_gradient_3D_dxyz_20nodes():
 
     pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
 
+
 def test_gradient_3D_tetrahedron():
     
     df = pd.DataFrame({ 'element_id': [1, 1, 1, 1],
@@ -458,6 +464,7 @@ def test_gradient_3D_tetrahedron():
 
     pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
 
+
 def test_gradient_3D_tetrahedron_10_nodes():
     
     df = pd.DataFrame({ 'element_id': [1, 1, 1, 1] + [1]*6,
@@ -478,6 +485,7 @@ def test_gradient_3D_tetrahedron_10_nodes():
     grad = df.gradient_3D.gradient_of('f').sort_index()
 
     pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
+
 
 def test_gradient_3D_tetrahedron_compare():
     
@@ -502,6 +510,7 @@ def test_gradient_3D_tetrahedron_compare():
     # the following fails, which means that the Gradient class is less accurate for tet elements
     #pd.testing.assert_frame_equal(grad_3D.reset_index(), grad.reset_index(), check_dtype=False)
     pd.testing.assert_frame_equal(grad_3D.reset_index(), expected.reset_index(), check_dtype=False)
+
 
 def test_gradient_3D_hex_compare_1():
     
@@ -536,6 +545,7 @@ def test_gradient_3D_hex_compare_1():
 
     pd.testing.assert_frame_equal(grad_3D.reset_index(), grad.reset_index(), check_dtype=False)
     pd.testing.assert_frame_equal(grad_3D.reset_index(), expected.reset_index(), check_dtype=False)
+
 
 def test_gradient_3D_hex_compare_2():
     

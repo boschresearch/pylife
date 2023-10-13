@@ -32,6 +32,7 @@ class DummyDetector(AbstractDetector):
     def process(self, samples):
         return self
 
+
 @pytest.mark.parametrize("samples, expected_index, expected_values", [
     (
         # flush
@@ -171,6 +172,7 @@ def test_rainflow_new_turns_flush_continue_four_times():
     expected_index = [13]
     expected_values = [7.]
     index, values = detector._new_turns(np.array([]), flush=True)
+
 
 @pytest.mark.parametrize("samples, expected_index, expected_values", [
     (
@@ -383,7 +385,6 @@ def test_rainflow_new_turns_double_flush_continue_df(samples1, expected_index1, 
     np.testing.assert_array_equal(values, expected_values)
 
 
-
 @pytest.mark.parametrize("samples, expected_index", [
     (
         # flush
@@ -432,6 +433,7 @@ def test_rainflow_new_turns_preserve_start_df(samples, expected_index):
     expected_values = [df.reset_index(drop=True) for _, df in expected_values.groupby("load_step")]
 
     np.testing.assert_array_equal(values, expected_values)
+
 
 def test_single_multiple_points():
     

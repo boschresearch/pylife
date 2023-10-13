@@ -140,6 +140,7 @@ class FullRecorder(LoopValueRecorder):
         self._index_from += index_from
         self._index_to += index_to
 
+
 class FKMNonlinearRecorder(AbstractRecorder):
     """Recorder that goes together with the FKMNonlinearDetector."""
 

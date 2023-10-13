@@ -232,6 +232,7 @@ class TestThreePointLecture(unittest.TestCase):
     def test_residual_index(self):
         np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 1, 9, 10]))
 
+
 class TestThreePointLowerAfterMain(unittest.TestCase):
     r'''
                                                  1   2   3   4   5   6

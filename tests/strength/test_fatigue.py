@@ -234,7 +234,6 @@ def test_security_load_multiple():
     pd.testing.assert_series_equal(result, expected)
 
 
-
 @pytest.mark.parametrize('TN, allowed_pf, cycles, expected', [
     (4., 0.5, 1e5, 10.0),
     (4., 0.5, 1e4, 100.0),

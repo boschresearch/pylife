@@ -254,6 +254,7 @@ def test_loopvalue_rainflow_recorder_histogram_one_non_zero(value_from, value_to
     histogram = fr.histogram()
     pd.testing.assert_series_equal(histogram, pd.Series(expected_histogram.flatten(), index=expected_index))
 
+
 # fkm nonlinear recorder
 def test_fkm_nonlinear_recorder_record_two_values():
     a1, a2, b1, b2, c1, c2, d1, d2, e1, e2, f1, f2 = 23., 42.,  46., 84.,  2.5, -2.2,  4.8, 2.3,  4.5, -0.2,  1.8, 0.3

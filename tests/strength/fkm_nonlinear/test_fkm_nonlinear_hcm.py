@@ -87,6 +87,7 @@ def test_number_of_closed_hystereses(load_sequence, n_hystereses_hcm_1, n_hyster
     assert result_n_hystereses_hcm_1 == n_hystereses_hcm_1
     assert result_n_hystereses_hcm_2 == n_hystereses_hcm_2
 
+
 @pytest.mark.parametrize(
     "load_sequences", [
     (
@@ -192,6 +193,7 @@ def test_load_sequences_with_same_lifetimes(load_sequences):
         N = result["P_RAM_lifetime_n_cycles"]
         assert N == N_reference
 
+
 @pytest.mark.parametrize(
     'load_sequence', [
     pd.Series([0, 500, 0]),
@@ -278,6 +280,7 @@ def test_repeated_load_sequence_P_RAM(load_sequence):
 
 
         assert np.isclose(N1, N3)
+
 
 @pytest.mark.parametrize(
     'original_load_sequence', [
@@ -457,6 +460,7 @@ def test_repeated_load_sequence_P_RAJ(load_sequence):
 
     assert np.isclose(N1, N2, rtol=0.25)
     assert np.isclose(N1, N3, rtol=0.25)
+
 
 @pytest.mark.parametrize(
     'original_load_sequence', [

@@ -36,6 +36,7 @@ import pylife.stress.rainflow.fkm_nonlinear
 import pylife.materiallaws.notch_approximation_law
 import pylife.materiallaws.notch_approximation_law_seegerbeste
 
+
 def test_woehler_curve_P_RAM_collective_has_no_index():
     
     # Parameters for 2.7.1 "akademisches Beispiel" in the FKM nonlinear document
@@ -141,6 +142,7 @@ def test_woehler_curve_P_RAM_collective_has_no_index():
     assert np.isclose(component_woehler_curve_P_RAM.fatigue_strength_limit, 150.8, rtol=1e-3)
     assert np.isclose(component_woehler_curve_P_RAM.fatigue_life_limit, 221637.4, rtol=1e-3)
     
+
 def test_woehler_curve_P_RAM_collective_has_MultiIndex():
     
     # Parameters for 2.7.1 "akademisches Beispiel" in the FKM nonlinear document
@@ -236,6 +238,7 @@ def test_woehler_curve_P_RAM_collective_has_MultiIndex():
     assert np.isclose(np.round(lifetime_n_cycles), 14618)
     assert np.isclose(np.round(lifetime_n_times_load_sequence), 3655)
     
+
 def test_woehler_curve_P_RAJ_has_no_index():
     
     # Parameters for 2.10.1 "akademisches Beispiel" in the FKM nonlinear document
@@ -342,6 +345,7 @@ def test_woehler_curve_P_RAJ_has_no_index():
     assert np.isclose(component_woehler_curve_P_RAJ.fatigue_strength_limit_final.squeeze(),  0.135358, rtol=1e-3)
     assert np.isclose(component_woehler_curve_P_RAJ.fatigue_life_limit_final.squeeze(), 245945.45, rtol=1e-3)
     
+
 def test_woehler_curve_P_RAJ_has_MultiIndex():
     
     # Parameters for 2.10.1 "akademisches Beispiel" in the FKM nonlinear document

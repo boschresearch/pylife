@@ -23,6 +23,7 @@ import itertools
 
 import pylife.stress.rainflow.general
 
+
 class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
     """HCM-Algorithm detector as described in FKM nonlinear.
 
@@ -760,6 +761,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 n_nodes = len(first_sample)
                 self._epsilon_min_LF *= pd.Series(1, index=np.arange(n_nodes))
                 self._epsilon_max_LF *= pd.Series(1, index=np.arange(n_nodes))
+
 
 class FKMNonlinearHysteresisPlotter:
 

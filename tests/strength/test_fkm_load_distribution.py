@@ -24,6 +24,7 @@ import numpy.testing as testing
 
 import pylife.strength.fkm_load_distribution
 
+
 @pytest.mark.parametrize('P_A, resulting_gamma_L, result', [
     (1e-5,   1.11956,  [111.956, -223.912,  111.956, -279.89, 223.912, 0., 223.912, -223.912]),
     (7.2e-5, 1.1064,   [110.64, -221.28,  110.64, -276.6, 221.28, 0., 221.28, -221.28]),
@@ -207,6 +208,7 @@ def test_load_distribution_lognormal(P_L, resulting_gamma_L, result):
     np.testing.assert_allclose(scaled_load_sequence.col0[scaled_load_sequence.index.get_level_values("node_id")==1], np.array(result)*0.1)
     np.testing.assert_allclose(scaled_load_sequence.col1, range(2*len(load_sequence.values)))
     
+
 def test_load_distribution_blanket():
     
     # test with a plain series
@@ -223,6 +225,7 @@ def test_load_distribution_blanket():
     assert np.isclose(gamma_L, 1.1)
     np.testing.assert_allclose(scaled_load_sequence, [ 110., -220.,  110., -275.,  220.,    0.,  220., -220.])
     
+
 def test_load_distribution_blanket_dataframe_single_column():
     
     # create a load_sequence with two nodes (node_id's 0 and 1) and eight values for each node 

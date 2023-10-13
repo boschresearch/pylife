@@ -25,6 +25,7 @@ import numpy.testing as testing
 import pylife
 import pylife.strength.woehler_fkm_nonlinear
 
+
 @pytest.mark.parametrize(
     "P_RAM_Z, P_RAM_D, d_1, d_2", [
     (400, 150, -0.3, -0.2),
@@ -131,6 +132,7 @@ def test_woehler_curve_P_RAM(P_RAM_Z, P_RAM_D, d_1, d_2):
         d_numeric = (log_P_2 - log_P_1) / (2*h)
         assert np.isclose(d_numeric, d_2)
 
+
 @pytest.mark.parametrize(
     "P_RAM_Z, P_RAM_D, d_1, d_2", [
     (100, 200, -0.3, -0.2),
@@ -147,6 +149,7 @@ def test_woehler_curve_P_RAM_exceptions(P_RAM_Z, P_RAM_D, d_1, d_2):
 
     with pytest.raises(ValueError, match="has to be"):
         component_woehler_curve_P_RAM = assessment_parameters.woehler_P_RAM
+
 
 # ---------- P_RAJ --------------
 @pytest.mark.parametrize(
@@ -241,6 +244,7 @@ def test_woehler_curve_P_RAJ(P_RAJ_Z, P_RAJ_D_0, d_RAJ):
 
         d_numeric = (log_P_2 - log_P_1) / (2*h)
         assert np.isclose(d_numeric, d_RAJ)
+
 
 @pytest.mark.parametrize(
     "P_RAJ_Z, P_RAJ_D_0, d_RAJ", [

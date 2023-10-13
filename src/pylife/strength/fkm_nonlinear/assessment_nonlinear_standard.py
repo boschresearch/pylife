@@ -42,6 +42,7 @@ import pylife.strength.fkm_nonlinear.parameter_calculations as parameter_calcula
     (FKM non-linear guideline 2019)
 '''
 
+
 def perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, calculate_P_RAM=True, calculate_P_RAJ=True):
     r"""Perform the lifetime assessment according to FKM nonlinear, using the damage parameters P_RAM and/or P_RAJ.
     The assessment can be done for a load sequence on a single point or for multiple points at once, e.g., a FEM mesh.
@@ -229,6 +230,7 @@ def perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, calcu
     
     return result
 
+
 def _assert_G_is_in_correct_format(assessment_parameters):
     """Check that the related stress gradient G is given in the correct format,
     either as a single float or as a pandas Series with values for each node
@@ -239,6 +241,7 @@ def _assert_G_is_in_correct_format(assessment_parameters):
     assert isinstance(assessment_parameters.G, float) \
         or (isinstance(assessment_parameters.G, pd.Series) and not isinstance(assessment_parameters.G.index, pd.MultiIndex)), \
         "stress gradient G is in a wrong format (should be either float or pd.Series indexed by node)"
+
 
 def _check_K_p_is_in_range(assessment_parameters):
     """Check that the load shape factor (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
@@ -252,6 +255,7 @@ def _check_K_p_is_in_range(assessment_parameters):
     if assessment_parameters.K_p == 1:
         print("Note, K_p is set to 1 which means only P_RAM can be calculated. "
             f"To use P_RAJ set K_p > 1, e.g. try K_p = 1.001.")
+
 
 def _scale_load_sequence_according_to_probability(assessment_parameters, load_sequence):
     """Scales the given load sequence according to one of three methods defined in the FKM nonlinear guideline.
@@ -313,6 +317,7 @@ def _scale_load_sequence_according_to_probability(assessment_parameters, load_se
         
     return scaled_load_sequence
 
+
 def _scale_load_sequence_by_c_factor(assessment_parameters, scaled_load_sequence):
     """Scale the load sequence by the given transfer factor c from the
     linear elastic FE result to the given magnitude.
@@ -324,6 +329,7 @@ def _scale_load_sequence_by_c_factor(assessment_parameters, scaled_load_sequence
     scaled_load_sequence = scaled_load_sequence.fkm_load_sequence.scaled_by_constant(c)
     
     return scaled_load_sequence
+
 
 def _calculate_local_parameters(assessment_parameters):
     r"""Calculate several intermediate parameters as described in the FKM nonlinear guideline:
@@ -355,7 +361,8 @@ def _calculate_local_parameters(assessment_parameters):
     assessment_parameters = parameter_calculations.calculate_roughness_parameter(assessment_parameters)
 
     return assessment_parameters
-    
+
+
 def _compute_component_woehler_curves(assessment_parameters):
     r"""Compute the PRAM and PRAJ component woehler curves.
     At first, the safety factors :math:`\gamma_M` and :math:`f_\text{RAM}, f_\text{RAJ}` 
@@ -380,6 +387,7 @@ def _compute_component_woehler_curves(assessment_parameters):
     component_woehler_curve_P_RAJ = component_woehler_curve_parameters.woehler_P_RAJ
         
     return assessment_parameters, component_woehler_curve_P_RAM, component_woehler_curve_P_RAJ
+
 
 def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence, maximum_absolute_load):
     """Perform the HCM rainflow counting with the extended Neuber notch approximation.
@@ -409,6 +417,7 @@ def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence, maximum_absolu
         
     return detector_1st, detector, extended_neuber_binned, recorder
 
+
 def _compute_damage_and_lifetimes_RAM(assessment_parameters, recorder, component_woehler_curve_P_RAM, result):
     """For P_RAM, calculate the damage and the lifetime and store in result dict."""
 
@@ -429,6 +438,7 @@ def _compute_damage_and_lifetimes_RAM(assessment_parameters, recorder, component
     result["P_RAM_lifetime_n_times_load_sequence"] = damage_calculator.lifetime_n_times_load_sequence
     
     return result, damage_calculator
+
 
 def _compute_lifetimes_for_failure_probabilities_RAM(assessment_parameters, result, damage_calculator):
     """If P_A is set to 0.5, i.e., no explicit statistical assessment is performed, do
@@ -457,6 +467,7 @@ def _compute_lifetimes_for_failure_probabilities_RAM(assessment_parameters, resu
 
     return result
 
+
 def _store_additional_objects_in_result_RAM(result, recorder, damage_calculator, component_woehler_curve_P_RAM, detector, detector_1st):
     """Store the given objects in the results dict. The ``result`` variable gets
      returned back to the user. These additional variables an be used for certain plots,
@@ -469,6 +480,7 @@ def _store_additional_objects_in_result_RAM(result, recorder, damage_calculator,
     result["P_RAM_detector"] = detector
     result["P_RAM_detector_1st"] = detector_1st
     return result
+
 
 def _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence, maximum_absolute_load):
     """Perform the HCM rainflow counting with the Seeger-Beste notch approximation.
@@ -498,6 +510,7 @@ def _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence, maximum_absolu
     
     return detector_1st, detector, seeger_beste_binned, recorder
 
+
 def _compute_damage_and_lifetimes_RAJ(assessment_parameters, recorder, component_woehler_curve_P_RAJ, result):
     """For P_RAJ, calculate the damage and the lifetime and store in result dict."""
 
@@ -520,6 +533,7 @@ def _compute_damage_and_lifetimes_RAJ(assessment_parameters, recorder, component
     
     return result, damage_calculator
 
+
 def _compute_damage_and_lifetimes_RAJ_miner(assessment_parameters, recorder, component_woehler_curve_P_RAJ, result):
     """For P_RAJ, calculate the damage and the lifetime using the woehler curve directly, and store in result dict."""
 
@@ -541,6 +555,7 @@ def _compute_damage_and_lifetimes_RAJ_miner(assessment_parameters, recorder, com
     result["P_RAJ_miner_lifetime_n_times_load_sequence"] = damage_calculator.lifetime_n_times_load_sequence
     
     return result
+
 
 def _compute_lifetimes_for_failure_probabilities_RAJ(assessment_parameters, result, damage_calculator):
     """If P_A is set to 0.5, i.e., no explicit statistical assessment is performed, do
@@ -569,6 +584,7 @@ def _compute_lifetimes_for_failure_probabilities_RAJ(assessment_parameters, resu
 
     return result
 
+
 def _store_additional_objects_in_result_RAJ(result, recorder, damage_calculator, component_woehler_curve_P_RAJ, detector, detector_1st):
     """Store the given objects in the results dict. The ``result`` variable gets
      returned back to the user. These additional variables an be used for certain plots,
@@ -583,7 +599,8 @@ def _store_additional_objects_in_result_RAJ(result, recorder, damage_calculator,
     result["P_RAJ_detector_1st"] = detector_1st
 
     return result
-    
+
+
 def _get_maximum_absolute_load(assessment_parameters, scaled_load_sequence):
     """Compute the maximum absolute load, separately for every node (max_load_independently_for_nodes=True).
     # The value is used to initialize the binning in the notch approximation schemes. Using 'True' yields smaller bin sizes
@@ -598,6 +615,7 @@ def _get_maximum_absolute_load(assessment_parameters, scaled_load_sequence):
         max_load_independently_for_nodes=assessment_parameters.max_load_independently_for_nodes)
     
     return maximum_absolute_load
+
 
 def _compute_lifetimes_P_RAJ(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAJ, maximum_absolute_load):
     """Compute the lifetimes using the given parameters and woehler curve, with P_RAJ.
@@ -618,6 +636,7 @@ def _compute_lifetimes_P_RAJ(assessment_parameters, result, scaled_load_sequence
 
     result = _store_additional_objects_in_result_RAJ(result, recorder, damage_calculator, component_woehler_curve_P_RAJ, detector, detector_1st)
     return result
+
 
 def _compute_lifetimes_P_RAM(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAM, maximum_absolute_load):
     """Compute the lifetimes using the given parameters and woehler curve, with P_RAM.

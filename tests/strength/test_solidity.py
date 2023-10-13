@@ -20,11 +20,13 @@ import pandas as pd
 import numpy as np
 import pytest
 
+
 @pytest.fixture
 def homogenious_collective():
     return pd.Series(2342.4711,
                      name='cycles',
                      index=pd.IntervalIndex.from_tuples([(1002., 1003.)], name='range'))
+
 
 @pytest.fixture
 def real_life_collective():

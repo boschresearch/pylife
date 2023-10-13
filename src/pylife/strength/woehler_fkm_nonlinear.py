@@ -25,6 +25,7 @@ import copy
 
 from pylife import PylifeSignal
 
+
 @pd.api.extensions.register_series_accessor('woehler_P_RAM')
 @pd.api.extensions.register_dataframe_accessor('woehler_P_RAM')
 class WoehlerCurvePRAM(PylifeSignal):
@@ -173,6 +174,7 @@ class WoehlerCurvePRAM(PylifeSignal):
         
         return 1e3 * (self.fatigue_strength_limit / self.P_RAM_Z) ** (1/self._obj.d_2)
     
+
 @pd.api.extensions.register_series_accessor('woehler_P_RAJ')
 @pd.api.extensions.register_dataframe_accessor('woehler_P_RAJ')
 class WoehlerCurvePRAJ(PylifeSignal):

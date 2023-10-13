@@ -71,7 +71,6 @@ def test_local_stress_with_fe(tb):
     tb.inject("np.testing.assert_approx_equal(damage.max(), 0.0023, significant=2)")
 
 
-
 @testbook('demos/psd_optimizer.ipynb', execute=True)
 def test_psd_optimizer(tb):
     tb.inject(
@@ -103,6 +102,7 @@ def test_time_series_handling(tb):
         """
     )
 
+
 @testbook('demos/lifetime_calc.ipynb')
 def test_lifetime_calc(tb):
     
@@ -119,6 +119,7 @@ def test_lifetime_calc(tb):
         """
     )
 
+
 @testbook('demos/fkm_nonlinear/fkm_nonlinear.ipynb')
 def test_fkm_nonlinear(tb):
     tb.execute()
@@ -128,6 +129,7 @@ def test_fkm_nonlinear(tb):
         assert np.isclose(result["P_RAJ_lifetime_n_cycles"], 781479, rtol=1e-2)
         """
     )
+
 
 @testbook('demos/fkm_nonlinear/fkm_nonlinear_full.ipynb')
 def test_fkm_nonlinear_full(tb):

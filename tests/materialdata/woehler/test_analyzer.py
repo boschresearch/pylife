@@ -66,6 +66,7 @@ def test_fatigue_data_finite_infinite_zone(data, finite_zone_expected, infinite_
     pd.testing.assert_frame_equal(sort_fatigue_data(fd.infinite_zone)[['load', 'cycles']],
                                   sort_fatigue_data(infinite_zone_expected))
 
+
 @pytest.mark.parametrize("data, finite_zone_expected, infinite_zone_expected", [
     (data,
      finite_expected_conservative,

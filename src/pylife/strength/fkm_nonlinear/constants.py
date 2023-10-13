@@ -125,6 +125,7 @@ all_constants = pd.DataFrame({
     }
 })
 
+
 def for_material_group(assessment_parameters):
     """
     Retrieve the constants for one of the three material groups that are defined in FKM nonlinear.

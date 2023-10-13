@@ -40,6 +40,7 @@ import pylife.strength.fkm_nonlinear.constants
     (FKM non-linear guideline 2019)
 '''
 
+
 def calculate_cyclic_assessment_parameters(assessment_parameters_):
     """Calculate the values of :math:`n', K'`, and :math:`E`, used to 
     describe the cyclic material behavior (Sec. 2.5.3 of FKM nonlinear).
@@ -86,6 +87,7 @@ def calculate_cyclic_assessment_parameters(assessment_parameters_):
             ** constants.n_prime
     
     return assessment_parameters
+
 
 def calculate_material_woehler_parameters_P_RAM(assessment_parameters_):
     """Calculate the parameters of the material damage Woehler curve for the P_RAM damage parameter
@@ -161,6 +163,7 @@ def calculate_material_woehler_parameters_P_RAM(assessment_parameters_):
         
     return assessment_parameters
 
+
 def calculate_material_woehler_parameters_P_RAJ(assessment_parameters_):
     """Calculate the parameters of the material damage Woehler curve for the P_RAJ damage parameter
     (Sec. 2.9.4 of FKM nonlinear).
@@ -234,6 +237,7 @@ def calculate_material_woehler_parameters_P_RAJ(assessment_parameters_):
         
     return assessment_parameters
 
+
 def calculate_roughness_material_woehler_parameters_P_RAM(assessment_parameters_):
     """
     For FKM nonlinear roughness & surface layer, calculate the additional parameters in the P_RAM Woehler curve 
@@ -293,6 +297,7 @@ def calculate_roughness_material_woehler_parameters_P_RAM(assessment_parameters_
           
     return assessment_parameters
 
+
 def calculate_roughness_material_woehler_parameters_P_RAJ(assessment_parameters_):
     """
     For FKM nonlinear roughness & surface layer, calculate the additional parameters in the P_RAJ Woehler curve 
@@ -346,7 +351,8 @@ def calculate_roughness_material_woehler_parameters_P_RAJ(assessment_parameters_
         / assessment_parameters["P_RAJ_Z_1e3"]) / np.log(N_D/1e3)
     
     return assessment_parameters
-    
+
+
 def calculate_roughness_component_woehler_parameters_P_RAM(assessment_parameters_, include_n_P):
     """Calculate the component woehler curve from the material woehler curve
     (Sec. 2.5.6 of FKM nonlinear), but with the special roughness consideration 
@@ -411,7 +417,8 @@ def calculate_roughness_component_woehler_parameters_P_RAM(assessment_parameters
     assessment_parameters["P_RAM_D"] = n_P / assessment_parameters.gamma_M_RAM * assessment_parameters.P_RAM_D_WS_rau
 
     return assessment_parameters
-    
+
+
 def calculate_roughness_component_woehler_parameters_P_RAJ(assessment_parameters_, include_n_P):
     """Calculate the component woehler curve from the material woehler curve
     (Sec. 2.8.6 of FKM nonlinear), but with the special roughness consideration 
@@ -485,6 +492,7 @@ def calculate_roughness_component_woehler_parameters_P_RAJ(assessment_parameters
     
     return assessment_parameters
 
+
 def calculate_nonlocal_parameters(assessment_parameters_):
     """Calculate the factors for the nonlocal effects on the component lifetime.
      (Sec. 2.5.6.1 of FKM nonlinear). This includes the statistic factor and the 
@@ -549,7 +557,8 @@ def calculate_nonlocal_parameters(assessment_parameters_):
     assessment_parameters["n_P"] =  assessment_parameters.n_bm * assessment_parameters.n_st
     
     return assessment_parameters
-    
+
+
 def calculate_roughness_parameter(assessment_parameters_):
     """Calculate the roughness factor K_R,P (Sec. 2.5.6.2 of FKM nonlinear).
     
@@ -604,7 +613,8 @@ def calculate_roughness_parameter(assessment_parameters_):
         assessment_parameters["K_RP"] = 1.
         
     return assessment_parameters
-    
+
+
 def compute_beta(P_A):
     """Calculates the beta parameter ("damage index"),
      which is an intermediate value for 
@@ -630,6 +640,7 @@ def compute_beta(P_A):
                            "the optimizer did not find a solution.")
     
     return -result.x[0] / sigma
+
 
 def calculate_failure_probability_factor_P_RAM(assessment_parameters_):
     """Calculate the factor for the failure probability of the component, i.e., the factor 
@@ -681,6 +692,7 @@ def calculate_failure_probability_factor_P_RAM(assessment_parameters_):
 
     return assessment_parameters
 
+
 def calculate_failure_probability_factor_P_RAJ(assessment_parameters_):
     """Calculate the factor for the failure probability of the component, i.e., the factor 
     for the standard deviation of the capacity to withstand stresses of the component.
@@ -730,6 +742,7 @@ def calculate_failure_probability_factor_P_RAJ(assessment_parameters_):
         assessment_parameters["gamma_M_RAJ"] = 1
 
     return assessment_parameters
+
 
 def calculate_component_woehler_parameters_P_RAM(assessment_parameters_):
     """Calculate the component woehler curve from the material woehler curve
@@ -790,7 +803,8 @@ def calculate_component_woehler_parameters_P_RAM(assessment_parameters_):
     assessment_parameters["P_RAM_D"] = 1 / assessment_parameters.f_RAM * assessment_parameters.P_RAM_D_WS
     
     return assessment_parameters
-    
+
+
 def calculate_component_woehler_parameters_P_RAJ(assessment_parameters_):
     """Calculate the component woehler curve from the material woehler curve
     (Sec. 2.8.6 of FKM nonlinear). This involves multiplying the appropriate
@@ -855,5 +869,3 @@ def calculate_component_woehler_parameters_P_RAJ(assessment_parameters_):
     assessment_parameters["P_RAJ_D"] = assessment_parameters.P_RAJ_D_0
     
     return assessment_parameters
-   
-    

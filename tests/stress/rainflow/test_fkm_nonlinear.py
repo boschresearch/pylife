@@ -27,6 +27,7 @@ from pylife.stress.rainflow.fkm_nonlinear import FKMNonlinearDetector
 import pylife.stress.rainflow.recorders as RFR
 import pylife.materiallaws.notch_approximation_law
 
+
 class TestFKMMemory1Inner(unittest.TestCase):
     """Example given in FKM nonlinear 3.2.1, p.147 """
     
@@ -70,6 +71,7 @@ class TestFKMMemory1Inner(unittest.TestCase):
         np.testing.assert_allclose(self._detector.strain_values, np.array([4.854492e-04, 1.169416e-08, 3.883614e-04, 9.709922e-05, 2.912740e-04, 1.941866e-04, 4.854492e-04, 1.169416e-08, 3.883614e-04, 9.709922e-05, 2.912740e-04, 1.941866e-04]), rtol=1e-3, atol=1e-5)
         np.testing.assert_allclose(self._detector.strain_values_first_run, np.array([4.854492e-04, 1.169416e-08, 3.883614e-04, 9.709922e-05, 2.912740e-04]), rtol=1e-3, atol=1e-5)
         np.testing.assert_allclose(self._detector.strain_values_second_run, np.array([1.941866e-04, 4.854492e-04, 1.169416e-08, 3.883614e-04, 9.709922e-05, 2.912740e-04, 1.941866e-04]), rtol=1e-3, atol=1e-5)
+
 
 class TestFKMMemory1_2_3(unittest.TestCase):
     """Example given in FKM nonlinear 3.2.2, p.150 """
@@ -125,6 +127,7 @@ class TestFKMMemory1_2_3(unittest.TestCase):
         np.testing.assert_allclose(self._detector.strain_values_second_run, np.array([4.85152226e-04, -4.85746157e-04,
             4.85152226e-04, -9.71373378e-04, -4.85935881e-04, -9.71373378e-04,
             9.71373378e-04,  4.74995178e-07,  9.71373378e-04, -9.713734e-04]), rtol=1e-3, atol=1e-5)
+
 
 class TestHCMExample1(unittest.TestCase):
     """Example 2.7.1 "Akademisches Beispiel", p.74 """
