@@ -76,7 +76,6 @@ class WoehlerCurvePRAM(PylifeSignal):
         
         # compute the minimum/maximum for the vectorized items
         woehler_curve_minimum_lifetime = copy.deepcopy(self)
-        #woehler_curve_minimum_lifetime._obj.P_RAM_Z_scalar = np.min(woehler_curve_minimum_lifetime._obj.P_RAM_Z_scalar)
         woehler_curve_minimum_lifetime._obj.P_RAM_Z = np.min(woehler_curve_minimum_lifetime._obj.P_RAM_Z)
         woehler_curve_minimum_lifetime._obj.P_RAM_D = np.min(woehler_curve_minimum_lifetime._obj.P_RAM_D)
         
