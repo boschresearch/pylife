@@ -183,16 +183,26 @@ class TestHCMExample1(unittest.TestCase):
         np.testing.assert_allclose(self._detector.strain_values_second_run, np.array([0.00061, -0.001574,  0.00061, -0.002099, 0.001529,  0.000121,  0.001529, -0.001574]), rtol=1e-3, atol=1e-5)
 
     def test_plotting(self):
-        
-        strain_values_primary, stress_values_primary, hysteresis_index_primary, \
-            strain_values_secondary, stress_values_secondary, hysteresis_index_secondary \
-            = self._detector.interpolated_stress_strain_data(n_points_per_branch=3, only_hystereses=False)
-        
+    
+        plotting_data = self._detector.interpolated_stress_strain_data(n_points_per_branch=3, only_hystereses=False)
+    
+        strain_values_primary = plotting_data["strain_values_primary"]
+        stress_values_primary = plotting_data["stress_values_primary"]
+        hysteresis_index_primary = plotting_data["hysteresis_index_primary"]
+        strain_values_secondary = plotting_data["strain_values_secondary"]
+        stress_values_secondary = plotting_data["stress_values_secondary"]
+        hysteresis_index_secondary = plotting_data["hysteresis_index_secondary"]
+
         # plot resulting stress-strain curve
         sampling_parameter = 50    # choose larger for smoother plot
-        strain_values_primary_fine, stress_values_primary_fine, hysteresis_index_primary_fine, \
-        strain_values_secondary_fine, stress_values_secondary_fine, hysteresis_index_secondary_fine \
-            = self._detector_1st.interpolated_stress_strain_data(sampling_parameter)
+        plotting_data_fine = self._detector_1st.interpolated_stress_strain_data(sampling_parameter)
+
+        strain_values_primary_fine = plotting_data_fine["strain_values_primary"]
+        stress_values_primary_fine = plotting_data_fine["stress_values_primary"]
+        hysteresis_index_primary_fine = plotting_data_fine["hysteresis_index_primary"]
+        strain_values_secondary_fine = plotting_data_fine["strain_values_secondary"]
+        stress_values_secondary_fine = plotting_data_fine["stress_values_secondary"]
+        hysteresis_index_secondary_fine = plotting_data_fine["hysteresis_index_secondary"]
 
         # the following plots the test case for visual debugging
         if False:

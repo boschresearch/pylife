@@ -322,9 +322,15 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         
             fkm_nonlinear_detector.process_hcm_first(...)
             sampling_parameter = 100    # choose larger for smoother plot or smaller for lower runtime
-            strain_values_primary, stress_values_primary, _, strain_values_secondary, stress_values_secondary, _ \
-                = fkm_nonlinear_detector.interpolated_stress_strain_data(sampling_parameter)
-            
+            plotting_data = detector.interpolated_stress_strain_data(sampling_parameter)
+
+            strain_values_primary = plotting_data["strain_values_primary"]
+            stress_values_primary = plotting_data["stress_values_primary"]
+            hysteresis_index_primary = plotting_data["hysteresis_index_primary"]
+            strain_values_secondary = plotting_data["strain_values_secondary"]
+            stress_values_secondary = plotting_data["stress_values_secondary"]
+            hysteresis_index_secondary = plotting_data["hysteresis_index_secondary"]
+
             plt.plot(strain_values_primary, stress_values_primary, "g-", lw=3)
             plt.plot(strain_values_secondary, stress_values_secondary, "b-.", lw=1)
 
@@ -340,14 +346,22 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         Returns
         -------
-        strain_values_primary, stress_values_primary, hysteresis_index_primary, \
-        strain_values_secondary, stress_values_secondary, hysteresis_index_secondary
-            Lists of strains and stresses of the points on the stress-strain curve, 
+        plotting_data : dict
+            A dict with the following keys:
+
+            * "strain_values_primary"
+            * "stress_values_primary"
+            * "hysteresis_index_primary"
+            * "strain_values_secondary"
+            * "stress_values_secondary"
+            * "hysteresis_index_secondary"
+
+            The values are lists of strains and stresses of the points on the stress-strain curve, 
             separately for primary and secondary branches. The lists contain nan values whenever the
             curve of the *same* branch is discontinuous. This allows to plot the entire curve
             with different colors for primary and secondary branches.
             
-            The entries in hysteresis_index_primary and hysteresis_index_secondary are the row 
+            The entries for hysteresis_index_primary and hysteresis_index_secondary are the row 
             indices into the collective DataFrame returned by the recorder. This allows, e.g.,
             to separate the output of multiple runs of the HCM algorithm or to plot the traversed
             paths on the stress-strain diagram for individual steps of the algorithm.
@@ -781,9 +795,15 @@ class FKMNonlinearHysteresisPlotter:
         
             fkm_nonlinear_detector.process_hcm_first(...)
             sampling_parameter = 100    # choose larger for smoother plot or smaller for lower runtime
-            strain_values_primary, stress_values_primary, _, strain_values_secondary, stress_values_secondary, _ \
-                = fkm_nonlinear_detector.interpolated_stress_strain_data(sampling_parameter)
-            
+            plotting_data = detector.interpolated_stress_strain_data(sampling_parameter)
+
+            strain_values_primary = plotting_data["strain_values_primary"]
+            stress_values_primary = plotting_data["stress_values_primary"]
+            hysteresis_index_primary = plotting_data["hysteresis_index_primary"]
+            strain_values_secondary = plotting_data["strain_values_secondary"]
+            stress_values_secondary = plotting_data["stress_values_secondary"]
+            hysteresis_index_secondary = plotting_data["hysteresis_index_secondary"]
+
             plt.plot(strain_values_primary, stress_values_primary, "g-", lw=3)
             plt.plot(strain_values_secondary, stress_values_secondary, "b-.", lw=1)
 
@@ -799,23 +819,29 @@ class FKMNonlinearHysteresisPlotter:
 
         Returns
         -------
-        strain_values_primary, stress_values_primary, hysteresis_index_primary, \
-        strain_values_secondary, stress_values_secondary, hysteresis_index_secondary
-            Lists of strains and stresses of the points on the stress-strain curve, 
+        plotting_data : dict
+            A dict with the following keys:
+
+            * "strain_values_primary"
+            * "stress_values_primary"
+            * "hysteresis_index_primary"
+            * "strain_values_secondary"
+            * "stress_values_secondary"
+            * "hysteresis_index_secondary"
+
+            The values are lists of strains and stresses of the points on the stress-strain curve, 
             separately for primary and secondary branches. The lists contain nan values whenever the
             curve of the *same* branch is discontinuous. This allows to plot the entire curve
             with different colors for primary and secondary branches.
             
-            The entries in hysteresis_index_primary and hysteresis_index_secondary are the row 
+            The entries for hysteresis_index_primary and hysteresis_index_secondary are the row 
             indices into the collective DataFrame returned by the recorder. This allows, e.g.,
             to separate the output of multiple runs of the HCM algorithm or to plot the traversed
             paths on the stress-strain diagram for individual steps of the algorithm.
 
         """
-
-        """This method processes the self._hcm_point_history list and computes
-        the points on the hysteresis curve respectively.
-        self._hcm_point_history contains all traversed points:
+        
+        """self._hcm_point_history contains all traversed points:
         It is a list of tuples (type, hcm_point, hysteresis_index), e.g., [ ("primary", hcm_point, 0), ("secondary", hcm_point, 1), ...]
         where the type is one of {"primary", "secondary"} and indicates the hysteresis branch up to the current point
         and the index is the hysteresis number to which the points belong. """
@@ -890,8 +916,15 @@ class FKMNonlinearHysteresisPlotter:
             previous_type = type
             previous_is_direction_up = is_direction_up
         
-        return np.array(strain_values_primary), np.array(stress_values_primary), np.array(hysteresis_index_primary), \
-            np.array(strain_values_secondary), np.array(stress_values_secondary), np.array(hysteresis_index_secondary)
+        result = {
+            "strain_values_primary": np.array(strain_values_primary), 
+            "stress_values_primary": np.array(stress_values_primary), 
+            "hysteresis_index_primary": np.array(hysteresis_index_primary),
+            "strain_values_secondary": np.array(strain_values_secondary), 
+            "stress_values_secondary": np.array(stress_values_secondary), 
+            "hysteresis_index_secondary": np.array(hysteresis_index_secondary)
+        }
+        return result
 
     def _handle_secondary_branch(self, n_points_per_branch, only_hystereses, strain_values_primary, stress_values_primary, 
         strain_values_secondary, stress_values_secondary, hysteresis_index_secondary, previous_point, 
