@@ -37,7 +37,7 @@ class P_RAM:
         None.
 
         """
-        self._collective = collective
+        self._collective = collective.copy()
         self._assessment_parameters = assessment_parameters
         
         # select set of constants according to given material group
@@ -125,7 +125,7 @@ class P_RAJ:
         None.
 
         """
-        self._collective = collective
+        self._collective = collective.copy()
         self._assessment_parameters = assessment_parameters
         self._component_woehler_curve_P_RAJ = component_woehler_curve_P_RAJ
         self._P_RAJ_Z = self._component_woehler_curve_P_RAJ.P_RAJ_Z
