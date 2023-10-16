@@ -245,6 +245,25 @@ def test_grad_dxy_complex_shuffle():
 # ---- gradient_3D
 def test_gradient_3D_constant():
     fkt = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
+    df = pd.DataFrame({'node_id':    [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
+                       'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
+                       'x': [0, 1, 1, 2, 0, 0, 1, 1, 1, 1, 2, 2, 0, 1, 1, 2],
+                       'y': [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2],
+                       'z': [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 2, 2, 0, 0],
+                       'fct': fkt}).set_index(['node_id', 'element_id'])
+
+    expected = pd.DataFrame({
+        'dfct_dx': np.zeros(9),
+        'dfct_dy': np.zeros(9),
+        'dfct_dz': np.zeros(9)
+    }, index=pd.RangeIndex(1, 10, name='node_id'))
+
+    grad = df.gradient_3D.gradient_of('fct').sort_index()
+
+    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
+
+def test_gradient_3D_is_not_3D():
+    fkt = [5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
                        'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
                        'x': [0, 1, 1, 2, 0, 0, 1, 1, 1, 1, 2, 2, 0, 1, 1, 2],
