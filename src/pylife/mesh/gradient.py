@@ -393,5 +393,6 @@ class Gradient3D(Mesh):
         result = result.reset_index(level=0, drop=True)
         
         # remove duplicate indices, keep the first node
+        return result[~result.index.duplicated(keep='first')]
     
     
