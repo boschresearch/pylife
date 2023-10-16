@@ -311,26 +311,26 @@ class Gradient3D(Mesh):
         
         nodal_values = df.iloc[:4,3]
         self._initialize_ansatz_function_derivative_simplex()
+    
+        # compute jacobian matrix of the mapping from reference space [0,1]^3 to world space
+        J11 = -x11 + x21
+        J21 = -x12 + x22
+        J31 = -x13 + x23
+        J12 = -x11 + x31
+        J22 = -x12 + x32
+        J32 = -x13 + x33
+        J13 = -x11 + x41
+        J23 = -x12 + x42
+        J33 = -x13 + x43
+        J = np.array([[J11,J12,J13],[J21,J22,J23],[J31,J32,J33]])
+        
+        # invert jacobian to map from world space to reference domain
+        try:
+            Jinv = np.linalg.inv(J)
+        except np.linalg.LinAlgError:
+            return df
         
         for node_index in range(4):
-            
-            # compute jacobian matrix of the mapping from reference space [0,1]^3 to world space
-            J11 = -x11 + x21
-            J21 = -x12 + x22
-            J31 = -x13 + x23
-            J12 = -x11 + x31
-            J22 = -x12 + x32
-            J32 = -x13 + x33
-            J13 = -x11 + x41
-            J23 = -x12 + x42
-            J33 = -x13 + x43
-            J = np.array([[J11,J12,J13],[J21,J22,J23],[J31,J32,J33]])
-            
-            # invert jacobian to map from world space to reference domain
-            try:
-                Jinv = np.linalg.inv(J)
-            except np.linalg.LinAlgError:
-                continue
             
             # loop over derivative index d/dx_k
             df.iloc[node_index,4:7] \
