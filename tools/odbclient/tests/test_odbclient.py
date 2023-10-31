@@ -158,3 +158,22 @@ def test_variable_stress_integration_point(client):
     result = client.variable('S', 'PART-1-1', 'Load', 1, position='INTEGRATION POINTS')
     result.to_csv('tests/stress_integration_point.csv')
     pd.testing.assert_frame_equal(result, expected)
+
+@pytest.fixture
+def client_history():
+    return odbclient.OdbClient('tests/history_output_test.odb')
+
+def test_history_region_empty(client):
+    assert client.history_regions("Load") == ['Assembly ASSEMBLY']
+
+def test_history_region_non_empty(client_history):
+    assert client_history.history_regions("Step-1") == ['Assembly ASSEMBLY', 'Element ASSEMBLY.1', 'Node ASSEMBLY.1', 'Node ASSEMBLY.2']
+
+def test_history_outputs(client_history):
+    assert client_history.history_outputs("Step-1", 'Element ASSEMBLY.1') == ['CTF1', 'CTF2', 'CTF3', 'CTM1', 'CTM2', 'CTM3', 'CU1', 'CU2', 'CU3', 'CUR1', 'CUR2', 'CUR3']
+
+def test_history_output_values(client_history):
+    assert client_history.history_output_values("Step-1", 'Element ASSEMBLY.1', 'CTF1').array[1] == pytest.approx(0.09999854117631912)
+
+def test_history_region_description(client_history):
+    assert client_history.history_region_description("Step-1", 'Element ASSEMBLY.1') == "Output at assembly ASSEMBLY instance ASSEMBLY element 1"
