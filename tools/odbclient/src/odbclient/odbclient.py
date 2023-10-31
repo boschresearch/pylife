@@ -453,8 +453,7 @@ class OdbClient:
          -------
          dictionary : ldictionary which contains history information
          """
-        dictionary = {}
-        dictionary = self._query("get_history_info")
+        dictionary = _decode(self._query("get_history_info"))
         return dictionary
 
     def _query(self, command, args=None):
@@ -519,8 +518,13 @@ def _encode(arg):
 
 
 def _decode(arg):
-    return arg.decode('ascii') if isinstance(arg, bytes) else arg
-
+    if isinstance(arg, bytes):
+        return arg.decode('ascii')
+    if isinstance(arg, dict):
+        return {_decode(key): _decode(value) for key, value in arg.items()}
+    if isinstance(arg, list):
+        return [_decode(element) for element in arg]
+    return arg
 
 def _guess_abaqus_bin():
     if sys.platform == 'win32':
