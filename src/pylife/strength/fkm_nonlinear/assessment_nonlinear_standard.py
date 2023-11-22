@@ -54,15 +54,15 @@ def perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, calcu
     
     The FKM nonlinear guideline defines three possible methods to consider the statistical distribution of the load:
     
-        1. a normal distribution with given standard deviation, $s_L$
-        2. a logarithmic-normal distribution with given standard deviation $LSD_s$
-        3. an unknown distribution, use the constant factor :math:`\gamma_L=1.1` for $P_L = 2.5\%$ 
-            or :math:`\gamma_L=1` for $P_L = 50\%$ or 
+        1. a normal distribution with given standard deviation, :math:`s_L`
+        2. a logarithmic-normal distribution with given standard deviation :math:`LSD_s`
+        3. an unknown distribution, use the constant factor :math:`\gamma_L=1.1` for :math:`P_L = 2.5\%`
+            or :math:`\gamma_L=1` for :math:`P_L = 50\%` or 
         
-    If the ``assessment_parameters`̀  contain a value for ``s_L``, the first approach is used (normal distribution).
+    If the ``assessment_parameters`̀`  contain a value for ``s_L``, the first approach is used (normal distribution).
     Else, if the ``assessment_parameters`̀  contain a value for ``LSD_s``, the second approach is used (log-normal distribution).
-    Else, if only ``P_L`̀  is given a scaling with the according factor is used. The statistical assessment can be skipped
-    by settings P_A = 0.5 and P_L = 50.
+    Else, if only ``P_L``̀  is given a scaling with the according factor is used. The statistical assessment can be skipped
+    by settings ``P_A = 0.5`` and ``P_L = 50``.
     
     Parameters
     ----------
@@ -262,15 +262,15 @@ def _scale_load_sequence_according_to_probability(assessment_parameters, load_se
     
     The FKM nonlinear guideline defines three possible methods to consider the statistical distribution of the load:
     
-        1. a normal distribution with given standard deviation, $s_L$
-        2. a logarithmic-normal distribution with given standard deviation $LSD_s$
-        3. an unknown distribution, use the constant factor :math:`\gamma_L=1.1` for $P_L = 2.5\%$ 
-            or :math:`\gamma_L=1` for $P_L = 50\%$ or 
+        1. a normal distribution with given standard deviation, :math:`s_L`
+        2. a logarithmic-normal distribution with given standard deviation :math:`LSD_s`
+        3. an unknown distribution, use the constant factor :math:`\gamma_L=1.1` for :math:`P_L = 2.5\%`
+            or :math:`\gamma_L=1` for :math:`P_L = 50\%` or 
         
-    If the ``assessment_parameters`̀  contain a value for ``s_L``, the first approach is used (normal distribution).
-    Else, if the ``assessment_parameters`̀  contain a value for ``LSD_s``, the second approach is used (log-normal distribution).
+    If the ``assessment_parameters`̀`  contain a value for ``s_L``, the first approach is used (normal distribution).
+    Else, if the ``assessment_parameters``̀  contain a value for ``LSD_s``, the second approach is used (log-normal distribution).
     Else, if only ``P_L`̀  is given a scaling with the according factor is used. The statistical assessment can be skipped
-    by settings P_A = 0.5 and P_L = 50.
+    by settings ``P_A = 0.5`` and ``P_L = 50``.
 
     Parameters
     ----------

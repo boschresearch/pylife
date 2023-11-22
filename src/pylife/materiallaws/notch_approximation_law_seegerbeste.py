@@ -130,7 +130,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         from the elastic-plastic stress as from the notch approximation.
         This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
 
-        This method is the inverse operation of "stress", i.e., L = load(stress(L)) and S = stress(load(stress)).
+        This method is the inverse operation of "stress", i.e., ``L = load(stress(L))`` and ``S = stress(load(stress))``.
         
         Note that this method is only implemented for the scalar case, as the  FKM nonlinear surface layer & roughness
         also only handles the scalar case with one assessment point at once, not with entire meshes.
@@ -241,7 +241,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         from the elastic-plastic stress as from the notch approximation.
         This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
 
-        This method is the inverse operation of "stress", i.e., L = load(stress(L)) and S = stress(load(stress)).
+        This method is the inverse operation of "stress", i.e., ``L = load(stress(L))`` and ``S = stress(load(stress))``.
 
         Note that this method is only implemented for the scalar case, as the  FKM nonlinear surface layer & roughness
         also only handles the scalar case with one assessment point at once, not with entire meshes.
@@ -277,7 +277,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         """Compute the plastic corrected strain term e^{\ast} from the Neuber approximation 
         (eq. 2.5-43 in FKM nonlinear)
         
-        e_star = L/K_p / E + (L/K_p / K')^(1/n')
+        ``e_star = L/K_p / E + (L/K_p / K')^(1/n')``
         """
         
         corrected_load = load / self._K_p
@@ -287,7 +287,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         """Compute the additional strain term from the Neuber approximation 
         (2nd summand in eq. 2.5-45 in FKM nonlinear)
         
-        (L/sigma * K_p * e_star)
+        ``(L/sigma * K_p * e_star)``
         """
         
         e_star = self._e_star(load)
@@ -305,7 +305,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         '''
         Compute the "u-term" from equation 2.8.40
         
-        (pi/2*(L/Sigma-1/k_p-1))
+        ``(pi/2*(L/Sigma-1/k_p-1))``
 
         '''
         if not isinstance(load, float):
@@ -320,11 +320,14 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         (2/u^2)*ln(1/cos(u))+(Sigma/L)^2-(Sigma/L)
 
         Note, this is only possible for 
-        1/cos(u) > 0  
-        <=>  0 <= u < pi/2  
-        <=>  0 <= L/Sigma - 1/k_p - 1 < 1
-        <=>  1 <= L/Sigma - 1/k_p < 2
-        <=>  1/(L/Sigma - 2) < k_p <= 1/(L/Sigma - 1)
+
+        .. code::
+
+          1/cos(u) > 0  
+          <=>  0 <= u < pi/2  
+          <=>  0 <= L/Sigma - 1/k_p - 1 < 1
+          <=>  1 <= L/Sigma - 1/k_p < 2
+          <=>  1/(L/Sigma - 2) < k_p <= 1/(L/Sigma - 1)
 
         '''
         # convert stress value to float
@@ -372,7 +375,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         '''
         Compute the "u-term" from equation 2.8.45 for the secondary branch
         
-        (pi/2*(delta_L/delta_Sigma-1/k_p-1))
+        ``(pi/2*(delta_L/delta_Sigma-1/k_p-1))``
 
         '''
         if not isinstance(delta_load, float):
@@ -384,14 +387,16 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         '''
         Compute the middle term of euqation 2.8.42 for the secondary branch
         
-        (2/u^2)*ln(1/cos(u))+(Sigma/L)^2-(Sigma/L)
+        ``(2/u^2)*ln(1/cos(u))+(Sigma/L)^2-(Sigma/L)``
 
         Note, this is only possible for 
-        1/cos(u) > 0
-        <=>  0 <= u < pi/2  
-        <=>  0 <= delta_L/delta_Sigma - 1/k_p - 1 < 1
-        <=>  1 <= delta_L/delta_Sigma - 1/k_p < 2
-        <=>  1/(delta_L/delta_Sigma - 2) < k_p <= 1/(delta_L/delta_Sigma - 1)
+        .. code::
+
+          1/cos(u) > 0
+          <=>  0 <= u < pi/2  
+          <=>  0 <= delta_L/delta_Sigma - 1/k_p - 1 < 1
+          <=>  1 <= delta_L/delta_Sigma - 1/k_p < 2
+          <=>  1/(delta_L/delta_Sigma - 2) < k_p <= 1/(delta_L/delta_Sigma - 1)
 
         '''
         if not isinstance(delta_stress, float):
@@ -407,8 +412,8 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         """Compute the implicit function of the stress, f(sigma), defined in eq.2.8-43 of FKM nonlinear.
         There are in principal two different approaches: 
         
-        * find root of f(sigma)-epsilon
-        * find root of f(sigma)/epsilon - 1
+        * find root of ``f(sigma)-epsilon``
+        * find root of ``f(sigma)/epsilon - 1``
         
         The second approach is numerically more stable and is used here.
         The code for the first approach would be:

@@ -167,7 +167,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         from the elastic-plastic stress as from the notch approximation.
         This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
 
-        This method is the inverse operation of "stress", i.e., L = load(stress(L)) and S = stress(load(stress)).
+        This method is the inverse operation of "stress", i.e., ``L = load(stress(L))`` and ``S = stress(load(stress))``.
 
         Parameters
         ----------
@@ -256,7 +256,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         from the elastic-plastic stress as from the notch approximation.
         This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
 
-        This method is the inverse operation of "stress", i.e., L = load(stress(L)) and S = stress(load(stress)).
+        This method is the inverse operation of "stress", i.e., ``L = load(stress(L))`` and ``S = stress(load(stress))``.
 
         Parameters
         ----------
@@ -295,7 +295,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         """Compute the plastic corrected strain term e^{\ast} from the Neuber approximation 
         (eq. 2.5-43 in FKM nonlinear)
         
-        e_star = L/K_p / E + (L/K_p / K')^(1/n')
+        ``e_star = L/K_p / E + (L/K_p / K')^(1/n')``
         """
         
         corrected_load = load / self._K_p
@@ -304,10 +304,12 @@ class ExtendedNeuber(NotchApproximationLawBase):
     def _d_e_star(self, load):
         """Compute the first derivative of self._e_star(load)
          
-        e_star = L/K_p / E + (L/K_p / K')^(1/n')
+        .. code::
+
+          e_star = L/K_p / E + (L/K_p / K')^(1/n')
          
-        de_star(L)/dL = d/dL[ L/K_p / E + (L/K_p / K')^(1/n') ]
-           = 1/(K_p * E) + tangential_compliance(L/K_p) / K_p
+          de_star(L)/dL = d/dL[ L/K_p / E + (L/K_p / K')^(1/n') ]
+             = 1/(K_p * E) + tangential_compliance(L/K_p) / K_p
         """
         return 1/(self.K_p * self.E) \
             + self._ramberg_osgood_relation.tangential_compliance(load/self.K_p) / self.K_p
@@ -316,7 +318,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         """Compute the additional strain term from the Neuber approximation 
         (2nd summand in eq. 2.5-45 in FKM nonlinear)
         
-        (L/sigma * K_p * e_star)
+        ``(L/sigma * K_p * e_star)``
         """
         
         e_star = self._e_star(load)
@@ -334,7 +336,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         """Compute the implicit function of the stress, f(sigma),
         defined in eq.2.5-45 of FKM nonlinear
         
-        f(sigma) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star)
+        ``f(sigma) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star)``
         """
         
         return self._ramberg_osgood_relation.strain(stress) - self._neuber_strain(stress, load)
@@ -342,7 +344,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
     def _d_stress_implicit(self, stress, load):
         """Compute the first derivative of self._stress_implicit
         
-        df/dsigma
+        ``df/dsigma``
         """
         
         e_star = self._e_star(load)
@@ -361,12 +363,14 @@ class ExtendedNeuber(NotchApproximationLawBase):
     def _d_delta_e_star(self, delta_load):
         """Compute the first derivative of self._delta_e_star(load)
          
-        delta_e_star = ΔL/K_p / E + 2*(ΔL/K_p / (2*K'))^(1/n')
-                     = ΔL/K_p / E + 2*(ΔL/(2*K_p) / K')^(1/n')
+        .. code::
+  
+          delta_e_star = ΔL/K_p / E + 2*(ΔL/K_p / (2*K'))^(1/n')
+                       = ΔL/K_p / E + 2*(ΔL/(2*K_p) / K')^(1/n')
          
-        d_delta_e_star(ΔL)/dΔL = d/dΔL[ ΔL/K_p / E + 2*(ΔL/(2*K_p) / K')^(1/n') ]
-           = 1/(K_p * E) + 2*tangential_compliance(ΔL/(2*K_p)) / (2*K_p)
-           = 1/(K_p * E) + tangential_compliance(ΔL/(2*K_p)) / K_p
+          d_delta_e_star(ΔL)/dΔL = d/dΔL[ ΔL/K_p / E + 2*(ΔL/(2*K_p) / K')^(1/n') ]
+             = 1/(K_p * E) + 2*tangential_compliance(ΔL/(2*K_p)) / (2*K_p)
+             = 1/(K_p * E) + tangential_compliance(ΔL/(2*K_p)) / K_p
         """
         return 1/(self.K_p * self.E) \
             + self._ramberg_osgood_relation.tangential_compliance(delta_load/(2*self.K_p)) / self.K_p
@@ -393,9 +397,12 @@ class ExtendedNeuber(NotchApproximationLawBase):
     def _d_stress_secondary_implicit(self, delta_stress, delta_load):
         """Compute the first derivative of self._stress_secondary_implicit
         Note, the derivative of `self._ramberg_osgood_relation.delta_strain` is:
-        d/dΔsigma delta_strain(Δsigma) =  d/dΔsigma 2*strain(Δsigma/2)
-          = 2*d/dΔsigma strain(Δsigma/2) = 2 * 1/2 * tangential_compliance(Δsigma/2)
-          = self._ramberg_osgood_relation.tangential_compliance(delta_stress/2)
+
+        .. code::
+
+          d/dΔsigma delta_strain(Δsigma) =  d/dΔsigma 2*strain(Δsigma/2)
+            = 2*d/dΔsigma strain(Δsigma/2) = 2 * 1/2 * tangential_compliance(Δsigma/2)
+            = self._ramberg_osgood_relation.tangential_compliance(delta_stress/2)
         """
         
         delta_e_star = self._delta_e_star(delta_load)
@@ -411,7 +418,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
          This is needed to apply the notch approximation law "backwards", i.e.,
          to get from stress back to load. This is required for the FKM nonlinear roughness & surface layer.
          
-         f(L) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star(L))
+         ``f(L) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star(L))``
          """
          
          return self._stress_implicit(stress, load)
@@ -419,10 +426,12 @@ class ExtendedNeuber(NotchApproximationLawBase):
     def _d_load_implicit(self, load, stress):
         """Compute the first derivative of self._load_implicit
          
-        f(L) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star(L))
+        .. code::
+
+          f(L) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star(L))
          
-        df/dL = d/dL [ -(L/sigma * K_p * e_star(L))]
-         = -1/sigma * K_p * e_star(L) - L/sigma * K_p * de_star/dL
+          df/dL = d/dL [ -(L/sigma * K_p * e_star(L))]
+           = -1/sigma * K_p * e_star(L) - L/sigma * K_p * de_star/dL
           
         """ 
          
@@ -436,7 +445,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         This is needed to apply the notch approximation law "backwards", i.e.,
         to get from stress back to load. This is required for the FKM nonlinear roughness & surface layer.
         
-        f(ΔL) = Δsigma/E + 2*(Δsigma/(2*K'))^(1/n') - (ΔL/Δsigma * K_p * Δe_star(ΔL))
+        ``f(ΔL) = Δsigma/E + 2*(Δsigma/(2*K'))^(1/n') - (ΔL/Δsigma * K_p * Δe_star(ΔL))``
          
         """
          
@@ -445,10 +454,12 @@ class ExtendedNeuber(NotchApproximationLawBase):
     def _d_load_secondary_implicit(self, delta_load, delta_stress):
         """Compute the first derivative of self._load_secondary_implicit
          
-        f(ΔL) = Δsigma/E + 2*(Δsigma/(2*K'))^(1/n') - (ΔL/Δsigma * K_p * Δe_star(ΔL))
+        .. code::
+
+          f(ΔL) = Δsigma/E + 2*(Δsigma/(2*K'))^(1/n') - (ΔL/Δsigma * K_p * Δe_star(ΔL))
          
-        df/dΔL = d/dΔL [ -(ΔL/Δsigma * K_p * Δe_star(ΔL))]
-         = -1/Δsigma * K_p * Δe_star(ΔL) - ΔL/Δsigma * K_p * dΔe_star/dΔL
+          df/dΔL = d/dΔL [ -(ΔL/Δsigma * K_p * Δe_star(ΔL))]
+           = -1/Δsigma * K_p * Δe_star(ΔL) - ΔL/Δsigma * K_p * dΔe_star/dΔL
           
         """ 
          
@@ -465,6 +476,7 @@ class Binned:
     root finding algorithm for every new load.
     
     There are two variants of the data structure. 
+    
     * First, for a single assessment point, the lookup-table contains one load,
       strain and stress value in every bin.
     * Second, for vectorized assessment of multiple nodes at once, the lookup-table

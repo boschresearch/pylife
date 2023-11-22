@@ -1,7 +1,7 @@
 The notch approximation law classes
 ======================================
 
-The following classes are available: ̀ `ExtendedNeuber``, ``SeegerBeste``, and ``Binned``.
+The following classes are available: ``ExtendedNeuber``, ``SeegerBeste``, and ``Binned``.
 
 The ``ExtendedNeuber`` and ``SeegerBeste`` classes implement the respective notch approximations.
 
