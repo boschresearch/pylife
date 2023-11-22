@@ -27,5 +27,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -U setuptools setuptools_scm wheel
         pip install -e .[all,docs]
+        apt-get install pandoc
     - name: Build docs
       run: sphinx-build -b html docs _build/html
