@@ -49,7 +49,6 @@ if not os.path.isdir(ipython_dir):
 
 # Don't try to use C-code for the pytensor stuff when building the docs.
 # Otherwise the demo notebooks fail on readthedocs
-os.environ['PYTENSOR_FLAGS'] = 'cxx=""'
 os.environ['PYTHONWARNINGS'] = 'ignore'
 
 import asyncio
