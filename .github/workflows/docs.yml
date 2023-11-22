@@ -27,4 +27,4 @@ jobs:
         pip install -U setuptools setuptools_scm wheel
         pip install -e .[all,docs]
     - name: Build docs
-      run: sphinx-build -Xfrozen_modules=off -b html docs _build/html
+      run: sphinx-build -b html docs _build/html
