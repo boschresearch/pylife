@@ -8,7 +8,10 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 ### New features
 
-* Introduce `WoehlerCurve.miner_original()`
+* History output for `odbclient`
+
+* `WoehlerCurve.miner_original()`
+
 
 ### Breaking changes
 
