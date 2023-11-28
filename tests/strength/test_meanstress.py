@@ -279,6 +279,7 @@ def test_meanstress_transform_additional_index():
     assert res.sum() == 9 + 18 + 36
     assert res.min() == 0
 
+
 def test_meanstress_transform_two_additional_indices():
     fr = pd.IntervalIndex.from_breaks(np.linspace(-25./24., 1., 49), closed='left', name='from')
     to = pd.IntervalIndex.from_breaks(np.linspace(-1./24., 2., 49), closed='left', name='to')

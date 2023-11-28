@@ -32,15 +32,18 @@ def create_input_DF():
     ts_df.index.name = "t"
     return ts_df
 
+
 def test_fs_calc_true():
     df = create_input_DF()
     fs = 2048
     assert fs == pts.fs_calc(df)
 
+
 def test_fs_calc_false():
     df = create_input_DF()
     df.index = df.index.astype(str)
     assert 1 == pts.fs_calc(df)
+
 
 def test_resample_acc_sine():
     # sine
@@ -52,12 +55,15 @@ def test_resample_acc_sine():
         ['count', 'mean', '50%', '25%', '75%'])
     pd.testing.assert_frame_equal(test_sin, expected_sin, rtol=2)
 
+
 def test_resample_acc_wn():
     # white noise
     ts_wn = pd.DataFrame(np.random.randn(129), index=np.linspace(0, 1, 129))
     expected_wn = ts_wn.describe()
     test_wn = pts.resample_acc(ts_wn, fs = pts.fs_calc(ts_wn)).describe()
     pd.testing.assert_frame_equal(test_wn, expected_wn, check_exact=True)
+
+
 def test_resample_acc_Sor():
     # SoR
     t = np.arange(0, 20, 1/4096)
@@ -67,6 +73,8 @@ def test_resample_acc_Sor():
     test_sin = pts.resample_acc(ts_sin, 2048).describe().drop(
         ['count', 'mean', '50%', '25%', '75%'])
     pd.testing.assert_frame_equal(test_sin, expected_sin, rtol=1e-2)
+
+
 def test_resample_acc_sawtooth():
     # sawtooth
     t=t = np.arange(0, 10, 1/4096)
@@ -74,6 +82,7 @@ def test_resample_acc_sawtooth():
     expected_st = ts_st.describe().drop(['count', '50%', 'mean'])
     test_st = pts.resample_acc(ts_st, 1024).describe().drop(['count', '50%', 'mean'])
     pd.testing.assert_frame_equal(test_st, expected_st, rtol=1e-2)
+
 
 def test_ps_df():
     sample_frequency = 512

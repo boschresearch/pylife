@@ -1,5 +1,5 @@
 The ``AbstractRecorder`` class
-###################################
+##############################
 
 .. autoclass:: pylife.stress.rainflow.AbstractRecorder
                :members:

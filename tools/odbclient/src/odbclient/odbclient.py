@@ -374,88 +374,6 @@ class OdbClient:
         column_names = _ascii(_decode, labels)
         return pd.DataFrame(values, index=index, columns=column_names)
 
-    def history_regions(self, step_name):
-         """Query the history Regions of a given step.
-
-         Parameters
-         ----------
-         step_name : string
-             The name of the step
-
-         Returns
-         -------
-         historyRegions : list of strings
-             The name of history regions, which are in the required step.
-         """
-         return self._query('get_history_regions', step_name)
-
-    def history_outputs(self, step_name, history_region_name):
-         """Query the history Outputs of a given step in a given history region.
-
-         Parameters
-         ----------
-         step_name : string
-             The name of the step
-
-         history_region_name: string
-             The name of the history region
-
-         Returns
-         -------
-         historyOutputs : list of strings
-             The name of the history outputs, which are in the required step and under the required history region
-         """
-         hisoutputs = self._query("get_history_outputs", (step_name, history_region_name))
-
-         return hisoutputs
-
-
-    def history_output_values(self, step_name, history_region_name, historyoutput_name):
-         """Query the history Regions of a given step.
-
-         Parameters
-         ----------
-         step_name : string
-             The name of the step
-
-         Returns
-         -------
-         historyRegions : list of strings
-             The name of the step the history regions are in.
-         """
-         hisoutput_valuesx, hisoutput_valuesy = self._query("get_history_output_values", (step_name, history_region_name, historyoutput_name))
-         history_region_description = self._query("get_history_region_description", (step_name, history_region_name))
-         historyoutput_data = pd.Series(hisoutput_valuesy, index = hisoutput_valuesx, name = history_region_description + ": " + historyoutput_name)
-
-         return historyoutput_data
-
-    def history_region_description(self, step_name, history_region_name):
-         """Query the description of a history Regions of a given step.
-
-         Parameters
-         ----------
-         step_name : string
-             The name of the step
-         history_region_name: string
-             The name of the history region
-
-         Returns
-         -------
-         historyRegion_description : list of strings
-             The description of the history region.
-         """
-         history_region_description = self._query("get_history_region_description", (step_name, history_region_name))
-         return history_region_description
-
-    def history_info(self):
-        """Query all the information about the history outputs in a given odb.
-         Returns
-         -------
-         dictionary : ldictionary which contains history information
-         """
-        dictionary = _decode(self._query("get_history_info"))
-        return dictionary
-
     def _query(self, command, args=None):
         args = _ascii(_encode, args)
         self._send_command(command, args)
@@ -518,13 +436,8 @@ def _encode(arg):
 
 
 def _decode(arg):
-    if isinstance(arg, bytes):
-        return arg.decode('ascii')
-    if isinstance(arg, dict):
-        return {_decode(key): _decode(value) for key, value in arg.items()}
-    if isinstance(arg, list):
-        return [_decode(element) for element in arg]
-    return arg
+    return arg.decode('ascii') if isinstance(arg, bytes) else arg
+
 
 def _guess_abaqus_bin():
     if sys.platform == 'win32':
@@ -542,7 +455,7 @@ def _guess_abaqus_bin_windows():
     for guess in guesses:
         if os.path.exists(guess):
             return guess
-    raise OSError("Could not guess abaqus binary path! Please submit as abaqus_bin parameter!")
+    return None
 
 
 def _guess_pythonpath(python_env_path):

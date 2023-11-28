@@ -50,6 +50,7 @@ There are/will be the following subpackages:
 * `strength` everything related to strength calculation
 	* failure probability estimation
 	* S-N-calculations
+	* local strain concept: FKM guideline nonlinear
 	* ...
 * `mesh` FEM mesh related stuff
     * stress gradients

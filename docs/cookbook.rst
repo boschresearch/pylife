@@ -16,6 +16,10 @@ computer, you can use `MyBinder
    :caption: Life time and reliability
 
    demos/lifetime_calc.nblink
+   demos/fkm_nonlinear.nblink
+   demos/fkm_nonlinear_full.nblink
+
+See also the tutorials about :doc:`FKM nonlinear <tutorials/fkm_nonlinear>`.
 
 .. toctree::
    :maxdepth: 1
@@ -36,6 +40,7 @@ computer, you can use `MyBinder
    demos/hotspot_beam.nblink
    demos/stress_gradient.nblink
    demos/local_stress_with_FE.nblink
+
 
 .. toctree::
    :maxdepth: 1

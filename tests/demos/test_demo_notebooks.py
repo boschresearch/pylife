@@ -71,7 +71,6 @@ def test_local_stress_with_fe(tb):
     tb.inject("np.testing.assert_approx_equal(damage.max(), 0.0023, significant=2)")
 
 
-
 @testbook('demos/psd_optimizer.ipynb', execute=True)
 def test_psd_optimizer(tb):
     tb.inject(
@@ -99,18 +98,45 @@ def test_time_series_handling(tb):
     tb.inject(
         """
         assert 'envelope' in df_psd.columns
+        %store -r rf_dict
         """
     )
 
 
 @testbook('demos/lifetime_calc.ipynb')
 def test_lifetime_calc(tb):
+    
+    # execute the time_series_handling.ipynb notebook to create the rf_dict variable
+    with testbook('../demos/time_series_handling.ipynb') as tb0:
+        tb0.execute()
+
     with tb.patch('pyvista.Plotter'):
         tb.execute()
 
     tb.inject(
         """
         np.testing.assert_approx_equal(fp_component, 3.04e-04, significant=2)
-        %store -d rf_dict
+        """
+    )
+
+
+@testbook('demos/fkm_nonlinear/fkm_nonlinear.ipynb')
+def test_fkm_nonlinear(tb):
+    tb.execute()
+
+    tb.inject(
+        """
+        assert np.isclose(result["P_RAJ_lifetime_n_cycles"], 781479, rtol=1e-2)
+        """
+    )
+
+
+@testbook('demos/fkm_nonlinear/fkm_nonlinear_full.ipynb')
+def test_fkm_nonlinear_full(tb):
+    tb.execute()
+
+    tb.inject(
+        """
+        assert np.isclose(lifetime_n_cycles, 273, rtol=1e-2)
         """
     )

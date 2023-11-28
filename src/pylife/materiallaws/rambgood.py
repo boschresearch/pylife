@@ -30,9 +30,9 @@ class RambergOsgood:
     E : float
         Young's Modulus
     K : float
-        The strength coefficient
+        The strength coefficient, usually named `K'` or ``K_prime`̀  in FKM nonlinear related formulas.
     n : float
-        The strain hardening coefficient
+        The strain hardening coefficient, usually named `n'` or ``n_prime`̀  in FKM nonlinear related formulas.
 
     Notes
     -----
@@ -130,7 +130,7 @@ class RambergOsgood:
         sign_x = np.sign(x)
         return abs_x, sign_x
 
-    def stress(self, strain, rtol=1e-5, tol=1e-6):
+    def stress(self, strain, *, rtol=1e-5, tol=1e-6):
         '''Calculate the stress for a given strain
 
         Parameters
@@ -153,7 +153,12 @@ class RambergOsgood:
         strain = np.asarray(strain)
         abs_strain, sign_strain = self._get_abs_sign(strain)
         stress0 = self._E * abs_strain
-        abs_stress = optimize.newton(func=residuum, x0=stress0, fprime=dresiduum, rtol=rtol, tol=tol)
+        abs_stress = optimize.newton(
+            func=residuum,
+            x0=stress0,
+            fprime=dresiduum, 
+            rtol=rtol, tol=tol
+        )
         return abs_stress * sign_strain
 
     def tangential_compliance(self, stress):

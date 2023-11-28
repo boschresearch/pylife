@@ -31,24 +31,30 @@ def pd():
     probs = rossow_cumfreqs(len(occurrences))
     return PD.ProbabilityFit(probs, np.sort(occurrences))
 
+
 def test_probability_fit_inconsistent():
     with pytest.raises(ValueError, match="probs and occurrence arrays must have the same 1D shape."):
         _ = PD.ProbabilityFit([1, 2], [1, 3, 4])
+
 
 def test_probability_fit_occurrences():
     pd = PD.ProbabilityFit([1, 2, 4], [1, 3, 4])
     np.testing.assert_array_equal(pd.occurrences, np.array([1., 3., 4.]))
 
+
 def test_probability_fit_slope(pd):
     np.testing.assert_approx_equal(pd.slope, 1.440756470107515)
 
+
 def test_probability_fit_intecept(pd):
     np.testing.assert_approx_equal(pd.intercept, 0.04474656548145248)
+
 
 def test_precentiles(pd):
     expected = np.array([-1.517929, -0.989169, -0.649324, -0.372289, -0.121587,
                          0.121587, 0.372289,  0.649324,  0.989169,  1.517929])
     np.testing.assert_allclose(pd.percentiles, expected, rtol=1e-4)
+
 
 def test_insufficient_data():
     occurrences = [100.0]

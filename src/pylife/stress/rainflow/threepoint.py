@@ -107,7 +107,7 @@ class ThreePointDetector(AbstractDetector):
         highest_front=cython.int, lowest_front=cython.int,
         start_val=cython.double, front_val=cython.double, back_val=cython.double,
         turns=cython.double[:])
-    def process(self, samples):
+    def process(self, samples, flush=False):
         """Process a sample chunk.
 
         Parameters
@@ -115,6 +115,41 @@ class ThreePointDetector(AbstractDetector):
         samples : array_like, shape (N, )
             The samples to be processed
 
+        flush : bool
+            Whether to flush the cached values at the end.
+            
+            If ``flush=False``, the last value of a load sequence is
+            cached for a subsequent call to ``process``, because it may or may
+            not be a turning point of the sequence, which is only decided
+            when the next data point arrives.
+            
+            Setting ``flush=True`` forces processing of the last value. 
+            When ``process`` is called again afterwards with new data, 
+            two increasing or decreasing values in a row might have been
+            processed, as opposed to only turning points of the sequence.
+            
+            Example:
+            a)
+                process([1, 2], flush=False)  # processes 1
+                process([3, 1], flush=True)   # processes 3, 1
+                -> processed sequence is [1,3,1], only turning points
+            
+            b)
+                process([1, 2], flush=True)   # processes 1, 2
+                process([3, 1], flush=True)   # processes 3, 1
+                -> processed sequence is [1,2,3,1], "," is not a turning point
+                
+            c) 
+                process([1, 2])   # processes 1
+                process([3, 1])   # processes 3
+                -> processed sequence is [1,3], end ("1") is missing
+
+            d) 
+                process([1, 2])   # processes 1
+                process([3, 1])   # processes 3
+                flush()           # process 1
+                -> processed sequence is [1,3,1]
+                
         Returns
         -------
         self : ThreePointDetector
@@ -127,7 +162,7 @@ class ThreePointDetector(AbstractDetector):
             residuals = self._residuals[:-1]
             residual_index = [*range(len(residuals))]
 
-        turns_index, turns_values = self._new_turns(samples)
+        turns_index, turns_values = self._new_turns(samples, flush)
 
         turns_np = np.concatenate((residuals, turns_values, samples[-1:]))
         turns_index = np.concatenate((self._residual_index, turns_index))

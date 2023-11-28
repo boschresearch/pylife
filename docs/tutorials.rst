@@ -11,10 +11,11 @@ If you want to try out the notebooks without installing anything on your
 computer, you can use `MyBinder
 <https://mybinder.org/v2/gh/boschresearch/pylife/develop?labpath=demos%2Findex.ipynb>`_.
 
-
 .. toctree::
    :maxdepth: 1
 
    demos/woehler_curve.nblink
    demos/load_collective.nblink
    demos/stress_strength.nblink
+   demos/fkm_nonlinear.nblink
+   demos/fkm_nonlinear_full.nblink

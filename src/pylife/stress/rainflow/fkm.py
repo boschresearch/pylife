@@ -75,7 +75,7 @@ class FKMDetector(AbstractDetector):
         last0=cython.double, last1=cython.double,
         loop_assumed=cython.int,
         max_turn=cython.double)
-    def process(self, samples):
+    def process(self, samples, flush=False):
         """Process a sample chunk.
 
         Parameters
@@ -90,7 +90,7 @@ class FKMDetector(AbstractDetector):
         """
         ir = self._ir
         max_turn = self._max_turn
-        turns_index, turns = self._new_turns(samples)
+        turns_index, turns = self._new_turns(samples, flush)
 
         from_vals = []
         to_vals = []

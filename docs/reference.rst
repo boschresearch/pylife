@@ -31,6 +31,12 @@ Strength
    strength/meanstress
    strength/failure_probability
    strength/miner
+   strength/fkm_nonlinear
+   strength/fkm_nonlinear_parameter_calculations
+   strength/fkm_nonlinear_damage_calculator
+   strength/damage_parameters
+   strength/woehler_fkm_nonlinear
+   strength/fkm_load_distribution
 
 Materiallaws
 ------------
@@ -41,6 +47,7 @@ Materiallaws
    materiallaws/rambgood
    materiallaws/woehlercurve
    materiallaws/true_stress_strain
+   materiallaws/notch_approximation_laws
 
 Materialdata
 ------------
@@ -58,7 +65,9 @@ Mesh utilities
    mesh/meshsignal
    mesh/hotspot
    mesh/gradient
+   mesh/gradient3D
    mesh/meshmapping
+   mesh/surface3D
 
 VMAP Interface
 --------------

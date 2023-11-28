@@ -32,6 +32,7 @@ def test_keys_dataframe():
 def test_keys_series():
     pd.testing.assert_index_equal(foo_bar_baz.iloc[0].test_accessor_none.keys(), pd.Index(['foo', 'bar', 'baz']))
 
+
 def test_missing_keys_none():
     assert foo_bar_baz.test_accessor_none.get_missing_keys(['foo', 'bar']) == []
 

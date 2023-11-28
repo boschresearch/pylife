@@ -24,6 +24,7 @@ import numpy as np
 import pylife.stress.rainflow as RF
 import pylife.stress.rainflow.recorders as RFR
 
+
 def process_signal(signal):
 
     fr = RFR.FullRecorder()
@@ -31,11 +32,13 @@ def process_signal(signal):
 
     return fr, dtor
 
+
 def test_four_point_detector_new_no_residuals():
     fr = RFR.FullRecorder()
     dtor = RF.FourPointDetector(recorder=fr)
     assert dtor.recorder is fr
     assert len(dtor.residuals) == 0
+
 
 class TestFourPointRandomNonPeriodicLoad(unittest.TestCase):
 
@@ -57,6 +60,7 @@ class TestFourPointRandomNonPeriodicLoad(unittest.TestCase):
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([2.,-1.,3.,-5.,
                                                                       4.,-4.,2.]))
+
 
 class TestFourPointRandombyDuplicatingResidualsFromAbove(unittest.TestCase):
 
@@ -275,6 +279,7 @@ class TestFourPointLecture(unittest.TestCase):
 
     def test_residual_index(self):
         np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 1, 9, 10]))
+
 
 class TestFourPointLowerAfterMain(unittest.TestCase):
     r'''

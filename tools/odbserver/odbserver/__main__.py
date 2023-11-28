@@ -41,12 +41,7 @@ class OdbServer:
             "get_node_set": self.node_set,
             "get_element_set": self.element_set,
             "get_variable_names": self.variable_names,
-            "get_variable": self.variable,
-            "get_history_regions": self.history_regions,
-            "get_history_outputs": self.history_outputs,
-            "get_history_output_values": self.history_output_values,
-            "get_history_region_description": self.history_region_description,
-            "get_history_info": self.history_info
+            "get_variable": self.variable
         }
 
     def instances(self, _args):
@@ -107,30 +102,6 @@ class OdbServer:
         else:
             _send_response(variable)
 
-    def history_regions(self, step_name):
-        _send_response(self._odb.history_regions(str(step_name)))
-
-    def history_outputs(self, args):
-        step_name, historyregion_name = args
-        step_name = str(step_name)
-        historyregion_name = str(historyregion_name)
-        _send_response(self._odb.history_outputs(step_name, historyregion_name))
-
-    def history_output_values(self, args):
-        step_name, historyregion_name, historyoutput_name = args
-        step_name = str(step_name)
-        historyregion_name = str(historyregion_name)
-        historyoutput_name = str(historyoutput_name)
-        _send_response(self._odb.history_output_values(step_name, historyregion_name, historyoutput_name))
-
-    def history_region_description(self, args):
-        step_name, historyregion_name = args
-        step_name = str(step_name)
-        historyregion_name = str(historyregion_name)
-        _send_response(self._odb.history_region_description(step_name, historyregion_name))
-
-    def history_info(self, args):
-        _send_response(self._odb.history_info())
 
 def _send_response(pickle_data, numpy_arrays=None):
     numpy_arrays = numpy_arrays or []
