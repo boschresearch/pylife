@@ -1,3 +1,4 @@
 {
-    "path": "../../demos/import_mesh_vmap.ipynb"
+    "path": "../../demos/import_mesh_vmap.ipynb",
+    "extra-media": ["../../demos/data/"]
 }
