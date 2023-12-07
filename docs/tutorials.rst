@@ -16,6 +16,6 @@ computer, you can use `MyBinder
 
    tutorials/woehler_curve.nblink
    tutorials/load_collective.nblink
-   tutorials/stress_strength.nblink
+   tutorials/stress-strength.rst
    tutorials/fkm_nonlinear.nblink
    tutorials/fkm_nonlinear_full.nblink
