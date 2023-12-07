@@ -49,6 +49,29 @@ if not os.path.isdir(ipython_dir):
         ep.preprocess(nb, {'metadata': {'path': os.path.dirname(fn)}})
 
 
+# Inject code to set pyvista jupyter backend into relevant notebooks
+#
+import nbsphinx
+original_from_notebook_node = nbsphinx.Exporter.from_notebook_node
+
+from nbconvert.preprocessors import Preprocessor
+
+def from_notebook_node(self, nb, resources, **kwargs):
+
+    class InjectPyvistaBackendPreprocessor(Preprocessor):
+        def preprocess(self, nb, resources):
+            for index, cell in enumerate(nb.cells):
+                if cell['cell_type'] == 'code' and 'import pyvista as pv' in cell['source'] :
+                    cell['source'] += "\npv.set_jupyter_backend('html')\n"
+                    break
+            return nb, resources
+
+    nb, resources = InjectPyvistaBackendPreprocessor().preprocess(nb, resources=resources)
+    return original_from_notebook_node(self, nb, resources, **kwargs)
+
+nbsphinx.Exporter.from_notebook_node = from_notebook_node
+
+
 # Don't try to use C-code for the pytensor stuff when building the docs.
 # Otherwise the demo notebooks fail on readthedocs
 os.environ['PYTHONWARNINGS'] = 'ignore'
