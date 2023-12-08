@@ -12,7 +12,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       MPLBACKEND: svg
-      PYTENSOR_FLAGS: cxx="",exception_verbosity=high
     strategy:
       fail-fast: false
       matrix:

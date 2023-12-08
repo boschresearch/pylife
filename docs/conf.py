@@ -28,6 +28,8 @@ if 'DISPLAY' not in os.environ and not sys.platform.startswith('win'):
     vdisplay = Xvfb()
     vdisplay.start()
 
+os.environ['PYDEVD_DISABLE_FILE_VALIDATION'] = "1"
+
 ipython_dir = os.path.join(__projectdir__, "_build", "ipythondir")
 os.environ['IPYTHONDIR'] = ipython_dir
 
@@ -47,9 +49,31 @@ if not os.path.isdir(ipython_dir):
         ep.preprocess(nb, {'metadata': {'path': os.path.dirname(fn)}})
 
 
+# Inject code to set pyvista jupyter backend into relevant notebooks
+#
+import nbsphinx
+original_from_notebook_node = nbsphinx.Exporter.from_notebook_node
+
+from nbconvert.preprocessors import Preprocessor
+
+def from_notebook_node(self, nb, resources, **kwargs):
+
+    class InjectPyvistaBackendPreprocessor(Preprocessor):
+        def preprocess(self, nb, resources):
+            for index, cell in enumerate(nb.cells):
+                if cell['cell_type'] == 'code' and 'import pyvista as pv' in cell['source'] :
+                    cell['source'] += "\npv.set_jupyter_backend('html')\n"
+                    break
+            return nb, resources
+
+    nb, resources = InjectPyvistaBackendPreprocessor().preprocess(nb, resources=resources)
+    return original_from_notebook_node(self, nb, resources, **kwargs)
+
+nbsphinx.Exporter.from_notebook_node = from_notebook_node
+
+
 # Don't try to use C-code for the pytensor stuff when building the docs.
 # Otherwise the demo notebooks fail on readthedocs
-os.environ['PYTENSOR_FLAGS'] = 'cxx=""'
 os.environ['PYTHONWARNINGS'] = 'ignore'
 
 import asyncio
@@ -129,7 +153,11 @@ todo_include_todos = True
 templates_path = ["_templates"]
 
 # The suffix of source filenames.
-source_suffix = [".rst", ".md", ".txt", ".ipynb"]
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'restructuredtext',
+    '.md': 'markdown',
+}
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
