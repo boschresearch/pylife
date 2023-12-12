@@ -15,16 +15,17 @@ You need a python installation e.g. a virtual environment with `pip` a recent
 (brand new ones might not work) python versions installed. There are several
 ways to achieve that.
 
-#### Using anaconda
+#### Using miniconda or anaconda
 
-Install anaconda or miniconda [http://anaconda.com] on your computer and create
-a virtual environment with the package `pip` installed. See the [conda
+Install [miniconda](https://conda.io/miniconda.html) or
+[anaconda](http://anaconda.com) on your computer and create a virtual
+environment with python installed. See the [conda
 documentation](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
 on how to do that. The newly created environment must be activated.
 
 The following command lines should do it
 ```
-conda create -n pylife-env python=3.9 pip --yes
+conda create -n pylife-env python=3.11 --yes
 conda activate pylife-env
 ```
 
@@ -50,7 +51,6 @@ That installs pyLife with all the dependencies to use pyLife in python
 programs. You might want to install some further packages like `jupyter` in
 order to work with jupyter notebooks.
 
-
 There is no conda package as of now, unfortunately.
 
 
@@ -75,7 +75,7 @@ Create an environment – usually a good idea to use a prefixed environment in
 your pyLife working directory and activate it.
 
 ```
-conda create -p .venv python=3.9 pip --yes
+conda create -p .venv python=3.11 pip --yes
 conda activate ./.venv
 ```
 

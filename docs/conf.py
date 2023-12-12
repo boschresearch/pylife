@@ -28,6 +28,8 @@ if 'DISPLAY' not in os.environ and not sys.platform.startswith('win'):
     vdisplay = Xvfb()
     vdisplay.start()
 
+os.environ['PYDEVD_DISABLE_FILE_VALIDATION'] = "1"
+
 ipython_dir = os.path.join(__projectdir__, "_build", "ipythondir")
 os.environ['IPYTHONDIR'] = ipython_dir
 
@@ -47,9 +49,13 @@ if not os.path.isdir(ipython_dir):
         ep.preprocess(nb, {'metadata': {'path': os.path.dirname(fn)}})
 
 
+
+
 # Don't try to use C-code for the pytensor stuff when building the docs.
 # Otherwise the demo notebooks fail on readthedocs
 os.environ['PYTHONWARNINGS'] = 'ignore'
+
+os.environ["PYVISTA_JUPYTER_BACKEND"] = 'html'
 
 import asyncio
 
@@ -128,7 +134,11 @@ todo_include_todos = True
 templates_path = ["_templates"]
 
 # The suffix of source filenames.
-source_suffix = [".rst", ".md", ".txt", ".ipynb"]
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'restructuredtext',
+    '.md': 'markdown',
+}
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'

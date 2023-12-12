@@ -26,13 +26,12 @@ class RambergOsgood:
 
     Parameters
     ----------
-
     E : float
         Young's Modulus
     K : float
-        The strength coefficient, usually named `K'` or ``K_prime`̀  in FKM nonlinear related formulas.
+        The strength coefficient, usually named ``K'`` or ``K_prime`` in FKM nonlinear related formulas.
     n : float
-        The strain hardening coefficient, usually named `n'` or ``n_prime`̀  in FKM nonlinear related formulas.
+        The strain hardening coefficient, usually named ``n'`` or ``n_prime`` in FKM nonlinear related formulas.
 
     Notes
     -----
@@ -156,7 +155,7 @@ class RambergOsgood:
         abs_stress = optimize.newton(
             func=residuum,
             x0=stress0,
-            fprime=dresiduum, 
+            fprime=dresiduum,
             rtol=rtol, tol=tol
         )
         return abs_stress * sign_strain
