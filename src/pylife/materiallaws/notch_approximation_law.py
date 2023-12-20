@@ -521,64 +521,130 @@ class Binned:
         stress : array-like float
             The resulting stress
         '''
-        
-        sign = np.sign(load)
-            
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
         if isinstance(load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+            return self._stress_multiple_assessment_points_lut_for_every_node(load)
             
-            # the lut is a DataFrame with MultiIndex with levels class_index and node_id
-            
-            # find the corresponding class only for the first node, use the result for all nodes
-            first_node_id = self._lut_primary_branch.index.get_level_values("node_id")[0]
-            lut_for_first_node = self._lut_primary_branch.load[self._lut_primary_branch.index.get_level_values("node_id")==first_node_id]
-            first_abs_load = abs(load.iloc[0].values[0])
-            
-            # get the class index of the corresponding bin/class
-            class_index = lut_for_first_node.searchsorted(first_abs_load)
-        
-            max_class_index = max(self._lut_primary_branch.index.get_level_values("class_index"))
-                
-            # raise error if requested load is higher than initialized maximum absolute load
-            if class_index+1 > max_class_index:
-                raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
-                                 f" but a higher absolute load value of {first_abs_load} is requested (in stress()).")
-        
-            # sign is a DataFrame with one column, convert to series
-            sign = sign[sign.columns[0]]
-            
-            # get stress from matching class, "+1", because the next higher class is used
-            stress = self._lut_primary_branch[self._lut_primary_branch.index.get_level_values("class_index") == class_index+1].stress
-            
-            # multiply with sign
-            return sign * stress.reset_index(drop=True)
-             
         # if the assessment is performed for multiple points at once, but only one lookup-table is used
-        elif isinstance(load, pd.DataFrame):
-        
-            load = load.fillna(0)
-            sign = sign.fillna(0)
-            
-            index = self._lut_primary_branch.load.searchsorted(np.abs(load.values))-1   # "-1", transform to zero-based indices
-    
-            # raise error if requested load is higher than initialized maximum absolute load
-            if np.any(index+1 >= len(self._lut_primary_branch)):
-                raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
-                                 f" but a higher absolute load value of |{load.max()}| is requested (in stress()).")
-        
-            return sign.values.flatten() * self._lut_primary_branch.iloc[(index+1).flatten()].stress.reset_index(drop=True)    # "+1", because the next higher class is used
+        if isinstance(load, pd.DataFrame):
+            return self._stress_multiple_assessment_points_single_lut(load)
         
         # if the assessment is done only for one value, i.e. load is a scalar
-        else:
-            index = self._lut_primary_branch.load.searchsorted(np.abs(load))-1   # "-1", transform to zero-based indices
-    
-            # raise error if requested load is higher than initialized maximum absolute load
-            if np.any(index+1 >= len(self._lut_primary_branch)):
-                raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
-                                 f" but a higher absolute load value of |{load}| is requested (in stress()).")
-            
-            return sign * self._lut_primary_branch.iloc[index+1].stress    # "+1", because the next higher class is used
+        return self._stress_single_assessment_point(load)
+          
+    def _stress_multiple_assessment_points_lut_for_every_node(self, load):
+        '''The stress of the primary path in the stress-strain diagram at a given load
+        by using the value of the look-up table (lut). 
+        The lut is a DataFrame with MultiIndex with levels class_index and node_id.
         
+        This method performs the task for for multiple points at once, 
+        i.e. load is a DataFrame with values for every node.
+        
+        .. note::
+            
+            The exact value would be computed by ``self._notch_approximation_law.stress(load)``.
+        
+        Parameters
+        ----------
+        load : array-like float
+            The load, a pandas DataFrame with RangeIndex (no named index)
+
+        Returns
+        -------
+        stress : array-like float
+            The resulting stress
+        '''
+        sign = np.sign(load)
+        
+        # find the corresponding class only for the first node, use the result for all nodes
+        first_node_id = self._lut_primary_branch.index.get_level_values("node_id")[0]
+        lut_for_first_node = self._lut_primary_branch.load[self._lut_primary_branch.index.get_level_values("node_id")==first_node_id]
+        first_abs_load = abs(load.iloc[0].values[0])
+        
+        # get the class index of the corresponding bin/class
+        class_index = lut_for_first_node.searchsorted(first_abs_load)
+    
+        max_class_index = max(self._lut_primary_branch.index.get_level_values("class_index"))
+            
+        # raise error if requested load is higher than initialized maximum absolute load
+        if class_index+1 > max_class_index:
+            raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
+                                f" but a higher absolute load value of {first_abs_load} is requested (in stress()).")
+    
+        # sign is a DataFrame with one column, convert to series
+        sign = sign[sign.columns[0]]
+        
+        # get stress from matching class, "+1", because the next higher class is used
+        stress = self._lut_primary_branch[self._lut_primary_branch.index.get_level_values("class_index") == class_index+1].stress
+        
+        # multiply with sign
+        return sign * stress.reset_index(drop=True)
+            
+    def _stress_multiple_assessment_points_single_lut(self, load):
+        '''The stress of the primary path in the stress-strain diagram at a given load
+        by using the value of the look-up table.
+        
+        This method performs the task for for multiple points at once, 
+        i.e. delta_load is a DataFrame with values for every node.
+
+        .. note::
+            
+            The exact value would be computed by ``self._notch_approximation_law.stress(load)``.
+        
+        Parameters
+        ----------
+        load : array-like float
+            The load, either a scalar value or a pandas DataFrame with RangeIndex (no named index)
+
+        Returns
+        -------
+        stress : array-like float
+            The resulting stress
+        '''
+        sign = np.sign(load)
+        
+        load = load.fillna(0)
+        sign = sign.fillna(0)
+        
+        index = self._lut_primary_branch.load.searchsorted(np.abs(load.values))-1   # "-1", transform to zero-based indices
+
+        # raise error if requested load is higher than initialized maximum absolute load
+        if np.any(index+1 >= len(self._lut_primary_branch)):
+            raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
+                                f" but a higher absolute load value of |{load.max()}| is requested (in stress()).")
+    
+        return sign.values.flatten() * self._lut_primary_branch.iloc[(index+1).flatten()].stress.reset_index(drop=True)    # "+1", because the next higher class is used
+
+    def _stress_single_assessment_point(self, load):
+        '''The stress of the primary path in the stress-strain diagram at a given load
+        by using the value of the look-up table.
+        
+        This method performs the task for a single assessment point, load is a scalar
+
+        .. note::
+            
+            The exact value would be computed by ``self._notch_approximation_law.stress(load)``.
+        
+        Parameters
+        ----------
+        load : array-like float
+            The load, either a scalar value or a pandas DataFrame with RangeIndex (no named index)
+
+        Returns
+        -------
+        stress : array-like float
+            The resulting stress
+        '''
+        sign = np.sign(load)
+        index = self._lut_primary_branch.load.searchsorted(np.abs(load))-1   # "-1", transform to zero-based indices
+
+        # raise error if requested load is higher than initialized maximum absolute load
+        if np.any(index+1 >= len(self._lut_primary_branch)):
+            raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
+                                f" but a higher absolute load value of |{load}| is requested (in stress()).")
+        
+        return sign * self._lut_primary_branch.iloc[index+1].stress    # "+1", because the next higher class is used
+    
     def strain(self, stress, load):
         '''Get the strain of the primary path in the stress-strain diagram at a given stress and load
         by using the value of the look-up table.
@@ -595,64 +661,119 @@ class Binned:
         strain : array-like float
             The resulting strain
         '''
-        sign = np.sign(load)
         
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
         if isinstance(load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
-            
-            # the lut is a DataFrame with MultiIndex with levels class_index and node_id
-            
-            # find the corresponding class only for the first node, use the result for all nodes
-            first_node_id = self._lut_primary_branch.index.get_level_values("node_id")[0]
-            lut_for_first_node = self._lut_primary_branch.load[self._lut_primary_branch.index.get_level_values("node_id")==first_node_id]
-            first_abs_load = abs(load.iloc[0].values[0])
-            
-            # get the class index of the corresponding bin/class
-            class_index = lut_for_first_node.searchsorted(first_abs_load)
-            
-            max_class_index = max(self._lut_primary_branch.index.get_level_values("class_index"))
-                
-            # raise error if requested load is higher than initialized maximum absolute load
-            if class_index+1 > max_class_index:
-                raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
-                                 f" but a higher absolute load value of {first_abs_load} is requested (in strain()).")
-        
-            # sign is a DataFrame with one column, convert to series
-            sign = sign[sign.columns[0]]
-            
-            # get strain from matching class, "+1", because the next higher class is used
-            strain = self._lut_primary_branch[self._lut_primary_branch.index.get_level_values("class_index") == class_index+1].strain 
-        
-            # multiply with sign
-            return sign * strain.reset_index(drop=True)
+            return self._strain_multiple_assessment_points_lut_for_every_node(load)
         
         # if the assessment is performed for multiple points at once, but only one lookup-table is used
-        elif isinstance(load, pd.DataFrame):
-        
-            load = load.fillna(0)
-            sign = sign.fillna(0)
-            
-            index = self._lut_primary_branch.load.searchsorted(np.abs(load.values))-1   # "-1", transform to zero-based indices
-    
-            # raise error if requested load is higher than initialized maximum absolute load
-            if np.any(index+1 >= len(self._lut_primary_branch)):
-                raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
-                                 f" but a higher absolute load value of |{load.max()}| is requested (in strain()).")
-        
-            return sign.values.flatten() * self._lut_primary_branch.iloc[(index+1).flatten()].strain.reset_index(drop=True)    # "+1", because the next higher class is used
+        if isinstance(load, pd.DataFrame):
+            return self._strain_multiple_assessment_points_single_lut(load)
         
         # if the assessment is done only for one value, i.e. load is a scalar
-        else:
+        return self._strain_single_assessment_point(load)
                 
-            index = self._lut_primary_branch.load.searchsorted(np.abs(load))-1  # "-1", transform to zero-based indices
+    def _strain_multiple_assessment_points_lut_for_every_node(self, load):
+        '''Get the strain of the primary path in the stress-strain diagram at a given stress and load
+        by using the value of the look-up table.
+
+        This method performs the task for for multiple points at once, 
+        i.e. delta_load is a DataFrame with values for every node.
+
+        Parameters
+        ----------
+        load : array-like float
+            The load
             
-            # raise error if requested load is higher than initialized maximum absolute load
-            if np.any(index+1 >= len(self._lut_primary_branch)):
-                raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
-                                 f" but a higher absolute load value of |{load}| is requested (in strain()).")
-            
-            return sign * self._lut_primary_branch.iloc[index+1].strain     # "+1", because the next higher class is used 
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        '''
+        sign = np.sign(load)
+
+        # the lut is a DataFrame with MultiIndex with levels class_index and node_id
         
+        # find the corresponding class only for the first node, use the result for all nodes
+        first_node_id = self._lut_primary_branch.index.get_level_values("node_id")[0]
+        lut_for_first_node = self._lut_primary_branch.load[self._lut_primary_branch.index.get_level_values("node_id")==first_node_id]
+        first_abs_load = abs(load.iloc[0].values[0])
+        
+        # get the class index of the corresponding bin/class
+        class_index = lut_for_first_node.searchsorted(first_abs_load)
+        
+        max_class_index = max(self._lut_primary_branch.index.get_level_values("class_index"))
+            
+        # raise error if requested load is higher than initialized maximum absolute load
+        if class_index+1 > max_class_index:
+            raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
+                                f" but a higher absolute load value of {first_abs_load} is requested (in strain()).")
+    
+        # sign is a DataFrame with one column, convert to series
+        sign = sign[sign.columns[0]]
+        
+        # get strain from matching class, "+1", because the next higher class is used
+        strain = self._lut_primary_branch[self._lut_primary_branch.index.get_level_values("class_index") == class_index+1].strain 
+    
+        # multiply with sign
+        return sign * strain.reset_index(drop=True)
+    
+    def _strain_multiple_assessment_points_single_lut(self, load):
+        '''Get the strain of the primary path in the stress-strain diagram at a given stress and load
+        by using the value of the look-up table.
+
+        This method performs the task for for multiple points at once, 
+        i.e. load is a DataFrame with values for every node.
+
+        Parameters
+        ----------
+        load : array-like float
+            The load
+            
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        '''
+        sign = np.sign(load)
+        load = load.fillna(0)
+        sign = sign.fillna(0)
+        
+        index = self._lut_primary_branch.load.searchsorted(np.abs(load.values))-1   # "-1", transform to zero-based indices
+
+        # raise error if requested load is higher than initialized maximum absolute load
+        if np.any(index+1 >= len(self._lut_primary_branch)):
+            raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
+                                f" but a higher absolute load value of |{load.max()}| is requested (in strain()).")
+    
+        return sign.values.flatten() * self._lut_primary_branch.iloc[(index+1).flatten()].strain.reset_index(drop=True)    # "+1", because the next higher class is used
+    
+    def _strain_single_assessment_point(self, load):
+        '''Get the strain of the primary path in the stress-strain diagram at a given stress and load
+        by using the value of the look-up table.
+
+        This method performs the task for a single assessment point, load is a scalar
+
+        Parameters
+        ----------
+        load : array-like float
+            The load
+            
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        '''
+        sign = np.sign(load)
+        index = self._lut_primary_branch.load.searchsorted(np.abs(load))-1  # "-1", transform to zero-based indices
+        
+        # raise error if requested load is higher than initialized maximum absolute load
+        if np.any(index+1 >= len(self._lut_primary_branch)):
+            raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
+                                f" but a higher absolute load value of |{load}| is requested (in strain()).")
+        
+        return sign * self._lut_primary_branch.iloc[index+1].strain     # "+1", because the next higher class is used 
+    
     def stress_secondary_branch(self, delta_load, *, rtol=1e-5, tol=1e-6):
         '''Get the stress on secondary branches in the stress-strain diagram at a given load
         by using the value of the look-up table.
@@ -674,64 +795,117 @@ class Binned:
             The resulting stress increment within the hysteresis
         '''
         
-        sign = np.sign(delta_load)
-        
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
         if isinstance(delta_load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
-            
-            # the lut is a DataFrame with MultiIndex with levels class_index and node_id
-            
-            # find the corresponding class only for the first node, use the result for all nodes
-            first_node_id = self._lut_primary_branch.index.get_level_values("node_id")[0]
-            lut_for_first_node = self._lut_secondary_branch.delta_load[self._lut_secondary_branch.index.get_level_values("node_id")==first_node_id]
-            first_abs_load = abs(delta_load.iloc[0].values[0])
-            
-            # get the class index of the corresponding bin/class
-            class_index = lut_for_first_node.searchsorted(first_abs_load)
-        
-            max_class_index = max(self._lut_secondary_branch.index.get_level_values("class_index"))
-                
-            # raise error if requested load is higher than initialized maximum absolute load
-            if class_index+1 > max_class_index:
-                raise ValueError(f"Binned class is initialized with a maximum absolute delta_load load of {2*self._maximum_absolute_load}, "\
-                                 f" but a higher absolute delta_load value of {first_abs_load} is requested (in stress_secondary_branch()).")
-        
-            # sign is a DataFrame with one column, convert to series
-            sign = sign[sign.columns[0]]
-            
-            # get stress from matching class, "+1", because the next higher class is used
-            delta_stress = self._lut_secondary_branch[self._lut_secondary_branch.index.get_level_values("class_index") == class_index+1].delta_stress 
-        
-            # multiply with sign
-            return sign * delta_stress.reset_index(drop=True)
+            return self._stress_secondary_branch_multiple_assessment_points_lut_for_every_node(delta_load)
              
         # if the assessment is performed for multiple points at once, but only one lookup-table is used
-        elif isinstance(delta_load, pd.DataFrame):
-        
-            delta_load = delta_load.fillna(0)
-            sign = sign.fillna(0)
-            
-            index = self._lut_secondary_branch.delta_load.searchsorted(np.abs(delta_load.values))-1   # "-1", transform to zero-based indices
-    
-            # raise error if requested load is higher than initialized maximum absolute load
-            if np.any(index+1 >= len(self._lut_secondary_branch)):
-                raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
-                                 f" but a higher absolute load value of |{delta_load.max()}| is requested (in stress_secondary_branch()).")
-        
-            return sign.values.flatten() * self._lut_secondary_branch.iloc[(index+1).flatten()].delta_stress.reset_index(drop=True)    # "+1", because the next higher class is used
+        if isinstance(delta_load, pd.DataFrame):
+            return self._stress_secondary_branch_multiple_assessment_points_single_lut(delta_load)
         
         # if the assessment is done only for one value, i.e. load is a scalar
-        else:
+        return self._stress_secondary_branch_single_assessment_point(delta_load)
                 
-            index = self._lut_secondary_branch.delta_load.searchsorted(np.abs(delta_load))-1   # "-1", transform to zero-based indices
+    def _stress_secondary_branch_multiple_assessment_points_lut_for_every_node(self, delta_load):
+        '''Get the stress on secondary branches in the stress-strain diagram at a given load
+        by using the value of the look-up table (lut).
+
+        This method performs the task for for multiple points at once, 
+        i.e. delta_load is a DataFrame with values for every node.
+
+        Parameters
+        ----------
+        delta_load : array-like float
+            The load increment of the hysteresis
             
-            # raise error if requested load is higher than initialized maximum absolute load
-            if np.any(index+1 >= len(self._lut_secondary_branch)):
-                raise ValueError(f"Binned class is initialized for a maximum absolute delta_load of {2*self._maximum_absolute_load}, "\
-                                 f" but a higher absolute delta_load value of |{delta_load}| is requested (in stress_secondary_branch()).")
-            
-            return sign * self._lut_secondary_branch.iloc[index+1].delta_stress     # "+1", because the next higher class is used
+        Returns
+        -------
+        delta_stress : array-like float
+            The resulting stress increment within the hysteresis
+        '''
+        sign = np.sign(delta_load)
+        # the lut is a DataFrame with MultiIndex with levels class_index and node_id
         
+        # find the corresponding class only for the first node, use the result for all nodes
+        first_node_id = self._lut_primary_branch.index.get_level_values("node_id")[0]
+        lut_for_first_node = self._lut_secondary_branch.delta_load[self._lut_secondary_branch.index.get_level_values("node_id")==first_node_id]
+        first_abs_load = abs(delta_load.iloc[0].values[0])
+        
+        # get the class index of the corresponding bin/class
+        class_index = lut_for_first_node.searchsorted(first_abs_load)
+    
+        max_class_index = max(self._lut_secondary_branch.index.get_level_values("class_index"))
+            
+        # raise error if requested load is higher than initialized maximum absolute load
+        if class_index+1 > max_class_index:
+            raise ValueError(f"Binned class is initialized with a maximum absolute delta_load load of {2*self._maximum_absolute_load}, "\
+                                f" but a higher absolute delta_load value of {first_abs_load} is requested (in stress_secondary_branch()).")
+    
+        # sign is a DataFrame with one column, convert to series
+        sign = sign[sign.columns[0]]
+        
+        # get stress from matching class, "+1", because the next higher class is used
+        delta_stress = self._lut_secondary_branch[self._lut_secondary_branch.index.get_level_values("class_index") == class_index+1].delta_stress 
+    
+        # multiply with sign
+        return sign * delta_stress.reset_index(drop=True)
+    
+    def _stress_secondary_branch_multiple_assessment_points_single_lut(self, delta_load):
+        '''Get the stress on secondary branches in the stress-strain diagram at a given load
+        by using the value of the look-up table (lut).
+
+        This method performs the task for for multiple points at once, 
+        i.e. delta_load is a DataFrame with values for every node.
+
+        Parameters
+        ----------
+        delta_load : array-like float
+            The load increment of the hysteresis
+            
+        Returns
+        -------
+        delta_stress : array-like float
+            The resulting stress increment within the hysteresis
+        '''
+        sign = np.sign(delta_load)
+        delta_load = delta_load.fillna(0)
+        sign = sign.fillna(0)
+        
+        index = self._lut_secondary_branch.delta_load.searchsorted(np.abs(delta_load.values))-1   # "-1", transform to zero-based indices
+
+        # raise error if requested load is higher than initialized maximum absolute load
+        if np.any(index+1 >= len(self._lut_secondary_branch)):
+            raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
+                                f" but a higher absolute load value of |{delta_load.max()}| is requested (in stress_secondary_branch()).")
+    
+        return sign.values.flatten() * self._lut_secondary_branch.iloc[(index+1).flatten()].delta_stress.reset_index(drop=True)    # "+1", because the next higher class is used
+    
+    def _stress_secondary_branch_single_assessment_point(self, delta_load):
+        '''Get the stress on secondary branches in the stress-strain diagram at a given load
+        by using the value of the look-up table (lut).
+
+        This method performs the task for a single assessment point, delta_load is a scalar
+
+        Parameters
+        ----------
+        delta_load : array-like float
+            The load increment of the hysteresis
+            
+        Returns
+        -------
+        delta_stress : array-like float
+            The resulting stress increment within the hysteresis
+        '''
+        sign = np.sign(delta_load)
+        index = self._lut_secondary_branch.delta_load.searchsorted(np.abs(delta_load))-1   # "-1", transform to zero-based indices
+        
+        # raise error if requested load is higher than initialized maximum absolute load
+        if np.any(index+1 >= len(self._lut_secondary_branch)):
+            raise ValueError(f"Binned class is initialized for a maximum absolute delta_load of {2*self._maximum_absolute_load}, "\
+                                f" but a higher absolute delta_load value of |{delta_load}| is requested (in stress_secondary_branch()).")
+        
+        return sign * self._lut_secondary_branch.iloc[index+1].delta_stress     # "+1", because the next higher class is used
+    
     def strain_secondary_branch(self, delta_stress, delta_load):
         '''Get the strain on secondary branches in the stress-strain diagram at a given stress and load
         by using the value of the look-up table.
@@ -748,66 +922,117 @@ class Binned:
         strain : array-like float
             The resulting strain
         '''
-        #return self._notch_approximation_law.strain_secondary_branch(delta_stress, delta_load) 
-    
-        sign = np.sign(delta_load)
-        
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
         if isinstance(delta_load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
-            
-            # the lut is a DataFrame with MultiIndex with levels class_index and node_id
-            
-            # find the corresponding class only for the first node, use the result for all nodes
-            first_node_id = self._lut_secondary_branch.index.get_level_values("node_id")[0]
-            lut_for_first_node = self._lut_secondary_branch.delta_load[self._lut_secondary_branch.index.get_level_values("node_id")==first_node_id]
-            first_abs_load = abs(delta_load.iloc[0].values[0])
-            
-            # get the class index of the corresponding bin/class
-            class_index = lut_for_first_node.searchsorted(first_abs_load)
-        
-            max_class_index = max(self._lut_secondary_branch.index.get_level_values("class_index"))
-                
-            # raise error if requested load is higher than initialized maximum absolute load
-            if class_index+1 > max_class_index:
-                raise ValueError(f"Binned class is initialized with a maximum absolute delta_load of {2*self._maximum_absolute_load}, "\
-                                 f" but a higher absolute delta_load value of {first_abs_load} is requested (in strain_secondary_branch()).")
-        
-            # sign is a DataFrame with one column, convert to series
-            sign = sign[sign.columns[0]]
-            
-            # get strain from matching class, "+1", because the next higher class is used
-            delta_strain = self._lut_secondary_branch[self._lut_secondary_branch.index.get_level_values("class_index") == class_index+1].delta_strain 
-        
-            # multiply with sign
-            return sign * delta_strain.reset_index(drop=True)
+            return self._strain_secondary_branch_multiple_assessment_points_lut_for_every_node(delta_load)
         
         # if the assessment is performed for multiple points at once, but only one lookup-table is used
-        elif isinstance(delta_load, pd.DataFrame):
-        
-            delta_load = delta_load.fillna(0)
-            sign = sign.fillna(0)
-            
-            index = self._lut_secondary_branch.delta_load.searchsorted(np.abs(delta_load.values))-1   # "-1", transform to zero-based indices
-    
-            # raise error if requested load is higher than initialized maximum absolute load
-            if np.any(index+1 >= len(self._lut_secondary_branch)):
-                raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
-                                 f" but a higher absolute load value of |{delta_load.max()}| is requested (in strain_secondary_branch()).")
-        
-            return sign.values.flatten() * self._lut_secondary_branch.iloc[(index+1).flatten()].delta_strain.reset_index(drop=True)    # "+1", because the next higher class is used
+        if isinstance(delta_load, pd.DataFrame):
+            return self._strain_secondary_branch_multiple_assessment_points_single_lut(delta_load)
         
         # if the assessment is done only for one value, i.e. load is a scalar
-        else:
+        return self._strain_secondary_branch_single_assessment_points(delta_load)
                     
-            index = self._lut_secondary_branch.delta_load.searchsorted(np.abs(delta_load))-1   # "-1", transform to zero-based indices
+    def _strain_secondary_branch_multiple_assessment_points_lut_for_every_node(self, delta_load):
+        '''Get the strain on secondary branches in the stress-strain diagram at a given stress and load
+        by using the value of the look-up table (lut). 
+        The lut is a DataFrame with MultiIndex with levels class_index and node_id.
+        
+        This method performs the task for for multiple points at once, 
+        i.e. delta_load is a DataFrame with values for every node.
+
+        Parameters
+        ----------
+        delta_load : array-like float
+            The load increment
             
-            # raise error if requested load is higher than initialized maximum absolute load
-            if np.any(index+1 >= len(self._lut_secondary_branch)):
-                raise ValueError(f"Binned class is initialized for a maximum absolute delta_load of {2*self._maximum_absolute_load}, "\
-                                 f" but a higher absolute delta_load value of |{delta_load}| is requested (in strain_secondary_branch()).")
-            
-            return sign * self._lut_secondary_branch.iloc[index+1].delta_strain     # "-1", transform to zero-based indices
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        '''
+        sign = np.sign(delta_load)
+        
+        # find the corresponding class only for the first node, use the result for all nodes
+        first_node_id = self._lut_secondary_branch.index.get_level_values("node_id")[0]
+        lut_for_first_node = self._lut_secondary_branch.delta_load[self._lut_secondary_branch.index.get_level_values("node_id")==first_node_id]
+        first_abs_load = abs(delta_load.iloc[0].values[0])
+        
+        # get the class index of the corresponding bin/class
+        class_index = lut_for_first_node.searchsorted(first_abs_load)
     
+        max_class_index = max(self._lut_secondary_branch.index.get_level_values("class_index"))
+            
+        # raise error if requested load is higher than initialized maximum absolute load
+        if class_index+1 > max_class_index:
+            raise ValueError(f"Binned class is initialized with a maximum absolute delta_load of {2*self._maximum_absolute_load}, "\
+                                f" but a higher absolute delta_load value of {first_abs_load} is requested (in strain_secondary_branch()).")
+    
+        # sign is a DataFrame with one column, convert to series
+        sign = sign[sign.columns[0]]
+        
+        # get strain from matching class, "+1", because the next higher class is used
+        delta_strain = self._lut_secondary_branch[self._lut_secondary_branch.index.get_level_values("class_index") == class_index+1].delta_strain 
+    
+        # multiply with sign
+        return sign * delta_strain.reset_index(drop=True)
+    
+    def _strain_secondary_branch_multiple_assessment_points_single_lut(self, delta_load):
+        '''Get the strain on secondary branches in the stress-strain diagram at a given stress and load
+        by using the value of the look-up table. 
+        
+        This method performs the task for for multiple points at once, 
+        i.e. delta_load is a DataFrame with values for every node.
+
+        Parameters
+        ----------
+        delta_load : array-like float
+            The load increment
+            
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        '''
+        delta_load = delta_load.fillna(0)
+        sign = np.sign(delta_load)
+        sign = sign.fillna(0)
+        
+        index = self._lut_secondary_branch.delta_load.searchsorted(np.abs(delta_load.values))-1   # "-1", transform to zero-based indices
+
+        # raise error if requested load is higher than initialized maximum absolute load
+        if np.any(index+1 >= len(self._lut_secondary_branch)):
+            raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
+                                f" but a higher absolute load value of |{delta_load.max()}| is requested (in strain_secondary_branch()).")
+    
+        return sign.values.flatten() * self._lut_secondary_branch.iloc[(index+1).flatten()].delta_strain.reset_index(drop=True)    # "+1", because the next higher class is used
+    
+    def _strain_secondary_branch_single_assessment_point(self, delta_load):
+        '''Get the strain on secondary branches in the stress-strain diagram at a given stress and load
+        by using the value of the look-up table. 
+        
+        This method performs the task for a single assessment point, delta_load is a scalar
+
+        Parameters
+        ----------
+        delta_load : float
+            The load increment
+            
+        Returns
+        -------
+        strain : float
+            The resulting strain
+        '''
+        sign = np.sign(delta_load)
+        index = self._lut_secondary_branch.delta_load.searchsorted(np.abs(delta_load))-1   # "-1", transform to zero-based indices
+        
+        # raise error if requested load is higher than initialized maximum absolute load
+        if np.any(index+1 >= len(self._lut_secondary_branch)):
+            raise ValueError(f"Binned class is initialized for a maximum absolute delta_load of {2*self._maximum_absolute_load}, "\
+                                f" but a higher absolute delta_load value of |{delta_load}| is requested (in strain_secondary_branch()).")
+        
+        return sign * self._lut_secondary_branch.iloc[index+1].delta_strain     # "-1", transform to zero-based indices
+
     def _create_bins(self):
         """Initialize the lookup tables by precomputing the notch approximation law values.
         """
@@ -816,10 +1041,10 @@ class Binned:
             assert self._maximum_absolute_load.index.name == "node_id"
             
             self._create_bins_multiple_assessment_points()
+            return
             
         # for a single assessment point use the standard data structure
-        else:
-            self._create_bins_single_assessment_point()
+        self._create_bins_single_assessment_point()
         
     def _create_bins_single_assessment_point(self):
         """Initialize the lookup tables by precomputing the notch approximation law values,
