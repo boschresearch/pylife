@@ -254,8 +254,10 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         self._initialize_epsilon_min_for_hcm_run(samples, load_turning_points)            
                 
         # run the HCM algorithm
-        self._load_max_seen, self._iz, self._ir = self._perform_hcm_algorithm(samples, recording_lists, largest_point, \
-                previous_load, self._iz, self._ir, self._load_max_seen, load_turning_points)
+        self._load_max_seen, self._iz, self._ir = self._perform_hcm_algorithm(
+            samples=samples, recording_lists=recording_lists, largest_point=largest_point, \
+            previous_load=previous_load, iz=self._iz, ir=self._ir, \
+            load_max_seen=self._load_max_seen, load_turning_points=load_turning_points)
 
         # transfer the detected hystereses to the recorder
         self._recorder.record_values_fkm_nonlinear(
@@ -310,7 +312,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         
         return np.array(self._strain_values[self._n_strain_values_first_run:])
 
-    def interpolated_stress_strain_data(self, n_points_per_branch=100, only_hystereses=False):
+    def interpolated_stress_strain_data(self, *, n_points_per_branch=100, only_hystereses=False):
         """Return points on the traversed hysteresis curve, mainly intended for plotting.
         The curve including all hystereses, primary and secondary branches is sampled
         at a fixed number of points within each hysteresis branch.
@@ -474,7 +476,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         
         return samples, flush
 
-    def _perform_hcm_algorithm(self, samples, recording_lists, largest_point, previous_load, iz, ir, load_max_seen, load_turning_points):
+    def _perform_hcm_algorithm(self, *, samples, recording_lists, largest_point, previous_load, iz, ir, load_max_seen, load_turning_points):
         """Perform the entire HCM algorithm for all load samples, 
         record the found hysteresis parameters in the recording_lists."""        
 
@@ -494,8 +496,9 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             # The stress and strain values will be computed during the current iteration of the present loop.
             current_point = self._HCM_Point(load=current_load)
             
-            current_point, iz, ir = self._hcm_process_sample(current_point, recording_lists, largest_point, iz, ir, 
-                load_max_seen, current_load_representative)
+            current_point, iz, ir = self._hcm_process_sample(current_point=current_point, recording_lists=recording_lists, \
+                largest_point=largest_point, iz=iz, ir=ir, 
+                load_max_seen=load_max_seen, current_load_representative=current_load_representative)
 
             # update the maximum seen absolute load
             if np.abs(current_load_representative) > load_max_seen+1e-12:
@@ -508,14 +511,15 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             # store the previously processed point to the list of residuals to be processed in the next iterations
             self._residuals.append(current_point)
             
-            self._hcm_update_min_max_strain_values(previous_load, current_load_representative, current_point)
+            self._hcm_update_min_max_strain_values(previous_load=previous_load, \
+                current_load_representative=current_load_representative, current_point=current_point)
             self._hcm_message += f"\n"
 
             previous_load = current_load_representative
 
         return load_max_seen, iz, ir
 
-    def _hcm_update_min_max_strain_values(self, previous_load, current_load_representative, current_point):
+    def _hcm_update_min_max_strain_values(self, *, previous_load, current_load_representative, current_point):
         """Update the minimum and maximum yet seen strain values
         This corresponds to the "steigend=1 or 2" assignment at chapter 2.9.7 point 5 and 
         the rules under point 7.
@@ -532,7 +536,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             # case "steigend=2", i.e., load decreases
             self._epsilon_min_LF = np.minimum(self._epsilon_min_LF, current_point.strain)
             
-    def _hcm_process_sample(self, current_point, recording_lists, largest_point, iz, ir, load_max_seen, current_load_representative):
+    def _hcm_process_sample(self, *, current_point, recording_lists, largest_point, iz, ir, load_max_seen, current_load_representative):
         """ Process one sample in the HCM algorithm, i.e., one load value """
 
         while True:
@@ -543,12 +547,12 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 # if the current load is a new maximum
                 if np.abs(current_load_representative) > load_max_seen+1e-12:
                     # case a) i., "Memory 3"
-                    current_point = self._handle_case_a_i(current_point, previous_point, largest_point, recording_lists, 
-                                                          current_load_representative, load_max_seen)
+                    current_point = self._handle_case_a_i(current_point=current_point, previous_point=previous_point, \
+                        recording_lists=recording_lists)
                     ir += 1
                     
                 else:
-                    current_point = self._handle_case_a_ii(load_max_seen, current_load_representative, current_point, previous_point)
+                    current_point = self._handle_case_a_ii(current_point=current_point, previous_point=previous_point)
 
                 # end the inner loop and fetch the next load from the load sequence
                 break
@@ -570,13 +574,14 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             
             # yes
             if current_load_extent < previous_load_extent-1e-12:
-                current_point = self._handle_case_c_i(current_point, previous_point_0, previous_point_1)
+                current_point = self._handle_case_c_i(current_point=current_point, previous_point_1=previous_point_1)
 
                 # continue with the next load value
                 break
                 
             # no -> we have a new hysteresis
-            self._handle_case_c_ii(recording_lists, previous_point_0, previous_point_1)
+            self._handle_case_c_ii(recording_lists=recording_lists, previous_point_0=previous_point_0, \
+                previous_point_1=previous_point_1)
                 
             iz -= 2
 
@@ -615,7 +620,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         return current_point, iz, ir
 
-    def _handle_case_c_ii(self, recording_lists, previous_point_0, previous_point_1):
+    def _handle_case_c_ii(self, *, recording_lists, previous_point_0, previous_point_1):
         """ Handle case c) ii. in the HCM algorithm, which detects a new hysteresis."""
 
         self._hcm_message += f" case c) ii., detected full hysteresis"
@@ -649,7 +654,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         self._residuals.pop()
         self._residuals.pop()
 
-    def _handle_case_c_i(self, current_point, previous_point_0, previous_point_1):
+    def _handle_case_c_i(self, *, current_point, previous_point_1):
         """Handle case c) i. of the HCM algorithm."""
 
         self._hcm_message += f" case c) i."
@@ -684,7 +689,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         return current_point
 
-    def _handle_case_a_ii(self, load_max_seen, current_load_representative, current_point, previous_point):
+    def _handle_case_a_ii(self, *, current_point, previous_point):
         """Handle the case a) ii. in the HCM algorithm."""
 
         self._hcm_message += f" case a) ii."
@@ -701,7 +706,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         return current_point
 
-    def _handle_case_a_i(self, current_point, previous_point, largest_point, recording_lists, current_load_representative, load_max_seen):
+    def _handle_case_a_i(self, *, current_point, previous_point, recording_lists):
         """Handle the case a) i. in the HCM algorithm where 
         the memory 3 effect is considered."""
         
@@ -783,7 +788,7 @@ class FKMNonlinearHysteresisPlotter:
         self._hcm_point_history = hcm_point_history
         self._ramberg_osgood_relation = ramberg_osgood_relation
         
-    def interpolated_stress_strain_data(self, n_points_per_branch=100, only_hystereses=False):
+    def interpolated_stress_strain_data(self, *, n_points_per_branch=100, only_hystereses=False):
         """Return points on the traversed hysteresis curve, mainly intended for plotting.
         The curve including all hystereses, primary and secondary branches is sampled
         at a fixed number of points within each hysteresis branch.
@@ -881,19 +886,24 @@ class FKMNonlinearHysteresisPlotter:
 
             # depending on branch type, compute interpolated points on the branch
             if type == "primary":
-                self._handle_primary_branch(n_points_per_branch, only_hystereses, strain_values_primary, 
-                stress_values_primary, hysteresis_index_primary, strain_values_secondary, stress_values_secondary, 
-                previous_point, previous_type, type, hcm_point, hysteresis_index, is_part_of_closed_hysteresis)
+                self._handle_primary_branch(n_points_per_branch=n_points_per_branch, only_hystereses=only_hystereses, 
+                    strain_values_primary=strain_values_primary, stress_values_primary=stress_values_primary, 
+                    hysteresis_index_primary=hysteresis_index_primary, strain_values_secondary=strain_values_secondary, 
+                    stress_values_secondary=stress_values_secondary, previous_point=previous_point, previous_type=previous_type, 
+                    type=type, hcm_point=hcm_point, hysteresis_index=hysteresis_index, 
+                    is_part_of_closed_hysteresis=is_part_of_closed_hysteresis)
             
                 last_secondary_start_point = None
 
             elif type == "secondary":
-                
                 hcm_point, secondary_start_point = self._handle_secondary_branch(
-                    n_points_per_branch, only_hystereses, strain_values_primary, stress_values_primary, 
-                    strain_values_secondary, stress_values_secondary, hysteresis_index_secondary, previous_point, 
-                    previous_type, previous_is_direction_up, last_secondary_start_point, 
-                    hcm_point, hysteresis_index, is_part_of_closed_hysteresis, is_direction_up)
+                    n_points_per_branch=n_points_per_branch, only_hystereses=only_hystereses, 
+                    strain_values_primary=strain_values_primary, stress_values_primary=stress_values_primary, 
+                    strain_values_secondary=strain_values_secondary, stress_values_secondary=stress_values_secondary,
+                    hysteresis_index_secondary=hysteresis_index_secondary, previous_point=previous_point, 
+                    previous_type=previous_type, previous_is_direction_up=previous_is_direction_up, 
+                    last_secondary_start_point=last_secondary_start_point, hcm_point=hcm_point, hysteresis_index=hysteresis_index, 
+                    is_part_of_closed_hysteresis=is_part_of_closed_hysteresis, is_direction_up=is_direction_up)
     
                 if previous_type == 'primary':
                     last_secondary_start_point = secondary_start_point
@@ -926,7 +936,7 @@ class FKMNonlinearHysteresisPlotter:
         }
         return result
 
-    def _handle_secondary_branch(self, n_points_per_branch, only_hystereses, strain_values_primary, stress_values_primary, 
+    def _handle_secondary_branch(self, *, n_points_per_branch, only_hystereses, strain_values_primary, stress_values_primary, 
         strain_values_secondary, stress_values_secondary, hysteresis_index_secondary, previous_point, 
         previous_type, previous_is_direction_up, last_secondary_start_point, hcm_point, hysteresis_index, 
         is_part_of_closed_hysteresis, is_direction_up):
@@ -985,7 +995,7 @@ class FKMNonlinearHysteresisPlotter:
                 hcm_point = previous_point
         return hcm_point,secondary_start_point
 
-    def _handle_primary_branch(self, n_points_per_branch, only_hystereses, strain_values_primary, stress_values_primary, 
+    def _handle_primary_branch(self, *, n_points_per_branch, only_hystereses, strain_values_primary, stress_values_primary, 
         hysteresis_index_primary, strain_values_secondary, stress_values_secondary, previous_point, previous_type, type, 
         hcm_point, hysteresis_index, is_part_of_closed_hysteresis):
         
