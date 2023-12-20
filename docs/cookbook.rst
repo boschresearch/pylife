@@ -19,8 +19,6 @@ computer, you can use `MyBinder
    demos/fkm_nonlinear.nblink
    demos/fkm_nonlinear_full.nblink
 
-See also the tutorials about :doc:`FKM nonlinear <tutorials/fkm_nonlinear>`.
-
 .. toctree::
    :maxdepth: 1
    :caption: Material Laws
