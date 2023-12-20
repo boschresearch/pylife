@@ -532,6 +532,93 @@ class Binned:
         # if the assessment is done only for one value, i.e. load is a scalar
         return self._stress_single_assessment_point(load)
           
+    def strain(self, stress, load):
+        '''Get the strain of the primary path in the stress-strain diagram at a given stress and load
+        by using the value of the look-up table.
+
+        Parameters
+        ----------
+        stress : array-like float
+            The stress
+        load : array-like float
+            The load
+            
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        '''
+        
+        # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
+        if isinstance(load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+            return self._strain_multiple_assessment_points_lut_for_every_node(load)
+        
+        # if the assessment is performed for multiple points at once, but only one lookup-table is used
+        if isinstance(load, pd.DataFrame):
+            return self._strain_multiple_assessment_points_single_lut(load)
+        
+        # if the assessment is done only for one value, i.e. load is a scalar
+        return self._strain_single_assessment_point(load)
+               
+    def stress_secondary_branch(self, delta_load, *, rtol=1e-5, tol=1e-6):
+        '''Get the stress on secondary branches in the stress-strain diagram at a given load
+        by using the value of the look-up table.
+
+        Parameters
+        ----------
+        delta_load : array-like float
+            The load increment of the hysteresis
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the stress gets solved.
+            In this case for the `Binning` class, the parameter is not used.
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the stress gets solved.
+            In this case for the `Binning` class, the parameter is not used.
+            
+        Returns
+        -------
+        delta_stress : array-like float
+            The resulting stress increment within the hysteresis
+        '''
+        
+        # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
+        if isinstance(delta_load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+            return self._stress_secondary_branch_multiple_assessment_points_lut_for_every_node(delta_load)
+             
+        # if the assessment is performed for multiple points at once, but only one lookup-table is used
+        if isinstance(delta_load, pd.DataFrame):
+            return self._stress_secondary_branch_multiple_assessment_points_single_lut(delta_load)
+        
+        # if the assessment is done only for one value, i.e. load is a scalar
+        return self._stress_secondary_branch_single_assessment_point(delta_load)
+           
+    def strain_secondary_branch(self, delta_stress, delta_load):
+        '''Get the strain on secondary branches in the stress-strain diagram at a given stress and load
+        by using the value of the look-up table.
+
+        Parameters
+        ----------
+        delta_stress : array-like float
+            The stress increment
+        delta_load : array-like float
+            The load increment
+            
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        '''
+        # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
+        if isinstance(delta_load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+            return self._strain_secondary_branch_multiple_assessment_points_lut_for_every_node(delta_load)
+        
+        # if the assessment is performed for multiple points at once, but only one lookup-table is used
+        if isinstance(delta_load, pd.DataFrame):
+            return self._strain_secondary_branch_multiple_assessment_points_single_lut(delta_load)
+        
+        # if the assessment is done only for one value, i.e. load is a scalar
+        return self._strain_secondary_branch_single_assessment_points(delta_load)
+           
     def _stress_multiple_assessment_points_lut_for_every_node(self, load):
         '''The stress of the primary path in the stress-strain diagram at a given load
         by using the value of the look-up table (lut). 
@@ -644,35 +731,7 @@ class Binned:
                                 f" but a higher absolute load value of |{load}| is requested (in stress()).")
         
         return sign * self._lut_primary_branch.iloc[index+1].stress    # "+1", because the next higher class is used
-    
-    def strain(self, stress, load):
-        '''Get the strain of the primary path in the stress-strain diagram at a given stress and load
-        by using the value of the look-up table.
-
-        Parameters
-        ----------
-        stress : array-like float
-            The stress
-        load : array-like float
-            The load
-            
-        Returns
-        -------
-        strain : array-like float
-            The resulting strain
-        '''
-        
-        # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if isinstance(load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
-            return self._strain_multiple_assessment_points_lut_for_every_node(load)
-        
-        # if the assessment is performed for multiple points at once, but only one lookup-table is used
-        if isinstance(load, pd.DataFrame):
-            return self._strain_multiple_assessment_points_single_lut(load)
-        
-        # if the assessment is done only for one value, i.e. load is a scalar
-        return self._strain_single_assessment_point(load)
-                
+     
     def _strain_multiple_assessment_points_lut_for_every_node(self, load):
         '''Get the strain of the primary path in the stress-strain diagram at a given stress and load
         by using the value of the look-up table.
@@ -773,39 +832,7 @@ class Binned:
                                 f" but a higher absolute load value of |{load}| is requested (in strain()).")
         
         return sign * self._lut_primary_branch.iloc[index+1].strain     # "+1", because the next higher class is used 
-    
-    def stress_secondary_branch(self, delta_load, *, rtol=1e-5, tol=1e-6):
-        '''Get the stress on secondary branches in the stress-strain diagram at a given load
-        by using the value of the look-up table.
-
-        Parameters
-        ----------
-        delta_load : array-like float
-            The load increment of the hysteresis
-        rtol : float, optional
-            The relative tolerance to which the implicit formulation of the stress gets solved.
-            In this case for the `Binning` class, the parameter is not used.
-        tol : float, optional
-            The absolute tolerance to which the implicit formulation of the stress gets solved.
-            In this case for the `Binning` class, the parameter is not used.
-            
-        Returns
-        -------
-        delta_stress : array-like float
-            The resulting stress increment within the hysteresis
-        '''
-        
-        # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if isinstance(delta_load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
-            return self._stress_secondary_branch_multiple_assessment_points_lut_for_every_node(delta_load)
-             
-        # if the assessment is performed for multiple points at once, but only one lookup-table is used
-        if isinstance(delta_load, pd.DataFrame):
-            return self._stress_secondary_branch_multiple_assessment_points_single_lut(delta_load)
-        
-        # if the assessment is done only for one value, i.e. load is a scalar
-        return self._stress_secondary_branch_single_assessment_point(delta_load)
-                
+         
     def _stress_secondary_branch_multiple_assessment_points_lut_for_every_node(self, delta_load):
         '''Get the stress on secondary branches in the stress-strain diagram at a given load
         by using the value of the look-up table (lut).
@@ -905,34 +932,7 @@ class Binned:
                                 f" but a higher absolute delta_load value of |{delta_load}| is requested (in stress_secondary_branch()).")
         
         return sign * self._lut_secondary_branch.iloc[index+1].delta_stress     # "+1", because the next higher class is used
-    
-    def strain_secondary_branch(self, delta_stress, delta_load):
-        '''Get the strain on secondary branches in the stress-strain diagram at a given stress and load
-        by using the value of the look-up table.
-
-        Parameters
-        ----------
-        delta_stress : array-like float
-            The stress increment
-        delta_load : array-like float
-            The load increment
-            
-        Returns
-        -------
-        strain : array-like float
-            The resulting strain
-        '''
-        # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if isinstance(delta_load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
-            return self._strain_secondary_branch_multiple_assessment_points_lut_for_every_node(delta_load)
-        
-        # if the assessment is performed for multiple points at once, but only one lookup-table is used
-        if isinstance(delta_load, pd.DataFrame):
-            return self._strain_secondary_branch_multiple_assessment_points_single_lut(delta_load)
-        
-        # if the assessment is done only for one value, i.e. load is a scalar
-        return self._strain_secondary_branch_single_assessment_points(delta_load)
-                    
+             
     def _strain_secondary_branch_multiple_assessment_points_lut_for_every_node(self, delta_load):
         '''Get the strain on secondary branches in the stress-strain diagram at a given stress and load
         by using the value of the look-up table (lut). 
