@@ -48,3 +48,10 @@ See also the tutorials about :doc:`FKM nonlinear <tutorials/fkm_nonlinear>`.
 
    demos/psd_optimizer.nblink
    demos/time_series_handling.nblink
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Load FEM meshes
+
+   demos/import_mesh_vmap.nblink
+   demos/import_mesh_ansys.nblink
