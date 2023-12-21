@@ -373,7 +373,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         assert n_points_per_branch >= 2
 
         plotter = FKMNonlinearHysteresisPlotter(self._hcm_point_history, self._ramberg_osgood_relation)
-        return plotter.interpolated_stress_strain_data(n_points_per_branch, only_hystereses)
+        return plotter.interpolated_stress_strain_data(n_points_per_branch=n_points_per_branch, only_hystereses=only_hystereses)
         
     def _proceed_on_primary_branch(self, current_point):
         """Follow the primary branch (de: Erstbelastungskurve) of a notch approximation material curve.
