@@ -617,7 +617,7 @@ class Binned:
             return self._strain_secondary_branch_multiple_assessment_points_single_lut(delta_load)
         
         # if the assessment is done only for one value, i.e. load is a scalar
-        return self._strain_secondary_branch_single_assessment_points(delta_load)
+        return self._strain_secondary_branch_single_assessment_point(delta_load)
            
     def _stress_multiple_assessment_points_lut_for_every_node(self, load):
         '''The stress of the primary path in the stress-strain diagram at a given load
