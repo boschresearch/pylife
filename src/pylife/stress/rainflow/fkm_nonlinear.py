@@ -324,7 +324,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         
             fkm_nonlinear_detector.process_hcm_first(...)
             sampling_parameter = 100    # choose larger for smoother plot or smaller for lower runtime
-            plotting_data = detector.interpolated_stress_strain_data(sampling_parameter)
+            plotting_data = detector.interpolated_stress_strain_data(n_points_per_branch=sampling_parameter)
 
             strain_values_primary = plotting_data["strain_values_primary"]
             stress_values_primary = plotting_data["stress_values_primary"]
@@ -800,7 +800,7 @@ class FKMNonlinearHysteresisPlotter:
         
             fkm_nonlinear_detector.process_hcm_first(...)
             sampling_parameter = 100    # choose larger for smoother plot or smaller for lower runtime
-            plotting_data = detector.interpolated_stress_strain_data(sampling_parameter)
+            plotting_data = detector.interpolated_stress_strain_data(n_points_per_branch=sampling_parameter)
 
             strain_values_primary = plotting_data["strain_values_primary"]
             stress_values_primary = plotting_data["stress_values_primary"]
