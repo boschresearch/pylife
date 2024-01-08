@@ -4,7 +4,7 @@ In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
 
-## since pylife-2.0.4
+## pylife-2.1.0
 
 ### New features
 
