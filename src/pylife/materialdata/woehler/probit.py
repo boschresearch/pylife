@@ -73,7 +73,3 @@ class Probit(Elementary):
         ND = self._transition_cycles(SD)
 
         return TS, SD, ND
-
-
-    def fitter(self):
-        return self._probability_fit
