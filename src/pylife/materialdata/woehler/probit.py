@@ -46,16 +46,16 @@ class Probit(Elementary):
         tot_num = self._inf_groups.fracture.count().to_numpy()
 
         fprobs = np.empty_like(frac_num, dtype=np.float64)
-        c1 = frac_num == 0
-        w = np.where(c1)
+        no_fractures = frac_num == 0
+        w = np.where(no_fractures)
         fprobs[w] = 1. - 0.5**(1./tot_num[w])
 
-        c2 = frac_num == tot_num
-        w = np.where(c2)
+        all_fractures = frac_num == tot_num
+        w = np.where(all_fractures)
         fprobs[w] = 0.5**(1./tot_num[w])
 
-        c3 = np.logical_and(np.logical_not(c1), np.logical_not(c2))
-        w = np.where(c3)
+        some_fractures = np.logical_and(np.logical_not(no_fractures), np.logical_not(all_fractures))
+        w = np.where(some_fractures)
         fprobs[w] = (3*frac_num[w] - 1) / (3*tot_num[w] + 1)
 
         return fprobs, self._inf_groups.load.mean()
