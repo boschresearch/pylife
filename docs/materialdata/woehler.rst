@@ -5,7 +5,7 @@ Module description
 ==================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    woehler/index
 
@@ -14,7 +14,7 @@ Fatigue data handling
 =====================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    woehler/fatigue_data
 
@@ -23,7 +23,7 @@ Analyzers
 =========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    woehler/elementary
    woehler/probit
@@ -36,7 +36,7 @@ Helpers
 =======
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    woehler/pearl_chain
    woehler/likelihood
