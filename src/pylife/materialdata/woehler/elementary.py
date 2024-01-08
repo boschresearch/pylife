@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2024 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -129,11 +129,6 @@ class Elementary:
         return 10**(self._lg_intercept + self._slope * (np.log10(fatigue_limit)))
 
     def _pearl_chain_method(self):
-        '''
-        Pearl chain method: consists of shifting the fractured data to a median load level.
-        The shifted data points are assigned to a Rossow failure probability.The scatter in load-cycle
-        direction can be computed from the probability net.
-        '''
         self._pearl_chain_estimator = PearlChainProbability(self._fd.fractures, self._slope)
 
         TN = functions.std_to_scattering_range(1./self._pearl_chain_estimator.slope)

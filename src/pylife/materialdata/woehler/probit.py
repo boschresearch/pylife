@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2024 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -25,6 +25,13 @@ from pylife.utils.probability_data import ProbabilityFit
 
 
 class Probit(Elementary):
+    """Wöhler analysis according to the Probit method.
+
+    For each load level in the infinite regime a failure probability is
+    estimated.  To these failure probability a log norm distribution is fitted,
+    whose parameters are then used to calculate the Wöhler curve parameters.
+    """
+
     def _specific_analysis(self, wc):
         self._inf_groups = self._fd.infinite_zone.groupby('load')
         if len(self._inf_groups) < 2:

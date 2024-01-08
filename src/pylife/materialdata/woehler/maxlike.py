@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2024 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -20,7 +20,19 @@ import numpy as np
 from scipy import optimize
 import warnings
 
+
 class MaxLikeInf(Elementary):
+    """Maximum likelihood procedure estimating the ``SD_50`` and ``TS`` and ``ND_50``.
+
+    Only the values describing the infinite lifetime (load endurance limit
+    ``SD_50`` and load endurance scatter ``TS``) are calculated by maximum
+    likelihood.  The slope ``k_1`` and ``TN`` are taken from the
+    :class:`Elementary` calculation.
+
+    The load cycle endurance ``ND_50`` is computed by intersecting load
+    endurance limit line with the line of slope ``k_1``.
+
+    """
     def _specific_analysis(self, wc):
         SD, TS = self.__max_likelihood_inf_limit()
 
@@ -31,11 +43,6 @@ class MaxLikeInf(Elementary):
         return wc
 
     def __max_likelihood_inf_limit(self):
-        ''' This maximum likelihood procedure estimates the load endurance limit SD50_mali_2_param and the
-        scatter in load direction TS_mali_2_param.
-        Moreover, the load cycle endurance is computed by the interesecting endurance limit line with the
-        line of slope k_1
-        '''
         SD_start = self._fd.fatigue_limit
         TS_start = 1.2
 
@@ -49,33 +56,29 @@ class MaxLikeInf(Elementary):
 
 
 class MaxLikeFull(Elementary):
+    """Maximum likelihood procedure estimating all parameters.
+
+    Maximum likelihood is a method of estimating the parameters of a
+    distribution model by maximizing a likelihood function, so that under the
+    assumed statistical model the observed data is most probable.  This
+    procedure consists of estimating the curve parameters, where some of these
+    parameters may be fixed by the user. The remaining parameters are then
+    fitted to produce the best possible outcome.
+
+    https://en.wikipedia.org/wiki/Maximum_likelihood_estimation
+
+    Parameters
+    ----------
+    fixed_parameters : dict
+        Dictionary of fixed parameters
+
+    """
+
     def _specific_analysis(self, wc, fixed_parameters={}):
         return pd.Series(self.__max_likelihood_full(wc, fixed_parameters))
 
     def __max_likelihood_full(self, initial_wcurve, fixed_prms):
-        """
-        Maximum likelihood is a method of estimating the parameters of a distribution model by maximizing
-        a likelihood function, so that under the assumed statistical model the observed data is most probable.
-        This procedure consists of estimating the  curve parameters, where some of these paramters may
-        be fixed by the user. The remaining paramters are then fitted to produce the best possible outcome.
-        The procedure uses the function Optimize.fmin
-        Optimize.fmin iterates over the function mali_sum_lolli values till it finds the minimum
 
-        https://en.wikipedia.org/wiki/Maximum_likelihood_estimation
-
-        Parameters
-        ----------
-        self.p_opt: Start values of the Mali estimated parameters if none are fixed by the user.
-
-        self.dict_bound: Boundary values of the Mali estimated parameters if none are fixed by the user.
-        This forces the optimizer to search for a minimum solution within a given area.
-
-
-        Returns
-        -------
-        self.Mali_5p_result: The estimated parameters computed using the optimizer.
-
-        """
         def warn_and_fix_if_no_runouts():
             nonlocal fixed_prms
             if self._fd.num_runouts == 0:
