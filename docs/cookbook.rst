@@ -19,8 +19,6 @@ computer, you can use `MyBinder
    demos/fkm_nonlinear.nblink
    demos/fkm_nonlinear_full.nblink
 
-See also the tutorials about :doc:`FKM nonlinear <tutorials/fkm_nonlinear>`.
-
 .. toctree::
    :maxdepth: 1
    :caption: Material Laws
@@ -48,3 +46,10 @@ See also the tutorials about :doc:`FKM nonlinear <tutorials/fkm_nonlinear>`.
 
    demos/psd_optimizer.nblink
    demos/time_series_handling.nblink
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Load FEM meshes
+
+   demos/import_mesh_vmap.nblink
+   demos/import_mesh_ansys.nblink

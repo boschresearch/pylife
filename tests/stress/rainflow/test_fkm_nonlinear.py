@@ -195,7 +195,7 @@ class TestHCMExample1(unittest.TestCase):
 
         # plot resulting stress-strain curve
         sampling_parameter = 50    # choose larger for smoother plot
-        plotting_data_fine = self._detector_1st.interpolated_stress_strain_data(sampling_parameter)
+        plotting_data_fine = self._detector_1st.interpolated_stress_strain_data(n_points_per_branch=sampling_parameter)
 
         strain_values_primary_fine = plotting_data_fine["strain_values_primary"]
         stress_values_primary_fine = plotting_data_fine["stress_values_primary"]

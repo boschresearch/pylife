@@ -130,6 +130,11 @@ def for_material_group(assessment_parameters):
     """
     Retrieve the constants for one of the three material groups that are defined in FKM nonlinear.
 
+    .. note::
+        
+        The constants for all material groups can be accessed as
+        ``pylife.strength.fkm_nonlinear.constants.all_constants``.
+        
     Parameters
     ----------
     assessment_parameters : pandas Series
@@ -141,9 +146,6 @@ def for_material_group(assessment_parameters):
     pandas Series
         All constants that are defined by FKM nonlinear for the given material group.
         
-    .. note::
-        
-        The constants for all material groups can be accessed as ``pylife.strength.fkm_nonlinear.all_constants``.
     """
     
     # select set of constants according to given material group
