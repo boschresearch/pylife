@@ -47,17 +47,17 @@ import pylife.strength.fkm_nonlinear.parameter_calculations as parameter_calcula
     (pd.Series([3, -3, 5, -5, 6, -6, 3, -3, 7, -7, 2, -2, 6, -6, 8, -8, 8, -8]), 8, 9), # FKM nonlinear 2.7.2
 ])
 def test_number_of_closed_hystereses(load_sequence, n_hystereses_hcm_1, n_hystereses_hcm_2):
-    
+
     assessment_parameters = pd.Series({
         'MatGroupFKM': 'Steel',  # [Steel, SteelCast, Al_wrought] material group
         'FinishingFKM': 'none',  # type of surface finisihing
         'R_m': 600,              # [MPa] ultimate tensile strength (de: Zugfestigkeit)
         #'K_RP': 1,               # [-] surface roughness factor, set to 1 for polished surfaces or determine from the diagrams below
         'R_z': 250,              # [um] average roughness (de: mittlere Rauheit), only required if K_RP is not specified directly
-    
+
         'P_A': 7.2e-5,           # [-] (one of [0.5, 2.3e-1, 1e-3, 7.2e-5, 1e-5], failure probability (de: auszulegende Ausfallwahrscheinlichkeit)
         # beta: 0.5,             # damage index, specify this as an alternative to P_A
-    
+
         'P_L': 2.5,              # [%] (one of 2.5%, 50%) (de: Auftretenswahrscheinlichkeit der Lastfolge)
         'c':   1.4,              # [MPa/N] (de: Übertragungsfaktor Vergleichsspannung zu Referenzlast im Nachweispunkt, c = sigma_I / L_REF)
         'A_sigma': 339.4,        # [mm^2] (de: Hochbeanspruchte Oberfläche des Bauteils)
@@ -68,8 +68,8 @@ def test_number_of_closed_hystereses(load_sequence, n_hystereses_hcm_1, n_hyster
         'x_Einsatz': 3000,       # [-] (de: Einsatzdurchlaufzahl)
         'r': 15,                 # [mm] radius (?)
     })
-    
-    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
+
+    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=True, calculate_P_RAJ=False)
 
     collective = result["P_RAM_collective"]
@@ -155,17 +155,17 @@ def test_number_of_closed_hystereses(load_sequence, n_hystereses_hcm_1, n_hyster
     )
 ])
 def test_load_sequences_with_same_lifetimes(load_sequences):
-    
+
     assessment_parameters = pd.Series({
         'MatGroupFKM': 'Steel',  # [Steel, SteelCast, Al_wrought] material group
         'FinishingFKM': 'none',  # type of surface finisihing
         'R_m': 600,              # [MPa] ultimate tensile strength (de: Zugfestigkeit)
         #'K_RP': 1,               # [-] surface roughness factor, set to 1 for polished surfaces or determine from the diagrams below
         'R_z': 250,              # [um] average roughness (de: mittlere Rauheit), only required if K_RP is not specified directly
-    
+
         'P_A': 7.2e-5,           # [-] (one of [0.5, 2.3e-1, 1e-3, 7.2e-5, 1e-5], failure probability (de: auszulegende Ausfallwahrscheinlichkeit)
         # beta: 0.5,             # damage index, specify this as an alternative to P_A
-    
+
         'P_L': 2.5,              # [%] (one of 2.5%, 50%) (de: Auftretenswahrscheinlichkeit der Lastfolge)
         'c':   1.4,              # [MPa/N] (de: Übertragungsfaktor Vergleichsspannung zu Referenzlast im Nachweispunkt, c = sigma_I / L_REF)
         'A_sigma': 339.4,        # [mm^2] (de: Hochbeanspruchte Oberfläche des Bauteils)
@@ -176,10 +176,10 @@ def test_load_sequences_with_same_lifetimes(load_sequences):
         'x_Einsatz': 3000,       # [-] (de: Einsatzdurchlaufzahl)
         'r': 15,                 # [mm] radius (?)
     })
-    
 
-    load_sequence = load_sequences[0] 
-    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
+
+    load_sequence = load_sequences[0]
+    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                                 calculate_P_RAM=True, calculate_P_RAJ=False)
 
     N_reference = result["P_RAM_lifetime_n_cycles"]
@@ -187,7 +187,7 @@ def test_load_sequences_with_same_lifetimes(load_sequences):
 
     for load_sequence in load_sequences:
 
-        result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
+        result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                                 calculate_P_RAM=True, calculate_P_RAJ=False)
 
         N = result["P_RAM_lifetime_n_cycles"]
@@ -220,17 +220,17 @@ def test_load_sequences_with_same_lifetimes(load_sequences):
     pd.Series([100, -100, 100, -200, -100, -200, 200, 0, 200, -200]),
 ])
 def test_repeated_load_sequence_P_RAM(load_sequence):
-    
+
     assessment_parameters = pd.Series({
         'MatGroupFKM': 'Steel',  # [Steel, SteelCast, Al_wrought] material group
         'FinishingFKM': 'none',  # type of surface finisihing
         'R_m': 600,              # [MPa] ultimate tensile strength (de: Zugfestigkeit)
         #'K_RP': 1,               # [-] surface roughness factor, set to 1 for polished surfaces or determine from the diagrams below
         'R_z': 250,              # [um] average roughness (de: mittlere Rauheit), only required if K_RP is not specified directly
-    
+
         'P_A': 7.2e-5,           # [-] (one of [0.5, 2.3e-1, 1e-3, 7.2e-5, 1e-5], failure probability (de: auszulegende Ausfallwahrscheinlichkeit)
         # beta: 0.5,             # damage index, specify this as an alternative to P_A
-    
+
         'P_L': 2.5,              # [%] (one of 2.5%, 50%) (de: Auftretenswahrscheinlichkeit der Lastfolge)
         'c':   1.4,              # [MPa/N] (de: Übertragungsfaktor Vergleichsspannung zu Referenzlast im Nachweispunkt, c = sigma_I / L_REF)
         'A_sigma': 339.4,        # [mm^2] (de: Hochbeanspruchte Oberfläche des Bauteils)
@@ -241,14 +241,14 @@ def test_repeated_load_sequence_P_RAM(load_sequence):
         'x_Einsatz': 3000,       # [-] (de: Einsatzdurchlaufzahl)
         'r': 15,                 # [mm] radius (?)
     })
-    
+
     for prefactor in [1, -1]:
 
         load_sequence = load_sequence*prefactor
-        
+
         # simulation with single collective
         print(f"load_sequence: {load_sequence}")
-        result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
+        result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                                 calculate_P_RAM=True, calculate_P_RAJ=False)
 
         N1 = result["P_RAM_lifetime_n_cycles"]
@@ -260,7 +260,7 @@ def test_repeated_load_sequence_P_RAM(load_sequence):
         # load sequence
         load_sequence_2 = pd.concat([load_sequence, load_sequence], ignore_index=True)
 
-        result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence_2, 
+        result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence_2,
                                                                                 calculate_P_RAM=True, calculate_P_RAJ=False)
         N2 = result["P_RAM_lifetime_n_cycles"]
         print(f"N2: {N2}")
@@ -272,7 +272,7 @@ def test_repeated_load_sequence_P_RAM(load_sequence):
         # load sequence
         load_sequence_3 = pd.concat([load_sequence, load_sequence, load_sequence, load_sequence, load_sequence, load_sequence], ignore_index=True)
 
-        result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence_3, 
+        result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence_3,
                                                                                 calculate_P_RAM=True, calculate_P_RAJ=False)
         N3 = result["P_RAM_lifetime_n_cycles"]
         print(f"N3: {N3}")
@@ -308,17 +308,17 @@ def test_repeated_load_sequence_P_RAM(load_sequence):
     pd.Series([100, -100, 100, -200, -100, -200, 200, 0, 200, -200]),
 ])
 def test_repeated_load_sequence_multiple_points_P_RAM(original_load_sequence):
-    
+
     assessment_parameters = pd.Series({
         'MatGroupFKM': 'Steel',  # [Steel, SteelCast, Al_wrought] material group
         'FinishingFKM': 'none',  # type of surface finisihing
         'R_m': 600,              # [MPa] ultimate tensile strength (de: Zugfestigkeit)
         #'K_RP': 1,               # [-] surface roughness factor, set to 1 for polished surfaces or determine from the diagrams below
         'R_z': 250,              # [um] average roughness (de: mittlere Rauheit), only required if K_RP is not specified directly
-    
+
         'P_A': 7.2e-5,           # [-] (one of [0.5, 2.3e-1, 1e-3, 7.2e-5, 1e-5], failure probability (de: auszulegende Ausfallwahrscheinlichkeit)
         # beta: 0.5,             # damage index, specify this as an alternative to P_A
-    
+
         'P_L': 2.5,              # [%] (one of 2.5%, 50%) (de: Auftretenswahrscheinlichkeit der Lastfolge)
         'c':   1.4,              # [MPa/N] (de: Übertragungsfaktor Vergleichsspannung zu Referenzlast im Nachweispunkt, c = sigma_I / L_REF)
         'A_sigma': 339.4,        # [mm^2] (de: Hochbeanspruchte Oberfläche des Bauteils)
@@ -334,16 +334,16 @@ def test_repeated_load_sequence_multiple_points_P_RAM(original_load_sequence):
     load_sequence_0 = original_load_sequence
     load_sequence_1 = load_sequence_0 * 0.7
     load_sequence_2 = load_sequence_0 * 0.2
-    
+
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
-    
+
     load_sequence = pd.DataFrame(index=index, data={"load": 0})
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
-    
+
     # perform assessment of all points at once
-    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
+    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                                       calculate_P_RAM=True, calculate_P_RAJ=False)
 
     N1 = result["P_RAM_lifetime_n_cycles"]
@@ -358,15 +358,15 @@ def test_repeated_load_sequence_multiple_points_P_RAM(original_load_sequence):
     load_sequence_0 = load_sequence_r2
     load_sequence_1 = load_sequence_0 * 0.7
     load_sequence_2 = load_sequence_0 * 0.2
-    
+
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
-    
+
     load_sequence = pd.DataFrame(index=index, data={"load": 0})
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
-    
-    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
+
+    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=True, calculate_P_RAJ=False)
     N2 = result["P_RAM_lifetime_n_cycles"]
     print(f"N2: {N2}")
@@ -380,15 +380,15 @@ def test_repeated_load_sequence_multiple_points_P_RAM(original_load_sequence):
     load_sequence_0 = load_sequence_r3
     load_sequence_1 = load_sequence_0 * 0.7
     load_sequence_2 = load_sequence_0 * 0.2
-    
+
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
-    
+
     load_sequence = pd.DataFrame(index=index, data={"load": 0})
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
 
-    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
+    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=True, calculate_P_RAJ=False)
     N3 = result["P_RAM_lifetime_n_cycles"]
     print(f"N3: {N3}")
@@ -412,17 +412,17 @@ def test_repeated_load_sequence_multiple_points_P_RAM(original_load_sequence):
     (pd.Series([100, -100, 100, -200, -100, -200, 200, 0, 200, -200])),
 ])
 def test_repeated_load_sequence_P_RAJ(load_sequence):
-    
+
     assessment_parameters = pd.Series({
         'MatGroupFKM': 'Steel',  # [Steel, SteelCast, Al_wrought] material group
         'FinishingFKM': 'none',  # type of surface finisihing
         'R_m': 600,              # [MPa] ultimate tensile strength (de: Zugfestigkeit)
         #'K_RP': 1,               # [-] surface roughness factor, set to 1 for polished surfaces or determine from the diagrams below
         'R_z': 250,              # [um] average roughness (de: mittlere Rauheit), only required if K_RP is not specified directly
-    
+
         'P_A': 7.2e-5,           # [-] (one of [0.5, 2.3e-1, 1e-3, 7.2e-5, 1e-5], failure probability (de: auszulegende Ausfallwahrscheinlichkeit)
         # beta: 0.5,             # damage index, specify this as an alternative to P_A
-    
+
         'P_L': 2.5,              # [%] (one of 2.5%, 50%) (de: Auftretenswahrscheinlichkeit der Lastfolge)
         'c':   1.4,              # [MPa/N] (de: Übertragungsfaktor Vergleichsspannung zu Referenzlast im Nachweispunkt, c = sigma_I / L_REF)
         'A_sigma': 339.4,        # [mm^2] (de: Hochbeanspruchte Oberfläche des Bauteils)
@@ -433,10 +433,10 @@ def test_repeated_load_sequence_P_RAJ(load_sequence):
         'x_Einsatz': 3000,       # [-] (de: Einsatzdurchlaufzahl)
         'r': 15,                 # [mm] radius (?)
     })
-    
+
     # simulation with single collective
 
-    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
+    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=False, calculate_P_RAJ=True)
     N1 = result["P_RAJ_lifetime_n_cycles"]
 
@@ -444,7 +444,7 @@ def test_repeated_load_sequence_P_RAJ(load_sequence):
     # load sequence
     load_sequence_2 = pd.concat([load_sequence, load_sequence], ignore_index=True)
 
-    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence_2, 
+    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence_2,
                                                                             calculate_P_RAM=False, calculate_P_RAJ=True)
     N2 = result["P_RAJ_lifetime_n_cycles"]
 
@@ -452,7 +452,7 @@ def test_repeated_load_sequence_P_RAJ(load_sequence):
     # load sequence
     load_sequence_3 = pd.concat([load_sequence, load_sequence, load_sequence, load_sequence, load_sequence, load_sequence], ignore_index=True)
 
-    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence_3, 
+    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence_3,
                                                                             calculate_P_RAM=False, calculate_P_RAJ=True)
     N3 = result["P_RAJ_lifetime_n_cycles"]
 
@@ -476,17 +476,17 @@ def test_repeated_load_sequence_P_RAJ(load_sequence):
     (pd.Series([100, -100, 100, -200, -100, -200, 200, 0, 200, -200])),
 ])
 def test_repeated_load_sequence_multiple_points_P_RAJ(original_load_sequence):
-    
+
     assessment_parameters = pd.Series({
         'MatGroupFKM': 'Steel',  # [Steel, SteelCast, Al_wrought] material group
         'FinishingFKM': 'none',  # type of surface finisihing
         'R_m': 600,              # [MPa] ultimate tensile strength (de: Zugfestigkeit)
         #'K_RP': 1,               # [-] surface roughness factor, set to 1 for polished surfaces or determine from the diagrams below
         'R_z': 250,              # [um] average roughness (de: mittlere Rauheit), only required if K_RP is not specified directly
-    
+
         'P_A': 7.2e-5,           # [-] (one of [0.5, 2.3e-1, 1e-3, 7.2e-5, 1e-5], failure probability (de: auszulegende Ausfallwahrscheinlichkeit)
         # beta: 0.5,             # damage index, specify this as an alternative to P_A
-    
+
         'P_L': 2.5,              # [%] (one of 2.5%, 50%) (de: Auftretenswahrscheinlichkeit der Lastfolge)
         'c':   1.4,              # [MPa/N] (de: Übertragungsfaktor Vergleichsspannung zu Referenzlast im Nachweispunkt, c = sigma_I / L_REF)
         'A_sigma': 339.4,        # [mm^2] (de: Hochbeanspruchte Oberfläche des Bauteils)
@@ -497,20 +497,20 @@ def test_repeated_load_sequence_multiple_points_P_RAJ(original_load_sequence):
         'x_Einsatz': 3000,       # [-] (de: Einsatzdurchlaufzahl)
         'r': 15,                 # [mm] radius (?)
     })
-    
+
     # generate a load sequence for three assessment points
     load_sequence_0 = original_load_sequence
     load_sequence_1 = load_sequence_0 * 1.2
     load_sequence_2 = load_sequence_0 * 0.2
-    
+
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
-    
+
     load_sequence = pd.DataFrame(index=index, data={"load": 0})
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
-    
-    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
+
+    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=False, calculate_P_RAJ=True)
     N1 = result["P_RAJ_lifetime_n_cycles"]
     print(f"N1: {N1}")
@@ -523,15 +523,15 @@ def test_repeated_load_sequence_multiple_points_P_RAJ(original_load_sequence):
     load_sequence_0 = load_sequence_r2
     load_sequence_1 = load_sequence_0 * 1.2
     load_sequence_2 = load_sequence_0 * 0.2
-    
+
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
-    
+
     load_sequence = pd.DataFrame(index=index, data={"load": 0})
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
-    
-    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
+
+    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=False, calculate_P_RAJ=True)
     N2 = result["P_RAJ_lifetime_n_cycles"]
     print(f"N2: {N2}")
@@ -544,15 +544,15 @@ def test_repeated_load_sequence_multiple_points_P_RAJ(original_load_sequence):
     load_sequence_0 = load_sequence_r3
     load_sequence_1 = load_sequence_0 * 1.2
     load_sequence_2 = load_sequence_0 * 0.2
-    
+
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
-    
+
     load_sequence = pd.DataFrame(index=index, data={"load": 0})
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
-    
-    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, 
+
+    result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=False, calculate_P_RAJ=True)
     N3 = result["P_RAJ_lifetime_n_cycles"]
     print(f"N3: {N3}")

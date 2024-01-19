@@ -217,7 +217,7 @@ def test_combine_test_big_bin():
     )
 
     pd.testing.assert_series_equal(result, expected)
-    
+
 
 @pytest.fixture
 def regular_binning():

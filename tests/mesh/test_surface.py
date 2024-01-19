@@ -24,7 +24,7 @@ import pytest
 
 
 def spherical_mesh(n_elements_phi = 6, n_elements_theta = 4, n_elements_r = 3, offset = np.array([1,2,3])):
-    
+
     coordinates = []
     for k,r in enumerate(np.linspace(3, 5, n_elements_r+1)):
         for j,theta in enumerate(np.linspace(np.deg2rad(10), np.deg2rad(50), n_elements_theta+1)):    # [0, np.pi]
@@ -62,7 +62,7 @@ def spherical_mesh(n_elements_phi = 6, n_elements_theta = 4, n_elements_r = 3, o
                 is_at_surface_list.append(k == n_elements_r-1 or j == 0 or i == n_elements_phi-1)
                 is_at_surface_list.append(k == n_elements_r-1 or j == n_elements_theta-1 or i == 0)
                 is_at_surface_list.append(k == n_elements_r-1 or j == n_elements_theta-1 or i == n_elements_phi-1)
-                
+
 
     # fill coordinates
     x_list = [coordinates[node_id][0] for node_id in node_id_list]
@@ -90,7 +90,7 @@ def spherical_mesh(n_elements_phi = 6, n_elements_theta = 4, n_elements_r = 3, o
     (5, 4, 3, np.array([1.2,.3,4.5])),
 ])
 def test_surface_3D(n_elements_phi, n_elements_theta, n_elements_r, offset):
-    
+
     # mesh is a segment of a sphere
     df_mesh, expected = spherical_mesh(n_elements_phi, n_elements_theta, n_elements_r, offset)
 

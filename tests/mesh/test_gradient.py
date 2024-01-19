@@ -23,14 +23,14 @@ import numpy as np
 
 
 def test_grad_constant():
-    
+
     # 9 nodes and 4 elements used in the following tests
     # 1---2---3
     # |[1]|[2]|
     # 4---5---6
     # |[3]|[4]|
     # 7---8---9
-    
+
     fkt = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
                        'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
@@ -305,7 +305,7 @@ def test_gradient_3D_dx():
                        'y': [0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2],
                        'z': [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0,  1, 1, 1, 1, 0, 0, 0, 0,  1, 1, 1, 1],
                        'fct': fkt})
-    
+
     df = df.set_index(['node_id', 'element_id'])
 
     expected = pd.DataFrame({
@@ -327,9 +327,9 @@ def test_gradient_3D_dx_flipped_index_levels():
                        'y': [0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2],
                        'z': [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0,  1, 1, 1, 1, 0, 0, 0, 0,  1, 1, 1, 1],
                        'fct': fkt})
-    
+
     df = df.set_index(['element_id', 'node_id'])
-    
+
     expected = pd.DataFrame({
         'dfct_dx': np.full(18, 3.0),
         'dfct_dy': np.zeros(18),
@@ -342,7 +342,7 @@ def test_gradient_3D_dx_flipped_index_levels():
 
 
 def test_gradient_3D_dy():
-    
+
     fkt = [1, 1, 4, 4, 1, 1, 4, 4, 1, 1, 4, 4, 1, 1, 4, 4, 4, 4, 7, 7, 4, 4, 7, 7, 4, 4, 7, 7, 4, 4, 7, 7]
     df = pd.DataFrame({'element_id': [1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4],
                        'node_id': [1, 2, 5, 4, 11, 12, 15, 14, 2, 3, 6, 5, 12, 13, 16, 15, 4, 5, 8, 7, 14, 15, 18, 17, 5, 6, 9, 8, 15, 16, 19, 18],
@@ -364,7 +364,7 @@ def test_gradient_3D_dy():
     pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
 
 def test_gradient_3D_dy_flipped_index_levels():
-    
+
     fkt = [1, 1, 4, 4, 1, 1, 4, 4, 1, 1, 4, 4, 1, 1, 4, 4, 4, 4, 7, 7, 4, 4, 7, 7, 4, 4, 7, 7, 4, 4, 7, 7]
     df = pd.DataFrame({'element_id': [1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4],
                        'node_id': [1, 2, 5, 4, 11, 12, 15, 14, 2, 3, 6, 5, 12, 13, 16, 15, 4, 5, 8, 7, 14, 15, 18, 17, 5, 6, 9, 8, 15, 16, 19, 18],
@@ -432,7 +432,7 @@ def test_gradient_3D_dxy_flipped_index_levels():
 
 
 def test_gradient_3D_dxyz_8nodes():
-    
+
     df = pd.DataFrame({'element_id': [1, 1, 1, 1, 1, 1, 1, 1],
                        'node_id': [1, 2, 3, 4, 5, 6, 7, 8],
                        'x': np.zeros(8),
@@ -451,7 +451,7 @@ def test_gradient_3D_dxyz_8nodes():
     df.iloc[5,:3] = np.array([1.5,0.3,1.1]) + offset
     df.iloc[6,:3] = np.array([1.8,1.2,1.2]) + offset
     df.iloc[7,:3] = np.array([0.7,1,1.8]) + offset
-    
+
     expected = pd.DataFrame({
         'dfct_dx': np.full(8, 1.0),
         'dfct_dy': np.full(8, 1.0),
@@ -470,7 +470,7 @@ def test_gradient_3D_dxyz_8_nodes_flipped_index_levels():
                        'y': np.zeros(8),
                        'z': np.zeros(8),
                        'fct': [0-0.2, 1.2-0.4 ,1.1+1.3, 0.2+1.2, 0.4-1.6, 1.5+0.3-1.1, 1.8+1.2-1.2, 0.7+1-1.8]})
-    
+
     df = df.set_index(['element_id', 'node_id'])
 
     # set node positions
@@ -483,7 +483,7 @@ def test_gradient_3D_dxyz_8_nodes_flipped_index_levels():
     df.iloc[5,:3] = np.array([1.5,0.3,1.1]) + offset
     df.iloc[6,:3] = np.array([1.8,1.2,1.2]) + offset
     df.iloc[7,:3] = np.array([0.7,1,1.8]) + offset
-    
+
     expected = pd.DataFrame({
         'dfct_dx': np.full(8, 1.0),
         'dfct_dy': np.full(8, 1.0),
@@ -495,7 +495,7 @@ def test_gradient_3D_dxyz_8_nodes_flipped_index_levels():
     pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
 
 def test_gradient_3D_dxyz_16nodes():
-    
+
     df = pd.DataFrame({'element_id': [1, 1, 1, 1, 1, 1, 1, 1]*2,
                        'node_id': range(16),
                        'x': np.zeros(16),
@@ -514,7 +514,7 @@ def test_gradient_3D_dxyz_16nodes():
     df.iloc[5,:3] = np.array([1.5,0.3,1.1]) + offset
     df.iloc[6,:3] = np.array([1.8,1.2,1.2]) + offset
     df.iloc[7,:3] = np.array([0.7,1,1.8]) + offset
-    
+
     expected = pd.DataFrame({
         'dfct_dx': [1]*8 + [0]*8,
         'dfct_dy': [1]*8 + [0]*8,
@@ -527,7 +527,7 @@ def test_gradient_3D_dxyz_16nodes():
 
 
 def test_gradient_3D_dxyz_20nodes():
-    
+
     df = pd.DataFrame({'element_id': [1, 1, 1, 1, 1, 1, 1, 1]*2 + [1,1,1,1],
                        'node_id': range(20),
                        'x': np.zeros(20),
@@ -546,7 +546,7 @@ def test_gradient_3D_dxyz_20nodes():
     df.iloc[5,:3] = np.array([1.5,0.3,1.1]) + offset
     df.iloc[6,:3] = np.array([1.8,1.2,1.2]) + offset
     df.iloc[7,:3] = np.array([0.7,1,1.8]) + offset
-    
+
     expected = pd.DataFrame({
         'dfct_dx': [1]*8 + [0]*12,
         'dfct_dy': [1]*8 + [0]*12,
@@ -559,7 +559,7 @@ def test_gradient_3D_dxyz_20nodes():
 
 
 def test_gradient_3D_tetrahedron():
-    
+
     df = pd.DataFrame({'element_id': [1, 1, 1, 1],
                        'node_id': range(4),
                        'x': [0.1, 0.4, 0.3, 0.2],
@@ -581,7 +581,7 @@ def test_gradient_3D_tetrahedron():
 
 
 def test_gradient_3D_tetrahedron_10_nodes():
-    
+
     df = pd.DataFrame({'element_id': [1, 1, 1, 1] + [1]*6,
                        'node_id': range(10),
                        'x': [0.1, 0.4, 0.3, 0.2] + [0]*6,
@@ -603,7 +603,7 @@ def test_gradient_3D_tetrahedron_10_nodes():
 
 
 def test_gradient_3D_tetrahedron_compare():
-    
+
     df = pd.DataFrame({'element_id': [1, 1, 1, 1],
                        'node_id': range(4),
                        'x': [0.1, 0.4, 0.3, 0.2],
@@ -612,7 +612,7 @@ def test_gradient_3D_tetrahedron_compare():
                        })
     df = df.set_index(['node_id', 'element_id'])
     df["f"] = 1.1*df.x
-    
+
     expected = pd.DataFrame({
         'df_dx': np.full(4, 1.1),
         'df_dy': np.full(4, 0),
@@ -628,7 +628,7 @@ def test_gradient_3D_tetrahedron_compare():
 
 
 def test_gradient_3D_hex_compare_1():
-    
+
     df = pd.DataFrame({'element_id': [1, 1, 1, 1, 1, 1, 1, 1],
                        'node_id': [1, 2, 3, 4, 5, 6, 7, 8],
                        'x': np.zeros(8),
@@ -646,9 +646,9 @@ def test_gradient_3D_hex_compare_1():
     df.iloc[5,:3] = np.array([1.5,0.3,1.1]) + offset
     df.iloc[6,:3] = np.array([1.8,1.2,1.2]) + offset
     df.iloc[7,:3] = np.array([0.7,1,1.8]) + offset
-    
+
     df["fct"] = 1.1*df.x
-    
+
     expected = pd.DataFrame({
         'dfct_dx': np.full(8, 1.1),
         'dfct_dy': np.zeros(8),
@@ -663,7 +663,7 @@ def test_gradient_3D_hex_compare_1():
 
 
 def test_gradient_3D_hex_compare_2():
-    
+
     df = pd.DataFrame({'element_id': [1, 1, 1, 1, 1, 1, 1, 1],
                        'node_id': [1, 2, 3, 4, 5, 6, 7, 8],
                        'x': np.zeros(8),
@@ -681,9 +681,9 @@ def test_gradient_3D_hex_compare_2():
     df.iloc[5,:3] = np.array([1.5,0.3,1.1]) + offset
     df.iloc[6,:3] = np.array([1.8,1.2,1.2]) + offset
     df.iloc[7,:3] = np.array([0.7,1,1.8]) + offset
-    
+
     df["fct"] = 1.1*df.x - 2.5*df.y + 5.4*df.z
-    
+
     expected = pd.DataFrame({
         'dfct_dx': np.full(8, 1.1),
         'dfct_dy': np.full(8, -2.5),
