@@ -460,7 +460,7 @@ def test_gradient_3D_dxyz_8nodes():
 
     grad = df.gradient_3D.gradient_of('fct').sort_index()
 
-    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
+    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index())
 
 def test_gradient_3D_dxyz_8_nodes_flipped_index_levels():
 
@@ -492,7 +492,7 @@ def test_gradient_3D_dxyz_8_nodes_flipped_index_levels():
 
     grad = df.gradient_3D.gradient_of('fct').sort_index()
 
-    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
+    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index())
 
 def test_gradient_3D_dxyz_16nodes():
 
@@ -516,14 +516,14 @@ def test_gradient_3D_dxyz_16nodes():
     df.iloc[7,:3] = np.array([0.7,1,1.8]) + offset
 
     expected = pd.DataFrame({
-        'dfct_dx': [1]*8 + [0]*8,
-        'dfct_dy': [1]*8 + [0]*8,
-        'dfct_dz': [-1]*8 + [0]*8
+        'dfct_dx': [1.0]*8 + [0.0]*8,
+        'dfct_dy': [1.0]*8 + [0.0]*8,
+        'dfct_dz': [-1.0]*8 + [0.0]*8
     }, index=pd.Index(range(16), name='node_id'))
 
     grad = df.gradient_3D.gradient_of('fct').sort_index()
 
-    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
+    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index())
 
 
 def test_gradient_3D_dxyz_20nodes():
@@ -548,14 +548,14 @@ def test_gradient_3D_dxyz_20nodes():
     df.iloc[7,:3] = np.array([0.7,1,1.8]) + offset
 
     expected = pd.DataFrame({
-        'dfct_dx': [1]*8 + [0]*12,
-        'dfct_dy': [1]*8 + [0]*12,
-        'dfct_dz': [-1]*8 + [0]*12
+        'dfct_dx': [1.0]*8 + [0.0]*12,
+        'dfct_dy': [1.0]*8 + [0.0]*12,
+        'dfct_dz': [-1.0]*8 + [0.0]*12
     }, index=pd.Index(range(20), name='node_id'))
 
     grad = df.gradient_3D.gradient_of('fct').sort_index()
 
-    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
+    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index())
 
 
 def test_gradient_3D_tetrahedron():
@@ -577,7 +577,7 @@ def test_gradient_3D_tetrahedron():
 
     grad = df.gradient_3D.gradient_of('f').sort_index()
 
-    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
+    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index())
 
 
 def test_gradient_3D_tetrahedron_10_nodes():
@@ -599,7 +599,7 @@ def test_gradient_3D_tetrahedron_10_nodes():
 
     grad = df.gradient_3D.gradient_of('f').sort_index()
 
-    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index(), check_dtype=False)
+    pd.testing.assert_frame_equal(grad.reset_index(), expected.reset_index())
 
 
 def test_gradient_3D_tetrahedron_compare():
