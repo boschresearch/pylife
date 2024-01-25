@@ -147,14 +147,14 @@ class FKMNonlinearRecorder(AbstractRecorder):
     def __init__(self):
         """Instantiate a FKMNonlinearRecorder."""
         super().__init__()
-        self._loads_min = []
-        self._loads_max = []
-        self._S_min = []
-        self._S_max = []
-        self._epsilon_min = []
-        self._epsilon_max = []
-        self._epsilon_min_LF = []
-        self._epsilon_max_LF = []
+        self._loads_min = pd.Series(dtype=np.float64)
+        self._loads_max = pd.Series(dtype=np.float64)
+        self._S_min = pd.Series(dtype=np.float64)
+        self._S_max = pd.Series(dtype=np.float64)
+        self._epsilon_min = pd.Series(dtype=np.float64)
+        self._epsilon_max = pd.Series(dtype=np.float64)
+        self._epsilon_min_LF = pd.Series(dtype=np.float64)
+        self._epsilon_max_LF = pd.Series(dtype=np.float64)
         self._is_closed_hysteresis = []
         self._is_zero_mean_stress_and_strain = []
         self._run_index = []
@@ -203,8 +203,8 @@ class FKMNonlinearRecorder(AbstractRecorder):
         Only for hystereses resulting from Memory 3, the FKM nonlinear document defines ``S_m``
         to be zero (eq. 2.9-52). This is indicated by ``_is_zero_mean_stress_and_strain=True`̀ .
         For these hystereses, this function returns 0 instead of ``(S_min + S_max) / 2``. """
-        return np.where(self.is_zero_mean_stress_and_strain, \
-                        0, 0.5 * (np.array(self._S_min) + np.array(self._S_max)))
+        median = 0.5 * (np.array(self._S_min) + np.array(self._S_max))
+        return np.where(self.is_zero_mean_stress_and_strain, 0, median)
 
     @property
     def epsilon_a(self):
@@ -237,7 +237,7 @@ class FKMNonlinearRecorder(AbstractRecorder):
     def is_zero_mean_stress_and_strain(self):
 
         # if the assessment is performed for multiple points at once
-        if len(self._S_min) > 0 and isinstance(self._S_min[0], pd.Series):
+        if len(self._S_min) > 0 and len(self._S_min.index.names) > 1:
             return self._get_for_every_node(self._is_zero_mean_stress_and_strain)
         else:
             return self._is_zero_mean_stress_and_strain
@@ -249,7 +249,6 @@ class FKMNonlinearRecorder(AbstractRecorder):
         Only for hystereses resulting from Memory 3, the FKM nonlinear document defines ``R = -1``
         (eq. 2.9-54). This is indicated by ``_is_zero_mean_stress_and_strain=True`̀ .
         For these hystereses, this function returns -1 instead of ``S_min / S_max``, which may be different. """
-
         return np.where(self.is_zero_mean_stress_and_strain, \
                         -1, np.array(self._S_min) / np.array(self._S_max))
 
@@ -259,7 +258,7 @@ class FKMNonlinearRecorder(AbstractRecorder):
         was recorded as a memory 3 hysteresis, which counts only half the damage in the FKM nonlinear procedure."""
 
         # if the assessment is performed for multiple points at once
-        if len(self._S_min) > 0 and isinstance(self._S_min[0], pd.Series):
+        if len(self._S_min) > 0 and len(self._S_min.index.names) > 1:
             return self._get_for_every_node(self._is_closed_hysteresis)
         else:
             return self._is_closed_hysteresis
@@ -289,32 +288,32 @@ class FKMNonlinearRecorder(AbstractRecorder):
         """
 
         # if the assessment is performed for multiple points at once
-        if len(self._S_min) > 0 and isinstance(self._S_min[0], pd.Series):
-
-            n_hystereses = self.R.shape[0]
-            n_nodes = self.R.shape[1]
+        if len(self._S_min) > 0 and len(self._S_min.index.names) > 1:
+            R = self.R
+            n_nodes = self._S_min.groupby('node_id').first().count()
+            n_hystereses = int(len(self._S_min) / n_nodes)
 
             index = pd.MultiIndex.from_product([range(n_hystereses), range(n_nodes)], names=["hysteresis_index", "assessment_point_index"])
 
             return pd.DataFrame(
                 index=index,
                 data={
-                    "loads_min": pd.concat(self._loads_min).to_numpy().flatten(),
-                    "loads_max": pd.concat(self._loads_max).to_numpy().flatten(),
-                    "S_min": pd.concat(self._S_min).to_numpy().flatten(),
-                    "S_max": pd.concat(self._S_max).to_numpy().flatten(),
-                    "R": self.R.flatten(),
-                    "epsilon_min": pd.concat(self._epsilon_min).to_numpy().flatten(),
-                    "epsilon_max": pd.concat(self._epsilon_max).to_numpy().flatten(),
-                    "S_a": self.S_a.flatten(),
-                    "S_m": self.S_m.flatten(),
-                    "epsilon_a": self.epsilon_a.flatten(),
-                    "epsilon_m": self.epsilon_m.flatten(),
-                    "epsilon_min_LF": pd.concat(self._epsilon_min_LF).to_numpy().flatten(),
-                    "epsilon_max_LF": pd.concat(self._epsilon_max_LF).to_numpy().flatten(),
-                    "is_closed_hysteresis": self.is_closed_hysteresis.flatten(),
-                    "is_zero_mean_stress_and_strain": self.is_zero_mean_stress_and_strain.flatten(),
-                    "run_index": np.array(self._run_index).reshape(-1,1).dot(np.ones((1,n_nodes))).flatten().astype(int),
+                    "loads_min": self._loads_min.to_numpy(),
+                    "loads_max": self._loads_max.to_numpy(),
+                    "S_min": self._S_min.to_numpy(),
+                    "S_max": self._S_max.to_numpy(),
+                    "R": self.R,
+                    "epsilon_min": self._epsilon_min.to_numpy(),
+                    "epsilon_max": self._epsilon_max.to_numpy(),
+                    "S_a": self.S_a,
+                    "S_m": self.S_m,
+                    "epsilon_a": self.epsilon_a,
+                    "epsilon_m": self.epsilon_m,
+                    "epsilon_min_LF": self._epsilon_min_LF.values,
+                    "epsilon_max_LF": self._epsilon_max_LF.to_numpy(),
+                    "is_closed_hysteresis": self.is_closed_hysteresis,
+                    "is_zero_mean_stress_and_strain": self.is_zero_mean_stress_and_strain,
+                    "run_index": np.array(self._run_index)
                 })
 
         else:
@@ -327,29 +326,29 @@ class FKMNonlinearRecorder(AbstractRecorder):
             loads_max = self._loads_max
 
             if len(self._loads_min) == 0 or len(self._loads_max) == 0:
-                loads_min = [np.nan]*n_hystereses
-                loads_max = [np.nan]*n_hystereses
+                loads_min = pd.Series(np.nan, index=index)
+                loads_max = pd.Series(np.nan, index=index)
 
             return pd.DataFrame(
                 index=index,
                 data={
-                    "loads_min": loads_min,
-                    "loads_max": loads_max,
-                    "S_min": self._S_min,
-                    "S_max": self._S_max,
-                    "R": self.R,
-                    "epsilon_min": self._epsilon_min,
-                    "epsilon_max": self._epsilon_max,
-                    "S_a": self.S_a,
-                    "S_m": self.S_m,
-                    "epsilon_a": self.epsilon_a,
-                    "epsilon_m": self.epsilon_m,
-                    "epsilon_min_LF": self._epsilon_min_LF,
-                    "epsilon_max_LF": self._epsilon_max_LF,
-                    "is_closed_hysteresis": self._is_closed_hysteresis,
-                    "is_zero_mean_stress_and_strain": self._is_zero_mean_stress_and_strain,
-                    "run_index": self._run_index,
-                    "debug_output": self._debug_output
+                    "loads_min": loads_min.values,
+                    "loads_max": loads_max.values,
+                    "S_min": self._S_min.values,
+                    "S_max": self._S_max.values,
+                    "R": self.R,  # FIXME .values,
+                    "epsilon_min": self._epsilon_min.values,
+                    "epsilon_max": self._epsilon_max.values,
+                    "S_a": self.S_a,  # FIXME .values,
+                    "S_m": self.S_m,  # FIXME .values,
+                    "epsilon_a": self.epsilon_a,  # FIXME .values,
+                    "epsilon_m": self.epsilon_m,  # FIXME .values,
+                    "epsilon_min_LF": self._epsilon_min_LF.values,
+                    "epsilon_max_LF": self._epsilon_max_LF.values,
+                    "is_closed_hysteresis": self._is_closed_hysteresis,  # FIXME .values
+                    "is_zero_mean_stress_and_strain": self._is_zero_mean_stress_and_strain, # FIXME .values,
+                    "run_index": self._run_index, # FIXME .values,
+                    "debug_output": self._debug_output, # FIXME .values,
             })
 
     def record_values_fkm_nonlinear(self, loads_min, loads_max, S_min, S_max, epsilon_min, epsilon_max,
@@ -357,16 +356,20 @@ class FKMNonlinearRecorder(AbstractRecorder):
                       is_closed_hysteresis, is_zero_mean_stress_and_strain, run_index, debug_output):
         """Record the loop values."""
 
-        if loads_min:
-            self._loads_min += loads_min
-        if loads_max:
-            self._loads_max += loads_max
-        self._S_min += S_min
-        self._S_max += S_max
-        self._epsilon_min += epsilon_min
-        self._epsilon_max += epsilon_max
-        self._epsilon_min_LF += epsilon_min_LF
-        self._epsilon_max_LF += epsilon_max_LF
+        if len(loads_min) > 0:
+            self._loads_min = loads_min if len(self._loads_min) == 0 else pd.concat([self._loads_min, loads_min])
+        elif len(self._loads_min) == 0:
+            self._loads_min.index = loads_min.index
+        if len(loads_max) > 0:
+            self._loads_max = loads_max if len(self._loads_max) == 0 else pd.concat([self._loads_max, loads_max])
+        elif len(self._loads_max) == 0:
+            self._loads_max.index = loads_max.index
+        self._S_min = S_min if len(self._S_min) == 0 else pd.concat([self._S_min, S_min])
+        self._S_max = S_max if len(self._S_max) == 0 else pd.concat([self._S_max, S_max])
+        self._epsilon_min = pd.concat([self._epsilon_min, epsilon_min])
+        self._epsilon_max = pd.concat([self._epsilon_max, epsilon_max])
+        self._epsilon_min_LF = pd.concat([self._epsilon_min_LF, epsilon_min_LF])
+        self._epsilon_max_LF = pd.concat([self._epsilon_max_LF, epsilon_max_LF])
         self._is_closed_hysteresis += is_closed_hysteresis
         self._is_zero_mean_stress_and_strain += is_zero_mean_stress_and_strain
 
@@ -379,11 +382,10 @@ class FKMNonlinearRecorder(AbstractRecorder):
     def _get_for_every_node(self, boolean_array):
 
         # number of points, i.e., number of values for every load step
-        m = len(self._S_min[0])
-
+        li = self._S_min.index.to_frame()['load_step']
+        m = self._S_min.groupby((li!=li.shift()).cumsum(), sort=False).count().iloc[0]
         # bring the array of boolean values to the right shape
         # numeric_array contains only 0s and 1s for False and True
-        numeric_array = np.array(boolean_array).reshape(-1,1).dot(np.ones((1,m)))
-
+        numeric_array = np.array(boolean_array).reshape(-1,1).dot(np.ones((1,m))).flatten()
         # transform the array to boolean type
         return np.where(numeric_array == 1, True, False)

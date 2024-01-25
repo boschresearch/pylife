@@ -279,6 +279,7 @@ class TestHCMExample1(unittest.TestCase):
         np.testing.assert_allclose(strain_values_primary_reference, strain_values_primary, rtol=1e-3)
         np.testing.assert_allclose(stress_values_primary_reference, stress_values_primary, rtol=1e-3)
         np.testing.assert_allclose(hysteresis_index_primary_reference, hysteresis_index_primary)
+
         np.testing.assert_allclose(strain_values_secondary_reference, strain_values_secondary, rtol=1e-3)
         np.testing.assert_allclose(stress_values_secondary_reference, stress_values_secondary, rtol=1e-3)
         np.testing.assert_allclose(hysteresis_index_secondary_reference, hysteresis_index_secondary)
@@ -357,19 +358,17 @@ class TestHCMExample2(unittest.TestCase):
 
 @pytest.mark.parametrize('vals, expected_loads_min, expected_loads_max', [
     (
-        [200, 600, 1000, 60, 1500, 201, 80, 400, 1501, 700, 200],
-        [60.0, 80.0, 200.0, 80.0, 60.0],
-        [1000.0, 1500.0, 1000.0, 1500.0, 1501.0]
+        [200, 600, 1000, 60, 1500, 200, 80, 400, 1500, 700, 200],
+        [60, 120, 180, 80, 160, 240, 200, 400, 600, 60, 120, 180, 80, 160, 240],
+        [1000, 2000, 3000, 1500, 3000, 4500, 1000, 2000, 3000, 1500, 3000, 4500, 1500, 3000, 4500]
     ),
     (
-        [0, 500],
-        [],
-        []
+        [0, 500], [], []
     ),
     (
         [100, -200, 100, -250, 200, 0, 200, -200],
-        [-200.,    0., -200.,  100., -250.,    0.],
-        [ 100.,  200., -200.,  200., -250.,  200.]
+        [-200, -400, -600,  0, 0, 0,  -200, -400, -600, -200, -400, -600, -250, -500, -750, 0, 0, 0],
+        [100,  200, 300, 200, 400, 600, 100, 200, 300, 100, 200, 300, 200, 400, 600, 200, 400, 600]
     )
 ])
 def test_edge_case_value_in_sample_tail(vals, expected_loads_min, expected_loads_max):
@@ -377,7 +376,6 @@ def test_edge_case_value_in_sample_tail(vals, expected_loads_min, expected_loads
 
     signal = pd.DataFrame({11: vals, 12: 2*vals, 13: 3*vals, 'load_step': range(len(vals))}).set_index('load_step').stack()
     signal.index.names = ['load_step', 'node_id']
-    signal = pd.DataFrame({'l': signal})
 
     E = 206e3    # [MPa] Young's modulus
     K = 3.1148*(1251)**0.897 / (( np.min([0.338, 1033.*1251.**(-1.235)]) )**0.187)
@@ -387,7 +385,7 @@ def test_edge_case_value_in_sample_tail(vals, expected_loads_min, expected_loads
 
     extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
 
-    maximum_absolute_load = max(abs(signal['l']))
+    maximum_absolute_load = max(abs(signal))
 
     extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
         extended_neuber, maximum_absolute_load, 100
@@ -399,33 +397,30 @@ def test_edge_case_value_in_sample_tail(vals, expected_loads_min, expected_loads
     )
     detector.process(signal).process(signal)
 
-    print("result")
+    loads_min = detector.recorder.loads_min
+    loads_max = detector.recorder.loads_max
 
-    loads_min = [l.iloc[0].values[0] for l in detector.recorder.loads_min]
-    loads_max = [l.iloc[0].values[0] for l in detector.recorder.loads_max]
+    np.testing.assert_allclose(loads_min, np.array(expected_loads_min))
+    np.testing.assert_allclose(loads_max, np.array(expected_loads_max))
 
-    print(loads_min)
-    print(loads_max)
-    np.testing.assert_allclose(loads_min, expected_loads_min)
-    np.testing.assert_allclose(loads_max, expected_loads_max)
+    detector.recorder.collective
 
-
-def test_flush_edge_case():
+def test_flush_edge_case_load():
     mi_1 = pd.MultiIndex.from_product([range(9), range(3)], names=["load_step", "node_id"])
 
-    signal_1 = pd.DataFrame({'l': [
+    signal_1 = pd.Series([
         0.0, 0.0, 0.0, 143.0, 171.0, 31.0, -287.0, -343.0, -63.0, 143.0, 171.0,
         31.0, -359.0, -429.0, -79.0, 287.0, 343.0, 63.0, 0.0, 0.0, 0.0, 287.0,
         343.0, 63.0, -287.0, -343.0, -63.0
-    ]}, index=mi_1)
+    ], index=mi_1)
 
-    mi_2 = pd.MultiIndex.from_product([range(8), range(3)], names=["load_step", "node_id"])
+    mi_2 = pd.MultiIndex.from_product([range(9, 17), range(3)], names=["load_step", "node_id"])
 
-    signal_2 = pd.DataFrame({'l': [
+    signal_2 = pd.Series([
         143.0, 171.0, 31.0, -287.0, -343.0, -63.0, 143.0, 171.0, 31.0, -359.0,
         -429.0, -79.0, 287.0, 343.0, 63.0, 0.0, 0.0, 0.0, 287.0, 343.0, 63.0,
         -287.0, -343.0, -63.0
-    ]}, index=mi_2)
+    ], index=mi_2)
 
     E = 206e3    # [MPa] Young's modulus
     K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
@@ -435,7 +430,7 @@ def test_flush_edge_case():
 
     extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
 
-    maximum_absolute_load = max(abs(pd.concat([signal_1['l'], signal_2['l']])))
+    maximum_absolute_load = max(abs(pd.concat([signal_1, signal_2])))
 
     extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
         extended_neuber, maximum_absolute_load, 100
@@ -448,12 +443,266 @@ def test_flush_edge_case():
 
     detector.process(signal_1, flush=True).process(signal_2, flush=True)
 
-    loads_min = [l.iloc[0].values[0] for l in detector.recorder.loads_min]
-    loads_max = [l.iloc[0].values[0] for l in detector.recorder.loads_max]
+    expected_load_min = pd.Series(
+        [
+            -143.0, -171.0, -31.0, -287.0, -343.0, -63.0, 0.0, 0.0, 0.0, -287.0, -343.0,
+            -63.0, -287.0, -343.0, -63.0, -359.0, -429.0, -79.0, 0.0, 0.0, 0.0
+        ],
+        index=pd.MultiIndex.from_product(
+            [[1, 2, 6, 8, 10, 4, 14], range(3)], names=["load_step", "node_id"]
+        )
+    )
+    expected_load_max = pd.Series(
+        [
+            143.0, 171.0,  31.0, 143.0, 171.0,  31.0, 287.0, 343.0,  63.0, 143.0, 171.0,
+            31.0, 143.0, 171.0,  31.0, 287.0, 343.0,  63.0, 287.0, 343.0, 63.0
+        ],
+        index=pd.MultiIndex.from_product(
+            [[1, 3, 5, 9, 11, 7, 13], range(3)], names=["load_step", "node_id"]
+        )
+    )
 
-    print(loads_min)
-    print(loads_max)
-    expected_loads_min = [-143.0, -287.0,    0.  , -287.0, -287.0, -359.0,    0.  ]
-    expected_loads_max = [143.0, 143.0, 287.0, 143.0, 143.0, 287.0, 287.0]
-    np.testing.assert_allclose(loads_min, expected_loads_min)
-    np.testing.assert_allclose(loads_max, expected_loads_max)
+    loads_min = detector.recorder.loads_min
+    loads_max = detector.recorder.loads_max
+
+    pd.testing.assert_series_equal(loads_min, expected_load_min)
+    pd.testing.assert_series_equal(loads_max, expected_load_max)
+
+
+def test_flush_edge_case_S():
+    mi_1 = pd.MultiIndex.from_product([range(9), range(3)], names=["load_step", "node_id"])
+
+    signal_1 = pd.Series([
+        0.0, 0.0, 0.0, 143.0, 171.0, 31.0, -287.0, -343.0, -63.0, 143.0, 171.0,
+        31.0, -359.0, -429.0, -79.0, 287.0, 343.0, 63.0, 0.0, 0.0, 0.0, 287.0,
+        343.0, 63.0, -287.0, -343.0, -63.0
+    ], index=mi_1)
+
+    mi_2 = pd.MultiIndex.from_product([range(9, 17), range(3)], names=["load_step", "node_id"])
+
+    signal_2 = pd.Series([
+        143.0, 171.0, 31.0, -287.0, -343.0, -63.0, 143.0, 171.0, 31.0, -359.0,
+        -429.0, -79.0, 287.0, 343.0, 63.0, 0.0, 0.0, 0.0, 287.0, 343.0, 63.0,
+        -287.0, -343.0, -63.0
+    ], index=mi_2)
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
+    #K = 2650.5   # [MPa]
+    n = 0.07    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(pd.concat([signal_1, signal_2])))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+
+    detector.process(signal_1, flush=True).process(signal_2, flush=True)
+
+    expected_S_min = pd.Series(
+        [
+            -49.096964, -57.761134, -11.552227,  -96.749900, -115.522268,  -21.660425, -9.610801e-11,
+            -1.143832e-10, -1.241333e-07,  -96.749900, -115.522268,  -21.660425,
+            -96.749900, -115.522268,  -21.660425, -121.298382, -144.402835,  -27.436539,
+            -9.610801e-11, -1.143832e-10, -1.241333e-07,
+        ],
+        index=pd.MultiIndex.from_product(
+            [[1, 2, 6, 8, 10, 4, 14], range(3)], names=["load_step", "node_id"]
+        )
+    )
+    expected_S_max = pd.Series(
+        [
+            49.096964, 57.761134, 11.552227, 49.096964, 57.761134, 10.108198, 96.749900,
+            115.522268, 21.660425, 49.096964, 57.761134, 10.108198, 49.096964, 57.761134,
+            10.108198, 96.749900, 115.522268, 21.660425, 96.749900, 115.522268, 21.660425,
+        ],
+        index=pd.MultiIndex.from_product(
+            [[1, 3, 5, 9, 11, 7, 13], range(3)], names=["load_step", "node_id"]
+        )
+    )
+
+    S_min = detector.recorder.S_min
+    S_max = detector.recorder.S_max
+
+    pd.testing.assert_series_equal(S_min, expected_S_min, check_index=False)
+    pd.testing.assert_series_equal(S_max, expected_S_max, check_index=False)
+
+    pd.testing.assert_series_equal(S_min, expected_S_min)
+    pd.testing.assert_series_equal(S_max, expected_S_max)
+
+
+@pytest.mark.parametrize('vals, num', [
+    (
+        1266.25 * pd.Series(
+            [0.3, -0.3, 0.5, -0.5, 0.6, -0.6, 0.3, -0.3, 0.7, -0.7, 0.2, -0.2, 0.6, -0.6, 0.8, -0.8, 0.8, -0.8]
+        ),
+        1
+    ),
+    (
+        np.array([100., -100., 100., -200., -100., -200., 200., 0., 200., -200.]),
+        2
+    ),
+    (
+        [100., 0., 80., 20., 60., 40.],
+        3
+    ),
+    (
+        [200., 600., 1000., 60., 1500., 200., 80., 400., 1500., 700., 200.],
+        4
+    ),
+    (
+        [0., 500.], 5
+    ),
+    (
+        [100., -200., 100., -250., 200., 0., 200., -200.],
+        6
+    ),
+    (
+        pd.Series([100., -200., 100., -250., 200., 0., 200., -200.]) * (250+6.6)/250 * 1.4,
+        7
+    )
+])
+def test_edge_case_value_in_sample_tail_compare_simple(vals, num):
+    vals = np.array(vals)
+    signal = pd.DataFrame({11: vals, 12: 2*vals, 13: 3*vals, 'load_step': range(len(vals))}).set_index('load_step').stack()
+    signal.index.names = ['load_step', 'node_id']
+
+    signal_2 = signal.copy()
+    index = signal.index.to_frame().reset_index(drop=True)
+    index['load_step'] += len(vals)
+    signal_2.index = index.set_index(signal.index.names).index
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.1148*(1251)**0.897 / (( np.min([0.338, 1033.*1251.**(-1.235)]) )**0.187)
+    #K = 2650.5   # [MPa]
+    n = 0.187    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load_simple = max(abs(vals))
+    maximum_absolute_load_multiple = signal.abs().groupby('node_id').max()
+
+
+    print("single")
+    extended_neuber_binned_simple = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load_simple, 100
+    )
+    detector_simple = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned_simple
+    )
+    detector_simple.process(vals).process(vals)
+
+    print("multiple")
+    extended_neuber_binned_multiple = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load_multiple, 100
+    )
+    detector_multiindex = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned_multiple
+    )
+    detector_multiindex.process(signal).process(signal)
+
+    simple_collective = detector_simple.recorder.collective
+    simple_collective.index = simple_collective.index.droplevel('assessment_point_index')
+    simple_collective.pop('debug_output')
+    multi_collective = detector_multiindex.recorder.collective
+
+    if 'debug_output' in multi_collective:
+        multi_collective.pop('debug_output')
+    pd.testing.assert_frame_equal(simple_collective, multi_collective.groupby('hysteresis_index').first())
+
+    with open(f'tests/stress/rainflow/reference-fkm-nonlinear/reference_process-process-{num}.json') as f:
+        reference = f.read()
+
+    assert multi_collective.to_json(indent=4) == reference
+
+
+
+@pytest.mark.parametrize('vals, num', [
+    (
+        1266.25 * pd.Series(
+            [0.3, -0.3, 0.5, -0.5, 0.6, -0.6, 0.3, -0.3, 0.7, -0.7, 0.2, -0.2, 0.6, -0.6, 0.8, -0.8, 0.8, -0.8]
+        ),
+        1
+    ),
+    (
+        np.array([100., -100., 100., -200., -100., -200., 200., 0., 200., -200.]),
+        2
+    ),
+    (
+        [100., 0., 80., 20., 60., 40.],
+        3
+    ),
+    (
+        [200., 600., 1000., 60., 1500., 200., 80., 400., 1500., 700., 200.],
+        4
+    ),
+    (
+        [0., 500.], 5
+    ),
+    (
+        [100., -200., 100., -250., 200., 0., 200., -200.],
+        6
+    ),
+    (
+        pd.Series([100., -200., 100., -250., 200., 0., 200., -200.]) * (250+6.6)/250 * 1.4,
+        7
+    )
+])
+def test_hcm_first_second(vals, num):
+    vals = np.array(vals)
+    signal = pd.DataFrame({11: vals, 12: 2*vals, 13: 3*vals, 'load_step': range(len(vals))}).set_index('load_step').stack()
+    signal.index.names = ['load_step', 'node_id']
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.1148*(1251)**0.897 / (( np.min([0.338, 1033.*1251.**(-1.235)]) )**0.187)
+    #K = 2650.5   # [MPa]
+    n = 0.187    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load_simple = max(abs(vals))
+    maximum_absolute_load_multiple = signal.abs().groupby('node_id').max()
+
+    extended_neuber_binned_simple = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load_simple, 100
+    )
+    extended_neuber_binned_multiple = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load_multiple, 100
+    )
+    detector_simple = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned_simple
+    )
+    detector_simple.process_hcm_first(vals).process_hcm_second(vals)
+
+    detector_multiindex = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned_multiple
+    )
+    detector_multiindex.process_hcm_first(signal).process_hcm_second(signal)
+
+    simple_collective = detector_simple.recorder.collective
+    simple_collective.index = simple_collective.index.droplevel('assessment_point_index')
+    simple_collective.pop('debug_output')
+    multi_collective = detector_multiindex.recorder.collective
+
+    if 'debug_output' in multi_collective:
+        multi_collective.pop('debug_output')
+    pd.testing.assert_frame_equal(simple_collective, multi_collective.groupby('hysteresis_index').first())
+
+    with open(f'tests/stress/rainflow/reference-fkm-nonlinear/reference_first_second-{num}.json') as f:
+        reference = f.read()
+
+    assert multi_collective.to_json(indent=4) == reference

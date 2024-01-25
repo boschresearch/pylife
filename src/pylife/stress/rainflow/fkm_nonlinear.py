@@ -54,15 +54,15 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         @property
         def load_representative(self):
-            if isinstance(self._load, pd.DataFrame):
-                return self._load.iloc[0].values[0]
+            if isinstance(self._load, pd.Series):
+                return self._load.iloc[0]
             else:
                 return self._load
 
         @property
         def strain_representative(self):
-            if isinstance(self._strain, pd.DataFrame):
-                return self._strain.iloc[0].values[0]
+            if isinstance(self._strain, pd.Series):
+                return self._strain.iloc[0]
             else:
                 return self._strain
 
@@ -75,15 +75,16 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             return self._strain
 
         def __str__(self):
-            if isinstance(self._load, pd.Series) or isinstance(self._load, pd.DataFrame):
+            assert not isinstance(self._load, pd.DataFrame)
+            if isinstance(self._load, pd.Series):
                 if self._stress is None:
                     if self._load is None:
                         return "()"
-                    return f"(load:{self._load.values[0]})"
+                    return f"(load:{self._load.values[0]:.1f})"
 
                 if self._load is None:
-                    return f"(sigma:{self._stress.values[0]}, eps:{self._strain.values[0]})"
-                return f"(load:{self._load.values[0]}, sigma:{self._stress.values[0]}, eps:{self._strain.values[0]})"
+                    return f"(sigma:{self._stress.values[0]:.1f}, eps:{self._strain.values[0]:.1e})"
+                return f"(load:{self._load.values[0]:.1f}, sigma:{self._stress.values[0]:.1f}, eps:{self._strain.values[0]:.1e})"
 
             if self._stress is None:
                 if self._load is None:
@@ -115,6 +116,9 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         # deviation from FKM nonlinear algorithm to match given example in FKM nonlinear
         self._epsilon_min_LF = 0       # the current value for _epsilon_min_LF, initialization see FKM nonlinear p.122
         self._epsilon_max_LF = 0       # the current value for _epsilon_max_LF, initialization see FKM nonlinear p.122
+
+        self._epsilon_min_LF = None
+        self._epsilon_max_LF = None
 
         # whether the load sequence starts and the first value should be considered (normally, only "turns" in the sequence get extracted, which would omit the first value)
         self._is_load_sequence_start = True
@@ -224,17 +228,27 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         """
 
         # collected values, which will be passed to the recorder at the end of `process()`
-        _loads_min = []
-        _loads_max = []
-        _S_min = []
-        _S_max = []
-        _epsilon_min = []
-        _epsilon_max = []
-        _epsilon_min_LF = []      # minimum strain of the load history up to (including) the current hysteresis (LF=Lastfolge), mentioned on p.127 of FKM nonlinear
-        _epsilon_max_LF = []      # maximum strain of the load history up to (including) the current hysteresis (LF=Lastfolge), mentioned on p.127 of FKM nonlinear
+        assert not isinstance(samples, pd.DataFrame)
+        multi_index = isinstance(samples, pd.Series) and len(samples.index.names) > 1
+
+        empty_index = [] if not isinstance(samples, pd.Series) else pd.DataFrame(columns=samples.index.names, dtype=np.int64).set_index(samples.index.names, drop=True).index
+        _loads_min = pd.Series(index=empty_index, dtype=np.float64)
+        _loads_max = pd.Series(index=empty_index, dtype=np.float64)
+        _S_min = pd.Series(index=empty_index, dtype=np.float64)
+        _S_max = pd.Series(index=empty_index, dtype=np.float64)
+        _epsilon_min = pd.Series(index=empty_index, dtype=np.float64)
+        _epsilon_max = pd.Series(index=empty_index, dtype=np.float64)
+        _epsilon_min_LF = pd.Series(index=empty_index, dtype=np.float64)      # minimum strain of the load history up to (including) the current hysteresis (LF=Lastfolge), mentioned on p.127 of FKM nonlinear
+        _epsilon_max_LF = pd.Series(index=empty_index, dtype=np.float64)      # maximum strain of the load history up to (including) the current hysteresis (LF=Lastfolge), mentioned on p.127 of FKM nonlinear
         _is_closed_hysteresis = []            # whether the hysteresis is fully closed and counts as a normal damage hysteresis
         _is_zero_mean_stress_and_strain = []  # whether the mean stress and strain are forced to be zero (occurs in eq. 2.9-52)
         _debug_output = []
+
+        if self._epsilon_min_LF is None:
+            self._epsilon_min_LF = pd.Series(0.0)
+
+        if self._epsilon_max_LF is None:
+            self._epsilon_max_LF = pd.Series(0.0)
 
         # store all lists together
         recording_lists = [_loads_min, _loads_max, _S_min, _S_max, _epsilon_min,
@@ -247,31 +261,31 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         self._run_index += 1
 
         # convert from Series to np.array
-        if isinstance(samples, pd.Series):
-            samples = samples.to_numpy()
 
         old_head_index = self._head_index
 
-        if isinstance(samples, pd.DataFrame):
-            _samples = samples.groupby('load_step').first().to_numpy().flatten()
+
+        if multi_index:
+            _samples = samples.groupby('load_step', sort=False).first().to_numpy().flatten()
         else:
-            _samples = samples
+            _samples = np.asarray(samples)
 
         # get the turning points
         loads_indices, load_turning_points = self._new_turns(_samples, flush)
 
-        if isinstance(samples, pd.DataFrame):
+        if multi_index:
             load_steps = samples.index.get_level_values('load_step').unique().to_series()
             if len(loads_indices) > 0:
                 tindex = loads_indices - old_head_index
                 idx = load_steps.iloc[tindex]
                 vals = samples.loc[idx].reset_index()
-                vals['load_step'].iloc[:len(self._last_sample)] = 0
                 vals = vals.set_index(['load_step', 'node_id'])
+                vals.columns = ['l']
                 if tindex[0] < 0:
-                    vals.iloc[:len(self._last_sample)] = self._last_sample
+                    vals.iloc[:len(self._last_sample), 0] = self._last_sample
 
-                load_turning_points = [df.reset_index(drop=True) for _, df in vals.groupby("load_step")]
+                load_turning_points = vals.iloc[:, 0]
+
             else:
                 load_turning_points = []
             idx = load_steps.iloc[-1]
@@ -279,13 +293,19 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         self._initialize_epsilon_min_for_hcm_run(samples, load_turning_points)
 
-        # run the HCM algorithm
-        self._load_max_seen, self._iz, self._ir = self._perform_hcm_algorithm(
+        if not isinstance(load_turning_points, pd.Series):
+            load_turning_points = pd.Series(load_turning_points)
+            load_turning_points.index.name = 'load_step'
+
+        self._load_max_seen, self._iz, self._ir, recording_lists = self._perform_hcm_algorithm(
             samples=samples, recording_lists=recording_lists, largest_point=largest_point,
             previous_load=previous_load, iz=self._iz, ir=self._ir,
             load_max_seen=self._load_max_seen, load_turning_points=load_turning_points)
 
         # transfer the detected hystereses to the recorder
+        [_loads_min, _loads_max, _S_min, _S_max, _epsilon_min, _epsilon_max, _epsilon_min_LF,
+         _epsilon_max_LF, _is_closed_hysteresis, _is_zero_mean_stress_and_strain, _debug_output] = recording_lists
+
         self._recorder.record_values_fkm_nonlinear(
             loads_min=_loads_min, loads_max=_loads_max,
             S_min=_S_min, S_max=_S_max,
@@ -308,7 +328,6 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         list of float
            The strain values of the turning points that are visited during the HCM algorithm.
         """
-
         return np.array(self._strain_values)
 
     @property
@@ -421,9 +440,8 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         sigma = self._notch_approximation_law.stress(current_point.load)
         epsilon = self._notch_approximation_law.strain(sigma, current_point.load)
 
-        current_point._stress = sigma
-        current_point._strain = epsilon
-
+        current_point._stress = pd.Series(sigma.values, index=current_point.load.index)
+        current_point._strain = pd.Series(epsilon.values, index=current_point.load.index)
 
         # log point for later plotting
         self._hcm_point_history.append(("primary", current_point, self._hysteresis_index))
@@ -446,42 +464,39 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             The initially given current point, but with  updated values of stress and strain.
 
         """
-        delta_L = current_point.load - previous_point.load   # as described in FKM nonlinear
+        delta_L = current_point.load.values - previous_point.load.values   # as described in FKM nonlinear
+        index = current_point.load.index
+        index_levels = [n for n in index.names if n != 'load_step']
+        delta_L = pd.Series(delta_L, index=current_point.load.index.droplevel(index_levels))
 
         delta_sigma = self._notch_approximation_law.stress_secondary_branch(delta_L)
         delta_epsilon = self._notch_approximation_law.strain_secondary_branch(delta_sigma, delta_L)
 
-        current_point._stress = previous_point._stress + delta_sigma
-        current_point._strain = previous_point._strain + delta_epsilon
+        current_point._stress = pd.Series(previous_point._stress.values + delta_sigma.values, index=current_point.load.index)
+        current_point._strain = pd.Series(previous_point._strain.values + delta_epsilon.values, index=current_point.load.index)
 
         # log point for later plotting
         self._hcm_point_history.append(("secondary", current_point, self._hysteresis_index))
-
         return current_point
 
     def _adjust_samples_and_flush_for_hcm_first_run(self, samples):
 
-        # convert from Series to np.array
-        if isinstance(samples, pd.Series):
-            samples = samples.to_numpy()
+        is_multi_index = isinstance(samples, pd.Series) and len(samples.index.names) > 1
 
-        # prepend zero
-        if isinstance(samples, np.ndarray):
-            samples = np.concatenate([[0], samples])
-
-        elif isinstance(samples, pd.DataFrame):
-
+        if not is_multi_index:
+            samples = np.concatenate([[0], np.asarray(samples)])
+        else:
             # get the index with all node_id`s
             node_id_index = samples.groupby("node_id").first().index
 
             # create a new sample with 0 load for all nodes
             multi_index = pd.MultiIndex.from_product([[0], node_id_index], names=["load_step","node_id"])
-            first_sample = pd.DataFrame(index=multi_index, data=[0]*len(multi_index), columns=samples.columns)
+            first_sample = pd.Series(0, index=multi_index)
 
             # increase the load_step index value by one for all samples
             samples_without_index = samples.reset_index()
             samples_without_index.load_step += 1
-            samples = samples_without_index.set_index(["load_step", "node_id"])
+            samples = samples_without_index.set_index(["load_step", "node_id"])[0]
 
             # prepend the new zero load sample
             samples = pd.concat([first_sample, samples], axis=0)
@@ -489,13 +504,12 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         # determine first, second and last samples
         scalar_samples = samples
 
-        if isinstance(samples, pd.DataFrame):
+        if is_multi_index:
             # convert to list
-            scalar_samples = [df.iloc[0].values[0] for _,df in samples.groupby("load_step")]
-
+            scalar_samples = samples.groupby("load_step", sort=False).first()
 
         scalar_samples_twice = np.concatenate([scalar_samples, scalar_samples])
-        turn_indices,_ = pylife.stress.rainflow.general.find_turns(scalar_samples_twice)
+        turn_indices, _ = pylife.stress.rainflow.general.find_turns(scalar_samples_twice)
 
         flush = True
         if len(scalar_samples)-1 not in turn_indices:
@@ -514,7 +528,8 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         self._hcm_message += f"turning points: {samples}\n"
 
         # iterate over loads from the given list of samples
-        for current_load in load_turning_points:
+        li = load_turning_points.index.to_frame()['load_step']
+        for _, current_load in load_turning_points.groupby((li!=li.shift()).cumsum(), sort=False):
             current_load_representative = self._get_scalar_current_load(current_load)
 
             self._hcm_message += f"* load {current_load}:"
@@ -523,7 +538,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             # The stress and strain values will be computed during the current iteration of the present loop.
             current_point = self._HCM_Point(load=current_load)
 
-            current_point, iz, ir = self._hcm_process_sample(
+            current_point, iz, ir, recording_lists = self._hcm_process_sample(
                 current_point=current_point,
                 recording_lists=recording_lists,
                 largest_point=largest_point, iz=iz, ir=ir,
@@ -550,7 +565,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
             previous_load = current_load_representative
 
-        return load_max_seen, iz, ir
+        return load_max_seen, iz, ir, recording_lists
 
     def _hcm_update_min_max_strain_values(self, *, previous_load, current_load_representative, current_point):
         """Update the minimum and maximum yet seen strain values
@@ -563,11 +578,14 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         if previous_load < current_load_representative-1e-12:
             # case "steigend=1", i.e., load increases
-            self._epsilon_max_LF = np.maximum(self._epsilon_max_LF, current_point.strain)
+            new_val = self._epsilon_max_LF if self._epsilon_max_LF.values[0] > current_point.strain.values[0] else current_point.strain
+            self._epsilon_max_LF = new_val #pd.Series(new_val.values, index=current_point.strain.index)
+
 
         else:
             # case "steigend=2", i.e., load decreases
-            self._epsilon_min_LF = np.minimum(self._epsilon_min_LF, current_point.strain)
+            new_val = self._epsilon_min_LF if self._epsilon_min_LF.values[0] < current_point.strain.values[0] else current_point.strain
+            self._epsilon_min_LF = pd.Series(new_val.values, index=current_point.strain.index)
 
     def _hcm_process_sample(self, *, current_point, recording_lists, largest_point, iz, ir, load_max_seen, current_load_representative):
         """ Process one sample in the HCM algorithm, i.e., one load value """
@@ -580,7 +598,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 # if the current load is a new maximum
                 if np.abs(current_load_representative) > load_max_seen+1e-12:
                     # case a) i., "Memory 3"
-                    current_point = self._handle_case_a_i(
+                    current_point, recording_lists = self._handle_case_a_i(
                         current_point=current_point, previous_point=previous_point,
                         recording_lists=recording_lists
                     )
@@ -589,13 +607,13 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 else:
                     current_point = self._handle_case_a_ii(current_point=current_point, previous_point=previous_point)
 
+
                 # end the inner loop and fetch the next load from the load sequence
                 break
 
             if iz < ir:
                 # branch is fully part of the initial curve, case "Memory 1"
                 current_point = self._handle_case_b(current_point)
-
                 # do not further process this load
                 break
 
@@ -606,7 +624,6 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             # is the current load extent smaller than the last one?
             current_load_extent = np.abs(current_load_representative-previous_point_1.load_representative)
             previous_load_extent = np.abs(previous_point_1.load_representative-previous_point_0.load_representative)
-
             # yes
             if current_load_extent < previous_load_extent-1e-12:
                 current_point = self._handle_case_c_i(current_point=current_point, previous_point_1=previous_point_1)
@@ -615,7 +632,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 break
 
             # no -> we have a new hysteresis
-            self._handle_case_c_ii(
+            recording_lists = self._handle_case_c_ii(
                 recording_lists=recording_lists, previous_point_0=previous_point_0, previous_point_1=previous_point_1
             )
 
@@ -647,38 +664,43 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             current_point = self._proceed_on_primary_branch(current_point)
 
             # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
-            self._strain_values.append(current_point.strain)
+            self._strain_values.append(current_point.strain.values[0])
 
             # count number of strain values in the first run of the HCM algorithm
             if self._run_index == 1:
                 self._n_strain_values_first_run += 1
             break
 
-        return current_point, iz, ir
+        return current_point, iz, ir, recording_lists
 
     def _handle_case_c_ii(self, *, recording_lists, previous_point_0, previous_point_1):
         """ Handle case c) ii. in the HCM algorithm, which detects a new hysteresis."""
 
         self._hcm_message += f" case c) ii., detected full hysteresis"
 
-        epsilon_min = np.minimum(previous_point_0.strain, previous_point_1.strain)
-        epsilon_max = np.maximum(previous_point_0.strain, previous_point_1.strain)
+        epsilon_min = previous_point_0.strain if previous_point_0.strain.values[0] < previous_point_1.strain.values[0] else previous_point_1.strain
+        epsilon_max = previous_point_0.strain if previous_point_0.strain.values[0] > previous_point_1.strain.values[0] else previous_point_1.strain
 
         [_loads_min, _loads_max, _S_min, _S_max, _epsilon_min, _epsilon_max, _epsilon_min_LF,
          _epsilon_max_LF, _is_closed_hysteresis, _is_zero_mean_stress_and_strain, _debug_output] = recording_lists
 
         # consume the last two loads, process this hysteresis
-        _loads_min.append(np.minimum(previous_point_0.load, previous_point_1.load))
-        _loads_max.append(np.maximum(previous_point_0.load, previous_point_1.load))
-        _S_min.append(np.minimum(previous_point_0.stress, previous_point_1.stress))
-        _S_max.append(np.maximum(previous_point_0.stress, previous_point_1.stress))
-        _epsilon_min.append(epsilon_min)
-        _epsilon_max.append(epsilon_max)
-        _epsilon_min_LF.append(self._epsilon_min_LF)
-        _epsilon_max_LF.append(self._epsilon_max_LF)
+        current_load_min = previous_point_0.load if previous_point_0.load.values[0] < previous_point_1.load.values[0] else previous_point_1.load
+        _loads_min = pd.concat([_loads_min, current_load_min])
+        current_load_max = previous_point_0.load if previous_point_0.load.values[0] > previous_point_1.load.values[0] else previous_point_1.load
+        _loads_max = pd.concat([_loads_max, current_load_max])
+
+        current_S_min = previous_point_0.stress if previous_point_0.stress.values[0] < previous_point_1.stress.values[0] else previous_point_1.stress
+        _S_min = pd.concat([_S_min, current_S_min])
+        current_S_max = previous_point_0.stress if previous_point_0.stress.values[0] > previous_point_1.stress.values[0] else previous_point_1.stress
+        _S_max = pd.concat([_S_max, current_S_max])
+
+        _epsilon_min = pd.concat([_epsilon_min, epsilon_min])
+        _epsilon_max = pd.concat([_epsilon_max, epsilon_max])
+        _epsilon_min_LF = pd.concat([_epsilon_min_LF, self._epsilon_min_LF])
+        _epsilon_max_LF = pd.concat([_epsilon_max_LF, self._epsilon_max_LF])
         _is_closed_hysteresis.append(True)
         _is_zero_mean_stress_and_strain.append(False)       # do not force the mean stress and strain to be zero
-
         # save point for the plotting utility / `interpolated_stress_strain_data` method
         # The hysteresis goes: previous_point_0 -> previous_point_1 -> previous_point_0.
         # previous_point_0,previous_point_1 are already logged, now store only previous_point_0 again to visualize the closed hysteresis
@@ -690,6 +712,9 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         self._residuals.pop()
         self._residuals.pop()
 
+        return [_loads_min, _loads_max, _S_min, _S_max, _epsilon_min, _epsilon_max, _epsilon_min_LF,
+                _epsilon_max_LF, _is_closed_hysteresis, _is_zero_mean_stress_and_strain, _debug_output]
+
     def _handle_case_c_i(self, *, current_point, previous_point_1):
         """Handle case c) i. of the HCM algorithm."""
 
@@ -699,7 +724,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         current_point = self._proceed_on_secondary_branch(previous_point_1, current_point)
 
         # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
-        self._strain_values.append(current_point.strain)
+        self._strain_values.append(current_point.strain.values[0])
 
         # count number of strain values in the first run of the HCM algorithm
         if self._run_index == 1:
@@ -717,7 +742,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         current_point = self._proceed_on_primary_branch(current_point)
 
         # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
-        self._strain_values.append(current_point.strain)
+        self._strain_values.append(current_point.strain.values[0])
 
         # count number of strain values in the first run of the HCM algorithm
         if self._run_index == 1:
@@ -734,7 +759,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         current_point = self._proceed_on_secondary_branch(previous_point, current_point)
 
         # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
-        self._strain_values.append(current_point.strain)
+        self._strain_values.append(current_point.strain.values[0])
 
         # count number of strain values in the first run of the HCM algorithm
         if self._run_index == 1:
@@ -762,20 +787,19 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         [_loads_min, _loads_max, _S_min, _S_max, _epsilon_min, _epsilon_max, _epsilon_min_LF,
          _epsilon_max_LF, _is_closed_hysteresis, _is_zero_mean_stress_and_strain, _debug_output] = recording_lists
-
-        _loads_min.append(-abs(previous_point.load))
-        _loads_max.append(abs(previous_point.load))
-        _S_min.append(-abs(previous_point.stress))
-        _S_max.append(abs(previous_point.stress))
-        _epsilon_min.append(-abs(previous_point.strain))
-        _epsilon_max.append(abs(previous_point.strain))
-        _epsilon_min_LF.append(self._epsilon_min_LF)
-        _epsilon_max_LF.append(self._epsilon_max_LF)
+        _loads_min = pd.concat([_loads_min, -abs(previous_point.load)])
+        _loads_max = pd.concat([_loads_max, abs(previous_point.load)])
+        _S_min = pd.concat([_S_min, -abs(previous_point.stress)])
+        _S_max = pd.concat([_S_max, abs(previous_point.stress)])
+        _epsilon_min = pd.concat([_epsilon_min, -abs(previous_point.strain)])
+        _epsilon_max = pd.concat([_epsilon_max, abs(previous_point.strain)])
+        _epsilon_min_LF = pd.concat([_epsilon_min_LF, self._epsilon_min_LF])
+        _epsilon_max_LF = pd.concat([_epsilon_max_LF, self._epsilon_max_LF])
         _is_closed_hysteresis.append(False)             # the hysteresis is not fully closed and will be considered half damage
         _is_zero_mean_stress_and_strain.append(True)    # force the mean stress and strain to be zero
 
         # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
-        self._strain_values.append(current_point.strain)
+        self._strain_values.append(current_point.strain.values[0])
 
         # count number of strain values in the first run of the HCM algorithm
         if self._run_index == 1:
@@ -788,7 +812,13 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         self._hysteresis_index += 1         # increment the hysteresis counter, only needed for the `interpolated_stress_strain` method which helps in plotting the hystereses
 
-        return current_point
+        return (
+            current_point,
+            [
+                _loads_min, _loads_max, _S_min, _S_max, _epsilon_min, _epsilon_max, _epsilon_min_LF,
+                _epsilon_max_LF, _is_closed_hysteresis, _is_zero_mean_stress_and_strain, _debug_output
+            ]
+        )
 
     def _get_scalar_current_load(self, current_load):
         """Get a scalar value that represents the current load.
@@ -796,8 +826,8 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         or the node from the first assessment point if multiple points are
         considered at once."""
 
-        if isinstance(current_load, pd.DataFrame):
-            current_load_representative = current_load.iloc[0].values[0]
+        if isinstance(current_load, pd.Series):
+            current_load_representative = current_load.iloc[0]
         else:
             current_load_representative = current_load
         return current_load_representative
@@ -814,8 +844,8 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 first_sample = samples[samples.index.get_level_values("load_step") == 0].reset_index(drop=True)
 
                 n_nodes = len(first_sample)
-                self._epsilon_min_LF *= pd.Series(1, index=np.arange(n_nodes))
-                self._epsilon_max_LF *= pd.Series(1, index=np.arange(n_nodes))
+                self._epsilon_min_LF = pd.Series([0.0]*n_nodes, index=pd.Index(np.arange(n_nodes), name='node_id'))
+                self._epsilon_max_LF = pd.Series([0.0]*n_nodes, index=pd.Index(np.arange(n_nodes), name='node_id'))
 
 
 class FKMNonlinearHysteresisPlotter:
@@ -895,8 +925,8 @@ class FKMNonlinearHysteresisPlotter:
         hysteresis_index_secondary = []
 
         previous_point = FKMNonlinearDetector._HCM_Point(stress=0, strain=0, load=0)
-        previous_point._stress = 0
-        previous_point._strain = 0
+        previous_point._stress = pd.Series(0)
+        previous_point._strain = pd.Series(0)
         previous_type = "primary"
         previous_is_direction_up = None
         last_secondary_start_point = None
@@ -910,15 +940,15 @@ class FKMNonlinearHysteresisPlotter:
         point_is_part_of_closed_hysteresis = self._determine_point_is_part_of_closed_hysteresis()
 
         previous_point = FKMNonlinearDetector._HCM_Point(strain=0)
-        previous_point._stress = 0
-        previous_point._strain = 0
+        previous_point._stress = pd.Series(0)
+        previous_point._strain = pd.Series(0)
 
         # iterate over all previously stored points of the curve
         for (type, hcm_point, hysteresis_index), is_part_of_closed_hysteresis in zip(self._hcm_point_history, point_is_part_of_closed_hysteresis):
 
             # determine current direction ("upwards"/"downwards" in stress direction) of the hysteresis branch to be plotted
             if hcm_point is not None and previous_point is not None:
-                is_direction_up = hcm_point.stress - previous_point.stress > 0
+                is_direction_up = hcm_point.stress.iloc[0] - previous_point.stress.iloc[0] > 0
 
             # depending on branch type, compute interpolated points on the branch
             if type == "primary":
@@ -1013,8 +1043,8 @@ class FKMNonlinearHysteresisPlotter:
                 stress = secondary_start_point._stress + delta_stress
                 strain = secondary_start_point._strain + delta_strain
 
-                new_points_stress.append(stress)
-                new_points_strain.append(strain)
+                new_points_stress.append(stress.iloc[0])
+                new_points_strain.append(strain.iloc[0])
 
             # if the hysteresis ends on the primary path, then the current assumption that we only need to plot the secondary branch is incorrect.
             # In that case, the end points are not equal, do not output any curve then.
@@ -1029,7 +1059,8 @@ class FKMNonlinearHysteresisPlotter:
             else:
                 # reuse the previous point for the next part of the graph
                 hcm_point = previous_point
-        return hcm_point,secondary_start_point
+
+        return hcm_point, secondary_start_point
 
     def _handle_primary_branch(self, *, n_points_per_branch, only_hystereses, strain_values_primary, stress_values_primary,
         hysteresis_index_primary, strain_values_secondary, stress_values_secondary, previous_point, previous_type, type,
@@ -1043,7 +1074,6 @@ class FKMNonlinearHysteresisPlotter:
                 stress_values_primary.append(np.nan)
                 strain_values_primary.append(np.nan)
                 hysteresis_index_primary.append(hysteresis_index)
-
                 stress_values_primary.append(stress_values_secondary[-1])
                 strain_values_primary.append(strain_values_secondary[-1])
                 hysteresis_index_primary.append(hysteresis_index)
@@ -1052,9 +1082,8 @@ class FKMNonlinearHysteresisPlotter:
             for stress in np.linspace(previous_point.stress, hcm_point.stress, n_points_per_branch):
                 # compute point on primary branch
                 strain = self._ramberg_osgood_relation.strain(stress)
-
-                stress_values_primary.append(stress)
-                strain_values_primary.append(strain)
+                stress_values_primary.append(stress[0])
+                strain_values_primary.append(strain[0])
                 hysteresis_index_primary.append(hysteresis_index)
 
     def _determine_point_is_part_of_closed_hysteresis(self):
@@ -1082,7 +1111,7 @@ class FKMNonlinearHysteresisPlotter:
         """Adjust the _hcm_point_history, split parts on the primary branch
         that appear for positive residual stresses."""
         old_hcm_point_history = self._hcm_point_history.copy()
-        largest_abs_stress_seen = 0
+        largest_abs_stress_seen = pd.Series(0)
         largest_abs_strain = 0
         self._hcm_point_history = []
 
@@ -1092,7 +1121,7 @@ class FKMNonlinearHysteresisPlotter:
                 previous_point = hcm_point
                 continue
 
-            if previous_point.stress * hcm_point.stress < 0:
+            if all(previous_point.stress * hcm_point.stress < 0):
                 sign = np.sign(hcm_point.stress)
                 intermediate_point = FKMNonlinearDetector._HCM_Point(
                     strain=sign*largest_abs_strain, stress=sign*largest_abs_stress_seen
@@ -1102,7 +1131,7 @@ class FKMNonlinearHysteresisPlotter:
             else:
                 self._hcm_point_history.append((type, hcm_point, hysteresis_index))
 
-            if abs(hcm_point.stress) > largest_abs_stress_seen:
+            if all(abs(hcm_point.stress.values) > largest_abs_stress_seen.values):
                 largest_abs_stress_seen = abs(hcm_point.stress)
                 largest_abs_strain = abs(hcm_point.strain)
 

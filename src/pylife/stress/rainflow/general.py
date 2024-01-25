@@ -331,7 +331,7 @@ class AbstractDetector(metaclass=ABCMeta):
         sample_tail_index = turn_index[-1] if turn_index.size > 0 else 0
         turn_index += self._head_index - len(self._sample_tail)
 
-        self._sample_tail = samples_with_last_tail[sample_tail_index:]
+        self._sample_tail = samples_with_last_tail[sample_tail_index:]  # FIXME: samples_with_last_tail[-1:] also possible?
         self._head_index += len(samples)
 
         if flush and len(self._sample_tail) > 0:

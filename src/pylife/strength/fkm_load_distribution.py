@@ -147,7 +147,7 @@ class FKMLoadSequence(PylifeSignal):
         """
 
         # if the load sequence is a pd.Series
-        if isinstance(self._obj, pd.Series):
+        if len(self._obj.index.names) == 1:
             L_max = max(abs(self._obj))
 
         # if the load sequence is a pd.DataFrame
@@ -159,18 +159,15 @@ class FKMLoadSequence(PylifeSignal):
                 levels = list(range(self._obj.index.nlevels - 1))  # all but the last level
                 L_max = self._obj.abs().groupby(level=levels).max()
 
-            # if L_max is still a DataFrame, take the maximum
-            if isinstance(L_max, pd.DataFrame):
+            # if there are multiple columns, select the first one
+            if isinstance(L_max, pd.DataFrame) and len(L_max.columns) > 1:
+                L_max = L_max.iloc[:,0]
 
-                # if there are multiple columns, select the first one
-                if len(L_max.columns) > 1:
-                    L_max = L_max.iloc[:,0]
-
-                if max_load_independently_for_nodes:
-                    return L_max
+            if max_load_independently_for_nodes:
+                return L_max
 
                 # take maximum over all load steps
-                L_max = L_max.max()
+            L_max = L_max.max()
 
         if isinstance(L_max, pd.DataFrame) or isinstance(L_max, pd.Series):
             L_max = L_max.squeeze()
