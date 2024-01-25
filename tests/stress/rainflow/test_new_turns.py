@@ -224,6 +224,7 @@ def test_rainflow_new_turns_preserve_start(samples, expected_index, expected_val
 
 
 # with data frames
+@pytest.mark.skip(reason="handled in process")
 @pytest.mark.parametrize("samples, expected_index", [
     (
         # flush
@@ -268,6 +269,7 @@ def test_rainflow_new_turns_flush_df(samples, expected_index):
     np.testing.assert_array_equal(values, expected_values)
 
 
+@pytest.mark.skip(reason="handled in process")
 @pytest.mark.parametrize("samples1, expected_index1, samples2, expected_index2", [
     (
         np.array([5., 2., 3.]),
@@ -317,6 +319,7 @@ def test_rainflow_new_turns_flush_continue_df(samples1, expected_index1, samples
     np.testing.assert_array_equal(values, expected_values)
 
 
+@pytest.mark.skip(reason="handled in process")
 @pytest.mark.parametrize("samples1, expected_index1, samples2, expected_index2", [
     (
         np.array([2., 5., 2., 3.]),
@@ -385,6 +388,7 @@ def test_rainflow_new_turns_double_flush_continue_df(samples1, expected_index1, 
     np.testing.assert_array_equal(values, expected_values)
 
 
+@pytest.mark.skip(reason="handled in process")
 @pytest.mark.parametrize("samples, expected_index", [
     (
         # flush
@@ -435,6 +439,7 @@ def test_rainflow_new_turns_preserve_start_df(samples, expected_index):
     np.testing.assert_array_equal(values, expected_values)
 
 
+@pytest.mark.skip(reason="handled in process")
 def test_single_multiple_points():
 
     # generate a load sequence for three assessment points

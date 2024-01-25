@@ -17,6 +17,7 @@
 __author__ = "Benjamin Maier"
 __maintainer__ = __author__
 
+import pytest
 import unittest
 import numpy as np
 import pandas as pd
@@ -352,3 +353,107 @@ class TestHCMExample2(unittest.TestCase):
             0.00130573, -0.00241213,  0.00305884, -0.00344949,  0.00397388, -0.00418244,
             0.00160266, -0.0021152,   0.00501943, -0.00498917,  0.00079592, -0.00166632,
             0.00410439, -0.00405193,  0.00603472, -0.00603472,  0.00603472, -0.00603472]), rtol=1e-3, atol=1e-5)
+
+
+@pytest.mark.parametrize('vals, expected_loads_min, expected_loads_max', [
+    (
+        [200, 600, 1000, 60, 1500, 201, 80, 400, 1501, 700, 200],
+        [60.0, 80.0, 200.0, 80.0, 60.0],
+        [1000.0, 1500.0, 1000.0, 1500.0, 1501.0]
+    ),
+    (
+        [0, 500],
+        [],
+        []
+    ),
+    (
+        [100, -200, 100, -250, 200, 0, 200, -200],
+        [-200.,    0., -200.,  100., -250.,    0.],
+        [ 100.,  200., -200.,  200., -250.,  200.]
+    )
+])
+def test_edge_case_value_in_sample_tail(vals, expected_loads_min, expected_loads_max):
+    vals = np.array(vals)
+
+    signal = pd.DataFrame({11: vals, 12: 2*vals, 13: 3*vals, 'load_step': range(len(vals))}).set_index('load_step').stack()
+    signal.index.names = ['load_step', 'node_id']
+    signal = pd.DataFrame({'l': signal})
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.1148*(1251)**0.897 / (( np.min([0.338, 1033.*1251.**(-1.235)]) )**0.187)
+    #K = 2650.5   # [MPa]
+    n = 0.187    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(signal['l']))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+    detector.process(signal).process(signal)
+
+    print("result")
+
+    loads_min = [l.iloc[0].values[0] for l in detector.recorder.loads_min]
+    loads_max = [l.iloc[0].values[0] for l in detector.recorder.loads_max]
+
+    print(loads_min)
+    print(loads_max)
+    np.testing.assert_allclose(loads_min, expected_loads_min)
+    np.testing.assert_allclose(loads_max, expected_loads_max)
+
+
+def test_flush_edge_case():
+    mi_1 = pd.MultiIndex.from_product([range(9), range(3)], names=["load_step", "node_id"])
+
+    signal_1 = pd.DataFrame({'l': [
+        0.0, 0.0, 0.0, 143.0, 171.0, 31.0, -287.0, -343.0, -63.0, 143.0, 171.0,
+        31.0, -359.0, -429.0, -79.0, 287.0, 343.0, 63.0, 0.0, 0.0, 0.0, 287.0,
+        343.0, 63.0, -287.0, -343.0, -63.0
+    ]}, index=mi_1)
+
+    mi_2 = pd.MultiIndex.from_product([range(8), range(3)], names=["load_step", "node_id"])
+
+    signal_2 = pd.DataFrame({'l': [
+        143.0, 171.0, 31.0, -287.0, -343.0, -63.0, 143.0, 171.0, 31.0, -359.0,
+        -429.0, -79.0, 287.0, 343.0, 63.0, 0.0, 0.0, 0.0, 287.0, 343.0, 63.0,
+        -287.0, -343.0, -63.0
+    ]}, index=mi_2)
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
+    #K = 2650.5   # [MPa]
+    n = 0.07    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(pd.concat([signal_1['l'], signal_2['l']])))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+
+    detector.process(signal_1, flush=True).process(signal_2, flush=True)
+
+    loads_min = [l.iloc[0].values[0] for l in detector.recorder.loads_min]
+    loads_max = [l.iloc[0].values[0] for l in detector.recorder.loads_max]
+
+    print(loads_min)
+    print(loads_max)
+    expected_loads_min = [-143.0, -287.0,    0.  , -287.0, -287.0, -359.0,    0.  ]
+    expected_loads_max = [143.0, 143.0, 287.0, 143.0, 143.0, 287.0, 287.0]
+    np.testing.assert_allclose(loads_min, expected_loads_min)
+    np.testing.assert_allclose(loads_max, expected_loads_max)
