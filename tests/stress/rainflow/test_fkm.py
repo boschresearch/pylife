@@ -19,6 +19,7 @@ __maintainer__ = __author__
 
 import unittest
 import numpy as np
+import pandas as pd
 
 import pylife.stress.rainflow as RF
 import pylife.stress.rainflow.recorders as RFR
@@ -60,3 +61,8 @@ class TestFKMMemory1_2_3(unittest.TestCase):
 
     def test_residuals(self):
         np.testing.assert_array_equal(self._dtor.residuals, np.array([1., -2.]))
+
+
+def test_series_signal_float_index():
+    signal = pd.Series([0., 1., 0.], index=[1.0, 2.0, 3.0])
+    process_signal(signal)
