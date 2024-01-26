@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2024 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -155,6 +155,8 @@ class ThreePointDetector(AbstractDetector):
         self : ThreePointDetector
             The ``self`` object so that processing can be chained
         """
+        samples = np.asarray(samples)
+
         if len(self._residuals) == 0:
             residuals = samples[:1]
             residual_index = [0, 1]

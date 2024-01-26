@@ -20,6 +20,7 @@ __maintainer__ = __author__
 import unittest
 import pytest
 import numpy as np
+import pandas as pd
 
 import pylife.stress.rainflow as RF
 import pylife.stress.rainflow.recorders as RFR
@@ -440,3 +441,8 @@ def test_flipped_signals(signal):
     np.testing.assert_array_equal(flipped_recorder.index_to, np.asarray(reference_recorder.index_to))
     np.testing.assert_array_equal(flipped_detector.residuals, -np.asarray(reference_detector.residuals))
     np.testing.assert_array_equal(flipped_detector.residual_index, np.asarray(reference_detector.residual_index))
+
+
+def test_series_signal_float_index():
+    signal = pd.Series([0., 1., 0.], index=[1.0, 2.0, 3.0])
+    process_signal(signal)
