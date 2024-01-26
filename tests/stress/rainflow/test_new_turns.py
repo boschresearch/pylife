@@ -36,13 +36,13 @@ class DummyDetector(AbstractDetector):
 @pytest.mark.parametrize("samples, expected_index, expected_values", [
     (
         # flush
-        np.array([32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.]), 
-        [4, 10, 14, 16], 
+        np.array([32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.]),
+        [4, 10, 14, 16],
         [33., 32., 40., 33.]
     ),(
         # falling_one
         np.array([1., 2., 1.]),
-        [1, 2], 
+        [1, 2],
         [2., 1.]
     ),(
         # rising_one
@@ -52,7 +52,7 @@ class DummyDetector(AbstractDetector):
     ),(
         # falling_one
         np.array([1., 2., 1.]),
-        [1, 2], 
+        [1, 2],
         [2., 1.]
     ),(
         # falling_two
@@ -64,10 +64,10 @@ class DummyDetector(AbstractDetector):
         np.array([1., 2., 1., 1.5, 4]),
         [1, 2, 4],
         [2., 1., 4]
-    ),
+    )
 ])
 def test_rainflow_new_turns_flush(samples, expected_index, expected_values):
-    
+
     index, values = DummyDetector(recorder=None)._new_turns(samples, flush=True)
     np.testing.assert_array_equal(index, expected_index)
     np.testing.assert_array_equal(values, expected_values)
@@ -177,18 +177,18 @@ def test_rainflow_new_turns_flush_continue_four_times():
 @pytest.mark.parametrize("samples, expected_index, expected_values", [
     (
         # flush
-        np.array([32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.]), 
-        [0, 4, 10, 14, 16], 
+        np.array([32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.]),
+        [0, 4, 10, 14, 16],
         [32., 33., 32., 40., 33.]
     ),(
         # falling_one
         np.array([1., 2., 1.]),
-        [0, 1, 2], 
+        [0, 1, 2],
         [1., 2., 1.]
     ),(
         # falling_one
         np.array([-1., -2., -1.]),
-        [0, 1, 2], 
+        [0, 1, 2],
         [-1., -2., -1.]
     ),(
         # rising_one
@@ -198,7 +198,7 @@ def test_rainflow_new_turns_flush_continue_four_times():
     ),(
         # falling_one
         np.array([1., 2., 1.]),
-        [0, 1, 2], 
+        [0, 1, 2],
         [1., 2., 1.]
     ),(
         # falling_two
@@ -217,7 +217,7 @@ def test_rainflow_new_turns_flush_continue_four_times():
     ),
 ])
 def test_rainflow_new_turns_preserve_start(samples, expected_index, expected_values):
-    
+
     index, values = DummyDetector(recorder=None)._new_turns(samples, flush=True, preserve_start=True)
     np.testing.assert_array_equal(index, expected_index)
     np.testing.assert_array_equal(values, expected_values)
@@ -227,12 +227,12 @@ def test_rainflow_new_turns_preserve_start(samples, expected_index, expected_val
 @pytest.mark.parametrize("samples, expected_index", [
     (
         # flush
-        np.array([32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.]), 
-        [4, 10, 14, 16], 
+        np.array([32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.]),
+        [4, 10, 14, 16],
     ),(
         # falling_one
         np.array([1., 2., 1.]),
-        [1, 2], 
+        [1, 2],
     ),(
         # rising_one
         np.array([1., 2., 1., 1.5]),
@@ -240,7 +240,7 @@ def test_rainflow_new_turns_preserve_start(samples, expected_index, expected_val
     ),(
         # falling_one
         np.array([1., 2., 1.]),
-        [1, 2], 
+        [1, 2],
     ),(
         # falling_two
         np.array([1., 2., 1., 0.]),
@@ -252,9 +252,9 @@ def test_rainflow_new_turns_preserve_start(samples, expected_index, expected_val
     ),
 ])
 def test_rainflow_new_turns_flush_df(samples, expected_index):
-    
+
     index = pd.MultiIndex.from_product([range(len(samples)), (1,5,8)], names=["load_step", "node_id"])
-    
+
     multiple_samples = np.concatenate([[samples], [samples*5], [samples*-2]]).T.reshape(-1,1)
     df_samples = pd.DataFrame(multiple_samples, index=index, columns=["L"])
 
@@ -282,12 +282,12 @@ def test_rainflow_new_turns_flush_df(samples, expected_index):
     )
 ])
 def test_rainflow_new_turns_flush_continue_df(samples1, expected_index1, samples2, expected_index2):
-    
+
     detector = DummyDetector(recorder=None)
 
     # first call to _new_turns
     index = pd.MultiIndex.from_product([range(len(samples1)), (1,5,8)], names=["load_step", "node_id"])
-    
+
     multiple_samples = np.concatenate([[samples1], [samples1*5], [samples1*-2]]).T.reshape(-1,1)
     df_samples = pd.DataFrame(multiple_samples, index=index, columns=["L"])
 
@@ -302,7 +302,7 @@ def test_rainflow_new_turns_flush_continue_df(samples1, expected_index1, samples
 
     # second call to _new_turns
     index = pd.MultiIndex.from_product([range(len(samples2)), (1,5,8)], names=["load_step", "node_id"])
-    
+
     multiple_samples = np.concatenate([[samples2], [samples2*5], [samples2*-2]]).T.reshape(-1,1)
     df_samples = pd.DataFrame(multiple_samples, index=index, columns=["L"])
 
@@ -338,12 +338,12 @@ def test_rainflow_new_turns_flush_continue_df(samples1, expected_index1, samples
     ),
 ])
 def test_rainflow_new_turns_double_flush_continue_df(samples1, expected_index1, samples2, expected_index2):
-    
+
     detector = DummyDetector(recorder=None)
 
     # first call to _new_turns
     index = pd.MultiIndex.from_product([range(len(samples1)), (1,5,8)], names=["load_step", "node_id"])
-    
+
     multiple_samples = np.concatenate([[samples1], [samples1*5], [samples1*-2]]).T.reshape(-1,1)
     df_samples = pd.DataFrame(multiple_samples, index=index, columns=["L"])
 
@@ -358,7 +358,7 @@ def test_rainflow_new_turns_double_flush_continue_df(samples1, expected_index1, 
 
     # second call to _new_turns
     index = pd.MultiIndex.from_product([range(len(samples2)), (1,5,8)], names=["load_step", "node_id"])
-    
+
     multiple_samples = np.concatenate([[samples2], [samples2*5], [samples2*-2]]).T.reshape(-1,1)
     df_samples = pd.DataFrame(multiple_samples, index=index, columns=["L"])
 
@@ -388,16 +388,16 @@ def test_rainflow_new_turns_double_flush_continue_df(samples1, expected_index1, 
 @pytest.mark.parametrize("samples, expected_index", [
     (
         # flush
-        np.array([32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.]), 
-        [0, 4, 10, 14, 16], 
+        np.array([32., 32., 32.1, 32.9, 33., 33., 33., 33., 33., 32.5, 32., 32., 32.7, 37.2, 40., 35.2, 33.]),
+        [0, 4, 10, 14, 16],
     ),(
         # falling_one
         np.array([1., 2., 1.]),
-        [0, 1, 2], 
+        [0, 1, 2],
     ),(
         # falling_one
         np.array([-1., -2., -1.]),
-        [0, 1, 2], 
+        [0, 1, 2],
     ),(
         # rising_one
         np.array([1., 2., 1., 1.5]),
@@ -405,7 +405,7 @@ def test_rainflow_new_turns_double_flush_continue_df(samples1, expected_index1, 
     ),(
         # falling_one
         np.array([1., 2., 1.]),
-        [0, 1, 2], 
+        [0, 1, 2],
     ),(
         # falling_two
         np.array([1., 2., 1., 0.]),
@@ -421,7 +421,7 @@ def test_rainflow_new_turns_double_flush_continue_df(samples1, expected_index1, 
 ])
 def test_rainflow_new_turns_preserve_start_df(samples, expected_index):
     index = pd.MultiIndex.from_product([range(len(samples)), (1,5,8)], names=["load_step", "node_id"])
-    
+
     multiple_samples = np.concatenate([[samples], [samples*5], [samples*-2]]).T.reshape(-1,1)
     df_samples = pd.DataFrame(multiple_samples, index=index, columns=["L"])
 
@@ -436,19 +436,19 @@ def test_rainflow_new_turns_preserve_start_df(samples, expected_index):
 
 
 def test_single_multiple_points():
-    
+
     # generate a load sequence for three assessment points
     load_sequence_0 = pd.Series([100, -200, 100, -250, 200, 0, 200, -200])  # [N]
     load_sequence_1 = load_sequence_0 * 1.2
     load_sequence_2 = load_sequence_0 * 0.2     # last has infinite life
-    
+
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
-    
+
     load_sequence = pd.DataFrame(index=index, data={"load": 0})
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
     load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
-    
+
 
     detector0 = DummyDetector(recorder=None)
     loads_indices1, load_turning_points1 = detector0._new_turns(load_sequence, flush=True, preserve_start=True)
@@ -467,5 +467,5 @@ def test_single_multiple_points():
     print(load_turning_points3)
     print(load_turning_points4)
     np.testing.assert_array_equal(loads_indices1, loads_indices3)
-    
+
     np.testing.assert_array_equal(loads_indices2, loads_indices4)

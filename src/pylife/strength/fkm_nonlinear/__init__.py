@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__author__ = "Benjamin Maier" 
+__author__ = "Benjamin Maier"
 __maintainer__ = __author__
 
 import pylife.strength.fkm_nonlinear.constants

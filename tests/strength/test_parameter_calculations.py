@@ -57,15 +57,15 @@ def test_compute_beta_fails(P_A):
     ("Al_wrought", 200., 434.411, 0.128)
 ])
 def test_calculate_cyclic_assessment_parameters_Rm(MatGroupFKM, R_m, K_prime, n_prime):
-    
+
     assessment_parameters = pd.Series({
         "MatGroupFKM": MatGroupFKM,
         "R_m": R_m
     })
-    
+
     result = pylife.strength.fkm_nonlinear.parameter_calculations.\
         calculate_cyclic_assessment_parameters(assessment_parameters)
-    
+
     assert np.isclose(result["K_prime"], K_prime, atol=1e-15, rtol=1e-6)
     assert result["n_prime"] == n_prime
 
@@ -89,15 +89,15 @@ def test_calculate_material_woehler_parameters_P_RAM_Rm(MatGroupFKM, R_m, P_A, P
         "R_m": R_m,
         "P_A": P_A,
     })
-    
+
     result = pylife.strength.fkm_nonlinear.parameter_calculations.\
         calculate_material_woehler_parameters_P_RAM(assessment_parameters)
-    
+
     assert np.isclose(result["P_RAM_Z_WS"], P_RAM_Z_WS, atol=1e-15, rtol=1e-3)
     assert np.isclose(result["P_RAM_D_WS"], P_RAM_D_WS, atol=1e-15, rtol=1e-3)
-    assert result["d_1"] == d_1 
+    assert result["d_1"] == d_1
     assert result["d_2"] == d_2
-    
+
 
 @pytest.mark.parametrize(
     "MatGroupFKM, R_m, P_A, P_RAJ_Z_WS, P_RAJ_D_WS, d_RAJ", [
@@ -118,14 +118,14 @@ def test_calculate_material_woehler_parameters_P_RAJ_Rm(MatGroupFKM, R_m, P_A, P
         "R_m": R_m,
         "P_A": P_A,
     })
-    
+
     result = pylife.strength.fkm_nonlinear.parameter_calculations.\
         calculate_material_woehler_parameters_P_RAJ(assessment_parameters)
-    
+
     assert np.isclose(result["P_RAJ_Z_WS"], P_RAJ_Z_WS, atol=1e-15, rtol=1e-3)
     assert np.isclose(result["P_RAJ_D_WS"], P_RAJ_D_WS, atol=1e-15, rtol=1e-3)
     assert result["d_RAJ"] == d_RAJ
-   
+
 
 @pytest.mark.parametrize(
     "MatGroupFKM, A_ref, A_sigma, R_m, G, n_st, n_bm, n_P", [
@@ -148,10 +148,10 @@ def test_calculate_nonlocal_parameters(MatGroupFKM, A_ref, A_sigma, R_m, G, n_st
         "R_m": R_m,
         "G": G,
     })
-    
+
     result = pylife.strength.fkm_nonlinear.parameter_calculations.\
         calculate_nonlocal_parameters(assessment_parameters)
-    
+
     assert np.isclose(result["n_st"], n_st, atol=1e-15)
     assert np.isclose(result["n_bm"], n_bm, atol=1e-15)
     assert np.isclose(result["n_P"], n_P, atol=1e-15)

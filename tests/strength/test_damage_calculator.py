@@ -38,7 +38,7 @@ import pylife.materiallaws.notch_approximation_law_seegerbeste
 
 
 def test_woehler_curve_P_RAM_collective_has_no_index():
-    
+
     # Parameters for 2.7.1 "akademisches Beispiel" in the FKM nonlinear document
     assessment_parameters = pd.Series({
         "MatGroupFKM": "Steel",
@@ -79,43 +79,43 @@ def test_woehler_curve_P_RAM_collective_has_no_index():
         "P_RAJ_D_0": 0.135361,
         "P_RAJ_D": 0.135361,
     })
-    
+
     # create woehler curve objects
     assessment_parameters["P_RAM_D"] = assessment_parameters.P_RAM_D_WS / assessment_parameters.f_RAM
     component_woehler_curve_parameters = assessment_parameters[["P_RAM_Z", "P_RAM_D", "d_1", "d_2"]]
     component_woehler_curve_P_RAM = component_woehler_curve_parameters.woehler_P_RAM
-    
+
     # create rainflow for P_RAM
     # initialize notch approximation law
     E, K_prime, n_prime, K_p = assessment_parameters[["E", "K_prime", "n_prime", "K_p"]]
     extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K_prime, n_prime, K_p)
-    
+
     load_sequence_list = pd.Series([143.696, -287.392, 143.696, -359.240, 287.392, 0.000, 287.392, -287.392])
-    
+
     # wrap the notch approximation law by a binning class, which precomputes the values
     maximum_absolute_load = max(np.abs(load_sequence_list))
     extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
         extended_neuber, maximum_absolute_load, 100)
-    
+
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
-    
+
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
         recorder=recorder, notch_approximation_law=extended_neuber_binned)
-    
+
     # perform HCM algorithm, first run
     detector.process_hcm_first(load_sequence_list)
-    
+
     # perform HCM algorithm, second run
     detector.process_hcm_second(load_sequence_list)
 
     collective = recorder.collective.reset_index(drop=True)
-    
+
     # define damage parameter
     damage_parameter = pylife.strength.damage_parameter.P_RAM(collective, assessment_parameters)
     #display(damage_parameter.collective)
-    
+
     # compute the effect of the damage parameter with the woehler curve
     damage_calculator = pylife.strength.fkm_nonlinear.damage_calculator\
         .DamageCalculatorPRAM(damage_parameter.collective, component_woehler_curve_P_RAM)
@@ -123,17 +123,17 @@ def test_woehler_curve_P_RAM_collective_has_no_index():
     # Infinite life assessment
     is_life_infinite = damage_calculator.is_life_infinite
     assert is_life_infinite == False
-    
+
     assert np.isclose(component_woehler_curve_P_RAM.fatigue_strength_limit, 150, rtol=1e-2)
     assert np.isclose(damage_calculator.P_RAM_max, 323, rtol=1e-2)
-    
+
     # finite life assessment
     lifetime_n_cycles = damage_calculator.lifetime_n_cycles
     lifetime_n_times_load_sequence = damage_calculator.lifetime_n_times_load_sequence
-    
+
     assert np.isclose(np.round(lifetime_n_cycles), 14618)
     assert np.isclose(np.round(lifetime_n_times_load_sequence), 3655)
-    
+
     assert np.isclose(component_woehler_curve_P_RAM.d_1, -0.302)
     assert np.isclose(component_woehler_curve_P_RAM.d_2, -0.197)
     assert np.isclose(component_woehler_curve_P_RAM.P_RAM_Z, 437.0, rtol=1e-3)
@@ -141,10 +141,10 @@ def test_woehler_curve_P_RAM_collective_has_no_index():
     assert np.isclose(damage_calculator.P_RAM_max, 322.9, rtol=1e-3)
     assert np.isclose(component_woehler_curve_P_RAM.fatigue_strength_limit, 150.8, rtol=1e-3)
     assert np.isclose(component_woehler_curve_P_RAM.fatigue_life_limit, 221637.4, rtol=1e-3)
-    
+
 
 def test_woehler_curve_P_RAM_collective_has_MultiIndex():
-    
+
     # Parameters for 2.7.1 "akademisches Beispiel" in the FKM nonlinear document
     assessment_parameters = pd.Series({
         "MatGroupFKM": "Steel",
@@ -185,41 +185,41 @@ def test_woehler_curve_P_RAM_collective_has_MultiIndex():
         "P_RAJ_D_0": 0.135361,
         "P_RAJ_D": 0.135361,
     })
-    
+
     # create woehler curve objects
     assessment_parameters["P_RAM_D"] = assessment_parameters.P_RAM_D_WS / assessment_parameters.f_RAM
     component_woehler_curve_parameters = assessment_parameters[["P_RAM_Z", "P_RAM_D", "d_1", "d_2"]]
     component_woehler_curve_P_RAM = component_woehler_curve_parameters.woehler_P_RAM
-    
+
     # create rainflow for P_RAM
     # initialize notch approximation law
     E, K_prime, n_prime, K_p = assessment_parameters[["E", "K_prime", "n_prime", "K_p"]]
     extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K_prime, n_prime, K_p)
-    
+
     load_sequence_list = pd.Series([143.696, -287.392, 143.696, -359.240, 287.392, 0.000, 287.392, -287.392])
-    
+
     # wrap the notch approximation law by a binning class, which precomputes the values
     maximum_absolute_load = max(np.abs(load_sequence_list))
     extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
         extended_neuber, maximum_absolute_load, 100)
-    
+
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
-    
+
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
         recorder=recorder, notch_approximation_law=extended_neuber_binned)
-    
+
     # perform HCM algorithm, first run
     detector.process_hcm_first(load_sequence_list)
-    
+
     # perform HCM algorithm, second run
     detector.process_hcm_second(load_sequence_list)
 
     # define damage parameter
     damage_parameter = pylife.strength.damage_parameter.P_RAM(recorder.collective, assessment_parameters)
     #display(damage_parameter.collective)
-    
+
     # compute the effect of the damage parameter with the woehler curve
     damage_calculator = pylife.strength.fkm_nonlinear.damage_calculator\
         .DamageCalculatorPRAM(damage_parameter.collective, component_woehler_curve_P_RAM)
@@ -227,20 +227,20 @@ def test_woehler_curve_P_RAM_collective_has_MultiIndex():
     # Infinite life assessment
     is_life_infinite = damage_calculator.is_life_infinite
     assert is_life_infinite == False
-    
+
     assert np.isclose(component_woehler_curve_P_RAM.fatigue_strength_limit, 150, rtol=1e-2)
     assert np.isclose(damage_calculator.P_RAM_max, 323, rtol=1e-2)
-    
+
     # finite life assessment
     lifetime_n_cycles = damage_calculator.lifetime_n_cycles
     lifetime_n_times_load_sequence = damage_calculator.lifetime_n_times_load_sequence
-    
+
     assert np.isclose(np.round(lifetime_n_cycles), 14618)
     assert np.isclose(np.round(lifetime_n_times_load_sequence), 3655)
-    
+
 
 def test_woehler_curve_P_RAJ_has_no_index():
-    
+
     # Parameters for 2.10.1 "akademisches Beispiel" in the FKM nonlinear document
     assessment_parameters = pd.Series({
         "MatGroupFKM": "Steel",
@@ -281,7 +281,7 @@ def test_woehler_curve_P_RAJ_has_no_index():
         "P_RAJ_D_0": 0.135361,
         "P_RAJ_D": 0.135361,
     })
-    
+
     # create woehler curve objects
     component_woehler_curve_parameters = assessment_parameters[["P_RAJ_Z", "P_RAJ_D_0", "d_RAJ"]]
     component_woehler_curve_P_RAJ = component_woehler_curve_parameters.woehler_P_RAJ
@@ -290,34 +290,34 @@ def test_woehler_curve_P_RAJ_has_no_index():
     # initialize notch approximation law
     E, K_prime, n_prime, K_p = assessment_parameters[["E", "K_prime", "n_prime", "K_p"]]
     seeger_beste = pylife.materiallaws.notch_approximation_law_seegerbeste.SeegerBeste(E, K_prime, n_prime, K_p)
-    
+
     load_sequence_list = pd.Series([143.696, -287.392, 143.696, -359.240, 287.392, 0.000, 287.392, -287.392])
-    
+
     # wrap the notch approximation law by a binning class, which precomputes the values
     maximum_absolute_load = max(np.abs(load_sequence_list))
     seeger_beste_binned = pylife.materiallaws.notch_approximation_law.Binned(
         seeger_beste, maximum_absolute_load, 100)
-    
+
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
-    
+
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
         recorder=recorder, notch_approximation_law=seeger_beste_binned)
-    
+
     # perform HCM algorithm, first run
     detector.process_hcm_first(load_sequence_list)
-    
+
     # perform HCM algorithm, second run
     detector.process_hcm_second(load_sequence_list)
 
     # remove index from collective
     collective = recorder.collective.reset_index(drop=True)
-    
+
     # define damage parameter
     damage_parameter = pylife.strength.damage_parameter.P_RAJ(collective, assessment_parameters,\
                                                               component_woehler_curve_P_RAJ)
-    
+
     # compute the effect of the damage parameter with the woehler curve
     damage_calculator = pylife.strength.fkm_nonlinear.damage_calculator\
         .DamageCalculatorPRAJ(damage_parameter.collective, assessment_parameters, component_woehler_curve_P_RAJ)
@@ -325,17 +325,17 @@ def test_woehler_curve_P_RAJ_has_no_index():
     # Infinite life assessment
     is_life_infinite = damage_calculator.is_life_infinite
     assert is_life_infinite == False
-    
+
     assert np.isclose(component_woehler_curve_P_RAJ.fatigue_strength_limit, 0.135, rtol=1e-2)
     assert np.isclose(damage_calculator.P_RAJ_max, 0.749, rtol=1e-2)
-    
+
     # finite life assessment
     lifetime_n_cycles = damage_calculator.lifetime_n_cycles
     lifetime_n_times_load_sequence = damage_calculator.lifetime_n_times_load_sequence
-    
+
     assert np.isclose(np.round(lifetime_n_cycles), 30947)
     assert np.isclose(np.round(lifetime_n_times_load_sequence), 7737)
-    
+
     assert np.isclose(component_woehler_curve_P_RAJ.d, -0.56, rtol=1e-3)
     assert np.isclose(component_woehler_curve_P_RAJ.P_RAJ_D.squeeze(),  0.135358, rtol=1e-3)
     assert np.isclose(component_woehler_curve_P_RAJ.P_RAJ_Z, 141.371959, rtol=1e-3)
@@ -344,10 +344,10 @@ def test_woehler_curve_P_RAJ_has_no_index():
     assert np.isclose(component_woehler_curve_P_RAJ.fatigue_life_limit, 245945.45, rtol=1e-3)
     assert np.isclose(component_woehler_curve_P_RAJ.fatigue_strength_limit_final.squeeze(),  0.135358, rtol=1e-3)
     assert np.isclose(component_woehler_curve_P_RAJ.fatigue_life_limit_final.squeeze(), 245945.45, rtol=1e-3)
-    
+
 
 def test_woehler_curve_P_RAJ_has_MultiIndex():
-    
+
     # Parameters for 2.10.1 "akademisches Beispiel" in the FKM nonlinear document
     assessment_parameters = pd.Series({
         "MatGroupFKM": "Steel",
@@ -388,7 +388,7 @@ def test_woehler_curve_P_RAJ_has_MultiIndex():
         "P_RAJ_D_0": 0.135361,
         "P_RAJ_D": 0.135361,
     })
-    
+
     # create woehler curve objects
     component_woehler_curve_parameters = assessment_parameters[["P_RAJ_Z", "P_RAJ_D_0", "d_RAJ"]]
     component_woehler_curve_P_RAJ = component_woehler_curve_parameters.woehler_P_RAJ
@@ -397,31 +397,31 @@ def test_woehler_curve_P_RAJ_has_MultiIndex():
     # initialize notch approximation law
     E, K_prime, n_prime, K_p = assessment_parameters[["E", "K_prime", "n_prime", "K_p"]]
     seeger_beste = pylife.materiallaws.notch_approximation_law_seegerbeste.SeegerBeste(E, K_prime, n_prime, K_p)
-    
+
     load_sequence_list = pd.Series([143.696, -287.392, 143.696, -359.240, 287.392, 0.000, 287.392, -287.392])
-    
+
     # wrap the notch approximation law by a binning class, which precomputes the values
     maximum_absolute_load = max(np.abs(load_sequence_list))
     seeger_beste_binned = pylife.materiallaws.notch_approximation_law.Binned(
         seeger_beste, maximum_absolute_load, 100)
-    
+
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
-    
+
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
         recorder=recorder, notch_approximation_law=seeger_beste_binned)
-    
+
     # perform HCM algorithm, first run
     detector.process_hcm_first(load_sequence_list)
-    
+
     # perform HCM algorithm, second run
     detector.process_hcm_second(load_sequence_list)
 
     # define damage parameter
     damage_parameter = pylife.strength.damage_parameter.P_RAJ(recorder.collective, assessment_parameters,\
                                                               component_woehler_curve_P_RAJ)
-    
+
     # compute the effect of the damage parameter with the woehler curve
     damage_calculator = pylife.strength.fkm_nonlinear.damage_calculator\
         .DamageCalculatorPRAJ(damage_parameter.collective, assessment_parameters, component_woehler_curve_P_RAJ)
@@ -429,14 +429,13 @@ def test_woehler_curve_P_RAJ_has_MultiIndex():
     # Infinite life assessment
     is_life_infinite = damage_calculator.is_life_infinite
     assert is_life_infinite == False
-    
+
     assert np.isclose(component_woehler_curve_P_RAJ.fatigue_strength_limit, 0.135, rtol=1e-2)
     assert np.isclose(damage_calculator.P_RAJ_max, 0.749, rtol=1e-2)
-    
+
     # finite life assessment
     lifetime_n_cycles = damage_calculator.lifetime_n_cycles
     lifetime_n_times_load_sequence = damage_calculator.lifetime_n_times_load_sequence
-    
+
     assert np.isclose(np.round(lifetime_n_cycles), 30947)
     assert np.isclose(np.round(lifetime_n_times_load_sequence), 7737)
-    

@@ -324,6 +324,8 @@ class P_RAJ:
         # initialize current fatigue limit
         P_RAJ_D = pd.Series(self._P_RAJ_D_0, index=assessment_point_index)
 
+        P_RAJ_D = pd.Series(self._P_RAJ_D_0, index=assessment_point_index)
+
         # initialize helper variables
         epsilon_open = pd.Series(0.0, index=assessment_point_index)
 
