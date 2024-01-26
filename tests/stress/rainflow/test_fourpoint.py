@@ -20,6 +20,7 @@ __maintainer__ = "Johannes Mueller"
 import unittest
 import pytest
 import numpy as np
+import pandas as pd
 
 import pylife.stress.rainflow as RF
 import pylife.stress.rainflow.recorders as RFR
@@ -474,3 +475,8 @@ def test_split_any_signal_anywhere_twice(signal):
             np.testing.assert_array_equal(fr.index_to, reference_recorder.index_to)
             np.testing.assert_array_equal(dtor.residuals, reference_detector.residuals)
             np.testing.assert_array_equal(dtor.residual_index, reference_detector.residual_index)
+
+
+def test_series_signal_float_index():
+    signal = pd.Series([0., 1., 0.], index=[1.0, 2.0, 3.0])
+    process_signal(signal)
