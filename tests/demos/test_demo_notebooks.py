@@ -105,7 +105,7 @@ def test_time_series_handling(tb):
 
 @testbook('demos/lifetime_calc.ipynb')
 def test_lifetime_calc(tb):
-    
+
     # execute the time_series_handling.ipynb notebook to create the rf_dict variable
     with testbook('../demos/time_series_handling.ipynb') as tb0:
         tb0.execute()

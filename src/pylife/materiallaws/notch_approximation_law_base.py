@@ -21,18 +21,18 @@ import pylife.materiallaws.rambgood
 
 class NotchApproximationLawBase:
     """This is a base class for any notch approximation law, e.g., the extended Neuber and the Seeger-Beste laws.
-    
+
     It initializes the internal variables used by the derived classes and provides getters and setters.
     """
-    
+
     def __init__(self, E, K, n, K_p=None):
         self._E = E
         self._K = K
         self._n = n
-        self._K_p = K_p 
-        
+        self._K_p = K_p
+
         self._ramberg_osgood_relation = pylife.materiallaws.rambgood.RambergOsgood(E, K, n)
-    
+
     @property
     def E(self):
         '''Get Young's Modulus'''

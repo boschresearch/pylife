@@ -291,7 +291,7 @@ class AbstractDetector(metaclass=ABCMeta):
             Whether to flush the values at the end, i.e., not keep a tail.
 
         preserve_start : bool
-            If the beginning of the sequence should be preserved. If this is 
+            If the beginning of the sequence should be preserved. If this is
             False, only turning points are extracted, for example:
                 _new_turns([1, 2, 1])   # -> 2
                 _new_turns([0, 1])      # -> 1
@@ -326,12 +326,12 @@ class AbstractDetector(metaclass=ABCMeta):
         # if we have samples left from the last call, disable option preserve_start
         if len(self._sample_tail) > 0:
             preserve_start = False
-            
+
         _is_multiple_assessment_points = False
         if isinstance(samples, pd.DataFrame):
             _is_multiple_assessment_points = True
 
-            # convert to list 
+            # convert to list
             samples = [df.reset_index(drop=True) for _,df in samples.groupby("load_step")]
 
         sample_len = len(samples)
@@ -342,9 +342,7 @@ class AbstractDetector(metaclass=ABCMeta):
         else:
             if len(samples) == 0:
                 samples = list(self._sample_tail)
-            elif len(self._sample_tail) == 0:
-                pass
-            else:
+            elif len(self._sample_tail) != 0:
                 samples = list(self._sample_tail) + samples
 
         # get indices and values of new turns in the current samples
@@ -360,7 +358,7 @@ class AbstractDetector(metaclass=ABCMeta):
             # store new tail of samples that were not considered in this call
             self._sample_tail = samples[turn_index[-1]:]
             turn_index += self._head_index - old_sample_tail_length
-        
+
         else:
             # if no turns were found, store all samples as new tail
             self._sample_tail = samples
@@ -397,7 +395,7 @@ class AbstractDetector(metaclass=ABCMeta):
     def _find_turns_multiple_assessment_points(self, samples):
 
         # extract the representative samples for the first node
-        samples_of_first_node = np.array([sample.iloc[0].values for sample in samples]).flatten() 
+        samples_of_first_node = np.array([sample.iloc[0].values for sample in samples]).flatten()
         turn_index, _ = find_turns(samples_of_first_node)
 
         # the selected samples are a list of DataFrames. Each DataFrame contains the values for all nodes
@@ -421,7 +419,7 @@ class AbstractDetector(metaclass=ABCMeta):
             Whether to flush the values at the end, i.e., not keep a tail.
 
         preserve_start : bool
-            If the beginning of the sequence should be preserved. If this is 
+            If the beginning of the sequence should be preserved. If this is
             False, only turning points are extracted, for example:
                 _new_turns([1, 2, 1])   # -> 2
                 _new_turns([0, 1])      # -> 1

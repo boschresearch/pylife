@@ -97,7 +97,7 @@ class HookesLaw1d:
         ----------
 
         E : float
-            Young's modulus 
+            Young's modulus
         '''
         self._E = E
 
@@ -181,7 +181,7 @@ class HookesLaw2dPlaneStress(_Hookeslawcore):
         e33 : array-like float
             The resulting elastic normal strain component with basis 3-3
         g12 : array-like float
-            The resulting elastic engineering shear strain component with basis 1-2, 
+            The resulting elastic engineering shear strain component with basis 1-2,
             (1. / 2 * g12 is the tensor component)
         '''
         s11, s22, s12 = self._as_consistant_arrays(s11, s22, s12)
@@ -201,7 +201,7 @@ class HookesLaw2dPlaneStress(_Hookeslawcore):
         e22 : array-like float
             The elastic normal strain component with basis 2-2
         g12 : array-like float
-            The elastic engineering shear strain component with basis 1-2, 
+            The elastic engineering shear strain component with basis 1-2,
             (1. / 2 * g12 is the tensor component)
 
         Returns
@@ -222,7 +222,7 @@ class HookesLaw2dPlaneStress(_Hookeslawcore):
 
 
 class HookesLaw2dPlaneStrain(HookesLaw2dPlaneStress):
-    '''Implementation of the Hooke's Law under plane strain conditions. 
+    '''Implementation of the Hooke's Law under plane strain conditions.
 
     Parameters
     ----------
@@ -264,7 +264,7 @@ class HookesLaw2dPlaneStrain(HookesLaw2dPlaneStress):
         e22 : array-like float
             The resulting elastic normal strain component with basis 2-2
         g12 : array-like float
-            The resulting elastic engineering shear strain component with basis 1-2, 
+            The resulting elastic engineering shear strain component with basis 1-2,
             (1. / 2 * g12 is the tensor component)
         '''
         e11, e22, _, g12 = super().strain(s11, s22, s12)
@@ -280,7 +280,7 @@ class HookesLaw2dPlaneStrain(HookesLaw2dPlaneStress):
         e22 : array-like float
             The elastic normal strain component with basis 2-2
         g12 : array-like float
-            The elastic engineering shear strain component with basis 1-2, 
+            The elastic engineering shear strain component with basis 1-2,
             (1. / 2 * g12 is the tensor component)
 
         Returns
@@ -347,13 +347,13 @@ class HookesLaw3d(_Hookeslawcore):
         e33 : array-like float
             The resulting elastic normal strain component with basis 3-3
         g12 : array-like float
-            The resulting elastic engineering shear strain component with basis 1-2, 
+            The resulting elastic engineering shear strain component with basis 1-2,
             (1. / 2 * g12 is the tensor component)
         g13 : array-like float
-            The resulting elastic engineering shear strain component with basis 1-3, 
+            The resulting elastic engineering shear strain component with basis 1-3,
             (1. / 2 * g13 is the tensor component)
         g23 : array-like float
-            The resulting elastic engineering shear strain component with basis 2-3, 
+            The resulting elastic engineering shear strain component with basis 2-3,
             (1. / 2 * g23 is the tensor component)
         '''
         s11, s22, s33, s12, s13, s23 = self._as_consistant_arrays(s11, s22, s33, s12, s13, s23)
@@ -377,13 +377,13 @@ class HookesLaw3d(_Hookeslawcore):
         e33 : array-like float
             The elastic normal strain component with basis 3-3
         g12 : array-like float
-            The elastic engineering shear strain component with basis 1-2, 
+            The elastic engineering shear strain component with basis 1-2,
             (1. / 2 * g12 is the tensor component)
         g13 : array-like float
-            The elastic engineering shear strain component with basis 1-3, 
+            The elastic engineering shear strain component with basis 1-3,
             (1. / 2 * g13 is the tensor component)
         g23 : array-like float
-            The elastic engineering shear strain component with basis 2-3, 
+            The elastic engineering shear strain component with basis 2-3,
             (1. / 2 * g23 is the tensor component)
 
         Returns

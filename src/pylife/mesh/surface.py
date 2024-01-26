@@ -29,7 +29,7 @@ from .meshsignal import Mesh
 class Surface3D(Mesh):
     '''Determines nodes at the surface in a 3D mesh.
     It also computes the outward normal vectors of the surface.
-    
+
     Raises
     ------
     AttributeError
@@ -55,7 +55,7 @@ class Surface3D(Mesh):
         r1 /= np.linalg.norm(r1, axis=1)[:,None] * np.ones((1,3))
         r2 /= np.linalg.norm(r2, axis=1)[:,None] * np.ones((1,3))
 
-            
+
         a = np.arccos(np.sum(r0*r1, axis=1))
         b = np.arccos(np.sum(r0*r2, axis=1))
         c = np.arccos(np.sum(r1*r2, axis=1))
@@ -65,7 +65,7 @@ class Surface3D(Mesh):
         # silence invalid values error, the resulting nan values will be masked out at the end
         old_settings = np.geterr()
         np.seterr(invalid="ignore")
-        
+
         sinA = np.sqrt( (np.sin(s-b) * np.sin(s-c)) / (np.sin(b)*np.sin(c)) )
         sinB = np.sqrt( (np.sin(s-a) * np.sin(s-c)) / (np.sin(a)*np.sin(c)) )
         sinC = np.sqrt( (np.sin(s-b) * np.sin(s-a)) / (np.sin(b)*np.sin(a)) )
@@ -92,7 +92,7 @@ class Surface3D(Mesh):
 
         # calculate area
         E = A + B + C - np.pi
-        
+
         return E
 
     def _compute_normals(self, x0, y0, z0, x1, y1, z1, x2, y2, z2):
@@ -112,7 +112,7 @@ class Surface3D(Mesh):
         return normal[:,0], normal[:,1], normal[:,2]
 
     def _determine_is_at_surface(self):
-        df = self._obj[["x", "y", "z"]].reorder_levels(["element_id", "node_id"]).sort_index(level="element_id", sort_remaining=False)       
+        df = self._obj[["x", "y", "z"]].reorder_levels(["element_id", "node_id"]).sort_index(level="element_id", sort_remaining=False)
         df["node_id"] = df.index.get_level_values("node_id")
 
         # add two other nodes for every node
@@ -136,7 +136,7 @@ class Surface3D(Mesh):
         df1 = df0.join(max_E, on=["element_id", "node_id_n0"], how="left", rsuffix="_max")
         df2 = df1[df1["E"] == df1["E_max"]]
         df2 = df2.groupby(["element_id", "node_id_n0"]).first()
-        
+
         index_columns = df2.reset_index()
         index_columns = index_columns[["element_id", "node_id_n0"]]
         df2.index = pd.MultiIndex.from_frame(index_columns, names=["element_id", "node_id"])
@@ -154,10 +154,10 @@ class Surface3D(Mesh):
         ''' Determines for every point in the mesh if it is at the mesh's surface.
 
         Example usage:
-        
+
         .. code::
-        
-            # df_mesh is a pandas DataFrame with columns "x", "y", "z" and 
+
+            # df_mesh is a pandas DataFrame with columns "x", "y", "z" and
             # one row per node, indexed by a mult-index with levels
             # "element_id" and "node_id".
             is_at_surface_1 = df_mesh.surface_3D.is_at_surface()
@@ -171,7 +171,7 @@ class Surface3D(Mesh):
         Returns
         -------
         is_at_surface : pd.Series
-            A series with the same index as the given DataFrame, indicating 
+            A series with the same index as the given DataFrame, indicating
             whether the node is at a surface of the component or not.
         '''
         assert "x" in self._obj
@@ -182,16 +182,16 @@ class Surface3D(Mesh):
         result = self._determine_is_at_surface()
 
         return result["is_at_surface"]
-        
+
     def is_at_surface_with_normals(self):
         ''' Determines for every point in the mesh if it is at the mesh's surface,
         additionally calculate the outward normals.
 
         Example usage:
-        
+
         .. code::
-        
-            # df_mesh is a pandas DataFrame with columns "x", "y", "z" and 
+
+            # df_mesh is a pandas DataFrame with columns "x", "y", "z" and
             # one row per node, indexed by a mult-index with levels
             # "element_id" and "node_id".
             is_at_surface_2 = df_mesh.surface_3D.is_at_surface_with_normals()
@@ -242,10 +242,9 @@ class Surface3D(Mesh):
 
         df_with_normals = d2[["normal_x", "normal_y", "normal_z"]]
         df_with_normals.index.names = ["element_id", "node_id"]
-        
+
         df_result = df.join(df_with_normals)[["is_at_surface", "normal_x", "normal_y", "normal_z"]]
 
         return df_result
 
 
-    
