@@ -288,11 +288,11 @@ def test_fkm_nonlinear_recorder_record_two_values():
 
 def test_fkm_nonlinear_recorder_empty_collective_default():
     fr = RFR.FKMNonlinearRecorder()
-    
+
     # create appropriate empty MultiIndex
     index = pd.MultiIndex.from_product([[],[]], names=["hysteresis_index","assessment_point_index"])
     index = index.set_levels([index.levels[1].astype(np.int64)], level=[1])
-    
+
     expected = pd.DataFrame(
         index=index,
         data={
@@ -315,7 +315,7 @@ def test_fkm_nonlinear_recorder_empty_collective_default():
             "debug_output": []
         }
     )
-    
+
     pd.testing.assert_frame_equal(fr.collective, expected)
 
 
@@ -324,7 +324,7 @@ def test_fkm_nonlinear_recorder_two_non_zero_collective():
     g1, g2 = 1, 2
     h1, h2 = 4, 5
     fr = RFR.FKMNonlinearRecorder()
-    
+
     # arguments: loads_min, loads_max, S_min, S_max, epsilon_min, epsilon_max, epsilon_min_LF, epsilon_max_LF,
     # is_closed_hysteresis, is_zero_mean_stress_and_strain, run_index, debug_output
     fr.record_values_fkm_nonlinear([a1], [b1], [c1], [d1], [e1], [f1], [g1], [h1], [False], [False], 1, [""])

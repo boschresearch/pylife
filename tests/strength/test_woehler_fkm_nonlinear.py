@@ -49,7 +49,7 @@ def test_woehler_curve_P_RAM(P_RAM_Z, P_RAM_D, d_1, d_2):
     assert d_2 == component_woehler_curve_P_RAM.d_2
 
     assert component_woehler_curve_P_RAM.fatigue_strength_limit == P_RAM_D
-    
+
     # evaluate curve at some points (as function of N)
     assert component_woehler_curve_P_RAM.calc_P_RAM(1e3) == P_RAM_Z
     assert component_woehler_curve_P_RAM.calc_P_RAM(1e10) == P_RAM_D
@@ -66,12 +66,12 @@ def test_woehler_curve_P_RAM(P_RAM_Z, P_RAM_D, d_1, d_2):
     # check inverse
     for N in np.logspace(0, np.log10(component_woehler_curve_P_RAM.fatigue_life_limit)-1e-10):
         P = component_woehler_curve_P_RAM.calc_P_RAM(N)
-        
+
         assert np.isclose(component_woehler_curve_P_RAM.calc_N(P), N)
 
     for P_RAM in np.logspace(np.log10(P_RAM_D)+1e-10, np.log10(component_woehler_curve_P_RAM.calc_P_RAM(1))):
         N = component_woehler_curve_P_RAM.calc_N(P_RAM)
-        
+
         assert np.isclose(component_woehler_curve_P_RAM.calc_P_RAM(N), P_RAM)
 
     # test that slopes are correct (for function of P_RAM)
@@ -176,10 +176,10 @@ def test_woehler_curve_P_RAJ(P_RAJ_Z, P_RAJ_D_0, d_RAJ):
 
     assert component_woehler_curve_P_RAJ.fatigue_strength_limit == P_RAJ_D_0
     assert component_woehler_curve_P_RAJ.fatigue_strength_limit_final == P_RAJ_D_0
-    
+
     # test updating of P_RAJ_D
     component_woehler_curve_P_RAJ.update_P_RAJ_D(2*P_RAJ_D_0)
-    
+
     assert 2*P_RAJ_D_0 == component_woehler_curve_P_RAJ.P_RAJ_D
     assert component_woehler_curve_P_RAJ.fatigue_strength_limit_final == 2*P_RAJ_D_0
     assert component_woehler_curve_P_RAJ.fatigue_strength_limit == P_RAJ_D_0
@@ -190,7 +190,7 @@ def test_woehler_curve_P_RAJ(P_RAJ_Z, P_RAJ_D_0, d_RAJ):
     # set back to original value
     component_woehler_curve_P_RAJ.update_P_RAJ_D(P_RAJ_D_0)
 
-    
+
     # evaluate curve at some points (as function of N)
     assert component_woehler_curve_P_RAJ.calc_P_RAJ(1e0) == P_RAJ_Z
     assert component_woehler_curve_P_RAJ.calc_P_RAJ(1e10) == P_RAJ_D_0
@@ -209,12 +209,12 @@ def test_woehler_curve_P_RAJ(P_RAJ_Z, P_RAJ_D_0, d_RAJ):
     # check inverse
     for N in np.logspace(0, np.log10(component_woehler_curve_P_RAJ.fatigue_life_limit)-1e-10):
         P = component_woehler_curve_P_RAJ.calc_P_RAJ(N)
-        
+
         assert np.isclose(component_woehler_curve_P_RAJ.calc_N(P), N)
 
     for P_RAJ in np.logspace(np.log10(P_RAJ_D_0)+1e-10, np.log10(component_woehler_curve_P_RAJ.calc_P_RAJ(1))):
         N = component_woehler_curve_P_RAJ.calc_N(P_RAJ)
-        
+
         assert np.isclose(component_woehler_curve_P_RAJ.calc_P_RAJ(N), P_RAJ)
 
     # test that slopes are correct (for function of P_RAJ)
