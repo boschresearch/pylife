@@ -16,6 +16,8 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 ### New features
 
+* History output for `odbclient`
+
 * Introduce `WoehlerCurve.miner_original()`
 
 ### Breaking changes
