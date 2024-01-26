@@ -1001,7 +1001,7 @@ class Binned:
         delta_load = delta_load.fillna(0)
         sign = sign.fillna(0)
 
-        index = self._find_lut_secondary_branch_index_or_raise(delta_load)
+        index = self._find_lut_secondary_branch_index_or_raise(delta_load.values)
 
         return sign.values.flatten() * self._lut_secondary_branch.iloc[(index+1).flatten()].delta_stress.reset_index(drop=True)    # "+1", because the next higher class is used
 
