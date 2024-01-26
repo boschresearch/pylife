@@ -4,6 +4,14 @@ In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
 
+## pylife-2.1.1
+
+## Improvements
+
+* Rainflow counters work with `pd.Series` of all index type (#69)
+* Improved documentation
+
+
 ## pylife-2.1.0
 
 ### New features
