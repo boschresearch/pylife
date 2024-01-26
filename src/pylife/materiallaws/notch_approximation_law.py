@@ -583,10 +583,11 @@ class Binned:
         '''Get the strain of the primary path in the stress-strain diagram at a given stress and load
         by using the value of the look-up table.
 
+        This method performs the task for for multiple points at once,
+        i.e. delta_load is a DataFrame with values for every node.
+
         Parameters
         ----------
-        stress : array-like float
-            The stress
         load : array-like float
             The load
 
@@ -655,7 +656,10 @@ class Binned:
 
     def stress_secondary_branch(self, delta_load, *, rtol=1e-5, tol=1e-6):
         '''Get the stress on secondary branches in the stress-strain diagram at a given load
-        by using the value of the look-up table.
+        by using the value of the look-up table (lut).
+
+        This method performs the task for for multiple points at once,
+        i.e. delta_load is a DataFrame with values for every node.
 
         Parameters
         ----------
@@ -734,12 +738,14 @@ class Binned:
 
     def strain_secondary_branch(self, delta_stress, delta_load):
         '''Get the strain on secondary branches in the stress-strain diagram at a given stress and load
-        by using the value of the look-up table.
+        by using the value of the look-up table (lut).
+        The lut is a DataFrame with MultiIndex with levels class_index and node_id.
+
+        This method performs the task for for multiple points at once,
+        i.e. delta_load is a DataFrame with values for every node.
 
         Parameters
         ----------
-        delta_stress : array-like float
-            The stress increment
         delta_load : array-like float
             The load increment
 

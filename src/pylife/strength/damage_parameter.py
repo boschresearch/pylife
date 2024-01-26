@@ -87,7 +87,7 @@ class P_RAM:
         self._M_sigma = self._constants.a_M * 1e-3 * R_m + self._constants.b_M
 
         # compute k according to eq. (2.6-83)
-        self._collective["k"] = 0
+        self._collective["k"] = 0.0
         self._collective.loc[self._collective["S_m"]>=0, "k"] = self._M_sigma * (self._M_sigma + 2)
         self._collective.loc[self._collective["S_m"]<0,  "k"] = self._M_sigma/3 * (self._M_sigma/3 + 2)
 
@@ -98,7 +98,7 @@ class P_RAM:
         self._collective["P_RAM"] = np.where(self._collective["discriminant"] >= 0,
                                              np.sqrt(self._collective["discriminant"]
                                                      * self._collective["epsilon_a"]
-                                                     * self._assessment_parameters.E), 0)
+                                                     * self._assessment_parameters.E), 0.0)
 
         # delete temporary columns
         self._collective.drop(columns = ["discriminant", "k"], inplace=True)
@@ -295,37 +295,39 @@ class P_RAJ:
         """compute crack opening strain with history (chapter 2.8.9.3, chapter 2.9.8.1 is better)"""
 
         # initialize new columns in collective DataFrame
-        self._collective["epsilon_open_alt"] = 0
-        self._collective["epsilon_open"] = 0
-        self._collective["P_RAJ"] = 0
-        self._collective["D"] = 0
-        self._collective["S_close"] = 0
+        self._collective["epsilon_open_alt"] = 0.0
+        self._collective["epsilon_open"] = 0.0
+        self._collective["P_RAJ"] = 0.0
+        self._collective["D"] = 0.0
+        self._collective["S_close"] = 0.0
         self._collective["case_name"] = ""
 
-        self._collective["epsilon_min_alt_SP"] = 0
-        self._collective["epsilon_max_alt_SP"] = 0
+        self._collective["epsilon_min_alt_SP"] = 0.0
+        self._collective["epsilon_max_alt_SP"] = 0.0
 
         assessment_point_index = self._collective[self._collective.index.get_level_values("hysteresis_index")==0]\
             .index.get_level_values("assessment_point_index")
 
         # initialize variables
         epsilon_open_alt = -np.inf   # initialized according to 2.9.7 point 2
-        epsilon_open_alt = pd.Series(0, index=assessment_point_index)
+        epsilon_open_alt = pd.Series(0.0, index=assessment_point_index)
 
         epsilon_min_alt_SP = pd.Series(np.infty, index=assessment_point_index)
         epsilon_max_alt_SP = pd.Series(-np.infty, index=assessment_point_index)
 
-        epsilon_min_alt_SP = pd.Series(0, index=assessment_point_index)
-        epsilon_max_alt_SP = pd.Series(0, index=assessment_point_index)
+        epsilon_min_alt_SP = pd.Series(0.0, index=assessment_point_index)
+        epsilon_max_alt_SP = pd.Series(0.0, index=assessment_point_index)
 
         # cumulative damage value
-        D_akt = pd.Series(0, index=assessment_point_index)
+        D_akt = pd.Series(0.0, index=assessment_point_index)
 
         # initialize current fatigue limit
         P_RAJ_D = pd.Series(self._P_RAJ_D_0, index=assessment_point_index)
 
+        P_RAJ_D = pd.Series(self._P_RAJ_D_0, index=assessment_point_index)
+
         # initialize helper variables
-        epsilon_open = pd.Series(0, index=assessment_point_index)
+        epsilon_open = pd.Series(0.0, index=assessment_point_index)
 
         # Find the last hysteresis of the first run of the HCM algorithm. After this hysteresis, we need to initialize some variables for the second HCM run.
         last_index_of_first_run = self._collective[(self._collective["run_index"]==1) & (self._collective["run_index"].shift(-1)==2)].index
@@ -505,7 +507,7 @@ class P_RAJ:
             # compute value of P_RAJ, eq. (2.9-110)
             P_RAJ = np.where(is_damage_in_current_hysteresis,
                              self._calculate_P_RAJ(delta_S_eff, delta_epsilon_eff),
-                             0)
+                             0.0)
 
             # store value in collective DataFrame for current hysteresis
             self._collective.loc[self._collective.index.get_level_values("hysteresis_index")==index,"P_RAJ"] = P_RAJ
@@ -524,7 +526,7 @@ class P_RAJ:
 
             # compute damage contribution
             D = np.where(group.is_closed_hysteresis,
-                         1/N,
+                         1.0/N,
                          0.5/N)
 
             # store damage in collective
