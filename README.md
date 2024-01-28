@@ -7,7 +7,7 @@
 [![Testsuite](https://github.com/boschresearch/pylife/actions/workflows/pytest.yml/badge.svg)](https://github.com/boschresearch/pylife/actions/workflows/pytest.yml)
 
 pyLife is an Open Source Python library for state of the art algorithms used in
-lifetime assessment of mechanical components subject to fatigue load.
+lifetime assessment of mechanical components subjected to fatigue.
 
 
 ## Purpose of the project
