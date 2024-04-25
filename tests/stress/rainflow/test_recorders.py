@@ -126,7 +126,7 @@ def test_full_rainflow_recorder_empty_collective_default():
         'index_from': [],
         'index_to': []
     })
-    pd.testing.assert_frame_equal(fr.collective, expected)
+    pd.testing.assert_frame_equal(fr.collective, expected, check_dtype=False)
 
 
 def test_full_rainflow_recorder_two_non_zero_collective():

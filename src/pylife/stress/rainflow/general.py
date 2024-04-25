@@ -60,7 +60,7 @@ def find_turns(samples):
 
     def clean_nans(samples):
         nans = pd.isna(samples)
-        if any(nans):
+        if nans.any():
             warnings.warn(UserWarning("At least one NaN like value has been dropped from the input signal."))
             return samples[~nans], nans
         return samples, None
@@ -381,7 +381,7 @@ class AbstractDetector(metaclass=ABCMeta):
         if preserve_start:
             if turn_index.size > 0:
                 if turn_index[0] > 0:
-                    
+
                     # prepend first sample to results
                     turn_index = np.insert(turn_index, 0, 0)
 
