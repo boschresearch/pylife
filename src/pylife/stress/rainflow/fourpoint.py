@@ -19,7 +19,9 @@ __maintainer__ = "Johannes Mueller"
 
 
 import numpy as np
-from pylife.rainflow_ext import fourpoint_loop
+
+#from pylife.rainflow_ext import fourpoint_loop  # Cython
+from pylife._rust_lib import fourpoint_loop  # Rust
 
 from .general import AbstractDetector
 
@@ -143,7 +145,7 @@ class FourPointDetector(AbstractDetector):
         turns_index, turns_values = self._new_turns(samples, flush)
 
         turns_np = np.concatenate((residuals, turns_values, samples[-1:]))
-        turns_index = np.concatenate((self._residual_index, turns_index))#, dtype=np.uint64)
+        turns_index = np.concatenate((self._residual_index, turns_index.astype(np.uintp)))
 
         (
             from_vals,

@@ -63,3 +63,4 @@ coverage_report*
 .hypothesis
 .mutmut-cache
 .python-version
+/rust/target/

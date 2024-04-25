@@ -140,7 +140,7 @@ class AbstractDetector(metaclass=ABCMeta):
         self._sample_tail = np.array([])
         self._recorder = recorder
         self._head_index = 0
-        self._residual_index = np.array([0], dtype=np.int64)
+        self._residual_index = np.array([0], dtype=np.uintp)
         self._residuals = np.array([])
         self._is_flushing_enabled = False
 

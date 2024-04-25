@@ -1,0 +1,19 @@
+[package]
+name = "pylife"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "_rust_lib"
+path = "src/lib.rs"
+
+crate-type = ["cdylib"]
+
+[dependencies]
+ndarray = "0.15.6"
+pyo3 = { version = "0.21.1", features = ["extension-module"] }
+numpy = "0.21.0"
+
+
+ndarray-npy = "0.8.1"
