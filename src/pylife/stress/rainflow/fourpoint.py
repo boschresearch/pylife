@@ -19,6 +19,7 @@ __maintainer__ = "Johannes Mueller"
 
 
 import numpy as np
+from pylife.rainflow_ext import fourpoint_loop
 
 from .general import AbstractDetector
 
@@ -144,54 +145,16 @@ class FourPointDetector(AbstractDetector):
         turns_np = np.concatenate((residuals, turns_values, samples[-1:]))
         turns_index = np.concatenate((self._residual_index, turns_index))#, dtype=np.uint64)
 
-        len_turns = len(turns_np)
+        (
+            from_vals,
+            to_vals,
+            from_index,
+            to_index,
+            residual_index
+        ) = fourpoint_loop(turns_np, turns_index)
 
-        from_vals = np.empty(len_turns//2, dtype=np.float64)
-        to_vals = np.empty(len_turns//2, dtype=np.float64)
-        from_index = np.empty(len_turns//2, dtype=np.int64)
-        to_index = np.empty(len_turns//2, dtype=np.int64)
-        residual_index = np.empty(len_turns, dtype=np.int64)
-
-        residual_index[:2] = [0, 1]
-
-        i = 2
-        ii = 2
-        t = 0
-        while i < len_turns:
-            if ii < 3:
-                residual_index[ii] = i
-                ii += 1
-                i += 1
-                continue
-
-            a = turns_np[residual_index[ii-3]]
-            b = turns_np[residual_index[ii-2]]
-            c = turns_np[residual_index[ii-1]]
-            d = turns_np[i]
-
-            ab = np.abs(a - b)
-            bc = np.abs(b - c)
-            cd = np.abs(c - d)
-            if bc <= ab and bc <= cd:
-                from_vals[t] = b
-                to_vals[t] = c
-
-                ii -= 1
-                idx_2 = turns_index[residual_index[ii]]
-                ii -= 1
-                idx_1 = turns_index[residual_index[ii]]
-                from_index[t] = idx_1
-                to_index[t] = idx_2
-                t += 1
-                continue
-
-            residual_index[ii] = i
-            ii += 1
-            i += 1
-
-        self._recorder.record_values(from_vals[:t], to_vals[:t])
-        self._recorder.record_index(from_index[:t], to_index[:t])
-        residual_index = residual_index[:ii]
+        self._recorder.record_values(from_vals, to_vals)
+        self._recorder.record_index(from_index, to_index)
 
         self._residuals = turns_np[residual_index]
         self._residual_index = turns_index[residual_index[:-1]]
