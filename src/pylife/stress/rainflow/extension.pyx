@@ -11,15 +11,15 @@ def fourpoint_loop(double [::1] turns, unsigned long [::1] turns_index):
 
     from_vals = np.empty(len_turns//2, dtype=np.float64)
     to_vals = np.empty(len_turns//2, dtype=np.float64)
-    from_index = np.empty(len_turns//2, dtype=np.int64)
-    to_index = np.empty(len_turns//2, dtype=np.int64)
+    from_index = np.empty(len_turns//2, dtype=np.uintp)
+    to_index = np.empty(len_turns//2, dtype=np.uintp)
 
     cdef double [::1] from_vals_v = from_vals
     cdef double [::1] to_vals_v = to_vals
     cdef unsigned long [::1] from_index_v = from_index
     cdef unsigned long [::1] to_index_v = to_index
 
-    residual_index = np.empty(len_turns, dtype=np.int64)
+    residual_index = np.empty(len_turns, dtype=np.uintp)
 
     cdef unsigned long [::1] residual_index_v = residual_index
 
