@@ -1,7 +1,9 @@
 
 
-import numpy as np
 cimport cython
+import numpy as np
+cimport numpy as np
+from libc.math cimport fabs
 
 
 @cython.boundscheck(False)  # Deactivate bounds checking
@@ -50,9 +52,9 @@ def fourpoint_loop(double [::1] turns, unsigned long [::1] turns_index):
         c = turns[residual_index_v[ii-1]]
         d = turns[i]
 
-        ab = np.abs(a - b)
-        bc = np.abs(b - c)
-        cd = np.abs(c - d)
+        ab = fabs(a - b)
+        bc = fabs(b - c)
+        cd = fabs(c - d)
         if bc <= ab and bc <= cd:
             from_vals_v[t] = b
             to_vals_v[t] = c

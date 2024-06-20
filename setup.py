@@ -7,11 +7,13 @@
     Learn more under: https://pyscaffold.org/
 """
 from setuptools import setup
-
 from distutils.core import Extension
+import numpy
+
 ext = Extension(
     name='pylife.rainflow_ext',
     sources=['src/pylife/stress/rainflow/extension.pyx'],
+    include_dirs=[numpy.get_include()],
     extra_compile_args=["-O3"]
 )
 

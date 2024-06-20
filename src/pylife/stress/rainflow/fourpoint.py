@@ -20,8 +20,8 @@ __maintainer__ = "Johannes Mueller"
 
 import numpy as np
 
-#from pylife.rainflow_ext import fourpoint_loop  # Cython
-from pylife._rust_lib import fourpoint_loop  # Rust
+from pylife.rainflow_ext import fourpoint_loop  # Cython
+#from pylife._rust_lib import fourpoint_loop  # Rust
 
 from .general import AbstractDetector
 
