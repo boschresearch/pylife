@@ -153,4 +153,4 @@ class FailureProbability:
 
         strength_cdf = norm.cdf(load_values, loc=self.s_50, scale=self.s_std)
 
-        return np.trapz(load_pdf * strength_cdf, x = load_values)
+        return np.trapezoid(load_pdf * strength_cdf, x = load_values)
