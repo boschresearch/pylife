@@ -65,7 +65,7 @@ all_constants = pd.DataFrame({
         "a_epsilon": 0.847,
         "b_sigma": 0.982,
         "b_epsilon": -0.181,
-        "epsilon_grenz": np.infty,
+        "epsilon_grenz": np.inf,
         "f_25percent_damage_woehler": 0.68,    # table 2.9
         "a_PZ_RAM": 25.56,      # table 2.10 (2.18), note that values for P_RAJ are different
         "b_PZ_RAM": 0.519,
@@ -98,7 +98,7 @@ all_constants = pd.DataFrame({
         "a_epsilon": 895.9,
         "b_sigma": 0.742,
         "b_epsilon": -1.183,
-        "epsilon_grenz": np.infty,
+        "epsilon_grenz": np.inf,
         "f_25percent_damage_woehler": 0.88,    # table 2.9
         "a_PZ_RAM": 16.71,      # table 2.10 (2.18), note that values for P_RAJ are different
         "b_PZ_RAM": 0.537,

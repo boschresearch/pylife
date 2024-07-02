@@ -312,8 +312,8 @@ class P_RAJ:
         epsilon_open_alt = -np.inf   # initialized according to 2.9.7 point 2
         epsilon_open_alt = pd.Series(0.0, index=assessment_point_index)
 
-        epsilon_min_alt_SP = pd.Series(np.infty, index=assessment_point_index)
-        epsilon_max_alt_SP = pd.Series(-np.infty, index=assessment_point_index)
+        epsilon_min_alt_SP = pd.Series(np.inf, index=assessment_point_index)
+        epsilon_max_alt_SP = pd.Series(-np.inf, index=assessment_point_index)
 
         epsilon_min_alt_SP = pd.Series(0.0, index=assessment_point_index)
         epsilon_max_alt_SP = pd.Series(0.0, index=assessment_point_index)
