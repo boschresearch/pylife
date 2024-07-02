@@ -239,10 +239,18 @@ class HaighDiagram(PylifeSignal):
         if isinstance(self._obj.index, pd.IntervalIndex):
             return check_func(self._obj.index)
 
-        all_but_R = filter(lambda n: n != 'R', map(lambda n: n or 0, self._obj.index.names))
-        return (self._obj.index.to_frame(index=False).groupby(list(all_but_R))
-                .apply(lambda g: check_func(g.set_index('R').index))
-                .any())
+        all_but_R = [n or 0 for n in self._obj.index.names if n != 'R']
+
+        # TODO: remove once we drop python 3.8 support
+        include_groups = {} if pd.__version__ < "2.2" else {'include_groups': False}
+
+        return (
+            self
+            ._obj.index.to_frame(index=False)
+            .groupby(all_but_R)
+            .apply(lambda g: check_func(g.set_index('R').index), **include_groups)
+            .any()
+        )
 
 
 class _SegmentTransformer:
