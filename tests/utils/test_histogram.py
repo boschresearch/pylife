@@ -209,7 +209,7 @@ def test_combine_test_big_bin():
     hist1 = pd.Series([1, 2], index=pd.IntervalIndex.from_tuples([(0.0, 0.5), (0.5, 1.0)]))
     hist2 = pd.Series([4], index=pd.IntervalIndex.from_tuples([(0.0, 1.0)]))
 
-    result = hi.combine_histogram([hist1, hist2], method=sum)
+    result = hi.combine_histogram([hist1, hist2], method="sum")
 
     expected = pd.Series(
         [1, 4, 2],
