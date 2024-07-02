@@ -18,19 +18,12 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 import sys
+
 import pytest
 
-
-def test_import_bayesian():
-
-    sys.modules['pymc'] = None
-
-    sys.modules.pop('pylife.materialdata.woehler', None)
-    sys.modules.pop('pylife.materialdata.woehler.bayesian', None)
-
-    import pylife.materialdata.woehler as WL
-
-    with pytest.raises(ImportError, match=r"pip install pylife\[pymc\]"):
-        WL.Bayesian(None)
-
-    del sys.modules['pymc']
+def test_instanciate_bayesian():
+    with pytest.raises(
+        NotImplementedError,
+        match="pyLife's Bayesian Wöhler analyzer has been shutdown.",
+    ):
+        import pylife.materialdata.woehler.bayesian

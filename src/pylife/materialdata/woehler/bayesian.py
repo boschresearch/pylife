@@ -18,6 +18,11 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
+raise NotImplementedError(
+    "pyLife's Bayesian Wöhler analyzer has been shutdown. "
+    "See documentation for details."
+)
+
 import sys
 import numpy as np
 import pandas as pd
@@ -38,6 +43,7 @@ class Bayesian(Elementary):
     We are considering switching from pymc to GPyOpt as calculation engine in the
     future.  Maybe this will lead to breaking changes without new major release.
     """
+
 
     class _LogLike(pt.Op):
         """

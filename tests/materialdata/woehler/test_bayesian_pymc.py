@@ -36,6 +36,9 @@ except ModuleNotFoundError:
 from pylife.materialdata import woehler
 
 
+pytestmark = pytest.mark.skip("Bayesian Wöhler estimator is no longer in use")
+
+
 @pytest.fixture
 def core_num():
     return 1 if sys.platform.startswith('win') else None
