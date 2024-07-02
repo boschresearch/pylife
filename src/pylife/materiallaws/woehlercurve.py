@@ -111,7 +111,7 @@ class WoehlerCurve(PylifeSignal):
         return self._failure_probability
 
     def transform_to_failure_probability(self, failure_probability):
-        failure_probability = np.asfarray(failure_probability)
+        failure_probability = np.asarray(failure_probability, dtype=np.float64)
 
         failure_probability, obj = self.broadcast(failure_probability)
 
