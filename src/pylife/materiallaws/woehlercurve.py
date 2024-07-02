@@ -120,6 +120,7 @@ class WoehlerCurve(PylifeSignal):
 
         SD = np.asarray(obj.SD / 10**((native_ppf-goal_ppf)*scattering_range_to_std(obj.TS)))
         ND = np.asarray(obj.ND / 10**((native_ppf-goal_ppf)*scattering_range_to_std(obj.TN)))
+        ND.flags.writeable = True
         ND[SD != 0] *= np.power(SD[SD != 0]/obj.SD, -obj.k_1)
 
         transformed = obj.copy()
@@ -265,7 +266,7 @@ class WoehlerCurve(PylifeSignal):
         transformed = self.transform_to_failure_probability(failure_probability)
 
         cyc, wc = transformed.broadcast(cycles)
-        load = np.asarray(wc.SD.copy())
+        load = np.asarray(wc.SD).copy()
 
         k = self._make_k(-cyc, -wc.ND, wc)
         in_limit = np.isfinite(k)
@@ -276,7 +277,7 @@ class WoehlerCurve(PylifeSignal):
         return pd.Series(load, index=cyc.index)
 
     def _make_k(self, src, ref, wc):
-        k = np.asarray(wc.k_1)
+        k = np.asarray(wc.k_1).copy()
         k_2 = np.asarray(wc.k_2)
 
         below_limit = np.asarray(src < ref)
