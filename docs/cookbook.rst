@@ -52,4 +52,3 @@ computer, you can use `MyBinder
    :caption: Load FEM meshes
 
    demos/import_mesh_vmap.nblink
-   demos/import_mesh_ansys.nblink
