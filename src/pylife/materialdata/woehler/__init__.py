@@ -48,11 +48,6 @@ from .elementary import Elementary
 from .probit import Probit
 from .maxlike import MaxLikeInf, MaxLikeFull
 
-try:
-    from .bayesian import Bayesian
-except ModuleNotFoundError:
-    from .pymc_dummy import Bayesian
-
 __all__ = [
     'FatigueData',
     'determine_fractures',
@@ -60,5 +55,4 @@ __all__ = [
     'Probit',
     'MaxLikeInf',
     'MaxLikeFull',
-    'Bayesian'
 ]
