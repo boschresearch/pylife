@@ -31,7 +31,7 @@ class FatigueData(PylifeSignal):
     Mandatory keys are
         * ``load`` : float, the load level
         * ``cycles`` : float, the cycles of failure or runout
-        * ``fracture``: bool, ``True`` iff the test is a runout
+        * ``fracture``: bool, ``True`` iff the test is a fracture
      '''
 
     def _validate(self):
