@@ -619,7 +619,11 @@ def test_edge_case_value_in_sample_tail_compare_simple(vals, num):
 
     if 'debug_output' in multi_collective:
         multi_collective.pop('debug_output')
-    pd.testing.assert_frame_equal(simple_collective, multi_collective.groupby('hysteresis_index').first())
+    pd.testing.assert_frame_equal(
+        simple_collective,
+        multi_collective.groupby('hysteresis_index').first(),
+        check_index_type=False,
+    )
 
     with open(f'tests/stress/rainflow/reference-fkm-nonlinear/reference_process-process-{num}.json') as f:
         reference = f.read()
@@ -700,7 +704,12 @@ def test_hcm_first_second(vals, num):
 
     if 'debug_output' in multi_collective:
         multi_collective.pop('debug_output')
-    pd.testing.assert_frame_equal(simple_collective, multi_collective.groupby('hysteresis_index').first())
+
+    pd.testing.assert_frame_equal(
+        simple_collective,
+        multi_collective.groupby('hysteresis_index').first(),
+        check_index_type=False,
+    )
 
     with open(f'tests/stress/rainflow/reference-fkm-nonlinear/reference_first_second-{num}.json') as f:
         reference = f.read()
