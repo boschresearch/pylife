@@ -25,7 +25,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -U setuptools setuptools_scm wheel
         pip install flake8 pytest pytest-cov
-        pip install -e .[testing]
+        pip install -e .[unit-testing]
     - name: Unit tests
       run: pytest
     - name: Notebook flow tests

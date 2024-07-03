@@ -18,9 +18,18 @@ import os
 import pytest
 import unittest.mock as mock
 
-from testbook import testbook
+class _dummy_testbook:
+    def __init__(self, nb, **kwargs):
+        pass
 
-from IPython.core.profiledir import ProfileDir
+    def __call__(self, func):
+        pass
+
+try:
+    from testbook import testbook
+    from IPython.core.profiledir import ProfileDir
+except ModuleNotFoundError:
+    testbook = _dummy_testbook
 
 pytestmark = pytest.mark.demos
 
