@@ -8,7 +8,8 @@ on:
       - develop
 
 jobs:
-  build:
+  testsuite:
+    name: Run testsuite
     runs-on: ${{ matrix.os }}
     env:
       MPLBACKEND: svg

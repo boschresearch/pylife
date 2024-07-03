@@ -8,7 +8,8 @@ on:
       - develop
 
 jobs:
-  build:
+  docsbuild:
+    name: Build documentation
     runs-on: ubuntu-latest
     env:
       MPLBACKEND: svg
