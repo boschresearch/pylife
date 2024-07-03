@@ -313,7 +313,7 @@ class FKMNonlinearRecorder(AbstractRecorder):
                     "epsilon_max_LF": self._epsilon_max_LF.to_numpy(),
                     "is_closed_hysteresis": self.is_closed_hysteresis,
                     "is_zero_mean_stress_and_strain": self.is_zero_mean_stress_and_strain,
-                    "run_index": np.array(self._run_index)
+                    "run_index": np.array(self._run_index, dtype=np.int64)
                 })
 
         else:
@@ -347,7 +347,7 @@ class FKMNonlinearRecorder(AbstractRecorder):
                     "epsilon_max_LF": self._epsilon_max_LF.values,
                     "is_closed_hysteresis": self._is_closed_hysteresis,  # FIXME .values
                     "is_zero_mean_stress_and_strain": self._is_zero_mean_stress_and_strain, # FIXME .values,
-                    "run_index": self._run_index, # FIXME .values,
+                    "run_index": np.array(self._run_index, dtype=np.int64),
                     "debug_output": self._debug_output, # FIXME .values,
             })
 

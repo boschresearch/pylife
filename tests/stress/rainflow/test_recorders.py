@@ -316,7 +316,7 @@ def test_fkm_nonlinear_recorder_empty_collective_default():
             "epsilon_max_LF": [],
             "is_closed_hysteresis": [],
             "is_zero_mean_stress_and_strain": [],
-            "run_index": [],
+            "run_index": np.array([], dtype=np.int64),
             "debug_output": []
         }
     )
