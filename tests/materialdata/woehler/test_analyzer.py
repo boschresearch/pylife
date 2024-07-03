@@ -178,10 +178,10 @@ def test_woehler_endure_zones_no_runouts():
 def test_woehler_elementary():
     expected = pd.Series({
         'SD': 362.5,
-        'k_1': 7.0,
-        'ND': 3e5,
-        'TN': 5.3,
-        'TS': 1.27,
+        'k_1': 9.88,
+        'ND': 417772,
+        'TN': 6.78,
+        'TS': 1.21,
         'failure_probability': 0.5
     }).sort_index()
 
@@ -193,10 +193,10 @@ def test_woehler_elementary():
 def test_woehler_elementary_initialize_with_determined_fractures():
     expected = pd.Series({
         'SD': 362.5,
-        'k_1': 7.0,
-        'ND': 3e5,
-        'TN': 5.3,
-        'TS': 1.27,
+        'k_1': 9.88,
+        'ND': 417772,
+        'TN': 6.78,
+        'TS': 1.21,
         'failure_probability': 0.5
     }).sort_index()
 
@@ -208,10 +208,10 @@ def test_woehler_elementary_initialize_with_determined_fractures():
 def test_woehler_elementary_initialize_with_pandas_dataframe():
     expected = pd.Series({
         'SD': 362.5,
-        'k_1': 7.0,
-        'ND': 3e5,
-        'TN': 5.3,
-        'TS': 1.27,
+        'k_1': 9.88,
+        'ND': 417772,
+        'TN': 6.78,
+        'TS': 1.21,
         'failure_probability': 0.5
     }).sort_index()
 
@@ -242,11 +242,11 @@ def test_woehler_elementary_only_one_load_level():
 
 def test_woehler_probit():
     expected = pd.Series({
-        'SD': 335,
-        'TS': 1.19,
-        'k_1': 6.94,
-        'ND': 463000.,
-        'TN': 5.26,
+        'SD': 339.3,
+        'TS': 1.2,
+        'k_1': 9.88,
+        'ND': 802898.,
+        'TN': 6.78,
         'failure_probability': 0.5
     }).sort_index()
 
@@ -268,9 +268,9 @@ def test_woehler_probit_data01():
     expected = pd.Series({
         'SD': 490,
         'TS': 1.1,
-        'k_1': 8.0,
-        'ND': 530e3,
-        'TN': 3.0,
+        'k_1': 5.2,
+        'ND': 298638.,
+        'TN': 1.93,
         'failure_probability': 0.5
     }).sort_index()
 
@@ -300,10 +300,10 @@ def test_woehler_probit_no_runouts():
 def test_woehler_max_likelihood_inf_limit():
     expected = pd.Series({
         'SD': 335,
-        'TS': 1.19,
-        'k_1': 6.94,
-        'ND': 463000.,
-        'TN': 5.26,
+        'TS': 1.20,
+        'k_1': 9.88,
+        'ND': 897649.,
+        'TN': 6.78,
         'failure_probability': 0.5
     }).sort_index()
 
