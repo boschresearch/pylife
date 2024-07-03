@@ -45,11 +45,11 @@ class WoehlerCurve(PylifeSignal):
     * ``k_2`` : The slope of the Wöhler Curve below the endurance limit
                 If the key is missing it is assumed to be infinity, i.e. perfect endurance
     * ``TN`` : The scatter in cycle direction, (N_90/N_10)
-               If the key is missing it is assumed to be 1.0 or calculated from ``TS``
-               if given.
-    * ``TS`` : The scatter in cycle direction, (S_90/S_10)
-               If the key is missing it is assumed to be 1.0 or calculated from ``TN``
-               if given.
+               If the key is missing it is assumed to be 1.0 – i.e. no scatter –
+               or calculated from ``TS`` if given.
+    * ``TS`` : The scatter in load direction, (SD_90/SD_10)
+               If the key is missing it is assumed to be 1.0 – i.e. no scatter –
+               or calculated from ``TN`` if given.
     """
 
     def __init__(self, pandas_obj):
