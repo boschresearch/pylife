@@ -142,6 +142,31 @@ class FatigueData(PylifeSignal):
 
         return self
 
+    def set_fatigue_limit(self, fatigue_limit=None):
+        """
+        Allows the user to set an arbitrary fatigue limit.
+        If none is set the standard fatigue limit estimator is used.
+
+        Parameters
+        ----------
+        fatigue_limit : float, optional
+            If given, the fatigue limit for separating the finite and infinite zone is set.
+
+        Returns
+        -------
+        self
+        """
+        if isinstance(fatigue_limit, (int, float)):
+            if not fatigue_limit is None:
+                self._fatigue_limit = fatigue_limit
+                self._calc_finite_zone_manual()
+            else:
+                self._calc_fatigue_limit()
+        else:
+            raise ValueError("Entered fatigue_limit is not a number.")
+
+        return self
+
     @property
     def max_runout_load(self):
         return self.runouts.load.max()
@@ -165,9 +190,12 @@ class FatigueData(PylifeSignal):
             self._infinite_zone = self._obj[:0]
             self._finite_zone = self._obj
             return
-
         self._finite_zone = self.fractures[self.fractures.load > self.max_runout_load]
         self._infinite_zone = self._obj[self._obj.load <= self.max_runout_load]
+
+    def _calc_finite_zone_manual(self):
+        self._finite_zone = self.fractures[self.fractures.load > self._fatigue_limit]
+        self._infinite_zone = self._obj[self._obj.load <= self._fatigue_limit]
 
 
 def determine_fractures(df, load_cycle_limit=None):

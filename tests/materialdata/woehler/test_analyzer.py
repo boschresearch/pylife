@@ -82,17 +82,32 @@ def test_fatigue_data_finite_infinite_zone(data, finite_zone_expected, infinite_
 ])
 def test_fatigue_data_finite_infinite_zone_conservative(data, finite_zone_expected, infinite_zone_expected):
     fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.conservative_fatigue_limit()
-    print(sort_fatigue_data(fd.finite_zone))
-    print(sort_fatigue_data(finite_zone_expected))
-    print(fd.fatigue_limit)
-    print(sort_fatigue_data(fd.infinite_zone))
-    print(sort_fatigue_data(infinite_zone_expected))
     pd.testing.assert_frame_equal(sort_fatigue_data(fd.finite_zone)[['load', 'cycles']],
                                   sort_fatigue_data(finite_zone_expected))
     fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.conservative_fatigue_limit()
     pd.testing.assert_frame_equal(sort_fatigue_data(fd.infinite_zone)[['load', 'cycles']],
                                   sort_fatigue_data(infinite_zone_expected))
 
+@pytest.mark.parametrize("data, finite_zone_expected, infinite_zone_expected, fat_limit", [
+    (data,
+     finite_expected_set_finite_limit,
+     infinite_expected_set_finite_limit,
+     fat_limit),
+    (data,
+     finite_expected_set_finite_limit_max,
+     infinite_expected_set_finite_limit_max,
+     fat_limit_max),
+    (data,
+     finite_expected_set_finite_limit_min,
+     infinite_expected_set_finite_limit_min,
+     fat_limit_min)
+])
+def test_fatigue_data_finite_infinite_zone_manuel_setting(data, finite_zone_expected, infinite_zone_expected, fat_limit):
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=fat_limit)
+    pd.testing.assert_frame_equal(sort_fatigue_data(fd.finite_zone)[['load', 'cycles']],
+                                  sort_fatigue_data(finite_zone_expected))
+    pd.testing.assert_frame_equal(sort_fatigue_data(fd.infinite_zone)[['load', 'cycles']],
+                                  sort_fatigue_data(infinite_zone_expected))
 
 def test_woehler_fracture_determination_given():
     df = pd.DataFrame({
