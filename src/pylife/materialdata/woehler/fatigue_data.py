@@ -142,28 +142,21 @@ class FatigueData(PylifeSignal):
 
         return self
 
-    def set_fatigue_limit(self, fatigue_limit=None):
+    def set_fatigue_limit(self, fatigue_limit):
         """
         Allows the user to set an arbitrary fatigue limit.
-        If none is set the standard fatigue limit estimator is used.
 
         Parameters
         ----------
-        fatigue_limit : float, optional
-            If given, the fatigue limit for separating the finite and infinite zone is set.
+        fatigue_limit : float
+            The fatigue limit for separating the finite and infinite zone is set.
 
         Returns
         -------
         self
         """
-        if isinstance(fatigue_limit, (int, float)):
-            if not fatigue_limit is None:
-                self._fatigue_limit = fatigue_limit
-                self._calc_finite_zone_manual(fatigue_limit)
-            else:
-                self._calc_fatigue_limit()
-        else:
-            raise ValueError("Entered fatigue_limit is not a number.")
+        self._fatigue_limit = fatigue_limit
+        self._calc_finite_zone_manual(fatigue_limit)
 
         return self
 
