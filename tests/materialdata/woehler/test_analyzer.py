@@ -255,6 +255,34 @@ def test_woehler_elementary_only_one_load_level():
         woehler.Elementary(fd).analyze().sort_index()
 
 
+def test_woehler_elementary_set_fatigue_limit_low():
+    expected = pd.Series({
+        'SD': 350.0,
+        'k_1': 9.88,
+        'ND': 590904,
+        'TN': 6.78,
+        'TS': 1.21,
+        'failure_probability': 0.5
+    }).sort_index()
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=350.)
+    wc = woehler.Elementary(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
+def test_woehler_elementary_set_fatigue_limit_high():
+    expected = pd.Series({
+        'SD': 376.,
+        'k_1': 7.07,
+        'ND': 191572,
+        'TN': 4.18,
+        'TS': 1.22,
+        'failure_probability': 0.5
+    }).sort_index()
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=376.)
+    wc = woehler.Elementary(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
 def test_woehler_probit():
     expected = pd.Series({
         'SD': 339.3,
@@ -266,6 +294,21 @@ def test_woehler_probit():
     }).sort_index()
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    wc = woehler.Probit(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
+def test_woehler_probit_set_fatigue_limit():
+    expected = pd.Series({
+        'SD': 340.4,
+        'TS': 1.21,
+        'k_1': 7.1,
+        'ND': 386721.,
+        'TN': 4.18,
+        'failure_probability': 0.5
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=376.)
     wc = woehler.Probit(fd).analyze().sort_index()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
@@ -323,6 +366,21 @@ def test_woehler_max_likelihood_inf_limit():
     }).sort_index()
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    wc = woehler.MaxLikeInf(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
+def test_woehler_max_likelihood_inf_limit_set_fatigue_limit():
+    expected = pd.Series({
+        'SD': 333.6,
+        'TS': 1.22,
+        'k_1': 7.1,
+        'ND': 446054.,
+        'TN': 4.18,
+        'failure_probability': 0.5
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data.set_fatigue_limit(fatigue_limit=376.)
     wc = woehler.MaxLikeInf(fd).analyze().sort_index()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
