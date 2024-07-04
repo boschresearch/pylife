@@ -345,10 +345,10 @@ def test_repeated_load_sequence_multiple_points_P_RAM(original_load_sequence):
 
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
 
-    load_sequence = pd.DataFrame(index=index, data={"load": 0})
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
+    load_sequence = pd.Series(index=index)
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==0] = load_sequence_0.to_numpy()
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==1] = load_sequence_1.to_numpy()
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==2] = load_sequence_2.to_numpy()
 
     # perform assessment of all points at once
     result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
@@ -369,10 +369,10 @@ def test_repeated_load_sequence_multiple_points_P_RAM(original_load_sequence):
 
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
 
-    load_sequence = pd.DataFrame(index=index, data={"load": 0})
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
+    load_sequence = pd.Series(index=index)
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==0] = load_sequence_0.to_numpy()
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==1] = load_sequence_1.to_numpy()
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==2] = load_sequence_2.to_numpy()
 
     result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=True, calculate_P_RAJ=False)
@@ -391,10 +391,10 @@ def test_repeated_load_sequence_multiple_points_P_RAM(original_load_sequence):
 
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
 
-    load_sequence = pd.DataFrame(index=index, data={"load": 0})
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
+    load_sequence = pd.Series(index=index)
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==0] = load_sequence_0.to_numpy()
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==1] = load_sequence_1.to_numpy()
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==2] = load_sequence_2.to_numpy()
 
     result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=True, calculate_P_RAJ=False)
@@ -513,10 +513,10 @@ def test_repeated_load_sequence_multiple_points_P_RAJ(original_load_sequence):
 
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
 
-    load_sequence = pd.DataFrame(index=index, data={"load": 0})
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
+    load_sequence = pd.Series(index=index)
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==0] = load_sequence_0.to_numpy()
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==1] = load_sequence_1.to_numpy()
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==2] = load_sequence_2.to_numpy()
 
     result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=False, calculate_P_RAJ=True)
@@ -534,10 +534,10 @@ def test_repeated_load_sequence_multiple_points_P_RAJ(original_load_sequence):
 
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
 
-    load_sequence = pd.DataFrame(index=index, data={"load": 0})
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
+    load_sequence = pd.Series(index=index)
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==0] = load_sequence_0.to_numpy()
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==1] = load_sequence_1.to_numpy()
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==2] = load_sequence_2.to_numpy()
 
     result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=False, calculate_P_RAJ=True)
@@ -555,10 +555,10 @@ def test_repeated_load_sequence_multiple_points_P_RAJ(original_load_sequence):
 
     index = pd.MultiIndex.from_product([range(len(load_sequence_0)), [0,1,2]], names=["load_step", "node_id"])
 
-    load_sequence = pd.DataFrame(index=index, data={"load": 0})
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==0,"load"] = load_sequence_0.to_numpy()
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==1,"load"] = load_sequence_1.to_numpy()
-    load_sequence.loc[load_sequence.index.get_level_values("node_id")==2,"load"] = load_sequence_2.to_numpy()
+    load_sequence = pd.Series(index=index)
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==0] = load_sequence_0.to_numpy()
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==1] = load_sequence_1.to_numpy()
+    load_sequence.loc[load_sequence.index.get_level_values("node_id")==2] = load_sequence_2.to_numpy()
 
     result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=False, calculate_P_RAJ=True)

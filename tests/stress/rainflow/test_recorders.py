@@ -264,9 +264,14 @@ def test_fkm_nonlinear_recorder_record_two_values():
 
     # arguments: loads_min, loads_max, S_min, S_max, epsilon_min, epsilon_max, epsilon_min_LF, epsilon_max_LF,
     # is_closed_hysteresis, is_zero_mean_stress_and_strain, run_index, debug_output
-    fr.record_values_fkm_nonlinear([a1], [b1], [c1], [d1], [e1], [f1], [g1], [h1], [False], [False], 1, [""])
-    fr.record_values_fkm_nonlinear([a2], [b2], [c2], [d2], [e2], [f2], [g2], [h2], [True], [False], 2, [""])
-    fr.record_values_fkm_nonlinear([a2], [b2], [c2], [d2], [e2], [f2], [g2], [h2], [True], [True], 2, [""])
+
+    args_1 = [pd.Series([v]) for v in [a1, b1, c1, d1, e1, f1, g1, h1]] + [[False], [False], 1, [""]]
+    args_2 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [False], 2, [""]]
+    args_3 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [True], 2, [""]]
+
+    fr.record_values_fkm_nonlinear(*args_1)
+    fr.record_values_fkm_nonlinear(*args_2)
+    fr.record_values_fkm_nonlinear(*args_3)
 
     np.testing.assert_array_equal(fr.loads_min, [a1, a2, a2])
     np.testing.assert_array_equal(fr.loads_max, [b1, b2, b2])
@@ -311,7 +316,7 @@ def test_fkm_nonlinear_recorder_empty_collective_default():
             "epsilon_max_LF": [],
             "is_closed_hysteresis": [],
             "is_zero_mean_stress_and_strain": [],
-            "run_index": [],
+            "run_index": np.array([], dtype=np.int64),
             "debug_output": []
         }
     )
@@ -325,11 +330,13 @@ def test_fkm_nonlinear_recorder_two_non_zero_collective():
     h1, h2 = 4, 5
     fr = RFR.FKMNonlinearRecorder()
 
-    # arguments: loads_min, loads_max, S_min, S_max, epsilon_min, epsilon_max, epsilon_min_LF, epsilon_max_LF,
-    # is_closed_hysteresis, is_zero_mean_stress_and_strain, run_index, debug_output
-    fr.record_values_fkm_nonlinear([a1], [b1], [c1], [d1], [e1], [f1], [g1], [h1], [False], [False], 1, [""])
-    fr.record_values_fkm_nonlinear([a2], [b2], [c2], [d2], [e2], [f2], [g2], [h2], [True], [False], 2, [""])
-    fr.record_values_fkm_nonlinear([a2], [b2], [c2], [d2], [e2], [f2], [g2], [h2], [True], [True], 2, [""])
+    args_1 = [pd.Series([v]) for v in [a1, b1, c1, d1, e1, f1, g1, h1]] + [[False], [False], 1, [""]]
+    args_2 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [False], 2, [""]]
+    args_3 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [True], 2, [""]]
+
+    fr.record_values_fkm_nonlinear(*args_1)
+    fr.record_values_fkm_nonlinear(*args_2)
+    fr.record_values_fkm_nonlinear(*args_3)
 
     expected = pd.DataFrame(
         index=pd.MultiIndex.from_product([[0,1,2],[0]],names=["hysteresis_index","assessment_point_index"]),

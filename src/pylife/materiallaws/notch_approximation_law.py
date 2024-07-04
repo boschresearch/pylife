@@ -522,17 +522,19 @@ class Binned:
             The resulting stress
         '''
 
+
+        # FIXME consolidate theese methods (duplicated code)
         sign = np.sign(load)
 
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if isinstance(load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+        if isinstance(load, pd.Series) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
 
             # the lut is a DataFrame with MultiIndex with levels class_index and node_id
 
             # find the corresponding class only for the first node, use the result for all nodes
             first_node_id = self._lut_primary_branch.index.get_level_values("node_id")[0]
             lut_for_first_node = self._lut_primary_branch.load[self._lut_primary_branch.index.get_level_values("node_id")==first_node_id]
-            first_abs_load = abs(load.iloc[0].values[0])
+            first_abs_load = abs(load.iloc[0])
 
             # get the class index of the corresponding bin/class
             class_index = lut_for_first_node.searchsorted(first_abs_load)
@@ -544,17 +546,14 @@ class Binned:
                 raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
                                  f" but a higher absolute load value of {first_abs_load} is requested (in stress()).")
 
-            # sign is a DataFrame with one column, convert to series
-            sign = sign[sign.columns[0]]
-
             # get stress from matching class, "+1", because the next higher class is used
             stress = self._lut_primary_branch[self._lut_primary_branch.index.get_level_values("class_index") == class_index+1].stress
 
             # multiply with sign
-            return sign * stress.reset_index(drop=True)
+            return sign * stress.to_numpy()
 
         # if the assessment is performed for multiple points at once, but only one lookup-table is used
-        elif isinstance(load, pd.DataFrame):
+        elif isinstance(load, pd.Series):
 
             load = load.fillna(0)
             sign = sign.fillna(0)
@@ -599,14 +598,14 @@ class Binned:
         sign = np.sign(load)
 
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if isinstance(load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+        if isinstance(load, pd.Series) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
 
             # the lut is a DataFrame with MultiIndex with levels class_index and node_id
 
             # find the corresponding class only for the first node, use the result for all nodes
             first_node_id = self._lut_primary_branch.index.get_level_values("node_id")[0]
             lut_for_first_node = self._lut_primary_branch.load[self._lut_primary_branch.index.get_level_values("node_id")==first_node_id]
-            first_abs_load = abs(load.iloc[0].values[0])
+            first_abs_load = abs(load.iloc[0])
 
             # get the class index of the corresponding bin/class
             class_index = lut_for_first_node.searchsorted(first_abs_load)
@@ -618,17 +617,14 @@ class Binned:
                 raise ValueError(f"Binned class is initialized with a maximum absolute load of {self._maximum_absolute_load}, "\
                                  f" but a higher absolute load value of {first_abs_load} is requested (in strain()).")
 
-            # sign is a DataFrame with one column, convert to series
-            sign = sign[sign.columns[0]]
-
             # get strain from matching class, "+1", because the next higher class is used
             strain = self._lut_primary_branch[self._lut_primary_branch.index.get_level_values("class_index") == class_index+1].strain
 
             # multiply with sign
-            return sign * strain.reset_index(drop=True)
+            return sign * strain.to_numpy()
 
         # if the assessment is performed for multiple points at once, but only one lookup-table is used
-        elif isinstance(load, pd.DataFrame):
+        elif isinstance(load, pd.Series):
 
             load = load.fillna(0)
             sign = sign.fillna(0)
@@ -681,14 +677,14 @@ class Binned:
         sign = np.sign(delta_load)
 
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if isinstance(delta_load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+        if isinstance(delta_load, pd.Series) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
 
             # the lut is a DataFrame with MultiIndex with levels class_index and node_id
 
             # find the corresponding class only for the first node, use the result for all nodes
             first_node_id = self._lut_primary_branch.index.get_level_values("node_id")[0]
             lut_for_first_node = self._lut_secondary_branch.delta_load[self._lut_secondary_branch.index.get_level_values("node_id")==first_node_id]
-            first_abs_load = abs(delta_load.iloc[0].values[0])
+            first_abs_load = abs(delta_load.iloc[0])
 
             # get the class index of the corresponding bin/class
             class_index = lut_for_first_node.searchsorted(first_abs_load)
@@ -700,17 +696,14 @@ class Binned:
                 raise ValueError(f"Binned class is initialized with a maximum absolute delta_load load of {2*self._maximum_absolute_load}, "\
                                  f" but a higher absolute delta_load value of {first_abs_load} is requested (in stress_secondary_branch()).")
 
-            # sign is a DataFrame with one column, convert to series
-            sign = sign[sign.columns[0]]
-
             # get stress from matching class, "+1", because the next higher class is used
             delta_stress = self._lut_secondary_branch[self._lut_secondary_branch.index.get_level_values("class_index") == class_index+1].delta_stress
 
             # multiply with sign
-            return sign * delta_stress.reset_index(drop=True)
+            return sign * delta_stress.to_numpy()
 
         # if the assessment is performed for multiple points at once, but only one lookup-table is used
-        elif isinstance(delta_load, pd.DataFrame):
+        elif isinstance(delta_load, pd.Series):
 
             delta_load = delta_load.fillna(0)
             sign = sign.fillna(0)
@@ -759,14 +752,14 @@ class Binned:
         sign = np.sign(delta_load)
 
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if isinstance(delta_load, pd.DataFrame) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+        if isinstance(delta_load, pd.Series) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
 
             # the lut is a DataFrame with MultiIndex with levels class_index and node_id
 
             # find the corresponding class only for the first node, use the result for all nodes
             first_node_id = self._lut_secondary_branch.index.get_level_values("node_id")[0]
             lut_for_first_node = self._lut_secondary_branch.delta_load[self._lut_secondary_branch.index.get_level_values("node_id")==first_node_id]
-            first_abs_load = abs(delta_load.iloc[0].values[0])
+            first_abs_load = abs(delta_load.iloc[0])
 
             # get the class index of the corresponding bin/class
             class_index = lut_for_first_node.searchsorted(first_abs_load)
@@ -778,17 +771,14 @@ class Binned:
                 raise ValueError(f"Binned class is initialized with a maximum absolute delta_load of {2*self._maximum_absolute_load}, "\
                                  f" but a higher absolute delta_load value of {first_abs_load} is requested (in strain_secondary_branch()).")
 
-            # sign is a DataFrame with one column, convert to series
-            sign = sign[sign.columns[0]]
-
             # get strain from matching class, "+1", because the next higher class is used
             delta_strain = self._lut_secondary_branch[self._lut_secondary_branch.index.get_level_values("class_index") == class_index+1].delta_strain
 
             # multiply with sign
-            return sign * delta_strain.reset_index(drop=True)
+            return sign * delta_strain.to_numpy()
 
         # if the assessment is performed for multiple points at once, but only one lookup-table is used
-        elif isinstance(delta_load, pd.DataFrame):
+        elif isinstance(delta_load, pd.Series):
 
             delta_load = delta_load.fillna(0)
             sign = sign.fillna(0)
@@ -817,8 +807,8 @@ class Binned:
     def _create_bins(self):
         """Initialize the lookup tables by precomputing the notch approximation law values.
         """
-        # for multiple assessment points at once use a DataFrame with MultiIndex
-        if isinstance(self._maximum_absolute_load, pd.DataFrame):
+        # for multiple assessment points at once use a Series with MultiIndex
+        if isinstance(self._maximum_absolute_load, pd.Series):
             assert self._maximum_absolute_load.index.name == "node_id"
 
             self._create_bins_multiple_assessment_points()
@@ -835,7 +825,6 @@ class Binned:
         self._lut_primary_branch = pd.DataFrame(0,
             index=pd.Index(np.arange(1, self._number_of_bins+1), name="class_index"),
             columns=["load", "strain", "stress"])
-
 
         self._lut_primary_branch.load \
             = self._lut_primary_branch.index/self._number_of_bins * self._maximum_absolute_load
@@ -867,8 +856,7 @@ class Binned:
         """Initialize the lookup tables by precomputing the notch approximation law values,
         for the case of vector-valued variables caused by an assessment on multiple points at once."""
 
-        # name column "max_abs_load"
-        self._maximum_absolute_load.rename(columns={self._maximum_absolute_load.columns[0]: "max_abs_load"}, inplace=True)
+        self._maximum_absolute_load.name = "max_abs_load"
 
         # create look-up table (lut) for the primary branch values, named PFAD in FKM nonlinear
         index = pd.MultiIndex.from_product([np.arange(1, self._number_of_bins+1), self._maximum_absolute_load.index],
@@ -915,4 +903,3 @@ class Binned:
         self._lut_secondary_branch.delta_strain \
             = self._notch_approximation_law.strain_secondary_branch(
                 self._lut_secondary_branch.delta_stress, self._lut_secondary_branch.delta_load)
-

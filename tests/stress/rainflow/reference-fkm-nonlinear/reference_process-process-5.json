@@ -1,0 +1,50 @@
+{
+    "loads_min":{
+
+    },
+    "loads_max":{
+
+    },
+    "S_min":{
+
+    },
+    "S_max":{
+
+    },
+    "R":{
+
+    },
+    "epsilon_min":{
+
+    },
+    "epsilon_max":{
+
+    },
+    "S_a":{
+
+    },
+    "S_m":{
+
+    },
+    "epsilon_a":{
+
+    },
+    "epsilon_m":{
+
+    },
+    "epsilon_min_LF":{
+
+    },
+    "epsilon_max_LF":{
+
+    },
+    "is_closed_hysteresis":{
+
+    },
+    "is_zero_mean_stress_and_strain":{
+
+    },
+    "run_index":{
+
+    }
+}

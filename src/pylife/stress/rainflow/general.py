@@ -318,90 +318,54 @@ class AbstractDetector(metaclass=ABCMeta):
         call.
         """
 
-        if isinstance(samples, pd.Series):
-            samples = samples.to_numpy()
+        if len(samples) == 0:
+            return np.array([]), np.array([])
 
-        assert isinstance(samples, np.ndarray) or isinstance(samples, pd.DataFrame)
-
-        # if we have samples left from the last call, disable option preserve_start
         if len(self._sample_tail) > 0:
             preserve_start = False
 
-        _is_multiple_assessment_points = False
-        if isinstance(samples, pd.DataFrame):
-            _is_multiple_assessment_points = True
+        samples_with_last_tail = np.concatenate((self._sample_tail, samples))
 
-            # convert to list
-            samples = [df.reset_index(drop=True) for _,df in samples.groupby("load_step")]
+        turn_index, turn_values = find_turns(samples_with_last_tail)
 
-        sample_len = len(samples)
+        sample_tail_index = turn_index[-1] if turn_index.size > 0 else 0
+        turn_index += self._head_index - len(self._sample_tail)
 
-        # prepend samples from previous call
-        if isinstance(samples, np.ndarray):
-            samples = np.concatenate((self._sample_tail, samples))
-        else:
-            if len(samples) == 0:
-                samples = list(self._sample_tail)
-            elif len(self._sample_tail) != 0:
-                samples = list(self._sample_tail) + samples
+        self._sample_tail = samples_with_last_tail[sample_tail_index:]  # FIXME: samples_with_last_tail[-1:] also possible?
+        self._head_index += len(samples)
 
-        # get indices and values of new turns in the current samples
-        if _is_multiple_assessment_points:
-            turn_index, turn_values = self._find_turns_multiple_assessment_points(samples)
-        else:
-            turn_index, turn_values = find_turns(samples)
-
-        # if turns were found
-        if turn_index.size > 0:
-            old_sample_tail_length = len(self._sample_tail)
-
-            # store new tail of samples that were not considered in this call
-            self._sample_tail = samples[turn_index[-1]:]
-            turn_index += self._head_index - old_sample_tail_length
-
-        else:
-            # if no turns were found, store all samples as new tail
-            self._sample_tail = samples
-
-        self._head_index += sample_len
-
-        # handle flush parameter
         if flush and len(self._sample_tail) > 0:
+            turn_index, turn_values = self._flush_new_turns(turn_index, turn_values)
 
-            turn_index = np.concatenate((turn_index, [self._head_index-1]))
-
-            if isinstance(turn_values, np.ndarray):
-                turn_values = np.concatenate((turn_values, [self._sample_tail[-1]]))
-            else:
-                turn_values.append(self._sample_tail[-1])
-
-            self._sample_tail = [self._sample_tail[-1]]
-
-        # handle preserve_start parameter
         if preserve_start:
-            if turn_index.size > 0:
-                if turn_index[0] > 0:
-                    
-                    # prepend first sample to results
-                    turn_index = np.insert(turn_index, 0, 0)
-
-                    if isinstance(turn_values, np.ndarray):
-                        turn_values = np.insert(turn_values, 0, samples[0])
-                    else:
-                        turn_values.insert(0, samples[0])
+            turn_index, turn_values = self._preserve_start(turn_index, turn_values, samples[0])
 
         return turn_index, turn_values
 
-    def _find_turns_multiple_assessment_points(self, samples):
+    def _flush_new_turns(self, turn_index, turn_values):
+        turn_index = np.concatenate((turn_index, [self._head_index-1]))
 
-        # extract the representative samples for the first node
-        samples_of_first_node = np.array([sample.iloc[0].values for sample in samples]).flatten()
-        turn_index, _ = find_turns(samples_of_first_node)
+        if isinstance(turn_values, np.ndarray):
+            turn_values = np.concatenate((turn_values, [self._sample_tail[-1]]))
+        else:
+            turn_values.append(self._last_sample)
 
-        # the selected samples are a list of DataFrames. Each DataFrame contains the values for all nodes
-        selected_samples = [samples[index] for index in turn_index]
+        self._sample_tail = self._sample_tail[-1:]
+        return turn_index, turn_values
 
-        return turn_index, selected_samples
+    def _preserve_start(self, turn_index, turn_values, first_sample):
+        if turn_index.size > 0:
+            if turn_index[0] > 0:
+
+                # prepend first sample to results
+                turn_index = np.insert(turn_index, 0, 0)
+
+                if isinstance(turn_values, np.ndarray):
+                    turn_values = np.insert(turn_values, 0, first_sample)
+                else:
+                    turn_values.insert(0, first_sample)
+        return turn_index, turn_values
+
 
 
     def _new_turns_multiple_assessment_points(self, samples, flush=False, preserve_start=False):
