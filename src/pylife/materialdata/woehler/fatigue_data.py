@@ -159,7 +159,7 @@ class FatigueData(PylifeSignal):
         if isinstance(fatigue_limit, (int, float)):
             if not fatigue_limit is None:
                 self._fatigue_limit = fatigue_limit
-                self._calc_finite_zone_manual()
+                self._calc_finite_zone_manual(fatigue_limit)
             else:
                 self._calc_fatigue_limit()
         else:
@@ -186,16 +186,14 @@ class FatigueData(PylifeSignal):
         return max_loads[1] + (max_loads[1]-max_loads[0]) / 2.
 
     def _calc_finite_zone(self):
-        if len(self.runouts) == 0:
-            self._infinite_zone = self._obj[:0]
-            self._finite_zone = self._obj
-            return
-        self._finite_zone = self.fractures[self.fractures.load > self.max_runout_load]
-        self._infinite_zone = self._obj[self._obj.load <= self.max_runout_load]
+        if len(self.runouts) > 0:
+            return self._calc_finite_zone_manual(self.max_runout_load)
+        self._infinite_zone = self._obj[:0]
+        self._finite_zone = self._obj
 
-    def _calc_finite_zone_manual(self):
-        self._finite_zone = self.fractures[self.fractures.load > self._fatigue_limit]
-        self._infinite_zone = self._obj[self._obj.load <= self._fatigue_limit]
+    def _calc_finite_zone_manual(self, limit):
+        self._finite_zone = self.fractures[self.fractures.load > limit]
+        self._infinite_zone = self._obj[self._obj.load <= limit]
 
 
 def determine_fractures(df, load_cycle_limit=None):
