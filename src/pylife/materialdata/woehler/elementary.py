@@ -73,6 +73,7 @@ class Elementary:
         """
         if len(self._fd.load.unique()) < 2:
             raise ValueError("Need at least two load levels to do a Wöhler analysis.")
+        self._finite_fractures = self._fd.finite_zone.loc[self._fd.finite_zone.fracture == True]
         wc = self._common_analysis()
         wc = self._specific_analysis(wc, **kwargs)
         self.__calc_bic(wc)
@@ -117,8 +118,8 @@ class Elementary:
         self._bic = (-2 * log_likelihood) + (param_num * np.log(self._fd.num_tests))
 
     def _fit_slope(self):
-        slope, lg_intercept, _, _, _ = stats.linregress(np.log10(self._fd.fractures.load),
-                                                        np.log10(self._fd.fractures.cycles))
+        slope, lg_intercept, _, _, _ = stats.linregress(np.log10(self._finite_fractures.load),
+                                                        np.log10(self._finite_fractures.cycles))
 
         return slope, lg_intercept
 
@@ -129,7 +130,7 @@ class Elementary:
         return 10**(self._lg_intercept + self._slope * (np.log10(fatigue_limit)))
 
     def _pearl_chain_method(self):
-        self._pearl_chain_estimator = PearlChainProbability(self._fd.fractures, self._slope)
+        self._pearl_chain_estimator = PearlChainProbability(self._finite_fractures, self._slope)
 
         TN = functions.std_to_scattering_range(1./self._pearl_chain_estimator.slope)
         TS = TN**(1./-self._slope)

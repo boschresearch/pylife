@@ -6,6 +6,11 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 ## pylife-2.1.1
 
+### Breaking changes
+
+* Change fracture load levels used for slope `k_1` and scatter `T_N` estimation. Now only fractures in the `finite_zone` are used for estimation and not all fractures (in `finite_zone` and `infinite_zone`). Change based on findings in DIN50100:2022-12.
+
+
 ### New features
 
 * Add option to manually set `fatigue_limit` for Woehler curve estimation. (#73)
