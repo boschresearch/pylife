@@ -6,7 +6,12 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 ## pylife-2.1.1
 
-## Improvements
+### New features
+
+* Add option to manually set `fatigue_limit` for Woehler curve estimation. (#73)
+
+
+### Improvements
 
 * Rainflow counters work with `pd.Series` of all index type (#69)
 * Improved documentation
