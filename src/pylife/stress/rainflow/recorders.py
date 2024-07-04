@@ -309,7 +309,7 @@ class FKMNonlinearRecorder(AbstractRecorder):
                     "S_m": self.S_m,
                     "epsilon_a": self.epsilon_a,
                     "epsilon_m": self.epsilon_m,
-                    "epsilon_min_LF": self._epsilon_min_LF.values,
+                    "epsilon_min_LF": self._epsilon_min_LF.to_numpy(),
                     "epsilon_max_LF": self._epsilon_max_LF.to_numpy(),
                     "is_closed_hysteresis": self.is_closed_hysteresis,
                     "is_zero_mean_stress_and_strain": self.is_zero_mean_stress_and_strain,

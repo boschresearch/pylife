@@ -244,6 +244,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         _is_zero_mean_stress_and_strain = []  # whether the mean stress and strain are forced to be zero (occurs in eq. 2.9-52)
         _debug_output = []
 
+        # initialization of _epsilon_min_LF see FKM nonlinear p.122
         if self._epsilon_min_LF is None:
             self._epsilon_min_LF = pd.Series(0.0)
 
@@ -280,7 +281,6 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 idx = load_steps.iloc[tindex]
                 vals = samples.loc[idx].reset_index()
                 vals = vals.set_index(['load_step', 'node_id'])
-                vals.columns = ['l']
                 if tindex[0] < 0:
                     vals.iloc[:len(self._last_sample), 0] = self._last_sample
 
@@ -466,8 +466,10 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         """
         delta_L = current_point.load.values - previous_point.load.values   # as described in FKM nonlinear
         index = current_point.load.index
-        index_levels = [n for n in index.names if n != 'load_step']
-        delta_L = pd.Series(delta_L, index=current_point.load.index.droplevel(index_levels))
+        obsolete_index_levels = [n for n in index.names if n != 'load_step']
+        delta_L = pd.Series(
+            delta_L, index=current_point.load.index.droplevel(obsolete_index_levels)
+        )
 
         delta_sigma = self._notch_approximation_law.stress_secondary_branch(delta_L)
         delta_epsilon = self._notch_approximation_law.strain_secondary_branch(delta_sigma, delta_L)
@@ -529,7 +531,9 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         # iterate over loads from the given list of samples
         li = load_turning_points.index.to_frame()['load_step']
-        for _, current_load in load_turning_points.groupby((li!=li.shift()).cumsum(), sort=False):
+        load_step = (li != li.shift()).cumsum()
+
+        for _, current_load in load_turning_points.groupby(load_step, sort=False):
             current_load_representative = self._get_scalar_current_load(current_load)
 
             self._hcm_message += f"* load {current_load}:"
