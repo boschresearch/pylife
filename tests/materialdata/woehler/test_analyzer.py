@@ -102,7 +102,7 @@ def test_fatigue_data_finite_infinite_zone_conservative(data, finite_zone_expect
      infinite_expected_set_finite_limit_min,
      fat_limit_min)
 ])
-def test_fatigue_data_finite_infinite_zone_manuel_setting(data, finite_zone_expected, infinite_zone_expected, fat_limit):
+def test_fatigue_data_finite_infinite_zone_manual_setting(data, finite_zone_expected, infinite_zone_expected, fat_limit):
     fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=fat_limit)
     pd.testing.assert_frame_equal(sort_fatigue_data(fd.finite_zone)[['load', 'cycles']],
                                   sort_fatigue_data(finite_zone_expected))
