@@ -178,9 +178,7 @@ def test_woehler_endur_zones(data, fatigue_limit_expected):
 ])
 def test_woehler_endur_zones_conservative(data, fatigue_limit_expected):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    print(fd.fatigue_limit)
     fd = fd.conservative_fatigue_limit()
-    print(fd.fatigue_limit)
     assert fd.fatigue_limit == fatigue_limit_expected
 
 
