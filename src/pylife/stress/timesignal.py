@@ -31,10 +31,9 @@ import pandas as pd
 import scipy.stats as stats
 import scipy.signal as signal
 
-from matplotlib.mlab import psd
-
 try:
     import tsfresh as ts
+
     _HAVE_TSFRESH = True
 except ModuleNotFoundError:
     _HAVE_TSFRESH = False
@@ -71,19 +70,26 @@ class TimeSignalGenerator:
     """
 
     def __init__(self, sample_rate, sine_set, gauss_set, log_gauss_set):
-        sine_amplitudes = stats.norm.rvs(loc=sine_set['amplitude_median'],
-                                         scale=sine_set['amplitude_std_dev'],
-                                         size=sine_set['number'])
-        sine_frequencies = stats.norm.rvs(loc=sine_set['frequency_median'],
-                                          scale=sine_set['frequency_std_dev'],
-                                          size=sine_set['number'])
-        sine_offsets = stats.norm.rvs(loc=sine_set['offset_median'],
-                                      scale=sine_set['offset_std_dev'],
-                                      size=sine_set['number'])
-        sine_phases = 2. * np.pi * np.random.rand(sine_set['number'])
+        sine_amplitudes = stats.norm.rvs(
+            loc=sine_set["amplitude_median"],
+            scale=sine_set["amplitude_std_dev"],
+            size=sine_set["number"],
+        )
+        sine_frequencies = stats.norm.rvs(
+            loc=sine_set["frequency_median"],
+            scale=sine_set["frequency_std_dev"],
+            size=sine_set["number"],
+        )
+        sine_offsets = stats.norm.rvs(
+            loc=sine_set["offset_median"],
+            scale=sine_set["offset_std_dev"],
+            size=sine_set["number"],
+        )
+        sine_phases = 2.0 * np.pi * np.random.rand(sine_set["number"])
 
         self.sine_set = list(
-            zip(sine_amplitudes, sine_frequencies, sine_phases, sine_offsets))
+            zip(sine_amplitudes, sine_frequencies, sine_phases, sine_offsets)
+        )
 
         self.sample_rate = sample_rate
         self.time_position = 0.0
@@ -106,8 +112,7 @@ class TimeSignalGenerator:
         will smoothly attach to the previously queried ones.
         """
         samples = np.zeros(sample_num)
-        end_time_position = self.time_position + \
-            (sample_num-1) / self.sample_rate
+        end_time_position = self.time_position + (sample_num - 1) / self.sample_rate
 
         for ampl, omega, phi, offset in self.sine_set:
             periods = np.floor(self.time_position / omega)
@@ -116,16 +121,17 @@ class TimeSignalGenerator:
             time = np.linspace(start, end, sample_num)
             samples += ampl * np.sin(omega * time + phi) + offset
 
-        self.time_position = end_time_position + 1. / self.sample_rate
+        self.time_position = end_time_position + 1.0 / self.sample_rate
 
         return samples
 
     def reset(self):
-        """ Resets the generator
+        """Resets the generator
 
         A resetted generator behaves like a new generator.
         """
         self.time_position = 0.0
+
 
 def fs_calc(df):
     """
@@ -143,14 +149,15 @@ def fs_calc(df):
 
     """
     try:
-        fs = 1/np.mean(np.diff(df.index))
+        fs = 1 / np.mean(np.diff(df.index))
     except TypeError:
         print("Index has to be a number not a string. We assume fs = 1")
         fs = 1
     return fs
 
+
 def resample_acc(df, fs=1):
-    """ Resamples a pandas time series DataFrame
+    """Resamples a pandas time series DataFrame
 
     Parameters
     ----------
@@ -165,15 +172,18 @@ def resample_acc(df, fs=1):
     -------
     DataFrame
     """
-    index_new = np.arange(df.index.min(), df.index.max() + 1/fs, 1/fs)
+    index_new = np.arange(df.index.min(), df.index.max() + 1 / fs, 1 / fs)
 
-    df_rs = pd.DataFrame(df.apply(lambda x: np.interp(index_new, df.index, x)).values,
-                         index=index_new, columns=df.columns)
+    df_rs = pd.DataFrame(
+        df.apply(lambda x: np.interp(index_new, df.index, x)).values,
+        index=index_new,
+        columns=df.columns,
+    )
     return df_rs
 
 
 def butter_bandpass(df, lowcut, highcut, order=5):
-    """ Use the functonality of scipy
+    """Use the functonality of scipy
 
 
     Parameters
@@ -196,19 +206,20 @@ def butter_bandpass(df, lowcut, highcut, order=5):
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
-    b, a = signal.butter(order, [low, high], btype='bandpass')
-    return df.apply(lambda x: signal.filtfilt(b, a, x, padlen=int(fs/2)))
+    b, a = signal.butter(order, [low, high], btype="bandpass")
+    return df.apply(lambda x: signal.filtfilt(b, a, x, padlen=int(fs / 2)))
 
-def psd_df(df_ts, NFFT=512):
+
+def psd_df(df_ts, nfft=512, nperseg=256):
     """
     calculates the psd using Welch algorithm from matplotlib functionality
 
     Parameters
     ----------
     df_ts : DataFram
-        time series dataframe
-    NFFT : int, optional
-        BufferSize. The default is 512.
+        Time series dataframe
+    nfft : int, optional
+        Length of the FFT. The default is 512.
 
     Returns
     -------
@@ -216,10 +227,12 @@ def psd_df(df_ts, NFFT=512):
         PSD.
 
     """
+
+    nperseg = min(nperseg, nfft)
     fs = fs_calc(df_ts)
     df_psd = pd.DataFrame()
     for col in df_ts:
-        df_psd[col], freq = psd(df_ts[col], Fs=fs,NFFT = NFFT)
+        freq, df_psd[col] = signal.welch(df_ts[col], fs=fs, nperseg=nperseg, nfft=nfft)
     df_psd.index = pd.Index(freq, name="frequency")
     return df_psd
 
@@ -273,18 +286,22 @@ def _roll_dataset(prep_roll_df, window_size=1000, overlap=200):
     # Create Rolled Dataset with Parameter rolling_direction & window_size
     # throws away the last halfshift
     rolling_direction = window_size - overlap
-    cycles = int((len(prep_roll_df)-window_size) / rolling_direction)+1
+    cycles = int((len(prep_roll_df) - window_size) / rolling_direction) + 1
 
     parts = []
     # shiften
     for i in range(cycles):
         position = (rolling_direction) * i
-        shift = prep_roll_df.iloc[position: position + window_size, :].copy()
+        shift = prep_roll_df.iloc[position : position + window_size, :].copy()
         # change IDs to format (id,time)
-        df = pd.DataFrame({'id': np.int64(np.zeros(len(shift), dtype=int)),
-                           'max_time': shift.iloc[-1, -1]})
+        df = pd.DataFrame(
+            {
+                "id": np.int64(np.zeros(len(shift), dtype=int)),
+                "max_time": shift.iloc[-1, -1],
+            }
+        )
 
-        shift['id'] = pd.MultiIndex.from_frame(df).to_numpy()
+        shift["id"] = pd.MultiIndex.from_frame(df).to_numpy()
 
         parts.append(shift)
 
@@ -326,9 +343,17 @@ def _extract_feature_df(df_rolled, feature="maximum"):
     return extracted_features
 
 
-def _select_relevant_windows(prep_roll, extracted_features, comparison_column_ex, fraction_max=0.25,
-                             window_size=1000, overlap=200, n_gridpoints=3, method="keep"):
-    """ Writes n_gridpoints NaN's into the window_sizes with extracted features
+def _select_relevant_windows(
+    prep_roll,
+    extracted_features,
+    comparison_column_ex,
+    fraction_max=0.25,
+    window_size=1000,
+    overlap=200,
+    n_gridpoints=3,
+    method="keep",
+):
+    """Writes n_gridpoints NaN's into the window_sizes with extracted features
     lower than fraction_max
 
     Parameters
@@ -363,15 +388,31 @@ def _select_relevant_windows(prep_roll, extracted_features, comparison_column_ex
     for i in range(len(extracted_features)):
         if relevant_feature[i] <= relevant_feature.max() * fraction_max:
             if just_added_NaNs is True:
-                liste.append(list(range(0 + i * rolling_direction,
-                                        window_size + i * rolling_direction)))
+                liste.append(
+                    list(
+                        range(
+                            0 + i * rolling_direction,
+                            window_size + i * rolling_direction,
+                        )
+                    )
+                )
 
             else:
-                liste.append(list(range(0 + i * rolling_direction,
-                                        window_size + i * rolling_direction - n_gridpoints)))
-                relevant_windows.iloc[i * rolling_direction + window_size - n_gridpoints:i *
-                                      rolling_direction + window_size,
-                                      0:relevant_windows.shape[1]-2] = None
+                liste.append(
+                    list(
+                        range(
+                            0 + i * rolling_direction,
+                            window_size + i * rolling_direction - n_gridpoints,
+                        )
+                    )
+                )
+                relevant_windows.iloc[
+                    i * rolling_direction
+                    + window_size
+                    - n_gridpoints : i * rolling_direction
+                    + window_size,
+                    0 : relevant_windows.shape[1] - 2,
+                ] = None
                 just_added_NaNs = True
         else:
             just_added_NaNs = False
@@ -393,8 +434,7 @@ def _select_relevant_windows(prep_roll, extracted_features, comparison_column_ex
     return relevant_windows
 
 
-def _polyfit_gridpoints(grid_points, prep_roll, order=3,
-                        verbose=False, n_gridpoints=3):
+def _polyfit_gridpoints(grid_points, prep_roll, order=3, verbose=False, n_gridpoints=3):
     """Fills gridpoints with polynomial regression
 
     Parameters
@@ -417,27 +457,35 @@ def _polyfit_gridpoints(grid_points, prep_roll, order=3,
     """
 
     # add a null row at the start and reset time index
-    delta_t = prep_roll.index[1]-prep_roll.index[0]
-    line = pd.DataFrame(grid_points.iloc[:1], index=[- delta_t])
+    delta_t = prep_roll.index[1] - prep_roll.index[0]
+    line = pd.DataFrame(grid_points.iloc[:1], index=[-delta_t])
     grid_points = pd.concat([grid_points, line], ignore_index=False)
     grid_points.index = grid_points.index + delta_t
     poly_gridpoints = grid_points.sort_index()
     poly_gridpoints.iloc[0, :] = 0
-    ts_time = prep_roll.iloc[:len(poly_gridpoints)]
+    ts_time = prep_roll.iloc[: len(poly_gridpoints)]
 
     poly_gridpoints["time"] = ts_time.index.values
     poly_gridpoints.index = poly_gridpoints["time"]
 
     # %% smooth the gaps with polynomial values
-    poly_gridpoints.interpolate(method='polynomial', order=order, inplace=True)
+    poly_gridpoints.interpolate(method="polynomial", order=order, inplace=True)
 
     return poly_gridpoints
 
 
-def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
-                     feature="abs_energy", method="keep", n_gridpoints=3,
-                     percentage_max=0.05, order=3):
-    """ Removes segments of the data in which the extracted feature value is lower as
+def clean_timeseries(
+    df,
+    comparison_column,
+    window_size=1000,
+    overlap=800,
+    feature="abs_energy",
+    method="keep",
+    n_gridpoints=3,
+    percentage_max=0.05,
+    order=3,
+):
+    """Removes segments of the data in which the extracted feature value is lower as
     percentage_max and fills the gaps with polynomial regression
 
     Parameters
@@ -468,36 +516,44 @@ def clean_timeseries(df, comparison_column, window_size=1000, overlap=800,
     df_poly : pandas DataFrame
         cleaned DataFrame
 
-        """
+    """
 
     if not _HAVE_TSFRESH:
-        raise ImportError("tsfresh and dependencies are not installed. "
-                          "Use `pip install pylife[tsfresh]` to install it.")
+        raise ImportError(
+            "tsfresh and dependencies are not installed. "
+            "Use `pip install pylife[tsfresh]` to install it."
+        )
 
     df_prep = _prepare_rolling(df)
     ts_time = df_prep.copy()
     # adding a row
-    delta_t = ts_time.index[1]-ts_time.index[0]
-    line = pd.DataFrame(ts_time.iloc[:1], index=[- delta_t])
+    delta_t = ts_time.index[1] - ts_time.index[0]
+    line = pd.DataFrame(ts_time.iloc[:1], index=[-delta_t])
     ts_time = pd.concat([ts_time, line], ignore_index=False)
     ts_time.index = ts_time.index + delta_t
     ts_time = ts_time.sort_index()
 
-    ts_time['time'] = ts_time.index.values
+    ts_time["time"] = ts_time.index.values
 
-    comparison_column_ex = comparison_column + '__'+feature
-    df_rolled = _roll_dataset(df_prep, window_size=window_size,
-                              overlap=overlap)
+    comparison_column_ex = comparison_column + "__" + feature
+    df_rolled = _roll_dataset(df_prep, window_size=window_size, overlap=overlap)
     extracted_features = _extract_feature_df(df_rolled, feature)
-    grid_points = _select_relevant_windows(df_prep, extracted_features, comparison_column_ex,
-                                           percentage_max, window_size, overlap,
-                                           method=method)
+    grid_points = _select_relevant_windows(
+        df_prep,
+        extracted_features,
+        comparison_column_ex,
+        percentage_max,
+        window_size,
+        overlap,
+        method=method,
+    )
 
-    poly_gridpoints = _polyfit_gridpoints(grid_points, ts_time, order=order, verbose=False,
-                                          n_gridpoints=n_gridpoints)
+    poly_gridpoints = _polyfit_gridpoints(
+        grid_points, ts_time, order=order, verbose=False, n_gridpoints=n_gridpoints
+    )
 
     # Remove NaN's at the end - should be maximum 2n
-    cleaned = poly_gridpoints.dropna(axis=0, how='any')
+    cleaned = poly_gridpoints.dropna(axis=0, how="any")
     cleaned.pop("id")
 
     return cleaned
