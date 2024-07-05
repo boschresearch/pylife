@@ -7,10 +7,22 @@
     Learn more under: https://pyscaffold.org/
 """
 from setuptools import setup
+from distutils.core import Extension
+import numpy
+
+ext = Extension(
+    name='pylife.rainflow_ext',
+    sources=['src/pylife/stress/rainflow/extension.pyx'],
+    include_dirs=[numpy.get_include()],
+    extra_compile_args=["-O3"]
+)
 
 if __name__ == "__main__":
     try:
-        setup(use_scm_version={"version_scheme": "no-guess-dev"})
+        setup(
+            use_scm_version={"version_scheme": "no-guess-dev"},
+            ext_modules=[ext]
+        )
     except:  # noqa
         print(
             "\n\nAn error occurred while building the project, "
