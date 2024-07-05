@@ -205,9 +205,9 @@ class Gradient3D(Mesh):
 
     def _compute_gradient_hexahedral(self, df):
 
-        df["grad_x"] = 0
-        df["grad_y"] = 0
-        df["grad_z"] = 0
+        df["grad_x"] = 0.0
+        df["grad_y"] = 0.0
+        df["grad_z"] = 0.0
 
         # extract node positions xij where i = node number from 1 to 8, j = coordinate axis
         x11,x12,x13 = df.iloc[0,:3]
@@ -299,9 +299,9 @@ class Gradient3D(Mesh):
 
     def _compute_gradient_simplex(self, df):
 
-        df["grad_x"] = 0
-        df["grad_y"] = 0
-        df["grad_z"] = 0
+        df["grad_x"] = 0.0
+        df["grad_y"] = 0.0
+        df["grad_z"] = 0.0
 
         # extract node positions xij where i = node number from 1 to 8, j = coordinate axis
         x11,x12,x13 = df.iloc[0,:3]
@@ -377,7 +377,12 @@ class Gradient3D(Mesh):
         assert value_key in self._obj
 
         # extract only the needed columns, order and sort multi-index
-        df = self._obj[["x", "y", "z", value_key]].reorder_levels(["element_id", "node_id"]).sort_index(level="element_id", sort_remaining=False)
+        df = (
+            self._obj[["x", "y", "z", value_key]]
+            .reorder_levels(["element_id", "node_id"])
+            .sort_index(level="element_id", sort_remaining=False)
+        )
+
 
         # apply the function which computes the gradient to every element separately
         df_grad = df.groupby("element_id", group_keys=False).apply(self._compute_gradient)

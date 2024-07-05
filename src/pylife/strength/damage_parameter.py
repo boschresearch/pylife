@@ -335,6 +335,7 @@ class P_RAJ:
         # if there is no hysteresis in the first run of the HCM algorithm, precompute some required values
         # this is described in the correction document to the FKM nonlinear
         if len(last_index_of_first_run) == 0:
+            last_index_of_first_run = 0
 
             # compute helper variables for fatigue limit
             a_0, delta_J_eff_th, _ = self._calculate_fatigue_limit_variables(D_akt)
