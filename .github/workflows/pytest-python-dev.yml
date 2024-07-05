@@ -5,10 +5,12 @@ on:
     branches:
       - master
       - develop
+  schedule:
+    - cron: "0 10 * * 0"
 
 jobs:
-  testsuite-small:
-    name: Minimal test suite
+  testsuite:
+    name: Test suiite
     runs-on: ubuntu-22.04
     env:
       MPLBACKEND: svg
@@ -19,37 +21,20 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.13-dev'
-    - name: Install dependencies
+    - name: Install dependencies minimal
       run: |
         sudo apt-get install libopenblas-dev libhdf5-dev
         python -m pip install --upgrade pip
         pip install -U setuptools setuptools_scm wheel
         pip install -e .[unit-testing]
-    - name: Unit tests
+    - name: Unit tests minimal
       run: pytest
 
-  testsuite-big:
-    name: Complete test suite
-    needs: [testsuite-small]
-    runs-on: ubuntu-22.04
-    env:
-      MPLBACKEND: svg
-
-    steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.13-dev'
-    - name: Install dependencies
+    - name: Install dependencies complete
       continue-on-error: true
       run: |
-        sudo apt-get install libopenblas-dev libhdf5-dev
-        python -m pip install --upgrade pip
-        pip install -U setuptools setuptools_scm wheel pytest
-        pip install -e .[unit-testing]
         pip install -e .[all,testing]
-    - name: Unit tests
+    - name: Unit tests complete
       continue-on-error: true
       run: pytest
     - name: Notebook flow tests
