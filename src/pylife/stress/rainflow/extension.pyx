@@ -8,7 +8,7 @@ from libc.math cimport fabs
 
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
-def fourpoint_loop(double [::1] turns, unsigned long [::1] turns_index):
+def fourpoint_loop(double [::1] turns, size_t [::1] turns_index):
     cdef Py_ssize_t len_turns = len(turns)
 
     from_vals = np.empty(len_turns//2, dtype=np.float64)
@@ -18,19 +18,19 @@ def fourpoint_loop(double [::1] turns, unsigned long [::1] turns_index):
 
     cdef double [::1] from_vals_v = from_vals
     cdef double [::1] to_vals_v = to_vals
-    cdef unsigned long [::1] from_index_v = from_index
-    cdef unsigned long [::1] to_index_v = to_index
+    cdef size_t [::1] from_index_v = from_index
+    cdef size_t [::1] to_index_v = to_index
 
     residual_index = np.empty(len_turns, dtype=np.uintp)
 
-    cdef unsigned long [::1] residual_index_v = residual_index
+    cdef size_t [::1] residual_index_v = residual_index
 
     residual_index_v[0] = 0
     residual_index_v[1] = 1
 
-    cdef unsigned long i = 2
-    cdef unsigned long ii = 2
-    cdef unsigned long t = 0
+    cdef size_t i = 2
+    cdef size_t ii = 2
+    cdef size_t t = 0
 
     cdef double a
     cdef double b

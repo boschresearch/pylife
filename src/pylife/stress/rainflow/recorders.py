@@ -109,8 +109,8 @@ class FullRecorder(LoopValueRecorder):
     def __init__(self):
         """Instantiate a FullRecorder."""
         super().__init__()
-        self._index_from = np.array([], dtype=np.uint64)
-        self._index_to = np.array([], dtype=np.uint64)
+        self._index_from = np.array([], dtype=np.uintp)
+        self._index_to = np.array([], dtype=np.uintp)
 
     @property
     def index_from(self):
