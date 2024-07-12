@@ -17,8 +17,8 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
-import cython
 import numpy as np
+from pylife.rainflow_ext import threepoint_loop
 
 from .general import AbstractDetector
 
@@ -102,11 +102,6 @@ class ThreePointDetector(AbstractDetector):
         """
         super().__init__(recorder)
 
-    @cython.locals(
-        start=cython.int, front=cython.int, back=cython.int,
-        highest_front=cython.int, lowest_front=cython.int,
-        start_val=cython.double, front_val=cython.double, back_val=cython.double,
-        turns=cython.double[:])
     def process(self, samples):
         """Process a sample chunk.
 
@@ -124,54 +119,29 @@ class ThreePointDetector(AbstractDetector):
 
         if len(self._residuals) == 0:
             residuals = samples[:1]
-            residual_index = [0, 1]
         else:
             residuals = self._residuals[:-1]
-            residual_index = [*range(len(residuals))]
 
         turns_index, turns_values = self._new_turns(samples)
 
-        turns_np = np.concatenate((residuals, turns_values, samples[-1:]))
-        turns_index = np.concatenate((self._residual_index, turns_index))
-
-        turns = turns_np
+        turns = np.concatenate((residuals, turns_values, samples[-1:]))
+        turns_index = np.concatenate((self._residual_index, turns_index.astype(np.uintp)))
 
         highest_front = np.argmax(residuals)
         lowest_front = np.argmin(residuals)
 
-        from_vals = []
-        to_vals = []
-        from_index = []
-        to_index = []
-
-        back = residual_index[-1] + 1
-        while back < turns.shape[0]:
-            if len(residual_index) >= 2:
-                start = residual_index[-2]
-                front = residual_index[-1]
-                start_val, front_val, back_val = turns[start], turns[front], turns[back]
-
-                if front_val > turns[highest_front]:
-                    highest_front = front
-                elif front_val < turns[lowest_front]:
-                    lowest_front = front
-                elif (start >= max(lowest_front, highest_front) and
-                      np.abs(back_val - front_val) >= np.abs(front_val - start_val)):
-                    from_vals.append(start_val)
-                    to_vals.append(front_val)
-                    from_index.append(turns_index[start])
-                    to_index.append(turns_index[front])
-                    residual_index.pop()
-                    residual_index.pop()
-                    continue
-
-            residual_index.append(back)
-            back += 1
+        (
+            from_vals,
+            to_vals,
+            from_index,
+            to_index,
+            residual_index
+        ) = threepoint_loop(turns, turns_index, highest_front, lowest_front, len(residuals))
 
         self._recorder.record_values(from_vals, to_vals)
         self._recorder.record_index(from_index, to_index)
 
-        self._residuals = turns_np[residual_index]
+        self._residuals = turns[residual_index]
         self._residual_index = turns_index[residual_index[:-1]]
         self._recorder.report_chunk(len(samples))
 
