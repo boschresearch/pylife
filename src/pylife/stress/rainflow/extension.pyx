@@ -27,7 +27,7 @@ def fourpoint_loop(double [::1] turns, size_t [::1] turns_index):
     residual_index_v[1] = 1
 
     cdef size_t i = 2
-    cdef size_t ii = 2
+    cdef size_t ri = 2
     cdef size_t t = 0
 
     cdef double a
@@ -39,15 +39,15 @@ def fourpoint_loop(double [::1] turns, size_t [::1] turns_index):
     cdef double cd
 
     while i < len_turns:
-        if ii < 3:
-            residual_index_v[ii] = i
-            ii += 1
+        if ri < 3:
+            residual_index_v[ri] = i
+            ri += 1
             i += 1
             continue
 
-        a = turns[residual_index_v[ii-3]]
-        b = turns[residual_index_v[ii-2]]
-        c = turns[residual_index_v[ii-1]]
+        a = turns[residual_index_v[ri-3]]
+        b = turns[residual_index_v[ri-2]]
+        c = turns[residual_index_v[ri-1]]
         d = turns[i]
 
         ab = fabs(a - b)
@@ -57,18 +57,19 @@ def fourpoint_loop(double [::1] turns, size_t [::1] turns_index):
             from_vals_v[t] = b
             to_vals_v[t] = c
 
-            ii -= 1
-            to_index_v[t] = turns_index[residual_index_v[ii]]
-            ii -= 1
-            from_index_v[t] = turns_index[residual_index_v[ii]]
+            ri -= 1
+            to_index_v[t] = turns_index[residual_index_v[ri]]
+            ri -= 1
+            from_index_v[t] = turns_index[residual_index_v[ri]]
             t += 1
             continue
 
-        residual_index_v[ii] = i
-        ii += 1
+        residual_index_v[ri] = i
+        ri += 1
         i += 1
 
-    return from_vals[:t], to_vals[:t], from_index[:t], to_index[:t], residual_index[:ii]
+    return from_vals[:t], to_vals[:t], from_index[:t], to_index[:t], residual_index[:ri]
+
 
 cpdef double _max(double a, double b):
     return a if a > b else b
