@@ -1,0 +1,62 @@
+name: Build wheels and perform benchmarks
+
+on:
+  pull_request:
+    branches: [develop, master]
+
+env:
+  CIBW_BUILD: cp37-* cp38-* cp39-* cp310-* cp311-* cp312-*
+  CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+  CIBW_MANYLINUX_I686_IMAGE: manylinux2014
+
+jobs:
+  build_wheels:
+    name: Build wheels on for various systems
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest] #, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: '3.12'
+
+      - name: Build wheels
+        run: |
+          pip wheel --no-deps -w dist .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel
+          path: dist/
+
+  benchmark:
+    name: Benchmark tests
+    needs: [build_wheels]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheel
+          path: dist/
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: '3.12'
+      - name: Install wheel
+        run: pip install $(ls -1 dist/*.whl)
+      - name: Install pytest
+        run: pip install pytest pytest-cov
+      - name: Generate test signal
+        run: python benchmarks/generate_time_signal.py
+      - name: Run benchmarks
+        run: pytest --no-cov -rP benchmarks

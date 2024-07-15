@@ -381,6 +381,44 @@ class TestThreePointDampeningClosed(unittest.TestCase):
         np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 1, 6]))
 
 
+class TestThreePointDampeningSplit(unittest.TestCase):
+    r'''
+                                                                                    1   2   3   4   5   6
+    -------------------------------------------------------------------------------------------------------
+    6           R                                                                 |   |   |   |   |   |   |
+    -----------/-\-----------------------------------------------------------------------------------------
+    5         /   \           2                                                   |   |   |   |   |   |   |
+    ---------/-----\---------/-\---------------------------------------------------------------------------
+    4       /       \       /   \   1                                             |   |   | 1 |   |   |   |
+    -------/---------\-----/-----\-/-\---------------------------------------------------------------------
+    3     /           \   /       1---\                                           |   | 1 |   |   |   |   |
+    -----/-------------\-/-------------\-------------------------------------------------------------------
+    2   /               2---------------\                                         |   |   |   |   |   |   |
+    ---/---------------------------------\-----------------------------------------------------------------
+    1 R                                   R                                       |   |   |   |   |   |   |
+    -------------------------------------------------------------------------------------------------------
+      0        1        2     3   4 5     6
+    '''
+    def setUp(self):
+        signal = np.array([1., 6., 2., 5., 3., 4., 1.])
+        self._fr, self._dtor = process_signal(signal[:5])
+        self._dtor.process(signal[5:])
+
+    def test_values(self):
+        np.testing.assert_array_equal(self._fr.values_from, np.array([3., 2.]))
+        np.testing.assert_array_equal(self._fr.values_to, np.array([4., 5.]))
+
+    def test_indeces(self):
+        np.testing.assert_array_equal(self._fr.index_from, np.array([4, 2]))
+        np.testing.assert_array_equal(self._fr.index_to, np.array([5, 3]))
+
+    def test_residuals(self):
+        np.testing.assert_array_equal(self._dtor.residuals, np.array([1., 6., 1.]))
+
+    def test_residual_index(self):
+        np.testing.assert_array_equal(self._dtor.residual_index, np.array([0, 1, 6]))
+
+
 test_signals = [
     np.array([0., 1., 0., 1., -1., 1., 0., 1., -1., 1., 0]),
     np.array([2., 5., 3., 6., 2., 3., 1., 6., 1., 4., 2., 3., 1., 4., 2., 5., 3., 4., 2.]),

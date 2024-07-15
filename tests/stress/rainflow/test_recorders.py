@@ -123,8 +123,8 @@ def test_full_rainflow_recorder_empty_collective_default():
     expected = pd.DataFrame({
         'from': [],
         'to': [],
-        'index_from': [],
-        'index_to': []
+        'index_from': pd.Series([], dtype=np.uintp),
+        'index_to': pd.Series([], dtype=np.uintp)
     })
     pd.testing.assert_frame_equal(fr.collective, expected)
 
@@ -140,10 +140,12 @@ def test_full_rainflow_recorder_two_non_zero_collective():
     expected = pd.DataFrame({
         'from': [vf1, vf2],
         'to': [vt1, vt2],
-        'index_from': [if1, if2],
-        'index_to': [it1, it2]
+        'index_from': pd.Series([if1, if2], dtype=np.uintp),
+        'index_to': pd.Series([it1, it2], dtype=np.uintp)
     })
 
+    print(expected)
+    print(expected.dtypes)
     pd.testing.assert_frame_equal(fr.collective, expected)
 
 
