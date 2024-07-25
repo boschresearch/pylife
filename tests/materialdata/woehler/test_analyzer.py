@@ -249,9 +249,14 @@ def test_woehler_elementary_no_runouts():
 def test_woehler_elementary_only_one_load_level():
     data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 1e6]]), columns=['load', 'cycles'])
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    with pytest.raises(ValueError, match=r"Need at least two load levels to do a Wöhler analysis."):
+    with pytest.raises(ValueError, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
         woehler.Elementary(fd).analyze().sort_index()
 
+def test_woehler_elementary_only_one_load_level_in_finite_region():
+    data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 1e6], [360.0, 1e6]]), columns=['load', 'cycles'])
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    with pytest.raises(ValueError, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
+        woehler.Elementary(fd).analyze().sort_index()
 
 def test_woehler_elementary_set_fatigue_limit_low():
     expected = pd.Series({
@@ -314,7 +319,7 @@ def test_woehler_probit_set_fatigue_limit():
 def test_woehler_probit_one_runout_load_level():
     fd = woehler.determine_fractures(data_one_runout_load_level, 1e7).fatigue_data
     expected = woehler.Elementary(fd).analyze()
-    with pytest.warns(UserWarning, match=r"Probit needs at least two runout load levels. Falling back to Elementary."):
+    with pytest.warns(UserWarning, match=r"Probit needs at least two – preferably mixed – load levels in the infinite zone. Falling back to Elementary."):
         wc = woehler.Probit(fd).analyze()
     pd.testing.assert_series_equal(wc, expected)
 
@@ -391,18 +396,16 @@ def test_bic_without_analysis():
 
 
 def test_woehler_max_likelihood_inf_limit_no_runouts():
-    expected = pd.Series({
-        'SD': 0.,
-        'TS': 1.19,
-        'k_1': 6.94,
-        'ND': 4.4e30,
-        'TN': 5.26,
-        'failure_probability': 0.5
-    }).sort_index()
-
     fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
-    wc = woehler.MaxLikeInf(fd).analyze().sort_index()
-    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+    with pytest.raises(ValueError, match=r"MaxLikeHood: need at least two mixed load levels."):
+        woehler.MaxLikeInf(fd).analyze().sort_index()
+
+
+def test_woehler_max_likelihood_inf_limit_only_two_fractures():
+    data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 5e5],[340.0, 1e7], [340.0, 1e5], [390.0, 1e4], [380.0, 1e5]]), columns=['load', 'cycles'])
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    with pytest.raises(ValueError, match=r"MaxLikeHood: need at least three fractures on two load levels."):
+        woehler.MaxLikeInf(fd).analyze().sort_index()
 
 
 def test_woehler_max_likelihood_full_without_fixed_params():

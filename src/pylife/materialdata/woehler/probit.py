@@ -35,7 +35,7 @@ class Probit(Elementary):
     def _specific_analysis(self, wc):
         self._inf_groups = self._fd.infinite_zone.groupby('load')
         if len(self._inf_groups) < 2:
-            warnings.warn(UserWarning("Probit needs at least two runout load levels. Falling back to Elementary."))
+            warnings.warn(UserWarning("Probit needs at least two – preferably mixed – load levels in the infinite zone. Falling back to Elementary."))
             return wc
 
         wc['TS'], wc['SD'], wc['ND'] = self.__probit_analysis()
