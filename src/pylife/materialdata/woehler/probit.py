@@ -33,12 +33,13 @@ class Probit(Elementary):
     """
 
     def _specific_analysis(self, wc):
+        wc_init = wc.copy(deep=True)
         self._inf_groups = self._fd.infinite_zone.groupby('load')
         if len(self._inf_groups) < 2:
             warnings.warn(UserWarning("Probit needs at least two – preferably mixed – load levels in the infinite zone. Falling back to Elementary."))
             return wc
 
-        wc['TS'], wc['SD'], wc['ND'] = self.__probit_analysis()
+        wc['TS'], wc['SD'], wc['ND'] = self.__probit_analysis(wc_init)
         return wc
 
     def __probit_rossow_estimation(self):
@@ -60,7 +61,7 @@ class Probit(Elementary):
 
         return fprobs, self._inf_groups.load.mean()
 
-    def __probit_analysis(self):
+    def __probit_analysis(self, wc_init):
         if self._fd.num_runouts == 0:
             return 1., 0., self._transition_cycles(0.0)
 
@@ -70,6 +71,7 @@ class Probit(Elementary):
 
         TS = functions.std_to_scattering_range(1./self._probability_fit.slope)
         SD = 10**(-self._probability_fit.intercept/self._probability_fit.slope)
-        ND = self._transition_cycles(SD)
+
+        ND = np.nan if np.isnan(wc_init['ND']) else self._transition_cycles(SD)
 
         return TS, SD, ND

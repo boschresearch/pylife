@@ -38,7 +38,8 @@ class MaxLikeInf(Elementary):
 
         wc['SD'] = SD
         wc['TS'] = TS
-        wc['ND'] = self._transition_cycles(SD)
+        if not np.isnan(wc['ND']):
+            wc['ND'] = self._transition_cycles(SD)
 
         return wc
 
