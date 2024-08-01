@@ -71,8 +71,8 @@ class Elementary:
         \*\*kwargs : kwargs arguments
             Arguments to be passed to the derived class
         """
-        if len(self._fd.load.unique()) < 2:
-            raise ValueError("Need at least two load levels to do a Wöhler analysis.")
+        if len(self._fd.load.unique()) < 2 or len(self._fd.finite_zone.load.unique()) < 2:
+            raise ValueError("Need at least two different load levels in the finite zone to do a Wöhler slope analysis.")
         self._finite_fractures = self._fd.finite_zone.loc[self._fd.finite_zone.fracture == True]
         wc = self._common_analysis()
         wc = self._specific_analysis(wc, **kwargs)
