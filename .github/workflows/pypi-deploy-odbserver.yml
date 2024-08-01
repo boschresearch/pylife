@@ -2,7 +2,7 @@ name: Build odbserver and upload to PyPI
 
 on:
   release:
-    type: [published]
+    types: [published]
 
 defaults:
   run:
