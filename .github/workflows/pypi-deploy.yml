@@ -39,7 +39,7 @@ jobs:
           python setup.py bdist_wheel
       - uses: actions/upload-artifact@v4
         with:
-            name: artifact-wheel
+            name: artifact-wheel-${{ matrix.os }}
             path: ./dist/*.whl
 
 
@@ -80,7 +80,12 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: artifact-wheel
+          name: artifact-wheel-windows-latest
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: artifact-wheel-ubuntu-latest
           path: dist
 
       - uses: pypa/gh-action-pypi-publish@v1.9.0
