@@ -2,7 +2,7 @@ name: Build and upload to PyPI
 
 on:
   release:
-    type: [published]
+    types: [published]
 
 env:
   CIBW_BUILD: cp37-* cp38-* cp39-* cp310-*
