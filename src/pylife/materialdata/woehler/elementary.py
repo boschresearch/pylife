@@ -22,7 +22,7 @@ from .likelihood import Likelihood
 from .pearl_chain import PearlChainProbability
 import pylife.utils.functions as functions
 from . import FatigueData, determine_fractures
-
+import warnings
 
 class Elementary:
     """Base class to analyze SN-data.
@@ -71,8 +71,31 @@ class Elementary:
         \*\*kwargs : kwargs arguments
             Arguments to be passed to the derived class
         """
-        if len(self._fd.load.unique()) < 2 or len(self._fd.finite_zone.load.unique()) < 2:
+        if len(self._fd.load.unique()) < 2:
             raise ValueError("Need at least two different load levels in the finite zone to do a Wöhler slope analysis.")
+        elif len(self._fd.finite_zone.load.unique()) < 2:
+            warnings.warn(UserWarning("Need at least two different load levels in the finite zone to do a Wöhler slope analysis."
+                                      " "))
+            if len(self._fd.finite_zone.load.unique()) == 1:
+                wc = pd.Series({
+                    'k_1': np.nan,
+                    'ND': np.nan,
+                    'SD': np.nan,
+                    'TN': np.nan,
+                    'TS': np.nan
+                    })
+            else:
+                wc = pd.Series({
+                    'k_1': np.inf,
+                    'ND': np.nan,
+                    'SD': np.nan,
+                    'TN': 1.0,
+                    'TS': np.nan
+                    })
+            wc = self._specific_analysis(wc, **kwargs)
+            wc['failure_probability'] = 0.5
+            return wc
+
         self._finite_fractures = self._fd.finite_zone.loc[self._fd.finite_zone.fracture == True]
         wc = self._common_analysis()
         wc = self._specific_analysis(wc, **kwargs)

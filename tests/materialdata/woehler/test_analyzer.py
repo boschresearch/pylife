@@ -252,11 +252,40 @@ def test_woehler_elementary_only_one_load_level():
     with pytest.raises(ValueError, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
         woehler.Elementary(fd).analyze().sort_index()
 
+
 def test_woehler_elementary_only_one_load_level_in_finite_region():
+    expected = pd.Series({
+        'k_1': np.nan,
+        'ND': np.nan,
+        'SD': np.nan,
+        'TN': np.nan,
+        'TS': np.nan,
+        'failure_probability': 0.5
+    }).sort_index()
+
     data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 1e6], [360.0, 1e6]]), columns=['load', 'cycles'])
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    with pytest.raises(ValueError, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
-        woehler.Elementary(fd).analyze().sort_index()
+    with pytest.warns(UserWarning, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
+        wc = woehler.Elementary(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected)
+
+
+def test_woehler_elementary_no_load_level_in_finite_region():
+    expected = pd.Series({
+        'k_1': np.inf,
+        'ND': np.nan,
+        'SD': np.nan,
+        'TN': 1.0,
+        'TS': np.nan,
+        'failure_probability': 0.5
+    }).sort_index()
+
+    data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 1e6], [360.0, 1e7]]), columns=['load', 'cycles'])
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    with pytest.warns(UserWarning, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
+        wc = woehler.Elementary(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected)
+
 
 def test_woehler_elementary_set_fatigue_limit_low():
     expected = pd.Series({
@@ -358,6 +387,23 @@ def test_woehler_probit_no_runouts():
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
+def test_woehler_probit_no_finite_zone_data():
+    expected = pd.Series({
+        'SD': 340.4,
+        'TS': 1.21,
+        'k_1': np.inf,
+        'ND': np.nan,
+        'TN': 1.0,
+        'failure_probability': 0.5
+    }).sort_index()
+    data_no_finite_zone = data[data['load']<376.].copy(deep=True)
+
+    fd = woehler.determine_fractures(data_no_finite_zone, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=376.)
+    with pytest.warns(UserWarning, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
+        wc = woehler.Probit(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
 def test_woehler_max_likelihood_inf_limit():
     expected = pd.Series({
         'SD': 335,
@@ -385,6 +431,23 @@ def test_woehler_max_likelihood_inf_limit_set_fatigue_limit():
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data.set_fatigue_limit(fatigue_limit=376.)
     wc = woehler.MaxLikeInf(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
+def test_woehler_max_likelihood_inf_limit_no_finite_zone_data():
+    expected = pd.Series({
+        'SD': 333.6,
+        'TS': 1.22,
+        'k_1': np.inf,
+        'ND': np.nan,
+        'TN': 1.0,
+        'failure_probability': 0.5
+    }).sort_index()
+    data_no_finite_zone = data[data['load']<376.].copy(deep=True)
+
+    fd = woehler.determine_fractures(data_no_finite_zone, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=376.)
+    with pytest.warns(UserWarning, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
+        wc = woehler.MaxLikeInf(fd).analyze().sort_index()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
