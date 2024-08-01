@@ -83,7 +83,7 @@ jobs:
           name: artifact-wheel
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@master
+      - uses: pypa/gh-action-pypi-publish@v1.9.0
         with:
           # user: __token__
           # password: ${{ secrets.upload_pypi }}
