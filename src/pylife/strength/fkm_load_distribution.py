@@ -116,8 +116,8 @@ class FKMLoadSequence(PylifeSignal):
             if len(self._obj.columns) >= 2:
 
                 # only scale the first column
-                result = self._obj.copy()
-                result.iloc[:,0] = result.iloc[:,0] * gamma_L
+                result = self._obj.copy().astype(np.float64)
+                result.iloc[:, 0] = result.iloc[:, 0] * gamma_L
                 return result
 
         return self._obj * gamma_L
