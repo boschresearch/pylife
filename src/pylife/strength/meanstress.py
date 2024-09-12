@@ -422,15 +422,19 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
 
     def fkm_goodman(self, haigh, R_goal):
         ranges = HaighDiagram.fkm_goodman(haigh).transform(self._obj, R_goal)['range']
-        return self._rebin_results(ranges).load_collective
+        return self._rebin_results(ranges, R_goal).load_collective
 
-    def _rebin_results(self, ranges):
+    def _rebin_results(self, ranges, R_goal):
 
         def resulting_intervals():
             ranges_max = ranges.max()
             binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.)
             bincount = int(np.ceil(ranges_max / binsize))
-            return pd.IntervalIndex.from_breaks(np.linspace(0, ranges_max, bincount+1), name="range")
+            range_bins = np.linspace(0, ranges_max, bincount+1)
+            means_bins = range_bins * (1. + R_goal) / (2.0 * (1. - R_goal))
+            range_itv = pd.IntervalIndex.from_breaks(range_bins, name="range")
+            means_itv = pd.IntervalIndex.from_breaks(means_bins, name="mean")
+            return range_itv, means_itv
 
         def aggregate_on_projection(projection, itvs, ranges, obj):
             level_values = tuple(projection)
@@ -452,18 +456,20 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
             new_idx = pd.IntervalIndex(pd.interval_range(0.,  0., 0), name='range')
             return pd.Series([], index=new_idx, name='cycles', dtype=np.float64)
 
-        intv_idx = resulting_intervals()
+        range_itv_idx, means_itg_idx = resulting_intervals()
 
         if len(self._remaining_names) > 0:
             remaining_idx = self._obj.index.to_frame(index=False).groupby(self._remaining_names).first().index
             result = (
                 remaining_idx.to_frame(index=False)
-                .apply(lambda p: aggregate_on_projection(p, intv_idx, ranges, self._obj), axis=1)
+                .apply(lambda p: aggregate_on_projection(p, range_itv_idx, ranges, self._obj), axis=1)
             )
             result.index = remaining_idx
-            result = result.stack().reorder_levels(['range'] + self._remaining_names)
+            result.columns = pd.MultiIndex.from_arrays([result.columns, means_itg_idx])
+            result = result.stack(['range', 'mean']).reorder_levels(['range', 'mean'] + self._remaining_names)
         else:
-            result = intv_idx.to_series().apply(lambda iv: sum_intervals(iv, ranges, self._obj))
+            result = range_itv_idx.to_series().apply(lambda iv: sum_intervals(iv, ranges, self._obj))
+            result.index = pd.MultiIndex.from_arrays([result.index, means_itg_idx])
 
         return result
 
