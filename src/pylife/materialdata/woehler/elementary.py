@@ -74,10 +74,16 @@ class Elementary:
             Arguments to be passed to the derived class
         """
         if len(self._fd.load.unique()) < 2:
-            raise ValueError("Need at least two different load levels in the finite zone to do a Wöhler slope analysis.")
-        elif len(self._fd.finite_zone.load.unique()) < 2:
-            warnings.warn(UserWarning("Need at least two different load levels in the finite zone to do a Wöhler slope analysis."
-                                      " "))
+            raise ValueError(
+                "Need at least two different load levels in the finite zone to do a Wöhler slope analysis."
+            )
+        self._raise_if_no_cycle_variance_in_finite_zone()
+        if len(self._fd.finite_zone.load.unique()) < 2:
+            warnings.warn(
+                UserWarning(
+                    "Need at least two different load levels in the finite zone to do a Wöhler slope analysis."
+                )
+            )
             if len(self._fd.finite_zone.load.unique()) == 1:
                 wc = pd.Series({
                     'k_1': np.nan,
@@ -105,6 +111,14 @@ class Elementary:
         wc['failure_probability'] = 0.5
 
         return wc
+
+    def _raise_if_no_cycle_variance_in_finite_zone(self):
+        finite_zone = self._fd.finite_zone
+        finite_fractures_cycles = finite_zone.loc[finite_zone['fracture'], 'cycles']
+        if finite_fractures_cycles.max() == finite_fractures_cycles.min():
+            raise ValueError(
+                "Cycle numbers must spread in finite zone to do a Wöhler slope analysis."
+            )
 
     def _common_analysis(self):
         self._slope, self._lg_intercept = self._fit_slope()

@@ -26,16 +26,20 @@ from pylife import DataValidator
 
 @pd.api.extensions.register_dataframe_accessor('fatigue_data')
 class FatigueData(PylifeSignal):
-    ''' class for fatigue data
+    """Class for fatigue data
 
     Mandatory keys are
         * ``load`` : float, the load level
         * ``cycles`` : float, the cycles of failure or runout
         * ``fracture``: bool, ``True`` iff the test is a fracture
-     '''
+    """
 
     def _validate(self):
         self.fail_if_key_missing(['load', 'cycles', 'fracture'])
+        if not self._obj.fracture.any():
+            raise ValueError("Need at least one fracture.")
+        if self.fractures.cycles.max() == self.fractures.cycles.min():
+            raise ValueError("There must be a variance in fracture cycles.")
         self._finite_infinite_transition = None
 
     @property
