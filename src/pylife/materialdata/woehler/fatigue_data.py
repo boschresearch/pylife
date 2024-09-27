@@ -116,6 +116,10 @@ class FatigueData(PylifeSignal):
     def mixed_loads(self):
         return np.intersect1d(self.runout_loads, self.fractured_loads)
 
+    @property
+    def pure_runout_loads(self):
+        return np.setxor1d(self.runout_loads, self.mixed_loads)
+
     def conservative_fatigue_limit(self):
         """
         Sets a lower fatigue limit that what is expected from the algorithm given by Mustafa Kassem.
@@ -160,6 +164,18 @@ class FatigueData(PylifeSignal):
 
         return self
 
+    def irrelevant_runouts_dropped(self):
+        '''Checks if data has several pure runout load levels and drops all except max pure runout level
+
+        '''
+        if len(self.pure_runout_loads) <= 1:
+            return self
+        if self.pure_runout_loads.max() < self.fractured_loads.min():
+            df = self._obj[~(self._obj.load < self.pure_runout_loads.max())]
+            return FatigueData(df)
+        else:
+            return self
+
     @property
     def max_runout_load(self):
         return self.runouts.load.max()
@@ -189,6 +205,10 @@ class FatigueData(PylifeSignal):
         self._infinite_zone = self._obj[self._obj.load <= limit]
 
 
+
+
+
+
 def determine_fractures(df, load_cycle_limit=None):
     '''Adds a fracture column according to defined load cycle limit
 
@@ -213,3 +233,4 @@ def determine_fractures(df, load_cycle_limit=None):
     ret = df.copy()
     ret['fracture'] = df.cycles < load_cycle_limit
     return ret
+

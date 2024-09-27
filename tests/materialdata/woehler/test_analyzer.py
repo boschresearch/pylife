@@ -595,3 +595,43 @@ def test_max_likelihood_one_mixed_horizon():
         wc = ml.analyze().sort_index()
     bic = ml.bayesian_information_criterion()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
+def test_irrelevant_runouts_dropped():
+    fd = woehler.determine_fractures(data_pure_runout_horizon_and_mixed_horizons, 1e7).fatigue_data
+    num_data_before = len(fd._obj)
+    num_tests_lowest_pure_runout_load_level = len(fd.load[fd.load==fd.pure_runout_loads.min()])
+    fd = fd.irrelevant_runouts_dropped()
+    num_data_after = len(fd._obj)
+    assert num_data_before-num_tests_lowest_pure_runout_load_level == num_data_after
+
+
+def test_irrelevant_runouts_dropped_no_change():
+    data_pure_runout_horizon_and_mixed_horizons
+    data_extend = data_pure_runout_horizon_and_mixed_horizons.copy(deep=True)
+    new_row = {'load': 2.75e+02, 'cycles': 1.00e+06}
+    data_extend = pd.concat([data_extend, pd.DataFrame([new_row])])#, ignore_index=True)
+    fd = woehler.determine_fractures(data_extend, 1e7).fatigue_data
+    num_data_before = len(fd._obj)
+    fd = fd.irrelevant_runouts_dropped()
+    num_data_after = len(fd._obj)
+    assert num_data_before == num_data_after
+
+
+def test_drop_irreverent_pure_runout_levels_no_data_change():
+    expected = pd.Series({
+        'SD': 339.23834,
+        'TS': 1.211044,
+        'k_1': 9.880429,
+        'ND': 804501,
+        'TN': 6.779709,
+        'failure_probability': 0.5
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data_pure_runout_horizon_and_mixed_horizons, 1e7).fatigue_data
+    num_data_before = len(fd._obj)
+    wc = woehler.Probit(fd).analyze().sort_index()
+    num_data_after = len(fd._obj)
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+    assert num_data_before == num_data_after
+
