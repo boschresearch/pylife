@@ -111,8 +111,8 @@ class Elementary:
         TN, TS = self._pearl_chain_method()
         return pd.Series({
             'k_1': -self._slope,
-            'ND': self._transition_cycles(self._fd.fatigue_limit),
-            'SD': self._fd.fatigue_limit,
+            'ND': self._transition_cycles(self._fd.finite_infinite_transition),
+            'SD': self._fd.finite_infinite_transition,
             'TN': TN,
             'TS': TS
         })
@@ -148,11 +148,11 @@ class Elementary:
 
         return slope, lg_intercept
 
-    def _transition_cycles(self, fatigue_limit):
-        # FIXME Elementary means fatigue_limit == 0 -> np.inf
-        if fatigue_limit == 0:
-            fatigue_limit = 0.1
-        return 10**(self._lg_intercept + self._slope * (np.log10(fatigue_limit)))
+    def _transition_cycles(self, finite_infinite_transition):
+        # FIXME Elementary means finite_infinite_transition == 0 -> np.inf
+        if finite_infinite_transition == 0:
+            finite_infinite_transition = 0.1
+        return 10**(self._lg_intercept + self._slope * (np.log10(finite_infinite_transition)))
 
     def _pearl_chain_method(self):
         self._pearl_chain_estimator = PearlChainProbability(self._finite_fractures, self._slope)

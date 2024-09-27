@@ -36,7 +36,7 @@ class FatigueData(PylifeSignal):
 
     def _validate(self):
         self.fail_if_key_missing(['load', 'cycles', 'fracture'])
-        self._fatigue_limit = None
+        self._finite_infinite_transition = None
 
     @property
     def num_tests(self):
@@ -74,7 +74,7 @@ class FatigueData(PylifeSignal):
         return self._obj.cycles
 
     @property
-    def fatigue_limit(self):
+    def finite_infinite_transition(self):
         '''The start value of the load endurance limit.
 
         It is determined by searching for the lowest load level before the
@@ -82,22 +82,22 @@ class FatigueData(PylifeSignal):
         runout appears.  Then the median of the two load levels is the start
         value.
         '''
-        if self._fatigue_limit is None:
-            self._calc_fatigue_limit()
-        return self._fatigue_limit
+        if self._finite_infinite_transition is None:
+            self._calc_finite_infinite_transition()
+        return self._finite_infinite_transition
 
     @property
     def finite_zone(self):
-        '''All the tests with load levels above ``fatigue_limit``, i.e. the finite zone'''
-        if self._fatigue_limit is None:
-            self._calc_fatigue_limit()
+        '''All the tests with load levels above ``finite_infinite_transition``, i.e. the finite zone'''
+        if self._finite_infinite_transition is None:
+            self._calc_finite_infinite_transition()
         return self._finite_zone
 
     @property
     def infinite_zone(self):
-        '''All the tests with load levels below ``fatigue_limit``, i.e. the infinite zone'''
-        if self._fatigue_limit is None:
-            self._calc_fatigue_limit()
+        '''All the tests with load levels below ``finite_infinite_transition``, i.e. the infinite zone'''
+        if self._finite_infinite_transition is None:
+            self._calc_finite_infinite_transition()
         return self._infinite_zone
 
     @property
@@ -120,7 +120,7 @@ class FatigueData(PylifeSignal):
     def pure_runout_loads(self):
         return np.setxor1d(self.runout_loads, self.mixed_loads)
 
-    def conservative_fatigue_limit(self):
+    def conservative_finite_infinite_transition(self):
         """
         Sets a lower fatigue limit that what is expected from the algorithm given by Mustafa Kassem.
         For calculating the fatigue limit, all amplitudes where runouts and fractures are present are collected.
@@ -141,26 +141,26 @@ class FatigueData(PylifeSignal):
             amps_to_consider = np.concatenate((amps_to_consider, [self.non_fractured_loads.max()]))
 
         if len(amps_to_consider) > 0:
-            self._fatigue_limit = amps_to_consider.mean()
+            self._finite_infinite_transition = amps_to_consider.mean()
             self._calc_finite_zone()
 
         return self
 
-    def set_fatigue_limit(self, fatigue_limit):
+    def set_finite_infinite_transition(self, finite_infinite_transition):
         """
         Allows the user to set an arbitrary fatigue limit.
 
         Parameters
         ----------
-        fatigue_limit : float
+        finite_infinite_transition : float
             The fatigue limit for separating the finite and infinite zone is set.
 
         Returns
         -------
         self
         """
-        self._fatigue_limit = fatigue_limit
-        self._calc_finite_zone_manual(fatigue_limit)
+        self._finite_infinite_transition = finite_infinite_transition
+        self._calc_finite_zone_manual(finite_infinite_transition)
 
         return self
 
@@ -178,9 +178,9 @@ class FatigueData(PylifeSignal):
     def max_runout_load(self):
         return self.runouts.load.max()
 
-    def _calc_fatigue_limit(self):
+    def _calc_finite_infinite_transition(self):
         self._calc_finite_zone()
-        self._fatigue_limit = 0.0 if len(self.runouts) == 0 else self._half_level_above_highest_runout()
+        self._finite_infinite_transition = 0.0 if len(self.runouts) == 0 else self._half_level_above_highest_runout()
 
     def _half_level_above_highest_runout(self):
         if len(self._finite_zone) > 0:

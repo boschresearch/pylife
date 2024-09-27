@@ -63,7 +63,7 @@ class MaxLikeInf(Elementary):
         fail_if_less_than_two_mixed_levels()
         fail_if_less_than_three_fractures()
 
-        SD_start = self._fd.fatigue_limit
+        SD_start = self._fd.finite_infinite_transition
         TS_start = 1.2
 
         var_opt = optimize.fmin(lambda p: -self._lh.likelihood_infinite(p[0], p[1]),
