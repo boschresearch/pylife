@@ -81,10 +81,10 @@ def test_fatigue_data_finite_infinite_zone(data, finite_zone_expected, infinite_
      no_runouts_infinite_expected)
 ])
 def test_fatigue_data_finite_infinite_zone_conservative(data, finite_zone_expected, infinite_zone_expected):
-    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.conservative_fatigue_limit()
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.conservative_finite_infinite_transition()
     pd.testing.assert_frame_equal(sort_fatigue_data(fd.finite_zone)[['load', 'cycles']],
                                   sort_fatigue_data(finite_zone_expected))
-    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.conservative_fatigue_limit()
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.conservative_finite_infinite_transition()
     pd.testing.assert_frame_equal(sort_fatigue_data(fd.infinite_zone)[['load', 'cycles']],
                                   sort_fatigue_data(infinite_zone_expected))
 
@@ -103,7 +103,7 @@ def test_fatigue_data_finite_infinite_zone_conservative(data, finite_zone_expect
      fat_limit_min)
 ])
 def test_fatigue_data_finite_infinite_zone_manual_setting(data, finite_zone_expected, infinite_zone_expected, fat_limit):
-    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=fat_limit)
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_finite_infinite_transition(finite_infinite_transition=fat_limit)
     pd.testing.assert_frame_equal(sort_fatigue_data(fd.finite_zone)[['load', 'cycles']],
                                   sort_fatigue_data(finite_zone_expected))
     pd.testing.assert_frame_equal(sort_fatigue_data(fd.infinite_zone)[['load', 'cycles']],
@@ -157,35 +157,35 @@ def test_woehler_fracture_determination_infered():
     pd.testing.assert_frame_equal(test, expected)
 
 
-@pytest.mark.parametrize("data, fatigue_limit_expected", [
+@pytest.mark.parametrize("data, finite_infinite_transition_expected", [
     (data, 362.5),
     (data_no_mixed_horizons, 362.5),
     (data_pure_runout_horizon_and_mixed_horizons, 362.5),
     (data_no_runouts, 0.0),
     (data_only_runout_levels, 362.5)
 ])
-def test_woehler_endur_zones(data, fatigue_limit_expected):
+def test_woehler_endur_zones(data, finite_infinite_transition_expected):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    assert fd.fatigue_limit == fatigue_limit_expected
+    assert fd.finite_infinite_transition == finite_infinite_transition_expected
 
 
-@pytest.mark.parametrize("data, fatigue_limit_expected", [
+@pytest.mark.parametrize("data, finite_infinite_transition_expected", [
     (data, 325.0),
     (data_no_mixed_horizons, 350.0),
     (data_pure_runout_horizon_and_mixed_horizons, 325.0),
     (data_no_runouts, 0.0),
     (data_only_runout_levels, 325.0)
 ])
-def test_woehler_endur_zones_conservative(data, fatigue_limit_expected):
+def test_woehler_endur_zones_conservative(data, finite_infinite_transition_expected):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    fd = fd.conservative_fatigue_limit()
-    assert fd.fatigue_limit == fatigue_limit_expected
+    fd = fd.conservative_finite_infinite_transition()
+    assert fd.finite_infinite_transition == finite_infinite_transition_expected
 
 
 def test_woehler_endure_zones_no_runouts():
     df = data[data.cycles < 1e7]
     fd = woehler.determine_fractures(df, 1e7).fatigue_data
-    assert fd.fatigue_limit == 0.0
+    assert fd.finite_infinite_transition == 0.0
 
 
 def test_woehler_elementary():
@@ -287,7 +287,7 @@ def test_woehler_elementary_no_load_level_in_finite_region():
     pd.testing.assert_series_equal(wc, expected)
 
 
-def test_woehler_elementary_set_fatigue_limit_low():
+def test_woehler_elementary_set_finite_infinite_transition_low():
     expected = pd.Series({
         'SD': 350.0,
         'k_1': 9.88,
@@ -296,12 +296,12 @@ def test_woehler_elementary_set_fatigue_limit_low():
         'TS': 1.21,
         'failure_probability': 0.5
     }).sort_index()
-    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=350.)
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_finite_infinite_transition(finite_infinite_transition=350.)
     wc = woehler.Elementary(fd).analyze().sort_index()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
-def test_woehler_elementary_set_fatigue_limit_high():
+def test_woehler_elementary_set_finite_infinite_transition_high():
     expected = pd.Series({
         'SD': 376.,
         'k_1': 7.07,
@@ -310,7 +310,7 @@ def test_woehler_elementary_set_fatigue_limit_high():
         'TS': 1.22,
         'failure_probability': 0.5
     }).sort_index()
-    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=376.)
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_finite_infinite_transition(finite_infinite_transition=376.)
     wc = woehler.Elementary(fd).analyze().sort_index()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
@@ -330,7 +330,7 @@ def test_woehler_probit():
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
-def test_woehler_probit_set_fatigue_limit():
+def test_woehler_probit_set_finite_infinite_transition():
     expected = pd.Series({
         'SD': 340.4,
         'TS': 1.21,
@@ -340,7 +340,7 @@ def test_woehler_probit_set_fatigue_limit():
         'failure_probability': 0.5
     }).sort_index()
 
-    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=376.)
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_finite_infinite_transition(finite_infinite_transition=376.)
     wc = woehler.Probit(fd).analyze().sort_index()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
@@ -398,7 +398,7 @@ def test_woehler_probit_no_finite_zone_data():
     }).sort_index()
     data_no_finite_zone = data[data['load']<376.].copy(deep=True)
 
-    fd = woehler.determine_fractures(data_no_finite_zone, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=376.)
+    fd = woehler.determine_fractures(data_no_finite_zone, 1e7).sort_index().fatigue_data.set_finite_infinite_transition(finite_infinite_transition=376.)
     with pytest.warns(UserWarning, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
         wc = woehler.Probit(fd).analyze().sort_index()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
@@ -419,7 +419,7 @@ def test_woehler_max_likelihood_inf_limit():
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
-def test_woehler_max_likelihood_inf_limit_set_fatigue_limit():
+def test_woehler_max_likelihood_inf_limit_set_finite_infinite_transition():
     expected = pd.Series({
         'SD': 333.6,
         'TS': 1.22,
@@ -429,7 +429,7 @@ def test_woehler_max_likelihood_inf_limit_set_fatigue_limit():
         'failure_probability': 0.5
     }).sort_index()
 
-    fd = woehler.determine_fractures(data, 1e7).fatigue_data.set_fatigue_limit(fatigue_limit=376.)
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data.set_finite_infinite_transition(finite_infinite_transition=376.)
     wc = woehler.MaxLikeInf(fd).analyze().sort_index()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
@@ -445,7 +445,7 @@ def test_woehler_max_likelihood_inf_limit_no_finite_zone_data():
     }).sort_index()
     data_no_finite_zone = data[data['load']<376.].copy(deep=True)
 
-    fd = woehler.determine_fractures(data_no_finite_zone, 1e7).sort_index().fatigue_data.set_fatigue_limit(fatigue_limit=376.)
+    fd = woehler.determine_fractures(data_no_finite_zone, 1e7).sort_index().fatigue_data.set_finite_infinite_transition(finite_infinite_transition=376.)
     with pytest.warns(UserWarning, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
         wc = woehler.MaxLikeInf(fd).analyze().sort_index()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
