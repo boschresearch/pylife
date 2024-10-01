@@ -30,8 +30,8 @@ class LoopValueRecorder(AbstractRecorder):
     def __init__(self):
         """Instantiate a LoopRecorder."""
         super().__init__()
-        self._values_from = []
-        self._values_to = []
+        self._values_from = np.zeros((0,))
+        self._values_to = np.zeros((0,))
 
     @property
     def values_from(self):
@@ -53,8 +53,8 @@ class LoopValueRecorder(AbstractRecorder):
 
     def record_values(self, values_from, values_to):
         """Record the loop values."""
-        self._values_from += values_from
-        self._values_to += values_to
+        self._values_from = np.append(self._values_from, values_from)
+        self._values_to = np.append(self._values_to, values_to)
 
     def histogram_numpy(self, bins=10):
         """Calculate a histogram of the recorded values into a plain numpy.histogram2d.
@@ -109,8 +109,8 @@ class FullRecorder(LoopValueRecorder):
     def __init__(self):
         """Instantiate a FullRecorder."""
         super().__init__()
-        self._index_from = []
-        self._index_to = []
+        self._index_from = np.array([], dtype=np.uintp)
+        self._index_to = np.array([], dtype=np.uintp)
 
     @property
     def index_from(self):
@@ -137,5 +137,9 @@ class FullRecorder(LoopValueRecorder):
 
     def record_index(self, index_from, index_to):
         """Record the index."""
-        self._index_from += index_from
-        self._index_to += index_to
+        self._index_from = np.concatenate(
+            (self._index_from, np.asarray(index_from, dtype=np.uintp))
+        )
+        self._index_to = np.concatenate(
+            (self._index_to, np.asarray(index_to, dtype=np.uintp))
+        )
