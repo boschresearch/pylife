@@ -165,9 +165,7 @@ class FatigueData(PylifeSignal):
         return self
 
     def irrelevant_runouts_dropped(self):
-        '''Checks if data has several pure runout load levels and drops all except max pure runout level
-
-        '''
+        '''Make a copy of the instance with irrelevant pure runout levels dropped. '''
         if len(self.pure_runout_loads) <= 1:
             return self
         if self.pure_runout_loads.max() < self.fractured_loads.min():
@@ -204,11 +202,6 @@ class FatigueData(PylifeSignal):
         self._finite_zone = self.fractures[self.fractures.load > limit]
         self._infinite_zone = self._obj[self._obj.load <= limit]
 
-
-
-
-
-
 def determine_fractures(df, load_cycle_limit=None):
     '''Adds a fracture column according to defined load cycle limit
 
@@ -233,4 +226,3 @@ def determine_fractures(df, load_cycle_limit=None):
     ret = df.copy()
     ret['fracture'] = df.cycles < load_cycle_limit
     return ret
-

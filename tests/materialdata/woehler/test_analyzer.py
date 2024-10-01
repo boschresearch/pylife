@@ -599,8 +599,8 @@ def test_max_likelihood_one_mixed_horizon():
 
 def test_irrelevant_runouts_dropped():
     fd = woehler.determine_fractures(data_pure_runout_horizon_and_mixed_horizons, 1e7).fatigue_data
-    num_data_before = len(fd._obj)
-    num_tests_lowest_pure_runout_load_level = len(fd.load[fd.load==fd.pure_runout_loads.min()])
+    num_data_before = 48
+    num_tests_lowest_pure_runout_load_level = 9
     fd = fd.irrelevant_runouts_dropped()
     num_data_after = len(fd._obj)
     assert num_data_before-num_tests_lowest_pure_runout_load_level == num_data_after
@@ -610,7 +610,7 @@ def test_irrelevant_runouts_dropped_no_change():
     data_pure_runout_horizon_and_mixed_horizons
     data_extend = data_pure_runout_horizon_and_mixed_horizons.copy(deep=True)
     new_row = {'load': 2.75e+02, 'cycles': 1.00e+06}
-    data_extend = pd.concat([data_extend, pd.DataFrame([new_row])])#, ignore_index=True)
+    data_extend = pd.concat([data_extend, pd.DataFrame([new_row])])
     fd = woehler.determine_fractures(data_extend, 1e7).fatigue_data
     num_data_before = len(fd._obj)
     fd = fd.irrelevant_runouts_dropped()
@@ -618,7 +618,7 @@ def test_irrelevant_runouts_dropped_no_change():
     assert num_data_before == num_data_after
 
 
-def test_drop_irreverent_pure_runout_levels_no_data_change():
+def test_drop_irreverent_pure_runout_levels_for_evaluation():
     expected = pd.Series({
         'SD': 339.23834,
         'TS': 1.211044,
@@ -629,9 +629,13 @@ def test_drop_irreverent_pure_runout_levels_no_data_change():
     }).sort_index()
 
     fd = woehler.determine_fractures(data_pure_runout_horizon_and_mixed_horizons, 1e7).fatigue_data
-    num_data_before = len(fd._obj)
     wc = woehler.Probit(fd).analyze().sort_index()
-    num_data_after = len(fd._obj)
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
-    assert num_data_before == num_data_after
 
+
+def test_drop_irreverent_pure_runout_levels_no_data_change():
+    fd = woehler.determine_fractures(data_pure_runout_horizon_and_mixed_horizons, 1e7).fatigue_data
+    num_data_before = len(fd._obj)
+    wc = woehler.Probit(fd).analyze()
+    num_data_after = len(fd._obj)
+    assert num_data_before == num_data_after
