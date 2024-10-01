@@ -61,6 +61,8 @@ class Elementary:
             params = fatigue_data
         else:
             raise ValueError("fatigue_data of type {} not understood: {}".format(type(fatigue_data), fatigue_data))
+        params = params.irrelevant_runouts_dropped()
+
         return params
 
     def analyze(self, **kwargs):
