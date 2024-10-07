@@ -6,10 +6,36 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 ## pylife-2.1.1
 
-## Improvements
+### Breaking changes
+
+* Change fracture load levels used for slope `k_1` and scatter `T_N`
+  estimation. Now only fractures in the `finite_zone` are used for estimation
+  and not all fractures (in `finite_zone` and `infinite_zone`). Change based on
+  findings in DIN50100:2022-12. (#80, #101)
+
+  (see [this discussion](https://github.com/boschresearch/pylife/discussions/104))
+
+* Rename `FatigueData.fatigue_limit` to `finite_infinite_transition`
+
+* The Bayesian Wöhler analyzer has been shutdown (#74) (see [this
+  discussion](https://github.com/boschresearch/pylife/discussions/104))
+
+
+### New features
+
+* Add option to manually set `fatigue_limit` (now renamed) for Woehler curve
+  estimation. (#73)
+
+
+### Improvements / bug fixes
 
 * Rainflow counters work with `pd.Series` of all index type (#69)
 * Improved documentation
+* Fixed confusing load matrix after mean stress transformation (#105)
+* Massive performance improvements of three point and four point rainflow
+  counters.
+* The Wöhler analyzer now ignores irrelevant pure runout levels (#100)
+* Support numpy>=2.0.0
 
 
 ## pylife-2.1.0

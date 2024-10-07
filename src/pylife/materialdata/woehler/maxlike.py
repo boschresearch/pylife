@@ -38,12 +38,32 @@ class MaxLikeInf(Elementary):
 
         wc['SD'] = SD
         wc['TS'] = TS
-        wc['ND'] = self._transition_cycles(SD)
+        if not np.isnan(wc['ND']):
+            wc['ND'] = self._transition_cycles(SD)
 
         return wc
 
     def __max_likelihood_inf_limit(self):
-        SD_start = self._fd.fatigue_limit
+
+        infinite_fractures = self._fd.infinite_zone.loc[self._fd.infinite_zone.fracture]
+        infinite_runouts = self._fd.infinite_zone.loc[~self._fd.infinite_zone.fracture]
+        infinite_fractured_loads = np.unique(infinite_fractures.load.values)
+        infinite_runout_loads = np.unique(infinite_runouts.load.values)
+        infinite_mixed_loads = np.intersect1d(infinite_runout_loads, infinite_fractured_loads)
+
+        def fail_if_less_than_two_mixed_levels():
+            if len(infinite_mixed_loads) < 2:
+                raise ValueError("MaxLikeHood: need at least two mixed load levels.")
+
+        def fail_if_less_than_three_fractures():
+            if infinite_fractures.shape[0] < 3 or len(infinite_fractured_loads) < 2:
+                raise ValueError("MaxLikeHood: need at least three fractures on two load levels.")
+
+
+        fail_if_less_than_two_mixed_levels()
+        fail_if_less_than_three_fractures()
+
+        SD_start = self._fd.finite_infinite_transition
         TS_start = 1.2
 
         var_opt = optimize.fmin(lambda p: -self._lh.likelihood_infinite(p[0], p[1]),

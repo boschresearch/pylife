@@ -197,6 +197,26 @@ def test_five_segment_multiple_M_sm():
     np.testing.assert_array_almost_equal(res.amplitude, np.ones_like(res))
 
 
+#GH-105
+@pytest.mark.parametrize("R_goal", [-1., 0., -1./3., 1./3.])
+def test_fkm_goodman_hist_R_goal(R_goal):
+    rg = pd.IntervalIndex.from_breaks(np.linspace(0., 2., 25), closed='left')
+    mn = pd.IntervalIndex.from_breaks(np.linspace(-1./12., 23./12., 25), closed='left')
+
+    mat = pd.Series(np.zeros(24*24), name='cycles',
+                    index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']))
+    mat.loc[(7./6., 7./6.)] = 1.
+    mat.loc[(4./3., 2./3.)] = 3.
+    mat.loc[(2. - 1e-9, 0.)] = 5.
+
+    haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
+    result = mat.meanstress_transform.fkm_goodman(haigh, R_goal).R
+
+    expected = pd.Series(R_goal, index=result.index, name=result.name)
+
+    pd.testing.assert_series_equal(result, expected)
+
+
 @pytest.mark.parametrize("R_goal, expected", [  # all calculated by pencil on paper
     (-1., 2.0),
     (0., 4./3.),
@@ -216,8 +236,10 @@ def test_fkm_goodman_hist_range_mean(R_goal, expected):
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
     res = mat.meanstress_transform.fkm_goodman(haigh, R_goal).to_pandas()
     test_interval = pd.Interval(expected-1./96., expected+1./96.)
-    assert res.loc[res.index.overlaps(test_interval)].sum() == 9
-    assert res.loc[np.logical_not(res.index.overlaps(test_interval))].sum() == 0
+
+    mask = res.index.get_level_values('range').overlaps(test_interval)
+    assert res.loc[mask].sum() == 9
+    assert res.loc[~mask].sum() == 0
 
 
 @pytest.mark.parametrize("R_goal, expected", [  # all calculated by pencil on paper
@@ -240,8 +262,10 @@ def test_fkm_goodman_hist_from_to(R_goal, expected):
     res = mat.meanstress_transform.fkm_goodman(haigh, R_goal).to_pandas()
 
     test_interval = pd.Interval(expected-1./96., expected+1./96.)
-    assert res.loc[res.index.overlaps(test_interval)].sum() == 9
-    assert res.loc[np.logical_not(res.index.overlaps(test_interval))].sum() == 0
+
+    mask = res.index.get_level_values('range').overlaps(test_interval)
+    assert res.loc[mask].sum() == 9
+    assert res.loc[~mask].sum() == 0
 
 
 def test_meanstress_transform_additional_index():
@@ -270,11 +294,13 @@ def test_meanstress_transform_additional_index():
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
     res = mat.meanstress_transform.fkm_goodman(haigh, -1.0).to_pandas()
 
-    assert set(res.index.names) == {'range', 'node_id'}
+    assert set(res.index.names) == {'range', 'mean', 'node_id'}
 
-    assert res.loc[(2.0, 1)] == 9
-    assert res.loc[(2.0, 2)] == 18
-    assert res.loc[(2.0, 3)] == 36
+    null_itv = pd.Interval(0.0, 0.0)
+
+    assert res.loc[(2.0, null_itv, 1)] == 9
+    assert res.loc[(2.0, null_itv, 2)] == 18
+    assert res.loc[(2.0, null_itv, 3)] == 36
 
     assert res.sum() == 9 + 18 + 36
     assert res.min() == 0
@@ -311,13 +337,15 @@ def test_meanstress_transform_two_additional_indices():
     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
     res = mat.meanstress_transform.fkm_goodman(haigh, -1.0).to_pandas()
 
-    assert set(res.index.names) == {'range', 'node_id', 'element_id'}
+    assert set(res.index.names) == {'range', 'mean', 'node_id', 'element_id'}
 
-    assert res.loc[(2.0, 1, 1)] == 9
-    assert res.loc[(2.0, 2, 1)] == 18
+    null_itv = pd.Interval(0.0, 0.0)
 
-    assert res.loc[(2.0, 1, 2)] == 36
-    assert res.loc[(2.0, 2, 2)] == 72
+    assert res.loc[(2.0, null_itv, 1, 1)] == 9
+    assert res.loc[(2.0, null_itv, 2, 1)] == 18
+
+    assert res.loc[(2.0, null_itv, 1, 2)] == 36
+    assert res.loc[(2.0, null_itv, 2, 2)] == 72
 
     assert res.sum() == 9 + 18 + 36 + 72
     assert res.min() == 0
@@ -344,8 +372,9 @@ def test_fkm_goodman_hist_range_mean_nonzero(R_goal, expected):
 
     test_interval = pd.Interval(expected-1./96., expected+1./96.)
 
-    assert res.loc[res.index.overlaps(test_interval)].sum() == 9
-    assert res.loc[np.logical_not(res.index.overlaps(test_interval))].sum() == 0
+    mask = res.index.get_level_values('range').overlaps(test_interval)
+    assert res.loc[mask].sum() == 9
+    assert res.loc[~mask].sum() == 0
 
     binsize = res.index.get_level_values('range').length.min()
     np.testing.assert_approx_equal(binsize, 2./24., significant=1)

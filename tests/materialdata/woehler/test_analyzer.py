@@ -82,18 +82,33 @@ def test_fatigue_data_finite_infinite_zone(data, finite_zone_expected, infinite_
      no_runouts_infinite_expected)
 ])
 def test_fatigue_data_finite_infinite_zone_conservative(data, finite_zone_expected, infinite_zone_expected):
-    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.conservative_fatigue_limit()
-    print(sort_fatigue_data(fd.finite_zone))
-    print(sort_fatigue_data(finite_zone_expected))
-    print(fd.fatigue_limit)
-    print(sort_fatigue_data(fd.infinite_zone))
-    print(sort_fatigue_data(infinite_zone_expected))
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.conservative_finite_infinite_transition()
     pd.testing.assert_frame_equal(sort_fatigue_data(fd.finite_zone)[['load', 'cycles']],
                                   sort_fatigue_data(finite_zone_expected))
-    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.conservative_fatigue_limit()
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.conservative_finite_infinite_transition()
     pd.testing.assert_frame_equal(sort_fatigue_data(fd.infinite_zone)[['load', 'cycles']],
                                   sort_fatigue_data(infinite_zone_expected))
 
+@pytest.mark.parametrize("data, finite_zone_expected, infinite_zone_expected, fat_limit", [
+    (data,
+     finite_expected_set_finite_limit,
+     infinite_expected_set_finite_limit,
+     fat_limit),
+    (data,
+     finite_expected_set_finite_limit_max,
+     infinite_expected_set_finite_limit_max,
+     fat_limit_max),
+    (data,
+     finite_expected_set_finite_limit_min,
+     infinite_expected_set_finite_limit_min,
+     fat_limit_min)
+])
+def test_fatigue_data_finite_infinite_zone_manual_setting(data, finite_zone_expected, infinite_zone_expected, fat_limit):
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_finite_infinite_transition(finite_infinite_transition=fat_limit)
+    pd.testing.assert_frame_equal(sort_fatigue_data(fd.finite_zone)[['load', 'cycles']],
+                                  sort_fatigue_data(finite_zone_expected))
+    pd.testing.assert_frame_equal(sort_fatigue_data(fd.infinite_zone)[['load', 'cycles']],
+                                  sort_fatigue_data(infinite_zone_expected))
 
 def test_woehler_fracture_determination_given():
     df = pd.DataFrame({
@@ -143,46 +158,44 @@ def test_woehler_fracture_determination_infered():
     pd.testing.assert_frame_equal(test, expected)
 
 
-@pytest.mark.parametrize("data, fatigue_limit_expected", [
+@pytest.mark.parametrize("data, finite_infinite_transition_expected", [
     (data, 362.5),
     (data_no_mixed_horizons, 362.5),
     (data_pure_runout_horizon_and_mixed_horizons, 362.5),
     (data_no_runouts, 0.0),
     (data_only_runout_levels, 362.5)
 ])
-def test_woehler_endur_zones(data, fatigue_limit_expected):
+def test_woehler_endur_zones(data, finite_infinite_transition_expected):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    assert fd.fatigue_limit == fatigue_limit_expected
+    assert fd.finite_infinite_transition == finite_infinite_transition_expected
 
 
-@pytest.mark.parametrize("data, fatigue_limit_expected", [
+@pytest.mark.parametrize("data, finite_infinite_transition_expected", [
     (data, 325.0),
     (data_no_mixed_horizons, 350.0),
     (data_pure_runout_horizon_and_mixed_horizons, 325.0),
     (data_no_runouts, 0.0),
     (data_only_runout_levels, 325.0)
 ])
-def test_woehler_endur_zones_conservative(data, fatigue_limit_expected):
+def test_woehler_endur_zones_conservative(data, finite_infinite_transition_expected):
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    print(fd.fatigue_limit)
-    fd = fd.conservative_fatigue_limit()
-    print(fd.fatigue_limit)
-    assert fd.fatigue_limit == fatigue_limit_expected
+    fd = fd.conservative_finite_infinite_transition()
+    assert fd.finite_infinite_transition == finite_infinite_transition_expected
 
 
 def test_woehler_endure_zones_no_runouts():
     df = data[data.cycles < 1e7]
     fd = woehler.determine_fractures(df, 1e7).fatigue_data
-    assert fd.fatigue_limit == 0.0
+    assert fd.finite_infinite_transition == 0.0
 
 
 def test_woehler_elementary():
     expected = pd.Series({
         'SD': 362.5,
-        'k_1': 7.0,
-        'ND': 3e5,
-        'TN': 5.3,
-        'TS': 1.27,
+        'k_1': 9.88,
+        'ND': 417772,
+        'TN': 6.78,
+        'TS': 1.21,
         'failure_probability': 0.5
     }).sort_index()
 
@@ -194,10 +207,10 @@ def test_woehler_elementary():
 def test_woehler_elementary_initialize_with_determined_fractures():
     expected = pd.Series({
         'SD': 362.5,
-        'k_1': 7.0,
-        'ND': 3e5,
-        'TN': 5.3,
-        'TS': 1.27,
+        'k_1': 9.88,
+        'ND': 417772,
+        'TN': 6.78,
+        'TS': 1.21,
         'failure_probability': 0.5
     }).sort_index()
 
@@ -209,10 +222,10 @@ def test_woehler_elementary_initialize_with_determined_fractures():
 def test_woehler_elementary_initialize_with_pandas_dataframe():
     expected = pd.Series({
         'SD': 362.5,
-        'k_1': 7.0,
-        'ND': 3e5,
-        'TN': 5.3,
-        'TS': 1.27,
+        'k_1': 9.88,
+        'ND': 417772,
+        'TN': 6.78,
+        'TS': 1.21,
         'failure_probability': 0.5
     }).sort_index()
 
@@ -237,17 +250,79 @@ def test_woehler_elementary_no_runouts():
 def test_woehler_elementary_only_one_load_level():
     data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 1e6]]), columns=['load', 'cycles'])
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
-    with pytest.raises(ValueError, match=r"Need at least two load levels to do a Wöhler analysis."):
+    with pytest.raises(ValueError, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
         woehler.Elementary(fd).analyze().sort_index()
+
+
+def test_woehler_elementary_only_one_load_level_in_finite_region():
+    expected = pd.Series({
+        'k_1': np.nan,
+        'ND': np.nan,
+        'SD': np.nan,
+        'TN': np.nan,
+        'TS': np.nan,
+        'failure_probability': 0.5
+    }).sort_index()
+
+    data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 1e6], [360.0, 1e6]]), columns=['load', 'cycles'])
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    with pytest.warns(UserWarning, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
+        wc = woehler.Elementary(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected)
+
+
+def test_woehler_elementary_no_load_level_in_finite_region():
+    expected = pd.Series({
+        'k_1': np.inf,
+        'ND': np.nan,
+        'SD': np.nan,
+        'TN': 1.0,
+        'TS': np.nan,
+        'failure_probability': 0.5
+    }).sort_index()
+
+    data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 1e6], [360.0, 1e7]]), columns=['load', 'cycles'])
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    with pytest.warns(UserWarning, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
+        wc = woehler.Elementary(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected)
+
+
+def test_woehler_elementary_set_finite_infinite_transition_low():
+    expected = pd.Series({
+        'SD': 350.0,
+        'k_1': 9.88,
+        'ND': 590904,
+        'TN': 6.78,
+        'TS': 1.21,
+        'failure_probability': 0.5
+    }).sort_index()
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_finite_infinite_transition(finite_infinite_transition=350.)
+    wc = woehler.Elementary(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
+def test_woehler_elementary_set_finite_infinite_transition_high():
+    expected = pd.Series({
+        'SD': 376.,
+        'k_1': 7.07,
+        'ND': 191572,
+        'TN': 4.18,
+        'TS': 1.22,
+        'failure_probability': 0.5
+    }).sort_index()
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_finite_infinite_transition(finite_infinite_transition=376.)
+    wc = woehler.Elementary(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
 def test_woehler_probit():
     expected = pd.Series({
-        'SD': 335,
-        'TS': 1.19,
-        'k_1': 6.94,
-        'ND': 463000.,
-        'TN': 5.26,
+        'SD': 339.3,
+        'TS': 1.2,
+        'k_1': 9.88,
+        'ND': 802898.,
+        'TN': 6.78,
         'failure_probability': 0.5
     }).sort_index()
 
@@ -256,10 +331,25 @@ def test_woehler_probit():
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
+def test_woehler_probit_set_finite_infinite_transition():
+    expected = pd.Series({
+        'SD': 340.4,
+        'TS': 1.21,
+        'k_1': 7.1,
+        'ND': 386721.,
+        'TN': 4.18,
+        'failure_probability': 0.5
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data, 1e7).sort_index().fatigue_data.set_finite_infinite_transition(finite_infinite_transition=376.)
+    wc = woehler.Probit(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
 def test_woehler_probit_one_runout_load_level():
     fd = woehler.determine_fractures(data_one_runout_load_level, 1e7).fatigue_data
     expected = woehler.Elementary(fd).analyze()
-    with pytest.warns(UserWarning, match=r"Probit needs at least two runout load levels. Falling back to Elementary."):
+    with pytest.warns(UserWarning, match=r"Probit needs at least two – preferably mixed – load levels in the infinite zone. Falling back to Elementary."):
         wc = woehler.Probit(fd).analyze()
     pd.testing.assert_series_equal(wc, expected)
 
@@ -269,9 +359,9 @@ def test_woehler_probit_data01():
     expected = pd.Series({
         'SD': 490,
         'TS': 1.1,
-        'k_1': 8.0,
-        'ND': 530e3,
-        'TN': 3.0,
+        'k_1': 5.2,
+        'ND': 298638.,
+        'TN': 1.93,
         'failure_probability': 0.5
     }).sort_index()
 
@@ -298,18 +388,67 @@ def test_woehler_probit_no_runouts():
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
+def test_woehler_probit_no_finite_zone_data():
+    expected = pd.Series({
+        'SD': 340.4,
+        'TS': 1.21,
+        'k_1': np.inf,
+        'ND': np.nan,
+        'TN': 1.0,
+        'failure_probability': 0.5
+    }).sort_index()
+    data_no_finite_zone = data[data['load']<376.].copy(deep=True)
+
+    fd = woehler.determine_fractures(data_no_finite_zone, 1e7).sort_index().fatigue_data.set_finite_infinite_transition(finite_infinite_transition=376.)
+    with pytest.warns(UserWarning, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
+        wc = woehler.Probit(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
 def test_woehler_max_likelihood_inf_limit():
     expected = pd.Series({
         'SD': 335,
-        'TS': 1.19,
-        'k_1': 6.94,
-        'ND': 463000.,
-        'TN': 5.26,
+        'TS': 1.20,
+        'k_1': 9.88,
+        'ND': 897649.,
+        'TN': 6.78,
         'failure_probability': 0.5
     }).sort_index()
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     wc = woehler.MaxLikeInf(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
+def test_woehler_max_likelihood_inf_limit_set_finite_infinite_transition():
+    expected = pd.Series({
+        'SD': 333.6,
+        'TS': 1.22,
+        'k_1': 7.1,
+        'ND': 446054.,
+        'TN': 4.18,
+        'failure_probability': 0.5
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data.set_finite_infinite_transition(finite_infinite_transition=376.)
+    wc = woehler.MaxLikeInf(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
+def test_woehler_max_likelihood_inf_limit_no_finite_zone_data():
+    expected = pd.Series({
+        'SD': 333.6,
+        'TS': 1.22,
+        'k_1': np.inf,
+        'ND': np.nan,
+        'TN': 1.0,
+        'failure_probability': 0.5
+    }).sort_index()
+    data_no_finite_zone = data[data['load']<376.].copy(deep=True)
+
+    fd = woehler.determine_fractures(data_no_finite_zone, 1e7).sort_index().fatigue_data.set_finite_infinite_transition(finite_infinite_transition=376.)
+    with pytest.warns(UserWarning, match=r"Need at least two different load levels in the finite zone to do a Wöhler slope analysis."):
+        wc = woehler.MaxLikeInf(fd).analyze().sort_index()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
 
 
@@ -321,18 +460,16 @@ def test_bic_without_analysis():
 
 
 def test_woehler_max_likelihood_inf_limit_no_runouts():
-    expected = pd.Series({
-        'SD': 0.,
-        'TS': 1.19,
-        'k_1': 6.94,
-        'ND': 4.4e30,
-        'TN': 5.26,
-        'failure_probability': 0.5
-    }).sort_index()
-
     fd = woehler.determine_fractures(data_no_runouts, 1e7).fatigue_data
-    wc = woehler.MaxLikeInf(fd).analyze().sort_index()
-    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+    with pytest.raises(ValueError, match=r"MaxLikeHood: need at least two mixed load levels."):
+        woehler.MaxLikeInf(fd).analyze().sort_index()
+
+
+def test_woehler_max_likelihood_inf_limit_only_two_fractures():
+    data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 5e5],[340.0, 1e7], [340.0, 1e5], [390.0, 1e4], [380.0, 1e5]]), columns=['load', 'cycles'])
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    with pytest.raises(ValueError, match=r"MaxLikeHood: need at least three fractures on two load levels."):
+        woehler.MaxLikeInf(fd).analyze().sort_index()
 
 
 def test_woehler_max_likelihood_full_without_fixed_params():
@@ -459,3 +596,47 @@ def test_max_likelihood_one_mixed_horizon():
         wc = ml.analyze().sort_index()
     bic = ml.bayesian_information_criterion()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
+def test_irrelevant_runouts_dropped():
+    fd = woehler.determine_fractures(data_pure_runout_horizon_and_mixed_horizons, 1e7).fatigue_data
+    num_data_before = 48
+    num_tests_lowest_pure_runout_load_level = 9
+    fd = fd.irrelevant_runouts_dropped()
+    num_data_after = len(fd._obj)
+    assert num_data_before-num_tests_lowest_pure_runout_load_level == num_data_after
+
+
+def test_irrelevant_runouts_dropped_no_change():
+    data_pure_runout_horizon_and_mixed_horizons
+    data_extend = data_pure_runout_horizon_and_mixed_horizons.copy(deep=True)
+    new_row = {'load': 2.75e+02, 'cycles': 1.00e+06}
+    data_extend = pd.concat([data_extend, pd.DataFrame([new_row])])
+    fd = woehler.determine_fractures(data_extend, 1e7).fatigue_data
+    num_data_before = len(fd._obj)
+    fd = fd.irrelevant_runouts_dropped()
+    num_data_after = len(fd._obj)
+    assert num_data_before == num_data_after
+
+
+def test_drop_irreverent_pure_runout_levels_for_evaluation():
+    expected = pd.Series({
+        'SD': 339.23834,
+        'TS': 1.211044,
+        'k_1': 9.880429,
+        'ND': 804501,
+        'TN': 6.779709,
+        'failure_probability': 0.5
+    }).sort_index()
+
+    fd = woehler.determine_fractures(data_pure_runout_horizon_and_mixed_horizons, 1e7).fatigue_data
+    wc = woehler.Probit(fd).analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+
+
+def test_drop_irreverent_pure_runout_levels_no_data_change():
+    fd = woehler.determine_fractures(data_pure_runout_horizon_and_mixed_horizons, 1e7).fatigue_data
+    num_data_before = len(fd._obj)
+    wc = woehler.Probit(fd).analyze()
+    num_data_after = len(fd._obj)
+    assert num_data_before == num_data_after

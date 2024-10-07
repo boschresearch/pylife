@@ -22,7 +22,7 @@ from .likelihood import Likelihood
 from .pearl_chain import PearlChainProbability
 import pylife.utils.functions as functions
 from . import FatigueData, determine_fractures
-
+import warnings
 
 class Elementary:
     """Base class to analyze SN-data.
@@ -61,6 +61,8 @@ class Elementary:
             params = fatigue_data
         else:
             raise ValueError("fatigue_data of type {} not understood: {}".format(type(fatigue_data), fatigue_data))
+        params = params.irrelevant_runouts_dropped()
+
         return params
 
     def analyze(self, **kwargs):
@@ -72,7 +74,31 @@ class Elementary:
             Arguments to be passed to the derived class
         """
         if len(self._fd.load.unique()) < 2:
-            raise ValueError("Need at least two load levels to do a Wöhler analysis.")
+            raise ValueError("Need at least two different load levels in the finite zone to do a Wöhler slope analysis.")
+        elif len(self._fd.finite_zone.load.unique()) < 2:
+            warnings.warn(UserWarning("Need at least two different load levels in the finite zone to do a Wöhler slope analysis."
+                                      " "))
+            if len(self._fd.finite_zone.load.unique()) == 1:
+                wc = pd.Series({
+                    'k_1': np.nan,
+                    'ND': np.nan,
+                    'SD': np.nan,
+                    'TN': np.nan,
+                    'TS': np.nan
+                    })
+            else:
+                wc = pd.Series({
+                    'k_1': np.inf,
+                    'ND': np.nan,
+                    'SD': np.nan,
+                    'TN': 1.0,
+                    'TS': np.nan
+                    })
+            wc = self._specific_analysis(wc, **kwargs)
+            wc['failure_probability'] = 0.5
+            return wc
+
+        self._finite_fractures = self._fd.finite_zone.loc[self._fd.finite_zone.fracture == True]
         wc = self._common_analysis()
         wc = self._specific_analysis(wc, **kwargs)
         self.__calc_bic(wc)
@@ -85,8 +111,8 @@ class Elementary:
         TN, TS = self._pearl_chain_method()
         return pd.Series({
             'k_1': -self._slope,
-            'ND': self._transition_cycles(self._fd.fatigue_limit),
-            'SD': self._fd.fatigue_limit,
+            'ND': self._transition_cycles(self._fd.finite_infinite_transition),
+            'SD': self._fd.finite_infinite_transition,
             'TN': TN,
             'TS': TS
         })
@@ -117,19 +143,19 @@ class Elementary:
         self._bic = (-2 * log_likelihood) + (param_num * np.log(self._fd.num_tests))
 
     def _fit_slope(self):
-        slope, lg_intercept, _, _, _ = stats.linregress(np.log10(self._fd.fractures.load),
-                                                        np.log10(self._fd.fractures.cycles))
+        slope, lg_intercept, _, _, _ = stats.linregress(np.log10(self._finite_fractures.load),
+                                                        np.log10(self._finite_fractures.cycles))
 
         return slope, lg_intercept
 
-    def _transition_cycles(self, fatigue_limit):
-        # FIXME Elementary means fatigue_limit == 0 -> np.inf
-        if fatigue_limit == 0:
-            fatigue_limit = 0.1
-        return 10**(self._lg_intercept + self._slope * (np.log10(fatigue_limit)))
+    def _transition_cycles(self, finite_infinite_transition):
+        # FIXME Elementary means finite_infinite_transition == 0 -> np.inf
+        if finite_infinite_transition == 0:
+            finite_infinite_transition = 0.1
+        return 10**(self._lg_intercept + self._slope * (np.log10(finite_infinite_transition)))
 
     def _pearl_chain_method(self):
-        self._pearl_chain_estimator = PearlChainProbability(self._fd.fractures, self._slope)
+        self._pearl_chain_estimator = PearlChainProbability(self._finite_fractures, self._slope)
 
         TN = functions.std_to_scattering_range(1./self._pearl_chain_estimator.slope)
         TS = TN**(1./-self._slope)

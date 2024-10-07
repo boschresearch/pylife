@@ -69,8 +69,9 @@ def test_meanstress_collective_fkm_goodman_single_ms_sens(ms_sens):
     expected_interval = pd.Interval(expected - 1./96., expected + 1./96.)
     res = rf.meanstress_transform.fkm_goodman(haigh, R_goal).to_pandas()
 
-    assert res.loc[res.index.overlaps(expected_interval)].sum() == 9
-    assert res.loc[~res.index.overlaps(expected_interval)].sum() == 0
+    mask = res.index.get_level_values('range').overlaps(expected_interval)
+    assert res.loc[mask].sum() == 9
+    assert res.loc[~mask].sum() == 0
 
 
 def test_meanstress_collective_fkm_goodman_multiple_ms_sens():
