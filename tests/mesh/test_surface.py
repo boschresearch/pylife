@@ -79,20 +79,70 @@ def spherical_mesh(n_elements_phi = 6, n_elements_theta = 4, n_elements_r = 3, o
 
 
 @pytest.mark.parametrize('n_elements_phi, n_elements_theta, n_elements_r, offset', [
-    (3, 3, 3, np.array([0,0,0])),
-    (3, 3, 3, np.array([0,1,0])),
-    (3, 3, 3, np.array([1.2,.3,4.5])),
-    (1, 3, 3, np.array([1.2,.3,4.5])),
-    (3, 1, 3, np.array([1.2,.3,4.5])),
-    (3, 3, 1, np.array([1.2,.3,4.5])),
-    (3, 1, 1, np.array([1.2,.3,4.5])),
-    (1, 1, 1, np.array([1.2,.3,4.5])),
-    (5, 4, 3, np.array([1.2,.3,4.5])),
+    (3, 3, 3, np.array([0, 0, 0])),
+    (3, 3, 3, np.array([0, 1, 0])),
+    (3, 3, 3, np.array([1.2, .3, 4.5])),
+    (1, 3, 3, np.array([1.2, .3, 4.5])),
+    (3, 1, 3, np.array([1.2, .3, 4.5])),
+    (3, 3, 1, np.array([1.2, .3, 4.5])),
+    (3, 1, 1, np.array([1.2, .3, 4.5])),
+    (1, 1, 1, np.array([1.2, .3, 4.5])),
+    (5, 4, 3, np.array([1.2, .3, 4.5])),
 ])
 def test_surface_3D(n_elements_phi, n_elements_theta, n_elements_r, offset):
 
     # mesh is a segment of a sphere
     df_mesh, expected = spherical_mesh(n_elements_phi, n_elements_theta, n_elements_r, offset)
+
+    is_at_surface_1 = df_mesh.surface_3D.is_at_surface()
+    is_at_surface_2 = df_mesh.surface_3D.is_at_surface_with_normals()
+
+    np.testing.assert_array_equal(is_at_surface_1, expected)
+    np.testing.assert_array_equal(is_at_surface_2["is_at_surface"].values, expected)
+
+
+@pytest.mark.parametrize('n_elements_phi, n_elements_theta, n_elements_r, offset', [
+    (3, 3, 3, np.array([0, 0, 0])),
+    (3, 3, 3, np.array([0, 1, 0])),
+    (3, 3, 3, np.array([1.2, .3, 4.5])),
+    (1, 3, 3, np.array([1.2, .3, 4.5])),
+    (3, 1, 3, np.array([1.2, .3, 4.5])),
+    (3, 3, 1, np.array([1.2, .3, 4.5])),
+    (3, 1, 1, np.array([1.2, .3, 4.5])),
+    (1, 1, 1, np.array([1.2, .3, 4.5])),
+    (5, 4, 3, np.array([1.2, .3, 4.5])),
+])
+def test_surface_3D_flipped_indeces(n_elements_phi, n_elements_theta, n_elements_r, offset):
+
+    # mesh is a segment of a sphere
+    df_mesh, expected = spherical_mesh(n_elements_phi, n_elements_theta, n_elements_r, offset)
+
+    df_mesh = df_mesh.reorder_levels(["element_id", "node_id"])
+
+    is_at_surface_1 = df_mesh.surface_3D.is_at_surface()
+    is_at_surface_2 = df_mesh.surface_3D.is_at_surface_with_normals()
+
+    np.testing.assert_array_equal(is_at_surface_1, expected)
+    np.testing.assert_array_equal(is_at_surface_2["is_at_surface"].values, expected)
+
+
+@pytest.mark.parametrize('n_elements_phi, n_elements_theta, n_elements_r, offset', [
+    (3, 3, 3, np.array([0, 0, 0])),
+    (3, 3, 3, np.array([0, 1, 0])),
+    (3, 3, 3, np.array([1.2, .3, 4.5])),
+    (1, 3, 3, np.array([1.2, .3, 4.5])),
+    (3, 1, 3, np.array([1.2, .3, 4.5])),
+    (3, 3, 1, np.array([1.2, .3, 4.5])),
+    (3, 1, 1, np.array([1.2, .3, 4.5])),
+    (1, 1, 1, np.array([1.2, .3, 4.5])),
+    (5, 4, 3, np.array([1.2, .3, 4.5])),
+])
+def test_surface_3D_additional_index(n_elements_phi, n_elements_theta, n_elements_r, offset):
+
+    # mesh is a segment of a sphere
+    df_mesh, expected = spherical_mesh(n_elements_phi, n_elements_theta, n_elements_r, offset)
+
+    df_mesh = df_mesh.assign(additional=1).set_index("additional", append=True)
 
     is_at_surface_1 = df_mesh.surface_3D.is_at_surface()
     is_at_surface_2 = df_mesh.surface_3D.is_at_surface_with_normals()
