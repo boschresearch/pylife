@@ -60,17 +60,30 @@ def test_plain_mesh_fail():
 def test_mesh_3d():
     mi = pd.MultiIndex.from_tuples([(1, 1)], names=['element_id', 'node_id'])
     df = pd.DataFrame({'x': [1.0], 'y': [2.0], 'z': [3.0], 'a': [9.9]}).set_index(mi)
-    pd.testing.assert_frame_equal(df.mesh.coordinates,
-                                  pd.DataFrame({'x': [1.0], 'y': [2.0], 'z': [3.0]}).set_index(mi))
+    pd.testing.assert_frame_equal(
+        df.mesh.coordinates,
+        pd.DataFrame({'x': [1.0], 'y': [2.0], 'z': [3.0]}).set_index(mi),
+    )
 
 
 def test_mesh_2d():
     mi = pd.MultiIndex.from_tuples([(1, 1)], names=['element_id', 'node_id'])
     df = pd.DataFrame({'x': [1.0], 'y': [2.0], 'c': [3.0], 'a': [9.9]}).set_index(mi)
-    pd.testing.assert_frame_equal(df.mesh.coordinates,
-                                  pd.DataFrame({'x': [1.0], 'y': [2.0]}).set_index(mi))
+    pd.testing.assert_frame_equal(
+        df.mesh.coordinates, pd.DataFrame({'x': [1.0], 'y': [2.0]}).set_index(mi)
+    )
 
 
+# GH-111
+def test_mesh_additional_index():
+    mi = pd.MultiIndex.from_tuples([(1, 1, 1)], names=['element_id', 'node_id', 'additional'])
+    df = pd.DataFrame({'x': [1.0], 'y': [2.0], 'c': [3.0], 'a': [9.9]}).set_index(mi)
+    pd.testing.assert_frame_equal(
+        df.mesh.coordinates, pd.DataFrame({'x': [1.0], 'y': [2.0]}).set_index(mi)
+    )
+
+
+# GH-111
 def test_mesh_fail_coordinates():
     mi = pd.MultiIndex.from_tuples([(1, 1)], names=['element_id', 'node_id'])
     df = pd.DataFrame({'x': [1.0], 'e': [2.0], 'c': [3.0], 'a': [9.9]}).set_index(mi)
@@ -78,8 +91,26 @@ def test_mesh_fail_coordinates():
         df.mesh.coordinates
 
 
-def test_mesh_fail_index():
+def test_mesh_fail_index_missing_both():
     df = pd.DataFrame({'x': [1.0], 'y': [2.0], 'z': [3.0], 'a': [9.9]})
+    with pytest.raises(AttributeError, match=r'.*element_id.*'):
+        df.mesh.coordinates
+
+
+def test_mesh_fail_index_missing_element():
+    df = pd.DataFrame(
+        {'x': [1.0], 'y': [2.0], 'z': [3.0], 'a': [9.9]},
+        index=pd.Index([1], name="node_id"),
+    )
+    with pytest.raises(AttributeError, match=r'.*element_id.*'):
+        df.mesh.coordinates
+
+
+def test_mesh_fail_index_missing_node():
+    df = pd.DataFrame(
+        {'x': [1.0], 'y': [2.0], 'z': [3.0], 'a': [9.9]},
+        index=pd.Index([1], name="element_id"),
+    )
     with pytest.raises(AttributeError, match=r'.*element_id.*'):
         df.mesh.coordinates
 
