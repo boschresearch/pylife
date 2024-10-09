@@ -5,7 +5,11 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 ## unreleased
 
-### Fixed bugs
+### Improvements
+
+* Sanitize checks for Wöhler analysis (#108)
+
+### Bugfixes
 
 * `MeshSignal` now allows for additional indeces (#111)
 
