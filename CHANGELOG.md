@@ -8,6 +8,7 @@ In this file noteworthy changes of new releases of pyLife are documented since
 ### Improvements
 
 * Sanitize checks for Wöhler analysis (#108)
+* Error messages when odbclient gets unsupported element types (#64)
 
 ### Bugfixes
 
