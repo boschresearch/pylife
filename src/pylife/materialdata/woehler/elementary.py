@@ -70,7 +70,7 @@ class Elementary:
 
         Parameters
         ----------
-        \*\*kwargs : kwargs arguments
+        **kwargs : kwargs arguments
             Arguments to be passed to the derived class
         """
         if len(self._fd.load.unique()) < 2:

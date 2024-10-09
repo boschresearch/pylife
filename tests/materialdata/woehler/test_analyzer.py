@@ -514,6 +514,7 @@ def test_woehler_max_likelihood_full_without_fixed_params():
     np.testing.assert_almost_equal(we.bayesian_information_criterion(), bic, decimal=2)
 
 
+@pytest.mark.filterwarnings("ignore:invalid value encountered in subtract")
 def test_woehler_max_likelihood_full_without_fixed_params_no_runouts():
     expected = pd.Series({
         'SD': 0,
