@@ -28,7 +28,6 @@ class OdbInterface:
     def __init__(self, odbfile):
         self._odb = ODB.openOdb(odbfile)
         self._asm = self._odb.rootAssembly
-
         self._index_cache = {}
 
     def instance_names(self):
@@ -240,11 +239,22 @@ class OdbInterface:
 
     def _instance_or_rootasm(self, instance_name):
         if instance_name == b'':
-            return self._asm
-        try:
-            return self._asm.instances[instance_name]
-        except Exception as e:
-            return e
+            instance = self._asm
+        else:
+            instance = self._asm.instances[instance_name]
+
+        element_types = {el.type for el in instance.elements}
+        unsupported_types = {et for et in element_types if et[0] != "C"}
+        if unsupported_types:
+            raise ValueError(
+                "Only continuum elements (C...) are supported at this point, sorry. "
+                "Please submit an issue to https://github.com/boschresearch/pylife/issues "
+                "if you need to support other types. "
+                "(Unsupported types %s found in instance %s)" % (
+                    ", ".join(unsupported_types), instance_name
+                ))
+
+        return instance
 
     def history_regions(self, step_name):
         """Get history regions, which belongs to the given step.
