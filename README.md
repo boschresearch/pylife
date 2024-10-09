@@ -31,11 +31,11 @@ based on pyLife code.
 
 ## Status
 
-pyLife-2.0.3 has been released.  That means that for the time being we hope
+pyLife-2.1.1 has been released.  That means that for the time being we hope
 that we will not introduce *breaking* changes.  That does not mean that the
 release is stable finished and perfect.  We will do small improvements,
 especially with respect to documentation in the upcoming months and release
-them as 2.0.x releases.  Once we have noticeable feature additions we will come
+them as 2.1.x releases.  Once we have noticeable feature additions we will come
 up with a 2.x.0 release.  No ETA about that.
 
 ## Contents
