@@ -22,6 +22,7 @@ need an Abaqus installation to run.
 
 import os
 import pytest
+import json
 
 import numpy as np
 import pandas as pd
@@ -48,6 +49,10 @@ def test_not_existing_abaqus_path():
 def test_odbclient_instances(client):
     np.testing.assert_array_equal(client.instance_names(), ['PART-1-1'])
 
+
+def test_odbclient_invalid_instance(client):
+    with pytest.raises(KeyError):
+        client.node_coordinates("FOO-1-1")
 
 def test_odbclient_node_coordinates(client):
     expected = pd.read_csv('tests/node_coordinates.csv', index_col='node_id')
@@ -158,3 +163,55 @@ def test_variable_stress_integration_point(client):
     result = client.variable('S', 'PART-1-1', 'Load', 1, position='INTEGRATION POINTS')
     result.to_csv('tests/stress_integration_point.csv')
     pd.testing.assert_frame_equal(result, expected)
+
+
+@pytest.fixture
+def client_history():
+    return odbclient.OdbClient('tests/history_output_test.odb')
+
+
+def test_history_region_empty(client):
+    assert client.history_regions("Load") == ['Assembly ASSEMBLY']
+
+
+def test_history_region_non_empty(client_history):
+    assert client_history.history_regions("Step-1") == [
+        'Assembly ASSEMBLY',
+        'Element ASSEMBLY.1',
+        'Node ASSEMBLY.1',
+        'Node ASSEMBLY.2',
+    ]
+
+
+def test_history_outputs(client_history):
+    assert client_history.history_outputs("Step-1", 'Element ASSEMBLY.1') == [
+        'CTF1',
+        'CTF2',
+        'CTF3',
+        'CTM1',
+        'CTM2',
+        'CTM3',
+        'CU1',
+        'CU2',
+        'CU3',
+        'CUR1',
+        'CUR2',
+        'CUR3',
+    ]
+
+def test_history_output_values(client_history):
+    assert client_history.history_output_values("Step-1", 'Element ASSEMBLY.1', 'CTF1').array[1] == pytest.approx(0.09999854117631912)
+
+
+def test_history_region_description(client_history):
+    assert (
+        client_history.history_region_description("Step-1", 'Element ASSEMBLY.1')
+        == "Output at assembly ASSEMBLY instance ASSEMBLY element 1"
+    )
+
+
+def test_history_info(client_history):
+    expected = json.loads("""
+{"Output at assembly ASSEMBLY instance ASSEMBLY node 1 region RP-1": {"History Outputs": ["RF1", "RF2", "RF3", "RM1", "RM2", "RM3", "U1", "U2", "U3", "UR1", "UR2", "UR3"], "History Region": "Node ASSEMBLY.1", "Steps ": ["Step-1", "Step-2"]}, "Output at assembly ASSEMBLY instance ASSEMBLY element 1": {"History Outputs": ["CTF1", "CTF2", "CTF3", "CTM1", "CTM2", "CTM3", "CU1", "CU2", "CU3", "CUR1", "CUR2", "CUR3"], "History Region": "Element ASSEMBLY.1", "Steps ": ["Step-1", "Step-2"]}, "Output at assembly ASSEMBLY instance ASSEMBLY node 2 region SET-5": {"History Outputs": ["RF1", "RF2", "RF3", "RM1", "RM2", "RM3", "U1", "U2", "U3", "UR1", "UR2", "UR3"], "History Region": "Node ASSEMBLY.2", "Steps ": ["Step-1", "Step-2"]}, "Output at assembly ASSEMBLY": {"History Outputs": ["ALLAE", "ALLCCDW", "ALLCCE", "ALLCCEN", "ALLCCET", "ALLCCSD", "ALLCCSDN", "ALLCCSDT", "ALLCD", "ALLDMD", "ALLDTI", "ALLEE", "ALLFD", "ALLIE", "ALLJD", "ALLKE", "ALLKL", "ALLPD", "ALLQB", "ALLSD", "ALLSE", "ALLVD", "ALLWK", "ETOTAL"], "History Region": "Assembly ASSEMBLY", "Steps ": ["Step-1", "Step-2"]}}
+    """)
+    assert client_history.history_info() == expected
