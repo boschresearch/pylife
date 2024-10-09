@@ -3,6 +3,16 @@
 In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
+## unreleased
+
+### Improvements
+
+* Sanitize checks for Wöhler analysis (#108)
+
+### Bugfixes
+
+* `MeshSignal` now allows for additional indeces (#111)
+
 
 ## pylife-2.1.1
 
