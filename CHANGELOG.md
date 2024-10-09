@@ -3,6 +3,12 @@
 In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
+## unreleased
+
+### Fixed bugs
+
+* `MeshSignal` now allows for additional indeces (#111)
+
 
 ## pylife-2.1.1
 
