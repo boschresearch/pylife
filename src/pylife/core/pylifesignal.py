@@ -273,10 +273,11 @@ def register_method(cls, method_name):
         def bar(df):
             return pd.DataFrame({'baz': df['foo'] + df['bar']})
 
-    >>> df = pd.DataFrame({'foo': [1.0, 2.0], 'bar': [-1.0, -2.0]})
-    >>> df.foo.bar()
-       baz
-    0  0.0
-    1  0.0
+        df = pd.DataFrame({'foo': [1.0, 2.0], 'bar': [-1.0, -2.0]})
+        df.foo.bar()
+
+           baz
+        0  0.0
+        1  0.0
     """
     return cls._register_method(method_name)
