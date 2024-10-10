@@ -30,20 +30,25 @@ Examples
 --------
 Read in a mesh from a vmap file:
 
-
->>> df = (vm = pylife.vmap.VMAPImport('demos/plate_with_hole.vmap')
-             .make_mesh('1', 'STATE-2')
-             .join_variable('STRESS_CAUCHY')
-             .join_variable('DISPLACEMENT')
-             .to_frame())
+>>> from pylife.vmap import VMAPImport
+>>> df = (
+...     VMAPImport('demos/plate_with_hole.vmap')
+...     .make_mesh('1', 'STATE-2')
+...     .join_coordinates()
+...     .join_variable('STRESS_CAUCHY')
+...     .join_variable('DISPLACEMENT')
+...     .to_frame()
+... )
 >>> df.head()
-                            x         y    z        S11       S22  S33        S12  S13  S23        dx        dy   dz
-element_id node_id
-1          1734     14.897208  5.269875  0.0  27.080811  6.927080  0.0 -13.687358  0.0  0.0  0.005345  0.000015  0.0
-           1582     14.555333  5.355806  0.0  28.319006  1.178649  0.0 -10.732705  0.0  0.0  0.005285  0.000003  0.0
-           1596     14.630658  4.908741  0.0  47.701195  5.512213  0.0 -17.866833  0.0  0.0  0.005376  0.000019  0.0
-           4923     14.726271  5.312840  0.0  27.699907  4.052865  0.0 -12.210032  0.0  0.0  0.005315  0.000009  0.0
-           4924     14.592996  5.132274  0.0  38.010101  3.345431  0.0 -14.299768  0.0  0.0  0.005326  0.000013  0.0
+                            x         y    z  ...        dx        dy   dz
+element_id node_id                            ...
+1          1734     14.897208  5.269875  0.0  ...  0.005345  0.000015  0.0
+           1582     14.555333  5.355806  0.0  ...  0.005285  0.000003  0.0
+           1596     14.630658  4.908741  0.0  ...  0.005376  0.000019  0.0
+           4923     14.726271  5.312840  0.0  ...  0.005315  0.000009  0.0
+           4924     14.592996  5.132274  0.0  ...  0.005326  0.000013  0.0
+<BLANKLINE>
+[5 rows x 12 columns]
 
 Get the coordinates of the mesh.
 
@@ -210,10 +215,19 @@ class Mesh(PlainMesh):
         Example
         -------
         >>> import pyvista as pv
-        >>> grid = pv.UnstructuredGrid(*our_mesh.mesh.vtk_data())
+        >>> from pylife.vmap import VMAPImport
+        >>> df = (
+        ...     VMAPImport('demos/plate_with_hole.vmap')
+        ...     .make_mesh('1', 'STATE-2')
+        ...     .join_coordinates()
+        ...     .join_variable('STRESS_CAUCHY')
+        ...     .to_frame()
+        ... )
+
+        >>> grid = pv.UnstructuredGrid(*df.mesh.vtk_data())
         >>> plotter = pv.Plotter(window_size=[1920, 1080])
-        >>> plotter.add_mesh(grid, scalars=our_mesh.groupby('element_id')['val'].mean().to_numpy())
-        >>> plotter.show()
+        >>> plotter.add_mesh(grid, scalars=df.groupby('element_id')['S11'].mean().to_numpy())  # doctest: +SKIP
+        >>> plotter.show()  # doctest: +SKIP
 
         Note the `*` that needs to be added when calling ``pv.UnstructuredGrid()``.
         """

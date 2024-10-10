@@ -165,12 +165,6 @@ def rebin_histogram(histogram, binning, nan_default=False):
 
     Examples
     --------
-    >>> h
-    (0.0, 1.0]    1.0
-    (1.0, 2.0]    2.0
-    (2.0, 3.0]    3.0
-    (3.0, 4.0]    4.0
-    dtype: float64
     >>> h = pd.Series([10.0, 20.0, 30.0, 40.0], index=pd.interval_range(0.0, 4.0, 4))
     >>> h
     (0.0, 1.0]    10.0
@@ -203,12 +197,15 @@ def rebin_histogram(histogram, binning, nan_default=False):
 
     Define the target bin just by an int:
 
-    >>> rebin_histogram(h, 5)
-    (0.0, 0.8]     8.0
-    (0.8, 1.6]    14.0
-    (1.6, 2.4]    20.0
-    (2.4, 3.2]    26.0
-    (3.2, 4.0]    32.0
+    >>> rebin_histogram(h, 8)
+    (0.0, 0.5]     5.0
+    (0.5, 1.0]     5.0
+    (1.0, 1.5]    10.0
+    (1.5, 2.0]    10.0
+    (2.0, 2.5]    15.0
+    (2.5, 3.0]    15.0
+    (3.0, 3.5]    20.0
+    (3.5, 4.0]    20.0
     dtype: float64
 
     Limitations

@@ -34,6 +34,7 @@ again.
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
+
 raise NotImplementedError(
     "pyLife's Bayesian Wöhler analyzer has been shutdown. "
     "See documentation for details."
