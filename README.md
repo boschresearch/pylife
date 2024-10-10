@@ -31,12 +31,15 @@ based on pyLife code.
 
 ## Status
 
-pyLife-2.1.1 has been released.  That means that for the time being we hope
-that we will not introduce *breaking* changes.  That does not mean that the
-release is stable finished and perfect.  We will do small improvements,
-especially with respect to documentation in the upcoming months and release
-them as 2.1.x releases.  Once we have noticeable feature additions we will come
-up with a 2.x.0 release.  No ETA about that.
+pyLife-2.1.x is the current release the you get by default.  We are doing small
+improvements, in the pyLife-2.1.x branch (`master`) while developing the more
+vast features in the 2.2.x branch (`develop`).
+
+The main new features of the 2.2.x branch is about FKM functionality. As that
+is quite a comprehensive addition we would need some time to get it right
+before we can release it as default release.
+
+Once 2.2.x is released we will probably stick to a one branch development.
 
 ## Contents
 
