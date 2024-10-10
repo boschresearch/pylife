@@ -3,11 +3,17 @@
 In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
-## unreleased
+## pylife-2.1.2
+
+### New features
+
+* New method `LoadCollective.histogram()` (#107)
 
 ### Improvements
 
 * Sanitize checks for Wöhler analysis (#108)
+* Error messages when odbclient gets unsupported element types (#64)
+* Improved documentation
 
 ### Bugfixes
 

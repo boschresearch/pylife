@@ -59,11 +59,11 @@ class HaighDiagram(PylifeSignal):
 
         Example
         -------
-        >>> hd = MST.HaighDiagram.from_dict({
-        >>>    (1.0, np.inf): 0.0,
-        >>>    (-np.inf, 0.0): 0.5,
-        >>>    (0.0, 1.0): 0.167
-        >>> })
+        >>> hd = HaighDiagram.from_dict({
+        ...    (1.0, np.inf): 0.0,
+        ...    (-np.inf, 0.0): 0.5,
+        ...    (0.0, 1.0): 0.167
+        ... })
 
         sets up a FKM Goodman like Haigh diagram.
         """
