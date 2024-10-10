@@ -382,13 +382,15 @@ def test_load_collective_mean_range_shift_scalar(df, expected_amplitude, expecte
 ])
 def test_load_collective_range_histogram_alter_bins(bins, expected_index_tuples, expected_data):
     df = pd.DataFrame({
-        'range': [1., 2., 1.],
-        'mean': [0, 0, 0]
+        'range': [1.0, 2.0, 1.0],
+        'mean': [0.0, 0.0, 0.0]
     }, columns=['range', 'mean'])
 
-    expected = pd.Series(expected_data,
-                         name='cycles',
-                         index=pd.IntervalIndex.from_tuples(expected_index_tuples, name='range'))
+    expected = pd.Series(
+        expected_data,
+        name='cycles',
+        index=pd.IntervalIndex.from_tuples(expected_index_tuples, name='range'),
+    )
 
     result = df.load_collective.range_histogram(bins)
 
@@ -396,10 +398,10 @@ def test_load_collective_range_histogram_alter_bins(bins, expected_index_tuples,
 
 
 def test_load_collective_range_histogram_alter_ranges():
-    df = pd.DataFrame({
-        'range': [1., 2., 1., 2., 1],
-        'mean': [0, 0, 0, 0, 0]
-    }, columns=['range', 'mean'])
+    df = pd.DataFrame(
+        {'range': [1.0, 2.0, 1.0, 2.0, 1], 'mean': [0.0, 0.0, 0.0, 0.0, 0.0]},
+        columns=['range', 'mean'],
+    )
 
     expected_index = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)], name='range')
     expected = pd.Series([0, 3, 2], name='cycles', index=expected_index)
@@ -411,8 +413,8 @@ def test_load_collective_range_histogram_alter_ranges():
 
 def test_load_collective_range_histogram_interval_index():
     df = pd.DataFrame({
-        'range': [1., 2., 1., 2., 1],
-        'mean': [0, 0, 0, 0, 0]
+        'range': [1.0, 2.0, 1.0, 2.0, 1.0],
+        'mean': [0.0, 0.0, 0.0, 0.0, 0.0]
     }, columns=['range', 'mean'])
 
     expected_index = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)], name='range')
@@ -423,19 +425,34 @@ def test_load_collective_range_histogram_interval_index():
     pd.testing.assert_series_equal(result.to_pandas(), expected)
 
 
+def test_load_collective_range_histogram_interval_arrays():
+    df = pd.DataFrame({
+        'range': [1.0, 2.0, 1.0, 2.0, 1.0],
+        'mean': [0.0, 0.0, 0.0, 0.0, 0.0]
+    }, columns=['range', 'mean'])
+
+    expected_index = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)], name='range')
+    expected = pd.Series([0, 3, 2], name='cycles', index=expected_index)
+
+    intervals = pd.arrays.IntervalArray.from_tuples([(0, 1), (1, 2), (2, 3)])
+    result = df.load_collective.range_histogram(intervals)
+
+    pd.testing.assert_series_equal(result.to_pandas(), expected)
+
+
 def test_load_collective_range_histogram_unnested_grouped():
     element_idx = pd.Index([10, 20, 30], name='element_id')
     cycle_idx = pd.Index([0, 1, 2], name='cycle_number')
     idx = pd.MultiIndex.from_product((element_idx, cycle_idx))
 
     df = pd.DataFrame({
-        'range': [1., 2., 1., 2., 1., 2., 1., 1., 1],
+        'range': [0., 1., 2., 0., 1., 2., 0., 1., 2.],
         'mean': [0, 0, 0, 0, 0, 0, 0, 0, 0]
     }, columns=['range', 'mean'], index=idx)
 
     expected_intervals = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)], name='range')
     expected_index = pd.MultiIndex.from_product([element_idx, expected_intervals])
-    expected = pd.Series([0, 2, 1, 0, 1, 2, 0, 3, 0], name='cycles', index=expected_index)
+    expected = pd.Series(1, name='cycles', index=expected_index)
 
     result = df.load_collective.range_histogram([0, 1, 2, 3], 'cycle_number')
 
@@ -449,8 +466,8 @@ def test_load_collective_range_histogram_nested_grouped():
     idx = pd.MultiIndex.from_product((element_idx, node_idx, cycle_idx))
 
     df = pd.DataFrame({
-        'range': [1., 2., 1., 2., 1., 2., 1., 1.],
-        'mean': [0, 0, 0, 0, 0, 0, 0, 0]
+        'range': [1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 1.0],
+        'mean': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     }, columns=['range', 'mean'], index=idx)
 
     expected_intervals = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)], name='range')
@@ -483,3 +500,151 @@ def test_load_collective_strange_shift():
     }, index=expected_index)
 
     pd.testing.assert_frame_equal(result, expected)
+
+
+# GH-107
+@pytest.mark.parametrize('bins, expected_index_tuples, expected_data', [
+    ([0, 1, 2, 3], [(0, 1), (1, 2), (2, 3)], [0, 0, 0, 2, 0, 0, 0, 1, 0]),
+    ([0, 2, 4], [(0, 2), (2, 4)], [2, 0, 1, 0])
+])
+def test_load_collective_histogram_alter_bins(bins, expected_index_tuples, expected_data):
+    df = pd.DataFrame(
+        {'range': [1.5, 2.5, 1.5], 'mean': [0.75, 1.25, 0.75]}, columns=['range', 'mean']
+    )
+
+    expected_intervals = pd.IntervalIndex.from_tuples(expected_index_tuples)
+    expected = pd.Series(
+        expected_data,
+        name='cycles',
+        index=pd.MultiIndex.from_product(
+            [expected_intervals, expected_intervals], names=['range', 'mean']
+        ),
+        dtype=np.float64
+    )
+
+    result = df.load_collective.histogram(bins)
+
+    pd.testing.assert_series_equal(result.to_pandas(), expected)
+
+
+# GH-107
+def test_load_collective_histogram_alter_ranges():
+    df = pd.DataFrame({
+        'range': [1., 2., 1., 2., 1],
+        'mean': [0.5, 1.0, 0.5, 1.0, 0.5]
+    }, columns=['range', 'mean'])
+
+    expected_intervals = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)])
+    expected = pd.Series(
+        [0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 2.0, 0.0],
+        name='cycles',
+        index=pd.MultiIndex.from_product(
+            [expected_intervals, expected_intervals], names=['range', 'mean']
+        ),
+    )
+
+    result = df.load_collective.histogram([0, 1, 2, 3])
+
+    pd.testing.assert_series_equal(result.to_pandas(), expected)
+
+
+# GH-107
+def test_load_collective_histogram_interval_index():
+    df = pd.DataFrame({
+        'range': [1., 2., 1., 2., 1],
+        'mean': [0.5, 1.0, 0.5, 1.0, 0.5]
+    }, columns=['range', 'mean'])
+
+    expected_intervals = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)])
+    expected = pd.Series(
+        [0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 2.0, 0.0],
+        name='cycles',
+        index=pd.MultiIndex.from_product(
+            [expected_intervals, expected_intervals], names=['range', 'mean']
+        ),
+    )
+
+    result = df.load_collective.histogram(expected_intervals)
+
+    pd.testing.assert_series_equal(result.to_pandas(), expected)
+
+
+# GH-107
+def test_load_collective_histogram_interval_array():
+    df = pd.DataFrame({
+        'range': [1., 2., 1., 2., 1],
+        'mean': [0.5, 1.0, 0.5, 1.0, 0.5]
+    }, columns=['range', 'mean'])
+
+    expected_intervals = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)])
+    expected = pd.Series(
+        [0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 2.0, 0.0],
+        name='cycles',
+        index=pd.MultiIndex.from_product(
+            [expected_intervals, expected_intervals], names=['range', 'mean']
+        ),
+    )
+
+    intervals = pd.arrays.IntervalArray.from_tuples([(0, 1), (1, 2), (2, 3)])
+    result = df.load_collective.histogram(intervals)
+
+    pd.testing.assert_series_equal(result.to_pandas(), expected)
+
+
+# GH-107
+def test_load_collective_histogram_unnested_grouped():
+    element_idx = pd.Index([10, 20, 30], name='element_id')
+    cycle_idx = pd.Index([0, 1, 2], name='cycle_number')
+    idx = pd.MultiIndex.from_product((element_idx, cycle_idx))
+
+    df = pd.DataFrame({
+        'range': [1., 2., 1., 2., 1., 2., 1., 1., 1],
+        'mean': [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    }, columns=['range', 'mean'], index=idx)
+
+    expected_intervals = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)])
+    expected_ranges = expected_intervals.set_names(['range'])
+    expected_means = expected_intervals.set_names(['mean'])
+
+    expected_index = pd.MultiIndex.from_product(
+        [element_idx, expected_ranges, expected_means]
+    )
+    expected = pd.Series(
+        [0, 0, 0, 2, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0],
+        name='cycles',
+        index=expected_index,
+        dtype=np.float64,
+    )
+
+    result = df.load_collective.histogram([0, 1, 2, 3], 'cycle_number')
+    pd.testing.assert_series_equal(result.to_pandas(), expected)
+
+
+# GH-107
+def test_load_collective_histogram_nested_grouped():
+    element_idx = pd.Index([10, 20], name='element_id')
+    node_idx = pd.Index([100, 101], name='node_id')
+    cycle_idx = pd.Index([0, 1], name='cycle_number')
+    idx = pd.MultiIndex.from_product((element_idx, node_idx, cycle_idx))
+
+    df = pd.DataFrame({
+        'range': [1., 2., 1., 2., 1., 2., 1., 2.],
+        'mean': [0, 0, 0, 0, 0, 0, 0, 0]
+    }, columns=['range', 'mean'], index=idx)
+
+    expected_intervals = pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)])
+    expected_ranges = expected_intervals.set_names(['range'])
+    expected_means = expected_intervals.set_names(['mean'])
+    expected_index = pd.MultiIndex.from_product(
+        [element_idx, node_idx, expected_ranges, expected_means]
+    )
+    expected = pd.Series(
+        [0, 0, 0, 1, 0, 0, 1, 0, 0] * 4,
+        name='cycles',
+        index=expected_index,
+        dtype=np.float64,
+    )
+
+    result = df.load_collective.histogram([0, 1, 2, 3], 'cycle_number')
+
+    pd.testing.assert_series_equal(result.to_pandas(), expected)

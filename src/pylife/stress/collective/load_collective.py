@@ -17,13 +17,16 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
-from .abstract_load_collective import AbstractLoadCollective
-from .load_histogram import LoadHistogram
+import warnings
 
 import pandas as pd
 import numpy as np
 
 from pylife import PylifeSignal
+
+from .abstract_load_collective import AbstractLoadCollective
+from .load_histogram import LoadHistogram
+
 
 @pd.api.extensions.register_dataframe_accessor('load_collective')
 class LoadCollective(PylifeSignal, AbstractLoadCollective):
@@ -169,34 +172,212 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         return obj.load_collective
 
     def range_histogram(self, bins, axis=None):
-        """Calculate the histogram of range values along a given axis.
+        """Calculate the histogram of cycles for range intervals along a given axis.
 
         Parameters
         ----------
         bins : int, sequence of scalars or pd.IntervalIndex
             The bins of the histogram to be calculated
 
+        axis : str, optional
+            The index axis along which the histogram is calculated. If missing
+            the histogram is calculated over the whole collective.
+
+
         Returns
         -------
         range histogram : :class:`~pylife.pylife.stress.LoadHistogram`
 
-        axis : str, optional
-            The index axis along which the histogram is calculated. If missing
-            the histogram is calculated over the whole collective.
+
+        Note
+        ----
+        This resulting histogram does not contain any information on the mean
+        stress. Neither does it perform any kind of mean stress transformation
+
+        See also
+        --------
+        histogram
+
+        Examples
+        --------
+        Calculate a range histogram of a simple load collective
+
+        >>> df = pd.DataFrame(
+        ...     {'range': [1.0, 2.0, 1.0, 2.0, 1.0], 'mean': [0, 0, 0, 0, 0]},
+        ...     columns=['range', 'mean'],
+        ... )
+        >>> df.load_collective.range_histogram([0, 1, 2, 3]).to_pandas()
+        range
+        (0, 1]    0
+        (1, 2]    3
+        (2, 3]    2
+        Name: cycles, dtype: int64
+
+        Calculate a range histogram of a load collective collection for
+        multiple nodes.  The axis along which to aggregate the histogram is
+        given as ``cycle_number``.
+
+        >>> element_idx = pd.Index([10, 20, 30], name='element_id')
+        >>> cycle_idx = pd.Index([0, 1, 2], name='cycle_number')
+        >>> index = pd.MultiIndex.from_product((element_idx, cycle_idx))
+
+        >>> df = pd.DataFrame({
+        ...     'range': [1., 2., 2., 0., 1., 2., 1., 1., 2.],
+        ...     'mean': [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ... }, columns=['range', 'mean'], index=index)
+
+        >>> h = df.load_collective.range_histogram([0, 1, 2, 3], 'cycle_number')
+        >>> h.to_pandas()
+        element_id  range
+        10          (0, 1]    0
+                    (1, 2]    1
+                    (2, 3]    2
+        20          (0, 1]    1
+                    (1, 2]    1
+                    (2, 3]    1
+        30          (0, 1]    0
+                    (1, 2]    2
+                    (2, 3]    1
+        Name: cycles, dtype: int64
+
         """
         def make_histogram(group):
             cycles, intervals = np.histogram(group * 2., bins)
             idx = pd.IntervalIndex.from_breaks(intervals, name='range')
             return pd.Series(cycles, index=idx, name='cycles')
 
-        if isinstance(bins, pd.IntervalIndex):
+        if isinstance(bins, pd.IntervalIndex) or isinstance(bins, pd.arrays.IntervalArray):
             bins = np.append(bins.left[0], bins.right)
 
         if axis is None:
             return LoadHistogram(make_histogram(self.amplitude))
 
-        result = pd.Series(self.amplitude
-                           .groupby(self._obj.index.droplevel(axis).names)
-                           .apply(make_histogram), name='cycles')
+        result = pd.Series(
+            self.amplitude.groupby(self._levels_from_axis(axis)).apply(
+                make_histogram
+            ),
+            name='cycles',
+        )
 
         return LoadHistogram(result)
+
+    def histogram(self, bins, axis=None):
+        """Calculate the histogram of cycles along a given axis.
+
+        Parameters
+        ----------
+        bins : int, sequence of scalars or pd.IntervalIndex
+            The bins of the histogram to be calculated
+
+        axis : str, optional
+            The index axis along which the histogram is calculated. If missing
+            the histogram is calculated over the whole collective.
+
+        Returns
+        -------
+        range histogram : :class:`~pylife.pylife.stress.LoadHistogram`
+
+        See also
+        --------
+        range_histogram
+
+        Examples
+        --------
+        Calculate a range histogram of a simple load collective
+
+        >>> df = pd.DataFrame(
+        ...     {'range': [1.0, 2.0, 1.0, 2.0, 1.0], 'mean': [0.5, 1.5, 1.0, 1.5, 0.5]},
+        ...     columns=['range', 'mean'],
+        ... )
+        >>> df.load_collective.histogram([0, 1, 2, 3]).to_pandas()
+        range   mean
+        (0, 1]  (0, 1]    0.0
+                (1, 2]    0.0
+                (2, 3]    0.0
+        (1, 2]  (0, 1]    2.0
+                (1, 2]    1.0
+                (2, 3]    0.0
+        (2, 3]  (0, 1]    0.0
+                (1, 2]    2.0
+                (2, 3]    0.0
+        Name: cycles, dtype: float64
+
+        Calculate a range histogram of a load collective collection for
+        multiple nodes.  The axis along which to aggregate the histogram is
+        given as ``cycle_number``.
+
+        >>> element_idx = pd.Index([10, 20], name='element_id')
+        >>> cycle_idx = pd.Index([0, 1, 2], name='cycle_number')
+        >>> index = pd.MultiIndex.from_product((element_idx, cycle_idx))
+
+        >>> df = pd.DataFrame({
+        ...     'range': [1., 2., 2., 0., 1., 2.],
+        ...     'mean': [0.5, 1.0, 1.0, 0.0, 1.0, 1.5]
+        ... }, columns=['range', 'mean'], index=index)
+
+        >>> h = df.load_collective.histogram([0, 1, 2, 3], 'cycle_number')
+        >>> h.to_pandas()
+        element_id  range   mean
+        10          (0, 1]  (0, 1]    0.0
+                            (1, 2]    0.0
+                            (2, 3]    0.0
+                    (1, 2]  (0, 1]    1.0
+                            (1, 2]    0.0
+                            (2, 3]    0.0
+                    (2, 3]  (0, 1]    0.0
+                            (1, 2]    2.0
+                            (2, 3]    0.0
+        20          (0, 1]  (0, 1]    1.0
+                            (1, 2]    0.0
+                            (2, 3]    0.0
+                    (1, 2]  (0, 1]    0.0
+                            (1, 2]    1.0
+                            (2, 3]    0.0
+                    (2, 3]  (0, 1]    0.0
+                            (1, 2]    1.0
+                            (2, 3]    0.0
+        Name: cycles, dtype: float64
+
+        """
+        def make_histogram(group):
+            cycles, range_bins, mean_bins = np.histogram2d(
+                group["range"], group["meanstress"], bins
+            )
+
+            return pd.Series(
+                cycles.ravel(),
+                name="cycles",
+                index=pd.MultiIndex.from_product(
+                    [
+                        pd.IntervalIndex.from_breaks(range_bins),
+                        pd.IntervalIndex.from_breaks(mean_bins),
+                    ],
+                    names=["range", "mean"],
+                ),
+            )
+
+        range_mean = pd.DataFrame(
+            {'range': self.amplitude * 2, 'meanstress': self.meanstress},
+            index=self._obj.index,
+        )
+
+        if isinstance(bins, pd.IntervalIndex) or isinstance(bins, pd.arrays.IntervalArray):
+            bins = np.append(bins.left[0], bins.right)
+
+        if axis is None:
+            return LoadHistogram(make_histogram(range_mean))
+
+        # TODO: Warning filter can be dropped as soon as python-3.8 support is dropped
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=FutureWarning)
+            result = pd.Series(
+                range_mean.groupby(self._levels_from_axis(axis))
+                .apply(make_histogram)
+                .stack(['range', 'mean']),
+                name="cycles",
+            )
+
+        return LoadHistogram(result)
+
+    def _levels_from_axis(self, axis):
+        return [lv for lv in self._obj.index.names if lv not in [axis] and lv is not None]
