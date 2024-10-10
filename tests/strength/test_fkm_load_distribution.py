@@ -36,14 +36,14 @@ def test_load_distribution_normal_1(P_A, resulting_gamma_L, result):
     # test with a plain series
     load_sequence = pd.Series([100, -200, 100, -250, 200, 0, 200, -200])  # [N]
 
-    assessment_parameters = pd.Series({
-        "P_A":               P_A,
-        "P_L":                   50,
-        "s_L":                   10,
-    })
+    assessment_parameters = pd.Series({"P_A": P_A, "P_L": 50, "s_L": 10})
 
     # FKMLoadDistributionNormal, uses assessment_parameters.s_L, assessment_parameters.P_L, assessment_parameters.P_A
-    scaled_load_sequence = load_sequence.fkm_safety_normal_from_stddev.scaled_load_sequence(assessment_parameters)
+    scaled_load_sequence = (
+        load_sequence.fkm_safety_normal_from_stddev.scaled_load_sequence(
+            assessment_parameters
+        )
+    )
     gamma_L = load_sequence.fkm_safety_normal_from_stddev.gamma_L(assessment_parameters)
 
     assert np.isclose(gamma_L, resulting_gamma_L)
@@ -164,11 +164,7 @@ def test_load_distribution_lognormal(P_L, resulting_gamma_L, result):
     load_sequence = pd.Series([100, -200, 100, -250, 200, 0, 200, -200])  # [N]
 
     # FKMLoadDistributionLognormal, uses assessment_parameters.LSD_s, assessment_parameters.P_L, assessment_parameters.P_A
-    assessment_parameters = pd.Series({
-        "P_A":               7.2e-5,
-        "P_L":               P_L,
-        "LSD_s":                  1e-2,
-    })
+    assessment_parameters = pd.Series({"P_A": 7.2e-5, "P_L": P_L, "LSD_s": 1e-2})
 
     scaled_load_sequence = load_sequence.fkm_safety_lognormal_from_stddev.scaled_load_sequence(assessment_parameters)
     gamma_L = load_sequence.fkm_safety_lognormal_from_stddev.gamma_L(assessment_parameters)

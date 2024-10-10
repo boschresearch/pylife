@@ -14,41 +14,58 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r'''Scale up a load sequence to incorporate safety factors for FKM
+"""Scale up a load sequence to incorporate safety factors for FKM
 nonlinear lifetime assessment.
 
-Given a pandas Series of load values, return a scaled version where the safety has been incorporated.
-The series is scaled by a constant value :math:`\gamma_L`, which models the distribution of the load,
-the severity of the failure (modeled by :math:`P_A`) and the considered load probability of either
-:math:`P_L=2.5 \%` or :math:`P_L=50 \%`.
+Given a pandas Series of load values, return a scaled version where the safety
+has been incorporated.  The series is scaled by a constant value
+:math:`\gamma_L`, which models the distribution of the load, the severity of
+the failure (modeled by :math:`P_A`) and the considered load probability of
+either :math:`P_L=2.5 \%` or :math:`P_L=50 \%`.
 
-The FKM nonlinear guideline defines three possible methods to consider the statistical distribution of the load:
+The FKM nonlinear guideline defines three possible methods to consider the
+statistical distribution of the load:
 
     * a normal distribution with given standard deviation, $s_L$
     * a logarithmic-normal distribution with given standard deviation $LSD_s$
-    * an unknown distribution, use the constant factor :math:`\gamma_L=1.1` for $P_L = 2.5\%$
+    * an unknown distribution, use the constant factor :math:`\gamma_L=1.1` for
+      $P_L = 2.5\%$
 
-For these three methods, there exist the three accessors `fkm_safety_normal_from_stddev`, `fkm_safety_lognormal_from_stddev`,
-and `fkm_safety_blanket`.
+For these three methods, there exist the three accessors
+`fkm_safety_normal_from_stddev`, `fkm_safety_lognormal_from_stddev`, and
+`fkm_safety_blanket`.
 
-The resulting scaling factor can be retrieved with ``.gamma_L(input_parameters)``, the scaled load series can be obtained
-with ``.scaled_load_sequence(input_parameters)``.
+The resulting scaling factor can be retrieved with
+``.gamma_L(input_parameters)``, the scaled load series can be obtained with
+``.scaled_load_sequence(input_parameters)``.
 
 Examples
 --------
-Assuming ``load_sequence`` is a pandas Series of load values and ``input_parameters`` is a series containing the required
-parameters, apply the three possible scaling methods as follows:
+
+>>> input_parameters = pd.Series({"P_A": 1e-5, "P_L": 50, "s_L": 10, "LSD_s": 1e-2,})
+>>> load_sequence = pd.Series([100.0, 150.0, 200.0], name="load")
+>>> # uses input_parameters.s_L, input_parameters.P_L, input_parameters.P_A
+>>> load_sequence.fkm_safety_normal_from_stddev.scaled_load_sequence(input_parameters)
+0    114.9450
+1    172.4175
+2    229.8900
+Name: load, dtype: float64
 
 >>> # uses input_parameters.s_L, input_parameters.P_L, input_parameters.P_A
->>> scaled_load_sequence = load_sequence.fkm_safety_normal_from_stddev.scaled_load_sequence(input_parameters)
-
->>> # uses input_parameters.s_L, input_parameters.P_L, input_parameters.P_A
->>> scaled_load_sequence = load_sequence.fkm_safety_lognormal_from_stddev.scaled_load_sequence(input_parameters)
+>>> load_sequence.fkm_safety_lognormal_from_stddev.scaled_load_sequence(input_parameters)
+0    107.124794
+1    160.687191
+2    214.249588
+Name: load, dtype: float64
 
 >>> # uses input_parameters.P_L
->>> scaled_load_sequence = load_sequence.fkm_safety_blanket.scaled_load_sequence(input_parameters)
+>>> load_sequence.fkm_safety_blanket.scaled_load_sequence(input_parameters)
+0    100.0
+1    150.0
+2    200.0
+Name: load, dtype: float64
 
-'''
+"""
 
 __author__ = "Benjamin Maier"
 __maintainer__ = __author__
@@ -60,7 +77,7 @@ from pylife import PylifeSignal
 @pd.api.extensions.register_dataframe_accessor("fkm_load_sequence")
 @pd.api.extensions.register_series_accessor("fkm_load_sequence")
 class FKMLoadSequence(PylifeSignal):
-    '''Base class used by the safety scaling method. It is used to compute the beta parameter
+    """Base class used by the safety scaling method. It is used to compute the beta parameter
     and to scale the load sequence by a constant gamma_L.
 
     This class can be used from user code to scale a load sequence, potentially on a mesh with other fields set for every node.
@@ -86,7 +103,7 @@ class FKMLoadSequence(PylifeSignal):
 
         # scale the load sequence by the factor 2, note that col2 is not scaled
         mesh.fkm_load_sequence.scaled_by_constant(2)
-    '''
+    """
 
     def scaled_by_constant(self, gamma_L):
         """
@@ -226,7 +243,7 @@ class FKMLoadSequence(PylifeSignal):
 @pd.api.extensions.register_dataframe_accessor("fkm_safety_normal_from_stddev")
 @pd.api.extensions.register_series_accessor("fkm_safety_normal_from_stddev")
 class FKMLoadDistributionNormal(FKMLoadSequence):
-    r'''Series accessor to get a scaled up load series, i.e., a list of load values with included load safety,
+    r"""Series accessor to get a scaled up load series, i.e., a list of load values with included load safety,
       as used in FKM nonlinear lifetime assessments.
 
       The loads are assumed to follow a **normal distribution** with standard deviation :math:`s_L`.
@@ -239,7 +256,7 @@ class FKMLoadDistributionNormal(FKMLoadSequence):
     See also
     --------
     :class:`AbstractFKMLoadDistribution`: accesses meshes with connectivity information
-    '''
+    """
 
     def gamma_L(self, input_parameters):
         r"""Compute the scaling factor :math:`\gamma_L=(L_\text{max} + \alpha_L) / L_\text{max}`.
@@ -324,7 +341,7 @@ class FKMLoadDistributionNormal(FKMLoadSequence):
 @pd.api.extensions.register_dataframe_accessor("fkm_safety_lognormal_from_stddev")
 @pd.api.extensions.register_series_accessor("fkm_safety_lognormal_from_stddev")
 class FKMLoadDistributionLognormal(FKMLoadSequence):
-    r'''Series accessor to get a scaled up load series, i.e., a list of load values with included load safety,
+    r"""Series accessor to get a scaled up load series, i.e., a list of load values with included load safety,
       as used in FKM nonlinear lifetime assessments.
 
       The loads are assumed to follow a **lognormal distribution** with standard deviation :math:`LSD_s`.
@@ -337,7 +354,7 @@ class FKMLoadDistributionLognormal(FKMLoadSequence):
     See also
     --------
     :class:`AbstractFKMLoadDistribution`: accesses meshes with connectivity information
-    '''
+    """
 
     def gamma_L(self, input_parameters):
         r"""Compute the scaling factor :math:`\gamma_L`.
@@ -413,7 +430,7 @@ class FKMLoadDistributionLognormal(FKMLoadSequence):
 @pd.api.extensions.register_dataframe_accessor("fkm_safety_blanket")
 @pd.api.extensions.register_series_accessor("fkm_safety_blanket")
 class FKMLoadDistributionBlanket(FKMLoadSequence):
-    r'''Series accessor to get a scaled up load series, i.e., a list of load values with included load safety,
+    r"""Series accessor to get a scaled up load series, i.e., a list of load values with included load safety,
       as used in FKM nonlinear lifetime assessments.
 
       The distribution of loads is unknown, therefore a scaling factor of :math:`\gamma_L` = 1.1 is assumed.
@@ -426,7 +443,7 @@ class FKMLoadDistributionBlanket(FKMLoadSequence):
     See also
     --------
     :class:`AbstractFKMLoadDistribution`: accesses meshes with connectivity information
-    '''
+    """
 
     def gamma_L(self, input_parameters):
         r"""Compute the scaling factor :math:`\gamma_L`.
