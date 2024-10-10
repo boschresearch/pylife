@@ -17,13 +17,16 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
-from .abstract_load_collective import AbstractLoadCollective
-from .load_histogram import LoadHistogram
+import warnings
 
 import pandas as pd
 import numpy as np
 
 from pylife import PylifeSignal
+
+from .abstract_load_collective import AbstractLoadCollective
+from .load_histogram import LoadHistogram
+
 
 @pd.api.extensions.register_dataframe_accessor('load_collective')
 class LoadCollective(PylifeSignal, AbstractLoadCollective):
@@ -364,12 +367,15 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         if axis is None:
             return LoadHistogram(make_histogram(range_mean))
 
-        result = pd.Series(
-            range_mean.groupby(self._levels_from_axis(axis))
-            .apply(make_histogram)
-            .stack(['range', 'mean'], future_stack=True),
-            name="cycles",
-        )
+        # TODO: Warning filter can be dropped as soon as python-3.8 support is dropped
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=FutureWarning)
+            result = pd.Series(
+                range_mean.groupby(self._levels_from_axis(axis))
+                .apply(make_histogram)
+                .stack(['range', 'mean']),
+                name="cycles",
+            )
 
         return LoadHistogram(result)
 
