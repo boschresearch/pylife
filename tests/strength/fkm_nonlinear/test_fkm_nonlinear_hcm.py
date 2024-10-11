@@ -563,9 +563,6 @@ def test_repeated_load_sequence_multiple_points_P_RAJ(original_load_sequence):
     result = pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence,
                                                                             calculate_P_RAM=False, calculate_P_RAJ=True)
     N3 = result["P_RAJ_lifetime_n_cycles"]
-    print(f"N3: {N3}")
-
-    print(f"{N1}, {N2}, {N3}, {(N1-N2)/N1*100}%, {(N1-N3)/N1*100}%")
 
     assert np.isclose(N1, N2, rtol=0.3).all()
     assert np.isclose(N1, N3, rtol=0.3).all()
