@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Scale up a load sequence to incorporate safety factors for FKM
+r"""Scale up a load sequence to incorporate safety factors for FKM
 nonlinear lifetime assessment.
 
 Given a pandas Series of load values, return a scaled version where the safety
@@ -26,10 +26,10 @@ either :math:`P_L=2.5 \%` or :math:`P_L=50 \%`.
 The FKM nonlinear guideline defines three possible methods to consider the
 statistical distribution of the load:
 
-    * a normal distribution with given standard deviation, $s_L$
-    * a logarithmic-normal distribution with given standard deviation $LSD_s$
+    * a normal distribution with given standard deviation, :math:`s_L`
+    * a logarithmic-normal distribution with given standard deviation :math:`LSD_s`
     * an unknown distribution, use the constant factor :math:`\gamma_L=1.1` for
-      $P_L = 2.5\%$
+      :math:`P_L = 2.5\%`
 
 For these three methods, there exist the three accessors
 `fkm_safety_normal_from_stddev`, `fkm_safety_lognormal_from_stddev`, and
@@ -78,9 +78,11 @@ from pylife import PylifeSignal
 @pd.api.extensions.register_series_accessor("fkm_load_sequence")
 class FKMLoadSequence(PylifeSignal):
     """Base class used by the safety scaling method. It is used to compute the beta parameter
-    and to scale the load sequence by a constant gamma_L.
+    and to scale the load sequence by a constant ``gamma_L``.
 
-    This class can be used from user code to scale a load sequence, potentially on a mesh with other fields set for every node.
+    This class can be used from user code to scale a load sequence, potentially
+    on a mesh with other fields set for every node.
+
     In such a case, the other fields are not modified.
 
     Example
@@ -106,13 +108,16 @@ class FKMLoadSequence(PylifeSignal):
     """
 
     def scaled_by_constant(self, gamma_L):
-        """
-        Scales the load sequence by the given constant gamma_L. This method basically computes
-        `gamma_L * self._obj`. The data in `self._obj` is either a pandas.Series, a pandas.DataFrame
-        with a single column or a pandas.DataFrame with multiple columns (usually two for stress and stress gradient).
-        In the case of a Series or only one column, it simply scales all values by the factor gamma_L.
-        In the case of a DataFrame with multiple columns, it only scales the first column by the factor gamma_L
-        and keeps the other columns unchanged.
+        """Scale the load sequence by the given constant ``gamma_L``.
+
+        This method basically computes ``gamma_L * self._obj``. The data in
+        ``self._obj`` is either a :class:`pandas.Series`, a
+        :class:`pandas.DataFrame` with a single column or a pandas.DataFrame
+        with multiple columns (usually two for stress and stress gradient).  In
+        the case of a Series or only one column, it simply scales all values by
+        the factor ``gamma_L``.  In the case of a DataFrame with multiple columns,
+        it only scales the first column by the factor gamma_L and keeps the
+        other columns unchanged.
 
         Returns a scaled copy of the data.
 
@@ -140,21 +145,27 @@ class FKMLoadSequence(PylifeSignal):
         return self._obj * gamma_L
 
     def maximum_absolute_load(self, max_load_independently_for_nodes=False):
-        """
-        Get the maximum absolute load over all nodes and load steps.
+        """Get the maximum absolute load over all nodes and load steps.
 
-        This is implemented for pd.Series (where the index is just the index of the load step),
-        pd.DataFrame with one column (where the index is a MultiIndex of load_step and node_id),
-        and pd.DataFrame with multiple columns with the load is given in the first column.
+        This is implemented for pd.Series (where the index is just the index of
+        the load step), pd.DataFrame with one column (where the index is a
+        MultiIndex of load_step and node_id), and pd.DataFrame with multiple
+        columns with the load is given in the first column.
 
         Parameters
         ----------
         max_load_independently_for_nodes : bool, optional
-            If the maximum absolute should be computed separately for every node. If set to False, a single maximum value is computed over all nodes.
-            The default is False, which means the whole mesh will be assessed by the same maximum load. This, however, means that calculating the FKM
-            nonlinear assessment for the whole mesh at once yields a different result than calculating the assessment for every single node one after
-            each other. (When doing it all at once, the maximum absolute load used for the failure probability is the maximum of the loads at every node,
-            when doing it only for a single node, the maximum absolute load value may be lower.)
+            If the maximum absolute should be computed separately for every node.
+
+            If set to False, a single maximum value is computed over all nodes.
+            The default is False, which means the whole mesh will be assessed
+            by the same maximum load. This, however, means that calculating the
+            FKMnonlinear assessment for the whole mesh at once yields a
+            different result than calculating the assessment for every single
+            node one after each other. (When doing it all at once, the maximum
+            absolute load used for the failure probability is the maximum of
+            the loads at every node, when doing it only for a single node, the
+            maximum absolute load value may be lower.)
 
         Returns
         -------
@@ -202,12 +213,14 @@ class FKMLoadSequence(PylifeSignal):
                 raise ValueError(f"Given parameters have to include \"{required_parameter}\".")
 
     def _get_beta(self, input_parameters):
-        """
-        Compute a scaling factor for assessing a load sequence for a given failure probability,
-        for details, refer to the FKM nonlinear document.
+        """Compute a scaling factor for assessing a load sequence for a given failure probability.
 
-        The beta factors are also described in "A. Fischer. Bestimmung modifizierter Teilsicherheitsbeiwerte zur semiprobabilistischen
-        Bemessung von Stahlbetonkonstruktionen im Bestand. TU Kaiserslautern, 2010"
+        For details, refer to the FKM nonlinear document.
+
+        The beta factors are also described in "A. Fischer. Bestimmung
+        modifizierter Teilsicherheitsbeiwerte zur semiprobabilistischen
+        Bemessung von Stahlbetonkonstruktionen im Bestand. TU Kaiserslautern,
+        2010"
 
         Parameters
         ----------
@@ -243,25 +256,29 @@ class FKMLoadSequence(PylifeSignal):
 @pd.api.extensions.register_dataframe_accessor("fkm_safety_normal_from_stddev")
 @pd.api.extensions.register_series_accessor("fkm_safety_normal_from_stddev")
 class FKMLoadDistributionNormal(FKMLoadSequence):
-    r"""Series accessor to get a scaled up load series, i.e., a list of load values with included load safety,
-      as used in FKM nonlinear lifetime assessments.
+    r"""Series accessor to get a scaled up load series.
 
-      The loads are assumed to follow a **normal distribution** with standard deviation :math:`s_L`.
-      To incorporate safety, reduce the
-      values of the load series from :math:`P_L = 50\%` up to the given load probability :math:`P_L`
-      and the given failure probability :math:`P_A`.
+    A load series is a list of load values with included load safety, as used
+    in FKM nonlinear lifetime assessments.
 
-      For more information, see 2.3.2.1 of the FKM nonlinear guideline.
+    The loads are assumed to follow a **normal distribution** with standard
+    deviation :math:`s_L`.  To incorporate safety, reduce the values of the
+    load series from :math:`P_L = 50\%` up to the given load probability
+    :math:`P_L` and the given failure probability :math:`P_A`.
 
-    See also
+    For more information, see 2.3.2.1 of the FKM nonlinear guideline.
+
+    See Also
     --------
     :class:`AbstractFKMLoadDistribution`: accesses meshes with connectivity information
     """
 
     def gamma_L(self, input_parameters):
-        r"""Compute the scaling factor :math:`\gamma_L=(L_\text{max} + \alpha_L) / L_\text{max}`.
-        Note that for load sequences on multiple nodes (i.e. on a full mesh), :math:`L_\text{max}`
-        is the maximum load over all nodes and load steps, not different for different nodes.
+        r"""Compute the scaling factor :math:`\gamma_L = (L_\text{max} + \alpha_L) / L_\text{max}`.
+
+        Note that for load sequences on multiple
+        nodes (i.e. on a full mesh), :math:`L_\text{max}` is the maximum load
+        over all nodes and load steps, not different for different nodes.
 
         Parameters
         ----------
@@ -341,19 +358,22 @@ class FKMLoadDistributionNormal(FKMLoadSequence):
 @pd.api.extensions.register_dataframe_accessor("fkm_safety_lognormal_from_stddev")
 @pd.api.extensions.register_series_accessor("fkm_safety_lognormal_from_stddev")
 class FKMLoadDistributionLognormal(FKMLoadSequence):
-    r"""Series accessor to get a scaled up load series, i.e., a list of load values with included load safety,
-      as used in FKM nonlinear lifetime assessments.
+    r"""Series accessor to get a scaled up load series.
 
-      The loads are assumed to follow a **lognormal distribution** with standard deviation :math:`LSD_s`.
-      To incorporate safety, reduce the
-      values of the load series from :math:`P_L = 50\%` up to the given load probability :math:`P_L`
-      and the given failure probability :math:`P_A`.
+    A load series is a list of load values with included load safety, as used
+    in FKM nonlinear lifetime assessments.
 
-      For more information, see 2.3.2.2 of the FKM nonlinear guideline.
+    The loads are assumed to follow a **lognormal distribution** with standard
+    deviation :math:`LSD_s`.  To incorporate safety, reduce the values of the
+    load series from :math:`P_L = 50\%` up to the given load probability
+    :math:`P_L` and the given failure probability :math:`P_A`.
 
-    See also
+    For more information, see 2.3.2.2 of the FKM nonlinear guideline.
+
+    See Also
     --------
     :class:`AbstractFKMLoadDistribution`: accesses meshes with connectivity information
+
     """
 
     def gamma_L(self, input_parameters):
@@ -476,8 +496,10 @@ class FKMLoadDistributionBlanket(FKMLoadSequence):
         elif np.isclose(input_parameters.P_L, 50):
             gamma_L = 1.0
         else:
-            raise ValueError("fkm_safety_blanket is only possible for P_L=2.5 % " \
-                             f"or P_L=50 %, not P_L={input_parameters.P_L} %")
+            raise ValueError(
+                "fkm_safety_blanket is only possible for P_L=2.5 % "
+                f"or P_L=50 %, not P_L={input_parameters.P_L} %"
+            )
 
         return gamma_L
 
@@ -491,7 +513,8 @@ class FKMLoadDistributionBlanket(FKMLoadSequence):
         input_parameters : pandas Series
             The parameters to specify the upscaling method.
 
-            * ``input_parameters.P_L``: probability in [%] of the load for which to do the assessment, one of {2.5, 50}
+            * ``input_parameters.P_L``: probability in [%] of the load
+              for which to do the assessment, one of {2.5, 50}
 
         Raises
         ------
