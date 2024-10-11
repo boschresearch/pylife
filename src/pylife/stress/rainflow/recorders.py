@@ -253,8 +253,9 @@ class FKMNonlinearRecorder(AbstractRecorder):
         Only for hystereses resulting from Memory 3, the FKM nonlinear document defines ``R = -1``
         (eq. 2.9-54). This is indicated by ``_is_zero_mean_stress_and_strain=True`̀ .
         For these hystereses, this function returns -1 instead of ``S_min / S_max``, which may be different. """
-        return np.where(self.is_zero_mean_stress_and_strain, \
-                        -1, np.array(self._S_min) / np.array(self._S_max))
+        with np.errstate(all="ignore"):
+            R = np.array(self._S_min) / np.array(self._S_max)
+        return np.where(self.is_zero_mean_stress_and_strain, -1, R)
 
     @property
     def is_closed_hysteresis(self):
