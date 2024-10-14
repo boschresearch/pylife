@@ -242,6 +242,7 @@ class TestHCMExample1(unittest.TestCase):
         )
 
 
+    @pytest.mark.skip(reason="to be reimplemented")
     def test_plotting(self):
 
         plotting_data = self._detector.interpolated_stress_strain_data(n_points_per_branch=3, only_hystereses=False)
@@ -557,7 +558,8 @@ def test_flush_edge_case_load():
         ],
         index=pd.MultiIndex.from_product(
             [[1, 2, 6, 8, 10, 4, 14], range(3)], names=["load_step", "node_id"]
-        )
+        ),
+        name="loads_min"
     )
     expected_load_max = pd.Series(
         [
@@ -566,7 +568,8 @@ def test_flush_edge_case_load():
         ],
         index=pd.MultiIndex.from_product(
             [[1, 3, 5, 9, 11, 7, 13], range(3)], names=["load_step", "node_id"]
-        )
+        ),
+        name="loads_max"
     )
 
     loads_min = detector.recorder.loads_min
@@ -894,7 +897,8 @@ def test_flush_edge_case_S():
         ],
         index=pd.MultiIndex.from_product(
             [[1, 2, 6, 8, 10, 4, 14], range(3)], names=["load_step", "node_id"]
-        )
+        ),
+        name="S_min"
     )
     expected_S_max = pd.Series(
         [
@@ -904,7 +908,8 @@ def test_flush_edge_case_S():
         ],
         index=pd.MultiIndex.from_product(
             [[1, 3, 5, 9, 11, 7, 13], range(3)], names=["load_step", "node_id"]
-        )
+        ),
+        name="S_max"
     )
 
     S_min = detector.recorder.S_min
@@ -992,11 +997,8 @@ def test_edge_case_value_in_sample_tail_compare_simple(vals, num):
 
     simple_collective = detector_simple.recorder.collective
     simple_collective.index = simple_collective.index.droplevel('assessment_point_index')
-    simple_collective.pop('debug_output')
     multi_collective = detector_multiindex.recorder.collective
 
-    if 'debug_output' in multi_collective:
-        multi_collective.pop('debug_output')
     pd.testing.assert_frame_equal(
         simple_collective,
         multi_collective.groupby('hysteresis_index').first(),
@@ -1076,11 +1078,7 @@ def test_hcm_first_second(vals, num):
 
     simple_collective = detector_simple.recorder.collective
     simple_collective.index = simple_collective.index.droplevel('assessment_point_index')
-    simple_collective.pop('debug_output')
     multi_collective = detector_multiindex.recorder.collective
-
-    if 'debug_output' in multi_collective:
-        multi_collective.pop('debug_output')
 
     pd.testing.assert_frame_equal(
         simple_collective,

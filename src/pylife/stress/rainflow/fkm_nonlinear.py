@@ -23,79 +23,23 @@ import itertools
 
 import pylife.stress.rainflow.general
 
+INDEX=0
+CASE=1
+
+LOAD=0
+STRESS=1
+STRAIN=2
+EPS_MIN_LF=3
+EPS_MAX_LF=4
+
+PRIMARY=0
+SECONDARY=1
+
 
 class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
     """HCM-Algorithm detector as described in FKM nonlinear.
 
     """
-
-    class _HCM_Point:
-        """A point in the stress-strain diagram on which the HCM algorithm operates on.
-
-        .. note::
-            For an assessment for multiple points (FEM mesh nodes) at once,
-            we assume that the load time series for the different points are
-            multiples of each other. In consequence, the hysteresis graph in
-            the stress-strain diagram follows the same sequence of primary and
-            secondary paths for every assessment point.
-            It suffices to consider a single point to find out when a hysteresis
-            gets closed and when to reach the primary path etc. However, the actual
-            stress/strain values will be computed individually for every point.
-        """
-
-        def __init__(self, load=None, strain=None, stress=None):
-            self._load = load
-            self._stress = stress
-            self._strain = strain
-
-        @property
-        def load(self):
-            return self._load
-
-        @property
-        def load_representative(self):
-            if isinstance(self._load, pd.Series):
-                return self._load.iloc[0]
-            else:
-                return self._load
-
-        @property
-        def strain_representative(self):
-            if isinstance(self._strain, pd.Series):
-                return self._strain.iloc[0]
-            else:
-                return self._strain
-
-        @property
-        def stress(self):
-            return self._stress
-
-        @property
-        def strain(self):
-            return self._strain
-
-        def __str__(self):
-            assert not isinstance(self._load, pd.DataFrame)
-            if isinstance(self._load, pd.Series):
-                if self._stress is None:
-                    if self._load is None:
-                        return "()"
-                    return f"(load:{self._load.values[0]:.1f})"
-
-                if self._load is None:
-                    return f"(sigma:{self._stress.values[0]:.1f}, eps:{self._strain.values[0]:.1e})"
-                return f"(load:{self._load.values[0]:.1f}, sigma:{self._stress.values[0]:.1f}, eps:{self._strain.values[0]:.1e})"
-
-            if self._stress is None:
-                if self._load is None:
-                    return "()"
-                return f"(load:{self._load:.1f})"
-            if self._load is None:
-                return f"sigma:{self._stress:.1f}, eps:{self._strain:.1e})"
-            return f"(load:{self._load:.1f}, sigma:{self._stress:.1f}, eps:{self._strain:.1e})"
-
-        def __repr__(self):
-            return self.__str__()
 
     def __init__(self, recorder, notch_approximation_law):
         super().__init__(recorder)
@@ -110,34 +54,22 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         self._load_max_seen = 0.0    # maximum seen load value
         self._run_index = 0     # which run through the load sequence is currently performed
 
-        self._epsilon_min_LF = np.inf         # the current value for _epsilon_min_LF, initialization see FKM nonlinear p.122
-        self._epsilon_max_LF = -np.inf        # the current value for _epsilon_max_LF, initialization see FKM nonlinear p.122
-
-        # deviation from FKM nonlinear algorithm to match given example in FKM nonlinear
-        self._epsilon_min_LF = 0       # the current value for _epsilon_min_LF, initialization see FKM nonlinear p.122
-        self._epsilon_max_LF = 0       # the current value for _epsilon_max_LF, initialization see FKM nonlinear p.122
-
         self._epsilon_min_LF = None
         self._epsilon_max_LF = None
 
         # whether the load sequence starts and the first value should be considered (normally, only "turns" in the sequence get extracted, which would omit the first value)
         self._is_load_sequence_start = True
 
-        self._residuals = []        # unclosed hysteresis points
+        self._last_record = None
+        self._residuals_array = []
+        self._residuals_ndarray = np.array([])
+        self._record_vals_residuals = pd.DataFrame()
 
-        self._hcm_point_history = []   # all traversed points, for plotting and debugging
-        # list of tuples (type, hcm_point, index), e.g., [ ("primary", hcm_point, 0), ("secondary", hcm_point, 1), ...]
-        # where the type is one of {"primary", "secondary"} and indicates the hysteresis branch up to the current point
-        # and the index is the hysteresis number to which the points belong
+        self._recorded_deformation = pd.DataFrame()
+        self._chunk_sizes = []
+
         self._hcm_message = ""
 
-        # the current index of the row in the recorded `collective` DataFrame, used only for debugging,
-        # i.e., the `interpolated_stress_strain_data` method
-        self._hysteresis_index = 0
-
-        self._current_debug_output = ""
-        self._strain_values = []
-        self._n_strain_values_first_run = 0
 
         self._last_sample = pd.DataFrame()
 
@@ -232,17 +164,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         multi_index = isinstance(samples, pd.Series) and len(samples.index.names) > 1
 
         empty_index = [] if not isinstance(samples, pd.Series) else pd.DataFrame(columns=samples.index.names, dtype=np.int64).set_index(samples.index.names, drop=True).index
-        _loads_min = pd.Series(index=empty_index, dtype=np.float64)
-        _loads_max = pd.Series(index=empty_index, dtype=np.float64)
-        _S_min = pd.Series(index=empty_index, dtype=np.float64)
-        _S_max = pd.Series(index=empty_index, dtype=np.float64)
-        _epsilon_min = pd.Series(index=empty_index, dtype=np.float64)
-        _epsilon_max = pd.Series(index=empty_index, dtype=np.float64)
-        _epsilon_min_LF = pd.Series(index=empty_index, dtype=np.float64)      # minimum strain of the load history up to (including) the current hysteresis (LF=Lastfolge), mentioned on p.127 of FKM nonlinear
-        _epsilon_max_LF = pd.Series(index=empty_index, dtype=np.float64)      # maximum strain of the load history up to (including) the current hysteresis (LF=Lastfolge), mentioned on p.127 of FKM nonlinear
-        _is_closed_hysteresis = []            # whether the hysteresis is fully closed and counts as a normal damage hysteresis
-        _is_zero_mean_stress_and_strain = []  # whether the mean stress and strain are forced to be zero (occurs in eq. 2.9-52)
-        _debug_output = []
+        self._is_zero_mean_stress_and_strain = []
 
         # initialization of _epsilon_min_LF see FKM nonlinear p.122
         if self._epsilon_min_LF is None:
@@ -252,11 +174,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             self._epsilon_max_LF = pd.Series(0.0)
 
         # store all lists together
-        recording_lists = [_loads_min, _loads_max, _S_min, _S_max, _epsilon_min,
-            _epsilon_max, _epsilon_min_LF, _epsilon_max_LF, _is_closed_hysteresis,
-            _is_zero_mean_stress_and_strain, _debug_output]
 
-        largest_point = self._HCM_Point(load=0)
         previous_load = 0
 
         self._run_index += 1
@@ -274,8 +192,11 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         # get the turning points
         loads_indices, load_turning_points = self._new_turns(_samples, flush)
 
+        self._group_size = 1
+
         if multi_index:
             load_steps = samples.index.get_level_values('load_step').unique().to_series()
+            self._group_size = len(samples) // len(load_steps)
             if len(loads_indices) > 0:
                 tindex = loads_indices - old_head_index
                 idx = load_steps.iloc[tindex]
@@ -297,25 +218,201 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             load_turning_points = pd.Series(load_turning_points)
             load_turning_points.index.name = 'load_step'
 
-        self._load_max_seen, self._iz, self._ir, recording_lists = self._perform_hcm_algorithm(
-            samples=samples, recording_lists=recording_lists, largest_point=largest_point,
+        self._current_load_index = load_turning_points.index
+        self._chunk_sizes.append(len(load_turning_points))
+
+        li = load_turning_points.index.to_frame()['load_step']
+        load_step = (li != li.shift()).cumsum()
+
+        self._current_load_indexer = load_turning_points.index.get_level_values("load_step").unique()
+
+        load_turning_points_rep = np.array([
+            self._get_scalar_current_load(current_load)
+            for _, current_load in load_turning_points.groupby(load_step, sort=False)
+        ])
+
+        self._hysts = []
+        self._record = -np.ones((len(load_turning_points_rep), 2), dtype=np.int64)
+
+        self._index = 0
+        self._hyst_index = 0
+
+        self._load_max_seen, self._iz, self._ir = self._perform_hcm_algorithm(
             previous_load=previous_load, iz=self._iz, ir=self._ir,
             load_max_seen=self._load_max_seen, load_turning_points=load_turning_points)
 
-        # transfer the detected hystereses to the recorder
-        [_loads_min, _loads_max, _S_min, _S_max, _epsilon_min, _epsilon_max, _epsilon_min_LF,
-         _epsilon_max_LF, _is_closed_hysteresis, _is_zero_mean_stress_and_strain, _debug_output] = recording_lists
+        residuals_index = np.array([i for i, _, _ in self._residuals_array])
+
+        self._hysts = np.array(self._hysts)
+
+        if self._last_record is None:
+            self._last_record = np.zeros((5, self._group_size))
+
+        record_vals = np.empty((len(load_turning_points), 5))
+        self._epsilon_LF = np.zeros((len(load_turning_points), 2))
+
+        sli = 0
+        for i, (_, load_turning_point) in enumerate(load_turning_points.groupby(load_step, sort=False)):
+            prev_index = int(self._record[i, INDEX])
+            prev_record = self._last_record
+            if prev_index < 0:
+                rl = len(self._record_vals_residuals)
+                l = rl + prev_index*self._group_size
+                u = l+self._group_size
+                prev_record = self._record_vals_residuals.iloc[l:u].to_numpy().T
+            elif prev_index < i:
+                prev_record = record_vals[prev_index*self._group_size:(prev_index+1)*self._group_size].T
+            record_vals[sli:sli+len(load_turning_point)] = self.process_deformation(self._record[i, :], load_turning_point, prev_record).T
+            sli += len(load_turning_point)
+
+        self._record_vals = pd.DataFrame(record_vals, columns=["load", "stress", "strain", "epsilon_min_LF", "epsilon_max_LF"], index=self._current_load_index)
+
+
+        self._recorded_deformation = pd.concat([self._recorded_deformation, self._record_vals])
+
+        _results_min, _results_max, _epsilon_min_LF_new, _epsilon_max_LF_new = self._process_recording(load_turning_points_rep)
+
+        remaining_vals_residuals = (
+            self._record_vals_residuals.loc[
+                self._record_vals_residuals.index[residuals_index[residuals_index < 0]]
+            ]
+            if len(residuals_index) > 0
+            else pd.DataFrame()
+        )
+
+        new_residuals_index = residuals_index[residuals_index >= 0]
+        li = self._record_vals.index.to_frame()['load_step']
+        load_step = (li != li.shift()).cumsum()
+
+        index_series = self._record_vals.index.get_level_values("load_step").to_series()
+        indexer = pd.DataFrame(
+            {
+                "load_step": index_series.values,
+                "load_num": load_step,
+            },
+            index=load_step.index
+        ).groupby("load_num").first()["load_step"].values
+
+        new_vals_residuals = (
+            self._record_vals.loc[
+                self._record_vals.index.isin(
+                    indexer[new_residuals_index],
+                    level="load_step",
+                )
+            ]
+            if len(new_residuals_index) > 0
+            else pd.DataFrame()
+        )
+
+        self._record_vals_residuals = pd.concat([remaining_vals_residuals, new_vals_residuals])
+
+        self._residuals_ndarray = (
+            load_turning_points_rep[residuals_index] if len(residuals_index) else np.array([])
+        )
+
+        res_len = len(self._residuals_array)
+        self._residuals_array = [(i-res_len, val, arr) for i, (_, val, arr) in enumerate(self._residuals_array)]
+
+
+        if len(self._hysts):
+            _is_closed_hysteresis = self._hysts[:, 0] > 0
+            _is_closed_hysteresis = _is_closed_hysteresis.tolist()
+        else:
+            _is_closed_hysteresis = []
 
         self._recorder.record_values_fkm_nonlinear(
-            loads_min=_loads_min, loads_max=_loads_max,
-            S_min=_S_min, S_max=_S_max,
-            epsilon_min=_epsilon_min, epsilon_max=_epsilon_max,
-            epsilon_min_LF=_epsilon_min_LF, epsilon_max_LF=_epsilon_max_LF,
-            is_closed_hysteresis=_is_closed_hysteresis, is_zero_mean_stress_and_strain=_is_zero_mean_stress_and_strain,
-            run_index=self._run_index, debug_output=_debug_output)
-
+            loads_min=_results_min["loads_min"],
+            loads_max=_results_max["loads_max"],
+            S_min=_results_min["S_min"],
+            S_max=_results_max["S_max"],
+            epsilon_min=_results_min["epsilon_min"],
+            epsilon_max=_results_max["epsilon_max"],
+            epsilon_min_LF=_epsilon_min_LF_new,
+            epsilon_max_LF=_epsilon_max_LF_new,
+            is_closed_hysteresis=_is_closed_hysteresis,
+            is_zero_mean_stress_and_strain=self._is_zero_mean_stress_and_strain,
+            run_index=self._run_index
+        )
 
         return self
+
+    def process_deformation(self, record, load, prev_record):
+        function_map = [self._primary, self._secondary]
+
+        function = function_map[record[CASE]]
+
+        result = np.empty((5, self._group_size))
+        result[:3, :] = function(prev_record, load)
+
+        old_load = self._last_record[LOAD]
+
+        if old_load[0] < load.iloc[0]:
+            result[EPS_MAX_LF] = self._last_record[EPS_MAX_LF] if self._last_record[EPS_MAX_LF, 0] > result[STRAIN, 0] else result[STRAIN, :]
+            result[EPS_MIN_LF] = self._last_record[EPS_MIN_LF]
+        else:
+            result[EPS_MIN_LF] = self._last_record[EPS_MIN_LF] if self._last_record[EPS_MIN_LF, 0] < result[STRAIN, 0] else result[STRAIN, :]
+            result[EPS_MAX_LF] = self._last_record[EPS_MAX_LF]
+
+        self._last_record = result.copy()
+
+        return result
+
+
+    def load_memory_1_2(self, point_0, point_1):
+        return (point_0, point_1, point_0, point_1) if point_0.values[0, 0] < point_1.values[0, 0] else (point_1, point_0, point_1, point_0)
+
+    def load_memory_3(self, point_0, point_1):
+        abs_point = point_0.abs()
+        return (-abs_point, abs_point, point_0, point_0)
+
+    def _process_recording(self, turning_points):
+        start = len(self._residuals_ndarray)
+        if start:
+            turning_points = np.concatenate((self._residuals_ndarray, turning_points))
+        record_vals_with_residuals = pd.concat([self._record_vals_residuals, self._record_vals])
+        num = len(self._hysts)
+
+        inames = self._current_load_index.names
+
+        results_min = pd.DataFrame(
+            np.zeros((num * self._group_size, len(inames) + 3)),
+            columns=["loads_min", "S_min", "epsilon_min"] + inames,
+        )
+
+        index_min = []
+
+        results_max = pd.DataFrame(
+            np.zeros((num * self._group_size, len(inames) + 3)),
+            columns=["loads_max", "S_max", "epsilon_max"] + inames
+        )
+
+        epsilon_min_LF = pd.Series(np.zeros((num * self._group_size)))
+        epsilon_max_LF = pd.Series(np.zeros((num * self._group_size)))
+
+        index_max = []
+
+        memory_functions = [self.load_memory_3, self.load_memory_1_2, self.load_memory_1_2, self.load_memory_3]
+
+        for i, hyst in enumerate(self._hysts):
+            idx = (hyst[1:3] + start) * self._group_size
+            point_0 = record_vals_with_residuals[idx[0]:idx[0]+self._group_size]
+            point_1 = record_vals_with_residuals[idx[1]:idx[1]+self._group_size]
+            hyst_type = hyst[0]
+
+            _min, _max, _lf_min, _lf_max = memory_functions[hyst_type](point_0, point_1)
+            rmin = _min.reset_index(drop=False)[["load", "stress", "strain"] + inames]
+            results_min.iloc[i*self._group_size:(i+1)*self._group_size] = rmin
+            results_max.iloc[i*self._group_size:(i+1)*self._group_size] = _max.reset_index(drop=False)[["load", "stress", "strain"] + inames]
+            index_min.append(_min.index)
+            index_max.append(_max.index)
+
+            epsilon_min_LF.iloc[i*self._group_size:(i+1)*self._group_size] = _lf_min['epsilon_min_LF']
+            epsilon_max_LF.iloc[i*self._group_size:(i+1)*self._group_size] = _lf_max['epsilon_max_LF']
+
+        for iname in inames:
+            results_min[iname] = results_min[iname].astype(np.int64)
+            results_max[iname] = results_max[iname].astype(np.int64)
+        return results_min.set_index(inames, drop=True), results_max.set_index(inames), epsilon_min_LF, epsilon_max_LF
 
     @property
     def strain_values(self):
@@ -328,7 +425,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         list of float
            The strain values of the turning points that are visited during the HCM algorithm.
         """
-        return np.array(self._strain_values)
+        return self._recorded_deformation.strain.to_numpy()
 
     @property
     def strain_values_first_run(self):
@@ -342,7 +439,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
            The strain values of the turning points that are visited during the first run of the HCM algorithm.
         """
 
-        return np.array(self._strain_values[:self._n_strain_values_first_run])
+        return self.strain_values[:self._chunk_sizes[0]]
 
     @property
     def strain_values_second_run(self):
@@ -356,130 +453,33 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
            The strain values of the turning points that are visited during the second run of the HCM algorithm.
         """
 
-        return np.array(self._strain_values[self._n_strain_values_first_run:])
+        return self.strain_values[self._chunk_sizes[0]:]
 
-    def interpolated_stress_strain_data(self, *, n_points_per_branch=100, only_hystereses=False):
-        """Return points on the traversed hysteresis curve, mainly intended for plotting.
-        The curve including all hystereses, primary and secondary branches is sampled
-        at a fixed number of points within each hysteresis branch.
-        These points can be used for plotting.
 
-        The intended use is to generate plots as follows:
 
-        .. code:: python
+    def _primary(self, _prev, load):
+        sigma = self._notch_approximation_law.stress(load)
+        epsilon = self._notch_approximation_law.strain(sigma, load)
+        return np.array([load, sigma, epsilon])
 
-            fkm_nonlinear_detector.process_hcm_first(...)
-            sampling_parameter = 100    # choose larger for smoother plot or smaller for lower runtime
-            plotting_data = detector.interpolated_stress_strain_data(n_points_per_branch=sampling_parameter)
+    def _secondary(self, prev, load):
+        prev_load = prev[LOAD]
+        secondary_load = np.sign(load) * np.minimum(np.abs(load), np.abs(prev_load))
 
-            strain_values_primary = plotting_data["strain_values_primary"]
-            stress_values_primary = plotting_data["stress_values_primary"]
-            hysteresis_index_primary = plotting_data["hysteresis_index_primary"]
-            strain_values_secondary = plotting_data["strain_values_secondary"]
-            stress_values_secondary = plotting_data["stress_values_secondary"]
-            hysteresis_index_secondary = plotting_data["hysteresis_index_secondary"]
-
-            plt.plot(strain_values_primary, stress_values_primary, "g-", lw=3)
-            plt.plot(strain_values_secondary, stress_values_secondary, "b-.", lw=1)
-
-        Parameters
-        ----------
-        n_points_per_branch : int, optional
-            How many sampling points to use per hysteresis branch, default 100.
-            A larger value values means smoother curves but longer runtime.
-
-        only_hystereses : bool, optional
-            Default ``False``. If only graphs of the closed hystereses should be output.
-            Note that this does not work for hysteresis that have multiple smaller hysterseses included.
-
-        Returns
-        -------
-        plotting_data : dict
-            A dict with the following keys:
-
-            * "strain_values_primary"
-            * "stress_values_primary"
-            * "hysteresis_index_primary"
-            * "strain_values_secondary"
-            * "stress_values_secondary"
-            * "hysteresis_index_secondary"
-
-            The values are lists of strains and stresses of the points on the stress-strain curve,
-            separately for primary and secondary branches. The lists contain nan values whenever the
-            curve of the *same* branch is discontinuous. This allows to plot the entire curve
-            with different colors for primary and secondary branches.
-
-            The entries for hysteresis_index_primary and hysteresis_index_secondary are the row
-            indices into the collective DataFrame returned by the recorder. This allows, e.g.,
-            to separate the output of multiple runs of the HCM algorithm or to plot the traversed
-            paths on the stress-strain diagram for individual steps of the algorithm.
-
-        """
-
-        assert n_points_per_branch >= 2
-
-        plotter = FKMNonlinearHysteresisPlotter(self._hcm_point_history, self._ramberg_osgood_relation)
-        return plotter.interpolated_stress_strain_data(n_points_per_branch=n_points_per_branch, only_hystereses=only_hystereses)
-
-    def _proceed_on_primary_branch(self, current_point):
-        """Follow the primary branch (de: Erstbelastungskurve) of a notch approximation material curve.
-
-        Parameters
-        ----------
-        previous_point : _HCM_Point
-            The starting point in the stress-strain diagram where to begin to follow the primary branch.
-        current_point : _HCM_Point
-            The end point until where to follow the primary branch. This variable only needs to have the load value.
-
-        Returns
-        -------
-        current_point : _HCM_Point
-            The initially given current point, but with  updated values of stress and strain.
-
-        """
-        sigma = self._notch_approximation_law.stress(current_point.load)
-        epsilon = self._notch_approximation_law.strain(sigma, current_point.load)
-
-        current_point._stress = pd.Series(sigma.values, index=current_point.load.index)
-        current_point._strain = pd.Series(epsilon.values, index=current_point.load.index)
-
-        # log point for later plotting
-        self._hcm_point_history.append(("primary", current_point, self._hysteresis_index))
-
-        return current_point
-
-    def _proceed_on_secondary_branch(self, previous_point, current_point):
-        """Follow the secondary branch of a notch approximation material curve.
-
-        Parameters
-        ----------
-        previous_point : _HCM_Point
-            The starting point in the stress-strain diagram where to begin to follow the primary branch.
-        current_point : _HCM_Point
-            The end point until where to follow the primary branch. This variable only needs to have the load value.
-
-        Returns
-        -------
-        current_point : _HCM_Point
-            The initially given current point, but with  updated values of stress and strain.
-
-        """
-        delta_L = current_point.load.values - previous_point.load.values   # as described in FKM nonlinear
-        index = current_point.load.index
-        obsolete_index_levels = [n for n in index.names if n != 'load_step']
-        delta_L = pd.Series(
-            delta_L, index=current_point.load.index.droplevel(obsolete_index_levels)
-        )
-
+        delta_L = load - prev_load #secondary_load
         delta_sigma = self._notch_approximation_law.stress_secondary_branch(delta_L)
         delta_epsilon = self._notch_approximation_law.strain_secondary_branch(delta_sigma, delta_L)
 
-        current_point._stress = pd.Series(previous_point._stress.values + delta_sigma.values, index=current_point.load.index)
-        current_point._strain = pd.Series(previous_point._strain.values + delta_epsilon.values, index=current_point.load.index)
+        sigma = prev[STRESS] + delta_sigma
+        epsilon = prev[STRAIN] + delta_epsilon
 
-        # log point for later plotting
-        self._hcm_point_history.append(("secondary", current_point, self._hysteresis_index))
-        return current_point
+        return np.array([load, sigma, epsilon])
+
+        delta_L = load - secondary_load
+        delta_sigma = self._notch_approximation_law.stress_secondary_branch(delta_L)
+        delta_epsilon = self._notch_approximation_law.strain_secondary_branch(delta_sigma, delta_L)
+
+        return np.array([load, sigma, epsilon])
 
     def _adjust_samples_and_flush_for_hcm_first_run(self, samples):
 
@@ -519,141 +519,111 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         return samples, flush
 
-    def _perform_hcm_algorithm(self, *, samples, recording_lists, largest_point, previous_load, iz, ir, load_max_seen, load_turning_points):
-        """Perform the entire HCM algorithm for all load samples,
-        record the found hysteresis parameters in the recording_lists."""
+    def _perform_hcm_algorithm(self, *, previous_load, iz, ir, load_max_seen, load_turning_points):
+        """Perform the entire HCM algorithm for all load samples"""
 
         # iz: number of not yet closed branches
         # ir: number of residual loads corresponding to hystereses that cannot be closed,
         #     because they contain parts of the primary branch
 
-        self._hcm_message += f"turning points: {samples}\n"
+        self._hcm_message += f"turning points: {load_turning_points}\n"
 
         # iterate over loads from the given list of samples
         li = load_turning_points.index.to_frame()['load_step']
         load_step = (li != li.shift()).cumsum()
 
-        for _, current_load in load_turning_points.groupby(load_step, sort=False):
+        for index, current_load in load_turning_points.groupby(load_step, sort=False):
             current_load_representative = self._get_scalar_current_load(current_load)
 
             self._hcm_message += f"* load {current_load}:"
 
-            # initialize the point in the stress-strain diagram corresponding to the current load.
-            # The stress and strain values will be computed during the current iteration of the present loop.
-            current_point = self._HCM_Point(load=current_load)
-
-            current_point, iz, ir, recording_lists = self._hcm_process_sample(
-                current_point=current_point,
-                recording_lists=recording_lists,
-                largest_point=largest_point, iz=iz, ir=ir,
-                load_max_seen=load_max_seen, current_load_representative=current_load_representative
+            iz, ir = self._hcm_process_sample(
+                iz=iz, ir=ir,
+                load_max_seen=load_max_seen, current_load_representative=current_load_representative,
+                current_index=index-1
             )
 
-            # update the maximum seen absolute load
-            if np.abs(current_load_representative) > load_max_seen+1e-12:
+            if np.abs(current_load_representative) > load_max_seen:
                 load_max_seen = np.abs(current_load_representative)
-                largest_point = current_point
 
-            # increment the indicator how many open hystereses there are
             iz += 1
 
-            # store the previously processed point to the list of residuals to be processed in the next iterations
-            self._residuals.append(current_point)
+            self._residuals_array.append((self._index, current_load_representative, self._record[self._index, :]))
 
-            self._hcm_update_min_max_strain_values(
-                previous_load=previous_load,
-                current_load_representative=current_load_representative,
-                current_point=current_point
-            )
-            self._hcm_message += f"\n"
+            self._index += 1
 
-            previous_load = current_load_representative
-
-        return load_max_seen, iz, ir, recording_lists
-
-    def _hcm_update_min_max_strain_values(self, *, previous_load, current_load_representative, current_point):
-        """Update the minimum and maximum yet seen strain values
-        This corresponds to the "steigend=1 or 2" assignment at chapter 2.9.7 point 5 and
-        the rules under point 7.
-
-        5->6, VZ = 5-6=-1 < 0, steigend = 1
-        7->4, VZ = 7-4=3 >= 0, steigend = 2, L(0)=0
-        """
-
-        if previous_load < current_load_representative-1e-12:
-            # case "steigend=1", i.e., load increases
-            new_val = self._epsilon_max_LF if self._epsilon_max_LF.values[0] > current_point.strain.values[0] else current_point.strain
-            self._epsilon_max_LF = new_val #pd.Series(new_val.values, index=current_point.strain.index)
+        return load_max_seen, iz, ir
 
 
-        else:
-            # case "steigend=2", i.e., load decreases
-            new_val = self._epsilon_min_LF if self._epsilon_min_LF.values[0] < current_point.strain.values[0] else current_point.strain
-            self._epsilon_min_LF = pd.Series(new_val.values, index=current_point.strain.index)
-
-    def _hcm_process_sample(self, *, current_point, recording_lists, largest_point, iz, ir, load_max_seen, current_load_representative):
+    def _hcm_process_sample(self, *, iz, ir, load_max_seen, current_load_representative, current_index):
         """ Process one sample in the HCM algorithm, i.e., one load value """
 
+        record_index = current_index
+
         while True:
-            # iz = len(self._residuals)
             if iz == ir:
-                previous_point = self._residuals[-1]
 
                 # if the current load is a new maximum
-                if np.abs(current_load_representative) > load_max_seen+1e-12:
+                if np.abs(current_load_representative) > load_max_seen:
                     # case a) i., "Memory 3"
-                    current_point, recording_lists = self._handle_case_a_i(
-                        current_point=current_point, previous_point=previous_point,
-                        recording_lists=recording_lists
-                    )
+                    self._record[self._index, :] = [record_index, PRIMARY]
+                    self._hysts.append([0, current_index-1, current_index+1])
+                    self._hyst_index += 1
+                    self._is_zero_mean_stress_and_strain.append(True)
+
                     ir += 1
 
                 else:
-                    current_point = self._handle_case_a_ii(current_point=current_point, previous_point=previous_point)
-
-
+                    self._record[self._index, :] = [record_index, SECONDARY]
+                    self._hyst_index += 1
                 # end the inner loop and fetch the next load from the load sequence
                 break
 
             if iz < ir:
+                self._record[self._index, :] = [record_index, PRIMARY]
+                self._hyst_index += 1
                 # branch is fully part of the initial curve, case "Memory 1"
-                current_point = self._handle_case_b(current_point)
-                # do not further process this load
                 break
 
             # here we have iz > ir:
-            previous_point_0 = self._residuals[-2]
-            previous_point_1 = self._residuals[-1]
+
+            prev_idx_0, prev_load_0, _ = self._residuals_array[-2]
+            prev_idx_1, prev_load_1, _ = self._residuals_array[-1]
 
             # is the current load extent smaller than the last one?
-            current_load_extent = np.abs(current_load_representative-previous_point_1.load_representative)
-            previous_load_extent = np.abs(previous_point_1.load_representative-previous_point_0.load_representative)
+            current_load_extent = np.abs(current_load_representative - prev_load_1)
+            previous_load_extent = np.abs(prev_load_1 - prev_load_0)
             # yes
-            if current_load_extent < previous_load_extent-1e-12:
-                current_point = self._handle_case_c_i(current_point=current_point, previous_point_1=previous_point_1)
+            if current_load_extent < previous_load_extent:
+                self._record[self._index, :] = [record_index, SECONDARY]
+                self._hyst_index += 1
 
                 # continue with the next load value
                 break
 
             # no -> we have a new hysteresis
-            recording_lists = self._handle_case_c_ii(
-                recording_lists=recording_lists, previous_point_0=previous_point_0, previous_point_1=previous_point_1
-            )
+
+            self._is_zero_mean_stress_and_strain.append(False)
+
+            self._residuals_array.pop()
+            self._residuals_array.pop()
+
+            if len(self._residuals_array):
+                record_index = self._residuals_array[-1][0]
 
             iz -= 2
 
             # if the points of the hysteresis lie fully inside the seen range of loads, i.e.,
             # the turn points are smaller than the maximum turn point so far
             # (this happens usually in the second run of the HCM algorithm)
-            if np.abs(previous_point_0.load_representative) < load_max_seen-1e-12 and np.abs(previous_point_1.load_representative) < load_max_seen-1e-12:
+            if np.abs(prev_load_0) < load_max_seen and np.abs(prev_load_1) < load_max_seen:
                 # case "Memory 2", "c) ii B"
                 # the primary branch is not yet reached, continue processing residual loads, potentially
                 # closing even more hysteresis
 
                 self._hcm_message += ","
-
-                # add a discontinuity marker
-                self._hcm_point_history.append(("discontinuity", None, self._hysteresis_index))
+                self._hysts.append([2, prev_idx_0, prev_idx_1])
+                self._hyst_index += 1
                 continue
 
             # case "Memory 1", "c) ii A"
@@ -665,164 +635,16 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             # effectively `iz = iz - 1` as described on p.70
 
             # Proceed on primary path for the rest, which was not part of the closed hysteresis
-            current_point = self._proceed_on_primary_branch(current_point)
+
+            self._record[self._index, :] = [record_index, PRIMARY]
+            self._hysts.append([1, prev_idx_0, prev_idx_1])
 
             # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
-            self._strain_values.append(current_point.strain.values[0])
 
             # count number of strain values in the first run of the HCM algorithm
-            if self._run_index == 1:
-                self._n_strain_values_first_run += 1
             break
 
-        return current_point, iz, ir, recording_lists
-
-    def _handle_case_c_ii(self, *, recording_lists, previous_point_0, previous_point_1):
-        """ Handle case c) ii. in the HCM algorithm, which detects a new hysteresis."""
-
-        self._hcm_message += f" case c) ii., detected full hysteresis"
-
-        epsilon_min = previous_point_0.strain if previous_point_0.strain.values[0] < previous_point_1.strain.values[0] else previous_point_1.strain
-        epsilon_max = previous_point_0.strain if previous_point_0.strain.values[0] > previous_point_1.strain.values[0] else previous_point_1.strain
-
-        [_loads_min, _loads_max, _S_min, _S_max, _epsilon_min, _epsilon_max, _epsilon_min_LF,
-         _epsilon_max_LF, _is_closed_hysteresis, _is_zero_mean_stress_and_strain, _debug_output] = recording_lists
-
-        # consume the last two loads, process this hysteresis
-        current_load_min = previous_point_0.load if previous_point_0.load.values[0] < previous_point_1.load.values[0] else previous_point_1.load
-        _loads_min = pd.concat([_loads_min, current_load_min])
-        current_load_max = previous_point_0.load if previous_point_0.load.values[0] > previous_point_1.load.values[0] else previous_point_1.load
-        _loads_max = pd.concat([_loads_max, current_load_max])
-
-        current_S_min = previous_point_0.stress if previous_point_0.stress.values[0] < previous_point_1.stress.values[0] else previous_point_1.stress
-        _S_min = pd.concat([_S_min, current_S_min])
-        current_S_max = previous_point_0.stress if previous_point_0.stress.values[0] > previous_point_1.stress.values[0] else previous_point_1.stress
-        _S_max = pd.concat([_S_max, current_S_max])
-
-        _epsilon_min = pd.concat([_epsilon_min, epsilon_min])
-        _epsilon_max = pd.concat([_epsilon_max, epsilon_max])
-        _epsilon_min_LF = pd.concat([_epsilon_min_LF, self._epsilon_min_LF])
-        _epsilon_max_LF = pd.concat([_epsilon_max_LF, self._epsilon_max_LF])
-        _is_closed_hysteresis.append(True)
-        _is_zero_mean_stress_and_strain.append(False)       # do not force the mean stress and strain to be zero
-        # save point for the plotting utility / `interpolated_stress_strain_data` method
-        # The hysteresis goes: previous_point_0 -> previous_point_1 -> previous_point_0.
-        # previous_point_0,previous_point_1 are already logged, now store only previous_point_0 again to visualize the closed hysteresis
-        self._hcm_point_history.append(("secondary", previous_point_0, self._hysteresis_index))
-
-        self._hysteresis_index += 1         # increment the hysteresis counter, only needed for the `interpolated_stress_strain` method which helps in plotting the hystereses
-
-        # remove the last two loads from the list of residual loads
-        self._residuals.pop()
-        self._residuals.pop()
-
-        return [_loads_min, _loads_max, _S_min, _S_max, _epsilon_min, _epsilon_max, _epsilon_min_LF,
-                _epsilon_max_LF, _is_closed_hysteresis, _is_zero_mean_stress_and_strain, _debug_output]
-
-    def _handle_case_c_i(self, *, current_point, previous_point_1):
-        """Handle case c) i. of the HCM algorithm."""
-
-        self._hcm_message += f" case c) i."
-
-        # yes -> we are on a new secondary branch, there is no new hysteresis to be closed with this
-        current_point = self._proceed_on_secondary_branch(previous_point_1, current_point)
-
-        # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
-        self._strain_values.append(current_point.strain.values[0])
-
-        # count number of strain values in the first run of the HCM algorithm
-        if self._run_index == 1:
-            self._n_strain_values_first_run += 1
-        return current_point
-
-    def _handle_case_b(self, current_point):
-        """ Handle case b) of the HCM algorithm.
-        The branch is fully part of the initial curve, case "Memory 1"
-        """
-
-        self._hcm_message += f" case b)"
-
-        # compute stress and strain of the current point
-        current_point = self._proceed_on_primary_branch(current_point)
-
-        # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
-        self._strain_values.append(current_point.strain.values[0])
-
-        # count number of strain values in the first run of the HCM algorithm
-        if self._run_index == 1:
-            self._n_strain_values_first_run += 1
-
-        return current_point
-
-    def _handle_case_a_ii(self, *, current_point, previous_point):
-        """Handle the case a) ii. in the HCM algorithm."""
-
-        self._hcm_message += f" case a) ii."
-
-        # secondary branch
-        current_point = self._proceed_on_secondary_branch(previous_point, current_point)
-
-        # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
-        self._strain_values.append(current_point.strain.values[0])
-
-        # count number of strain values in the first run of the HCM algorithm
-        if self._run_index == 1:
-            self._n_strain_values_first_run += 1
-
-        return current_point
-
-    def _handle_case_a_i(self, *, current_point, previous_point, recording_lists):
-        """Handle the case a) i. in the HCM algorithm where
-        the memory 3 effect is considered."""
-
-        self._hcm_message += f" case a) i., detected half counted hysteresis"
-
-        # case "Memory 3"
-        # the first part is still on the secondary branch, the second part is on the primary branch
-        # split these two parts
-
-        # the secondary branch corresponds to the load range [L, -L], where L is the previous load,
-        # which is named L_{q-1} in the FKM document
-        flipped_previous_point = self._HCM_Point(load=-previous_point.load)
-        flipped_previous_point = self._proceed_on_secondary_branch(previous_point, flipped_previous_point)
-
-        # the primary branch is the rest
-        current_point = self._proceed_on_primary_branch(current_point)
-
-        [_loads_min, _loads_max, _S_min, _S_max, _epsilon_min, _epsilon_max, _epsilon_min_LF,
-         _epsilon_max_LF, _is_closed_hysteresis, _is_zero_mean_stress_and_strain, _debug_output] = recording_lists
-        _loads_min = pd.concat([_loads_min, -abs(previous_point.load)])
-        _loads_max = pd.concat([_loads_max, abs(previous_point.load)])
-        _S_min = pd.concat([_S_min, -abs(previous_point.stress)])
-        _S_max = pd.concat([_S_max, abs(previous_point.stress)])
-        _epsilon_min = pd.concat([_epsilon_min, -abs(previous_point.strain)])
-        _epsilon_max = pd.concat([_epsilon_max, abs(previous_point.strain)])
-        _epsilon_min_LF = pd.concat([_epsilon_min_LF, self._epsilon_min_LF])
-        _epsilon_max_LF = pd.concat([_epsilon_max_LF, self._epsilon_max_LF])
-        _is_closed_hysteresis.append(False)             # the hysteresis is not fully closed and will be considered half damage
-        _is_zero_mean_stress_and_strain.append(True)    # force the mean stress and strain to be zero
-
-        # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
-        self._strain_values.append(current_point.strain.values[0])
-
-        # count number of strain values in the first run of the HCM algorithm
-        if self._run_index == 1:
-            self._n_strain_values_first_run += 1
-
-        # A note on _is_zero_mean_stress_and_strain: the FKM document specifies zero mean stress and strain in the current case,
-        # sigma_m=0, and epsilon_m=0 (eq. (2.9-52, 2.9-53)).
-        # Due to rounding errors as a result of the binning (de: Klassierung), the sigma_m and epsilon_m values are
-        # normally not zero. The FKM
-
-        self._hysteresis_index += 1         # increment the hysteresis counter, only needed for the `interpolated_stress_strain` method which helps in plotting the hystereses
-
-        return (
-            current_point,
-            [
-                _loads_min, _loads_max, _S_min, _S_max, _epsilon_min, _epsilon_max, _epsilon_min_LF,
-                _epsilon_max_LF, _is_closed_hysteresis, _is_zero_mean_stress_and_strain, _debug_output
-            ]
-        )
+        return iz, ir
 
     def _get_scalar_current_load(self, current_load):
         """Get a scalar value that represents the current load.
@@ -852,291 +674,39 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 self._epsilon_max_LF = pd.Series([0.0]*n_nodes, index=pd.Index(np.arange(n_nodes), name='node_id'))
 
 
-class FKMNonlinearHysteresisPlotter:
+    def interpolated_deformation(self, *, load_step, run_index, n_points):
+        run_history = self._history.xs(run_index, level="run_index")
+        idx = run_history.index.droplevel(["hyst_from", "hyst_to"]).get_loc(load_step)
 
-    def __init__(self, hcm_point_history, ramberg_osgood_relation):
-        self._hcm_point_history = hcm_point_history
-        self._ramberg_osgood_relation = ramberg_osgood_relation
+        to_value = run_history.iloc[idx]
 
-    def interpolated_stress_strain_data(self, *, n_points_per_branch=100, only_hystereses=False):
-        """Return points on the traversed hysteresis curve, mainly intended for plotting.
-        The curve including all hystereses, primary and secondary branches is sampled
-        at a fixed number of points within each hysteresis branch.
-        These points can be used for plotting.
-
-        The intended use is to generate plots as follows:
-
-        .. code:: python
-
-            fkm_nonlinear_detector.process_hcm_first(...)
-            sampling_parameter = 100    # choose larger for smoother plot or smaller for lower runtime
-            plotting_data = detector.interpolated_stress_strain_data(n_points_per_branch=sampling_parameter)
-
-            strain_values_primary = plotting_data["strain_values_primary"]
-            stress_values_primary = plotting_data["stress_values_primary"]
-            hysteresis_index_primary = plotting_data["hysteresis_index_primary"]
-            strain_values_secondary = plotting_data["strain_values_secondary"]
-            stress_values_secondary = plotting_data["stress_values_secondary"]
-            hysteresis_index_secondary = plotting_data["hysteresis_index_secondary"]
-
-            plt.plot(strain_values_primary, stress_values_primary, "g-", lw=3)
-            plt.plot(strain_values_secondary, stress_values_secondary, "b-.", lw=1)
-
-        Parameters
-        ----------
-        n_points_per_branch : int, optional
-            How many sampling points to use per hysteresis branch, default 100.
-            A larger value values means smoother curves but longer runtime.
-
-        only_hystereses : bool, optional
-            Default ``False``. If only graphs of the closed hystereses should be output.
-            Note that this does not work for hysteresis that have multiple smaller hysterseses included.
-
-        Returns
-        -------
-        plotting_data : dict
-            A dict with the following keys:
-
-            * "strain_values_primary"
-            * "stress_values_primary"
-            * "hysteresis_index_primary"
-            * "strain_values_secondary"
-            * "stress_values_secondary"
-            * "hysteresis_index_secondary"
-
-            The values are lists of strains and stresses of the points on the stress-strain curve,
-            separately for primary and secondary branches. The lists contain nan values whenever the
-            curve of the *same* branch is discontinuous. This allows to plot the entire curve
-            with different colors for primary and secondary branches.
-
-            The entries for hysteresis_index_primary and hysteresis_index_secondary are the row
-            indices into the collective DataFrame returned by the recorder. This allows, e.g.,
-            to separate the output of multiple runs of the HCM algorithm or to plot the traversed
-            paths on the stress-strain diagram for individual steps of the algorithm.
-
-        """
-
-        """self._hcm_point_history contains all traversed points:
-        It is a list of tuples (type, hcm_point, hysteresis_index), e.g., [ ("primary", hcm_point, 0), ("secondary", hcm_point, 1), ...]
-        where the type is one of {"primary", "secondary"} and indicates the hysteresis branch up to the current point
-        and the index is the hysteresis number to which the points belong. """
-
-        strain_values_primary = []
-        stress_values_primary = []
-        hysteresis_index_primary = []
-        strain_values_secondary = []
-        stress_values_secondary = []
-        hysteresis_index_secondary = []
-
-        previous_point = FKMNonlinearDetector._HCM_Point(stress=0, strain=0, load=0)
-        previous_point._stress = pd.Series(0)
-        previous_point._strain = pd.Series(0)
-        previous_type = "primary"
-        previous_is_direction_up = None
-        last_secondary_start_point = None
-        is_direction_up = None
-
-        # split primary parts if necessary
-        self._split_primary_parts(previous_point)
-
-        # determine which points are part of closed hysteresis and which are only part
-        # of other parts in the stress-strain diagram
-        point_is_part_of_closed_hysteresis = self._determine_point_is_part_of_closed_hysteresis()
-
-        previous_point = FKMNonlinearDetector._HCM_Point(strain=0)
-        previous_point._stress = pd.Series(0)
-        previous_point._strain = pd.Series(0)
-
-        # iterate over all previously stored points of the curve
-        for (type, hcm_point, hysteresis_index), is_part_of_closed_hysteresis in zip(self._hcm_point_history, point_is_part_of_closed_hysteresis):
-
-            # determine current direction ("upwards"/"downwards" in stress direction) of the hysteresis branch to be plotted
-            if hcm_point is not None and previous_point is not None:
-                is_direction_up = hcm_point.stress.iloc[0] - previous_point.stress.iloc[0] > 0
-
-            # depending on branch type, compute interpolated points on the branch
-            if type == "primary":
-                self._handle_primary_branch(n_points_per_branch=n_points_per_branch, only_hystereses=only_hystereses,
-                    strain_values_primary=strain_values_primary, stress_values_primary=stress_values_primary,
-                    hysteresis_index_primary=hysteresis_index_primary, strain_values_secondary=strain_values_secondary,
-                    stress_values_secondary=stress_values_secondary, previous_point=previous_point, previous_type=previous_type,
-                    type=type, hcm_point=hcm_point, hysteresis_index=hysteresis_index,
-                    is_part_of_closed_hysteresis=is_part_of_closed_hysteresis)
-
-                last_secondary_start_point = None
-
-            elif type == "secondary":
-                hcm_point, secondary_start_point = self._handle_secondary_branch(
-                    n_points_per_branch=n_points_per_branch, only_hystereses=only_hystereses,
-                    strain_values_primary=strain_values_primary, stress_values_primary=stress_values_primary,
-                    strain_values_secondary=strain_values_secondary, stress_values_secondary=stress_values_secondary,
-                    hysteresis_index_secondary=hysteresis_index_secondary, previous_point=previous_point,
-                    previous_type=previous_type, previous_is_direction_up=previous_is_direction_up,
-                    last_secondary_start_point=last_secondary_start_point, hcm_point=hcm_point, hysteresis_index=hysteresis_index,
-                    is_part_of_closed_hysteresis=is_part_of_closed_hysteresis, is_direction_up=is_direction_up)
-
-                if previous_type == 'primary':
-                    last_secondary_start_point = secondary_start_point
-                elif previous_type == 'discontinuity':
-                    last_secondary_start_point = hcm_point
-
-            elif type == "discontinuity":
-
-                # if the option "only_hystereses" is set, only output point if it is part of a closed hysteresis
-                if is_part_of_closed_hysteresis or not only_hystereses:
-
-                    stress_values_secondary.append(np.nan)
-                    strain_values_secondary.append(np.nan)
-                    hysteresis_index_secondary.append(hysteresis_index)
-
-                previous_type = type
-                continue
-
-            previous_point = hcm_point
-            previous_type = type
-            previous_is_direction_up = is_direction_up
-
-        result = {
-            "strain_values_primary": np.array(strain_values_primary),
-            "stress_values_primary": np.array(stress_values_primary),
-            "hysteresis_index_primary": np.array(hysteresis_index_primary),
-            "strain_values_secondary": np.array(strain_values_secondary),
-            "stress_values_secondary": np.array(stress_values_secondary),
-            "hysteresis_index_secondary": np.array(hysteresis_index_secondary)
-        }
-        return result
-
-    def _handle_secondary_branch(self, *, n_points_per_branch, only_hystereses, strain_values_primary, stress_values_primary,
-        strain_values_secondary, stress_values_secondary, hysteresis_index_secondary, previous_point,
-        previous_type, previous_is_direction_up, last_secondary_start_point, hcm_point, hysteresis_index,
-        is_part_of_closed_hysteresis, is_direction_up):
-
-        secondary_start_point = None
-
-        # if the option "only_hystereses" is set, only output point if it is part of a closed hysteresis
-        if is_part_of_closed_hysteresis or not only_hystereses:
-            # whenever a new segment of the secondary branch starts,
-            # add the previous point as starting point
-            if previous_type == "primary":
-                stress_values_secondary.append(np.nan)
-                strain_values_secondary.append(np.nan)
-                hysteresis_index_secondary.append(hysteresis_index)
-
-                if stress_values_primary:
-                    stress_values_secondary.append(stress_values_primary[-1])
-                    strain_values_secondary.append(strain_values_primary[-1])
-                    hysteresis_index_secondary.append(hysteresis_index)
-
-            # determine starting point of the current secondary branch
-            # After hanging hystereses that consist entirely of secondary branches, the line continues on a previous secondary branch
-            # Such case is detected if the previous direction up or downwards (from the hanging hystereses) is the same as the current direction (continuing after hanging hysteresis)
-            if previous_is_direction_up == is_direction_up and last_secondary_start_point is not None:
-                secondary_start_point = last_secondary_start_point
-            else:
-                secondary_start_point = previous_point
-
-            new_points_stress = []
-            new_points_strain = []
-
-            # iterate over sampling point within current curve segment
-            for stress in np.linspace(previous_point.stress, hcm_point.stress, n_points_per_branch):
-                # compute point on secondary branch
-                delta_stress = stress - secondary_start_point.stress
-                delta_strain = self._ramberg_osgood_relation.delta_strain(delta_stress)
-
-                stress = secondary_start_point._stress + delta_stress
-                strain = secondary_start_point._strain + delta_strain
-
-                new_points_stress.append(stress.iloc[0])
-                new_points_strain.append(strain.iloc[0])
-
-            # if the hysteresis ends on the primary path, then the current assumption that we only need to plot the secondary branch is incorrect.
-            # In that case, the end points are not equal, do not output any curve then.
-
-            # If the end points are equal
-            if np.isclose(stress, hcm_point.stress):
-                stress_values_secondary += new_points_stress
-                strain_values_secondary += new_points_strain
-                hysteresis_index_secondary += [hysteresis_index] * len(new_points_strain)
-
-            # if the end points are not equal (see explanation above)
-            else:
-                # reuse the previous point for the next part of the graph
-                hcm_point = previous_point
-
-        return hcm_point, secondary_start_point
-
-    def _handle_primary_branch(self, *, n_points_per_branch, only_hystereses, strain_values_primary, stress_values_primary,
-        hysteresis_index_primary, strain_values_secondary, stress_values_secondary, previous_point, previous_type, type,
-        hcm_point, hysteresis_index, is_part_of_closed_hysteresis):
-
-        # if the option "only_hystereses" is set, only output point if it is part of a closed hysteresis
-        if is_part_of_closed_hysteresis or not only_hystereses:
-            # whenever a new segment of the primary branch starts,
-            # add the previous point as starting point
-            if previous_type != type:
-                stress_values_primary.append(np.nan)
-                strain_values_primary.append(np.nan)
-                hysteresis_index_primary.append(hysteresis_index)
-                stress_values_primary.append(stress_values_secondary[-1])
-                strain_values_primary.append(strain_values_secondary[-1])
-                hysteresis_index_primary.append(hysteresis_index)
-
-            # iterate over sampling point within current curve segment
-            for stress in np.linspace(previous_point.stress, hcm_point.stress, n_points_per_branch):
-                # compute point on primary branch
+        if idx == 0:
+            if run_index == self._history.index.get_level_values("run_index").min():
+                stress = np.linspace(0.0, to_value.stress, n_points)
                 strain = self._ramberg_osgood_relation.strain(stress)
-                stress_values_primary.append(stress[0])
-                strain_values_primary.append(strain[0])
-                hysteresis_index_primary.append(hysteresis_index)
 
-    def _determine_point_is_part_of_closed_hysteresis(self):
-        """Determine which points are part of a closed hysteresis"""
-        point_is_part_of_closed_hysteresis = []
-        previous_index = -1
-        first_point_set = False
+                return pd.DataFrame({"stress": stress, "strain": strain, "secondary_branch": False})
 
-        for (_, _, index) in reversed(self._hcm_point_history):
-            if index != previous_index:
-                point_is_part_of_closed_hysteresis.insert(0, True)
-                first_point_set = True
+            from_value = self._history.xs(run_index-1, level="run_index").iloc[-1]
+        else:
+            from_value = run_history.iloc[idx-1]
 
-            elif first_point_set:
-                first_point_set = False
-                point_is_part_of_closed_hysteresis.insert(0, True)
-            else:
-                point_is_part_of_closed_hysteresis.insert(0, False)
+        stress = np.linspace(from_value.stress, to_value.stress, n_points)
 
-            previous_index = index
+        if to_value.secondary_branch:
+            secondary = np.ones(n_points, dtype=np.bool_)
+        else:
+            secondary = np.abs(stress) <= np.abs(from_value.stress)
 
-        return point_is_part_of_closed_hysteresis
+        delta_stress = from_value.stress - stress[secondary]
+        strain = np.empty(n_points)
+        strain[secondary] = from_value.strain - self._ramberg_osgood_relation.delta_strain(delta_stress)
+        strain[~secondary] = self._ramberg_osgood_relation.strain(stress[~secondary])
 
-    def _split_primary_parts(self, previous_point):
-        """Adjust the _hcm_point_history, split parts on the primary branch
-        that appear for positive residual stresses."""
-        old_hcm_point_history = self._hcm_point_history.copy()
-        largest_abs_stress_seen = pd.Series(0)
-        largest_abs_strain = 0
-        self._hcm_point_history = []
+        return pd.DataFrame({"stress": stress, "strain": strain, "secondary_branch": secondary})
 
-        for (type, hcm_point, hysteresis_index) in old_hcm_point_history:
-            if type != "primary":
-                self._hcm_point_history.append((type, hcm_point, hysteresis_index))
-                previous_point = hcm_point
-                continue
 
-            if all(previous_point.stress * hcm_point.stress < 0):
-                sign = np.sign(hcm_point.stress)
-                intermediate_point = FKMNonlinearDetector._HCM_Point(
-                    strain=sign*largest_abs_strain, stress=sign*largest_abs_stress_seen
-                )
-                self._hcm_point_history.append(("secondary", intermediate_point, hysteresis_index))
-                self._hcm_point_history.append(("primary", hcm_point, hysteresis_index))
-            else:
-                self._hcm_point_history.append((type, hcm_point, hysteresis_index))
-
-            if all(abs(hcm_point.stress.values) > largest_abs_stress_seen.values):
-                largest_abs_stress_seen = abs(hcm_point.stress)
-                largest_abs_strain = abs(hcm_point.strain)
-
-            previous_point = hcm_point
+    def interpolated_deformation_history(self, n_points):
+        result = self._history.drop(["load", "epsilon_min_LF", "epsilon_max_LF"], axis=1).droplevel("hyst_to")
+        result.index = result.index.rename({"hyst_from": "hyst_index"})
+        return result
