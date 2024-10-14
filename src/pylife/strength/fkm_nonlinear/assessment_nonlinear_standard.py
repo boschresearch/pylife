@@ -258,7 +258,7 @@ def _check_K_p_is_in_range(assessment_parameters):
 
 
 def _scale_load_sequence_according_to_probability(assessment_parameters, load_sequence):
-    """Scales the given load sequence according to one of three methods defined in the FKM nonlinear guideline.
+    r"""Scales the given load sequence according to one of three methods defined in the FKM nonlinear guideline.
 
     The FKM nonlinear guideline defines three possible methods to consider the statistical distribution of the load:
 
