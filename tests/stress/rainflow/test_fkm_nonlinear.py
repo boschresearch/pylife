@@ -29,6 +29,15 @@ import pylife.stress.rainflow.recorders as RFR
 import pylife.materiallaws.notch_approximation_law
 
 
+@pytest.fixture(autouse=True)
+def np_precision_2_print():
+    old_prec = pd.get_option("display.precision")
+    with np.printoptions(precision=2):
+        pd.set_option("display.precision", 2)
+        yield
+    pd.set_option("display.precision", old_prec)
+
+
 class TestFKMMemory1Inner(unittest.TestCase):
     """Example given in FKM nonlinear 3.2.1, p.147 """
 
