@@ -25,7 +25,7 @@ from .general import AbstractDetector
 
 
 class FourPointDetector(AbstractDetector):
-    """Implements four point rainflow counting algorithm.
+    r"""Implements four point rainflow counting algorithm.
 
     .. jupyter-execute::
 

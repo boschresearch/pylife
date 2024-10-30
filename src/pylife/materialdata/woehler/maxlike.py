@@ -125,42 +125,39 @@ class MaxLikeFull(Elementary):
         warn_and_fix_if_no_runouts()
         warn_and_fix_if_less_than_two_mixed_levels()
 
-        p_opt = initial_wcurve.to_dict()
+        prms_to_optimize = initial_wcurve.to_dict()
         for k in fixed_prms:
-            p_opt.pop(k)
+            prms_to_optimize.pop(k)
 
-        if not p_opt:
+        if not prms_to_optimize:
             raise AttributeError('You need to leave at least one parameter empty!')
-        var_opt = optimize.fmin(
-            self.__likelihood_wrapper, [*p_opt.values()],
-            args=([*p_opt], fixed_prms),
+        optimized_prms = optimize.fmin(
+            self.__likelihood_wrapper, [*prms_to_optimize.values()],
+            args=([*prms_to_optimize], fixed_prms),
             full_output=True,
             disp=False,
             maxiter=1e4,
             maxfun=1e4,
-        )
-        res = {}
-        res.update(fixed_prms)
-        res.update(zip([*p_opt], var_opt[0]))
+        )[0]
 
-        return self.__make_parameters(res)
+        # TODO: Change to following line when python 3.8 is dropped
+        #r esult = fixed_prms | dict(zip(prms_to_optimize, optimized_prms))
+
+        result = {}
+        result.update(fixed_prms)
+        result.update(zip(prms_to_optimize, optimized_prms))
+
+        return self.__make_parameters(result)
 
     def __make_parameters(self, params):
-        params['SD'] = np.abs(params['SD'])
-        params['TS'] = np.abs(params['TS'])
-        params['k_1'] = np.abs(params['k_1'])
-        params['ND'] = np.abs(params['ND'])
-        params['TN'] = np.abs(params['TN'])
-        return params
+        return {k: np.abs(v) for k, v in params.items()}
 
     def __likelihood_wrapper(self, var_args, var_keys, fix_args):
-        ''' 1) Finds the start values to be optimized. The rest of the paramters are fixed by the user.
-            2) Calls function mali_sum_lolli to calculate the maximum likelihood of the current
-            variable states.
-        '''
+        # TODO: Change to following line when python 3.8 is dropped
+        # args = self.__make_parameters(fix_args | dict(zip(var_keys, var_args)))
+
         args = {}
         args.update(fix_args)
         args.update(zip(var_keys, var_args))
         args = self.__make_parameters(args)
-
-        return -self._lh.likelihood_total(args['SD'], args['TS'], args['k_1'], args['ND'], args['TN'])
+        return -self._lh.likelihood_total(**args)
