@@ -3,7 +3,8 @@
 In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
-## Unreleased
+
+## pylife-2.1.3
 
 ### Improvements
 
