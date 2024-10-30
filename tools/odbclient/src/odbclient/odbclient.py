@@ -219,9 +219,19 @@ class OdbClient:
             For every element there is list of node ids that the element is connected to.
 
         """
-        index, connectivity = self._query('get_connectivity', (instance_name, elset_name))
-        return pd.DataFrame({'connectivity': connectivity},
-                            index=pd.Index(index, name='element_id', dtype=np.int64))
+        index, connectivity = self._query(
+            'get_connectivity', (instance_name, elset_name)
+        )
+
+        return pd.DataFrame(
+            {
+                'connectivity': [
+                    conn[conn >= -0].astype(np.int64).tolist() for conn in connectivity
+                ]
+            },
+            index=pd.Index(index, name='element_id', dtype=np.int64),
+        )
+
 
     def nset_names(self, instance_name=''):
         """Query the available node set names.

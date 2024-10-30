@@ -3,6 +3,15 @@
 In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
+## Unreleased
+
+### Improvements
+
+* Massive performance improvement when reading element connectivity by
+  `odbclient.` Note that also `odbserver` needs to be updated in its
+  environment.
+
+
 ## pylife-2.1.2
 
 ### New features

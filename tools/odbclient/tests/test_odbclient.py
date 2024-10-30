@@ -106,12 +106,14 @@ def test_odbclient_elset_names_invalid_instance_name(client):
         client.elset_names('nonexistent')
 
 
-@pytest.mark.skip("to be implemented")
 def test_element_connectivity(client):
-    expected = pd.read_csv('tests/connectivity.csv', index_col='element_id')
+    expected = pd.read_json(
+        'tests/connectivity.json', orient="index"
+    )
+    expected.index.names = ["element_id"]
+
     result = client.element_connectivity('PART-1-1')
-    print(result)
-    print(expected)
+
     pd.testing.assert_frame_equal(result, expected)
 
 

@@ -22,7 +22,6 @@ import numpy as np
 import odbAccess as ODB
 import json
 
-
 class OdbInterface:
 
     def __init__(self, odbfile):
@@ -78,10 +77,11 @@ class OdbInterface:
             raise KeyError(element_set_name)
 
         index = np.empty(len(elements), dtype=np.int)
-        connectivity = []
+        connectivity = -np.ones((len(elements), 20))
         for i, el in enumerate(elements):
             index[i] = el.label
-            connectivity.append(list(el.connectivity))
+            conns = list(el.connectivity)
+            connectivity[i, :len(conns)] = conns
 
         return (index, connectivity)
 
