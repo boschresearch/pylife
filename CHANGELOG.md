@@ -3,6 +3,13 @@
 In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
+## Unreleased
+
+### Minor improvments
+
+* Connectivity information is now transfered from odbserver to odbclient as
+  ints.
+
 
 ## pylife-2.1.3
 

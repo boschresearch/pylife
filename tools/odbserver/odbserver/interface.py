@@ -76,8 +76,8 @@ class OdbInterface:
         else:
             raise KeyError(element_set_name)
 
-        index = np.empty(len(elements), dtype=np.int)
-        connectivity = -np.ones((len(elements), 20))
+        index = np.empty(len(elements), dtype=np.int64)
+        connectivity = -np.ones((len(elements), 20), dtype=np.int64)
         for i, el in enumerate(elements):
             index[i] = el.label
             conns = list(el.connectivity)

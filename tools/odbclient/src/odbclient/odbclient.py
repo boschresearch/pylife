@@ -226,7 +226,7 @@ class OdbClient:
         return pd.DataFrame(
             {
                 'connectivity': [
-                    conn[conn >= -0].astype(np.int64).tolist() for conn in connectivity
+                    conn[conn >= -0].tolist() for conn in connectivity
                 ]
             },
             index=pd.Index(index, name='element_id', dtype=np.int64),

@@ -113,6 +113,7 @@ def test_element_connectivity(client):
     expected.index.names = ["element_id"]
 
     result = client.element_connectivity('PART-1-1')
+    assert isinstance(result.loc[1, "connectivity"][0], int)
 
     pd.testing.assert_frame_equal(result, expected)
 
