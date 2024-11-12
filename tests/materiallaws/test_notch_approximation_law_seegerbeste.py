@@ -113,6 +113,21 @@ def test_seeger_beste_example_2():
         binned_notch_approximation_law._lut_secondary_branch, expected_matrix_AST_171_seeger_beste, rtol=2e-3, atol=1e-5)
 
 
+def test_seeger_beste_example_no_binning():
+    E = 206e3    # [MPa] Young's modulus
+    K = 1184     # [MPa]
+    n = 0.187    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    notch_approximation_law = SeegerBeste(E, K, n, K_p)
+
+    stress = notch_approximation_law.stress(150.0)
+    stress_secondary_branch = notch_approximation_law.stress_secondary_branch(150.0)
+
+    assert np.isclose(stress, 147.1, rtol=1e-3)
+    assert np.isclose(stress_secondary_branch, 149.8, rtol=1e-3)
+
+
 @pytest.mark.skip(reason="Derivatives not implemented at the moment, left in the code because it might be useful in the future for performance optimization with gradient-based root finding algorithms.")
 @pytest.mark.parametrize('stress, load', [
     (4, 9),
