@@ -20,7 +20,6 @@ __maintainer__ = __author__
 import numpy as np
 from scipy import optimize
 import pandas as pd
-import copy
 
 import pylife.materiallaws.rambgood
 
@@ -136,7 +135,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         '''
         stress = optimize.newton(
             func=self._stress_implicit,
-            x0=copy.copy(load),
+            x0=load,
             fprime=self._d_stress_implicit,
             args=([load]),
             rtol=rtol, tol=tol, maxiter=20
@@ -193,9 +192,10 @@ class ExtendedNeuber(NotchApproximationLawBase):
         # =>   sigma/E + (sigma/K')^(1/n') =  (L/sigma * K_p * e_star)
         # =>   (sigma/E + (sigma/K')^(1/n')) /  K_p * sigma =  L *  e_star(L)
         # <=> self._ramberg_osgood_relation.strain(stress) / self._K_p * stress = L * e_star(L)
+
         load = optimize.newton(
             func=self._load_implicit,
-            x0=copy.copy(stress),
+            x0=stress,
             fprime=self._d_load_implicit,
             args=([stress]),
             rtol=rtol, tol=tol, maxiter=20
@@ -225,7 +225,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         '''
         delta_stress = optimize.newton(
             func=self._stress_secondary_implicit,
-            x0=copy.copy(delta_load),
+            x0=delta_load,
             fprime=self._d_stress_secondary_implicit,
             args=([delta_load]),
             rtol=rtol, tol=tol, maxiter=20
@@ -281,9 +281,10 @@ class ExtendedNeuber(NotchApproximationLawBase):
         # =>   sigma/E + (sigma/K')^(1/n') =  (L/sigma * K_p * e_star)
         # =>   (sigma/E + (sigma/K')^(1/n')) /  K_p * sigma =  L *  e_star(L)
         # <=> self._ramberg_osgood_relation.strain(stress) / self._K_p * stress = L * e_star(L)
+
         delta_load = optimize.newton(
             func=self._load_secondary_implicit,
-            x0=copy.copy(delta_stress),
+            x0=delta_stress,
             fprime=self._d_load_secondary_implicit,
             args=([delta_stress]),
             rtol=rtol, tol=tol, maxiter=20
