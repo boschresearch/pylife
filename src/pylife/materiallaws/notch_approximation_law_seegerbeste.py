@@ -97,7 +97,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             # or (value, converged, zero_der) for vector-valued invocation
 
         # only for multiple points at once, if some points diverged
-        if sum(stress[1]) < len(stress[1]):
+        if len(stress) == 3 and sum(stress[1]) < len(stress[1]):
             stress = self._stress_fix_not_converged_values(stress, load, x0, rtol, tol)
 
         return stress[0]
@@ -209,7 +209,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             # or (value, converged, zero_der) for vector-valued invocation
 
         # only for multiple points at once, if some points diverged
-        if sum(delta_stress[1]) < len(delta_stress[1]):
+        if len(delta_stress) == 3 and sum(delta_stress[1]) < len(delta_stress[1]):
             delta_stress = self._stress_secondary_fix_not_converged_values(delta_stress, delta_load, x0, rtol, tol)
 
         return delta_stress[0]
