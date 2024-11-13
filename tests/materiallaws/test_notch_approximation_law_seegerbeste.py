@@ -72,6 +72,8 @@ def test_seeger_beste_example_1():
     pd.testing.assert_frame_equal(
         binned_notch_approximation_law._lut_secondary_branch, expected_matrix_AST_162_seeger_beste, rtol=1e-3, atol=1e-5)
 
+    assert np.isclose(binned_notch_approximation_law._lut_primary_branch.load.max(), maximum_absolute_load)
+
 
 def test_seeger_beste_example_2():
     """ example under 2.7.2, p.78 of FKM nonlinear, "Welle mit V-Kerbe" """
