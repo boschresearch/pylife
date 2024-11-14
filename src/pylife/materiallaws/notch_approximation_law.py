@@ -39,28 +39,28 @@ class NotchApproximationLawBase:
 
     @property
     def E(self):
-        '''Young's Modulus'''
+        """Young's Modulus"""
         return self._E
 
     @property
     def K(self):
-        '''the strength coefficient'''
+        """the strength coefficient"""
         return self._K
 
     @property
     def n(self):
-        '''the strain hardening coefficient'''
+        """the strain hardening coefficient"""
         return self._n
 
     @property
     def K_p(self):
-        '''the shape factor (de: Traglastformzahl)'''
+        """the shape factor (de: Traglastformzahl)"""
         return self._K_p
 
     @property
     def ramberg_osgood_relation(self):
-        '''the Ramberg-Osgood relation object, i.e., an object of type RambergOsgood
-        '''
+        """the Ramberg-Osgood relation object, i.e., an object of type RambergOsgood
+        """
         return self._ramberg_osgood_relation
 
     @K_p.setter
@@ -81,7 +81,7 @@ class NotchApproximationLawBase:
 
 
 class ExtendedNeuber(NotchApproximationLawBase):
-    r'''Implementation of the extended Neuber notch approximation material relation.
+    r"""Implementation of the extended Neuber notch approximation material relation.
 
     This notch approximation law is used for the P_RAM damage parameter in the FKM
     nonlinear guideline (2019). Given an elastic-plastic stress (and strain) from a linear FE
@@ -106,13 +106,10 @@ class ExtendedNeuber(NotchApproximationLawBase):
     -----
     The equation implemented is described in the FKM nonlinear reference, chapter 2.5.7.
 
-    '''
+    """
 
     def stress(self, load, *, rtol=1e-4, tol=1e-4):
-        '''Calculate the stress of the primary path in the stress-strain diagram at a given
-        elastic-plastic stress (load), from a FE computation.
-        This is done by solving for the root of f(sigma) in eq. 2.5-45 of FKM nonlinear.
-
+        r"""Calculate the stress of the primary path in the stress-strain diagram at a given
 
         Parameters
         ----------
@@ -132,7 +129,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         -------
         stress : array-like float
             The resulting elastic-plastic stress according to the notch-approximation law.
-        '''
+        """
         stress = optimize.newton(
             func=self._stress_implicit,
             x0=load,
@@ -143,7 +140,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         return stress
 
     def strain(self, stress, load):
-        '''Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
+        """Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
         The formula is given by eq. 2.5-42 of FKM nonlinear.
         load / stress * self._K_p * e_star
 
@@ -158,12 +155,12 @@ class ExtendedNeuber(NotchApproximationLawBase):
         -------
         strain : array-like float
             The resulting strain
-        '''
+        """
 
         return self._ramberg_osgood_relation.strain(stress)
 
     def load(self, stress, *, rtol=1e-4, tol=1e-4):
-        '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
+        """Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
         from the elastic-plastic stress as from the notch approximation.
         This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
 
@@ -185,7 +182,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         load : array-like float
             The resulting load or lienar-elastic stress.
 
-        '''
+        """
 
         # self._stress_implicit(stress) = 0
         # f(sigma) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star) = 0
@@ -203,7 +200,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         return load
 
     def stress_secondary_branch(self, delta_load, *, rtol=1e-4, tol=1e-4):
-        '''Calculate the stress on secondary branches in the stress-strain diagram at a given
+        """Calculate the stress on secondary branches in the stress-strain diagram at a given
         elastic-plastic stress (load), from a FE computation.
         This is done by solving for the root of f(sigma) in eq. 2.5-46 of FKM nonlinear.
 
@@ -222,18 +219,18 @@ class ExtendedNeuber(NotchApproximationLawBase):
         -------
         delta_stress : array-like float
             The resulting stress increment within the hysteresis
-        '''
+        """
         delta_stress = optimize.newton(
             func=self._stress_secondary_implicit,
             x0=delta_load,
             fprime=self._d_stress_secondary_implicit,
-            args=([delta_load]),
+            args=([np.asarray(delta_load, dtype=np.float64)]),
             rtol=rtol, tol=tol, maxiter=20
         )
         return delta_stress
 
     def strain_secondary_branch(self, delta_stress, delta_load):
-        '''Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
+        """Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
         The formula is given by eq. 2.5-46 of FKM nonlinear.
 
         Parameters
@@ -247,12 +244,12 @@ class ExtendedNeuber(NotchApproximationLawBase):
         -------
         strain : array-like float
             The resulting strain
-        '''
+        """
 
         return self._ramberg_osgood_relation.delta_strain(delta_stress)
 
     def load_secondary_branch(self, delta_stress, *, rtol=1e-4, tol=1e-4):
-        '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
+        """Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
         from the elastic-plastic stress as from the notch approximation.
         This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
 
@@ -274,7 +271,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         delta_load : array-like float
             The resulting load or lienar-elastic stress.
 
-        '''
+        """
 
         # self._stress_implicit(stress) = 0
         # f(sigma) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star) = 0
@@ -466,6 +463,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         return -1/delta_stress * self.K_p * self._delta_e_star(delta_load) \
             - delta_load/delta_stress * self.K_p * self._d_delta_e_star(delta_load)
 
+
 class Binned:
     """Binning for notch approximation laws, as described in FKM nonlinear 2.5.8.2, p.55.
     The implicitly defined stress function of the notch approximation law is precomputed
@@ -493,12 +491,12 @@ class Binned:
 
     @property
     def ramberg_osgood_relation(self):
-        '''The ramberg osgood relation object
-        '''
+        """The ramberg osgood relation object
+        """
         return self._notch_approximation_law.ramberg_osgood_relation
 
     def stress(self, load, *, rtol=1e-5, tol=1e-6):
-        '''The stress of the primary path in the stress-strain diagram at a given load
+        """The stress of the primary path in the stress-strain diagram at a given load
         by using the value of the look-up table.
 
         .. note::
@@ -520,7 +518,7 @@ class Binned:
         -------
         stress : array-like float
             The resulting stress
-        '''
+        """
 
 
         # FIXME consolidate theese methods (duplicated code)
@@ -569,6 +567,7 @@ class Binned:
 
         # if the assessment is done only for one value, i.e. load is a scalar
         else:
+
             index = self._lut_primary_branch.load.searchsorted(np.abs(load))-1   # "-1", transform to zero-based indices
 
             # raise error if requested load is higher than initialized maximum absolute load
@@ -579,7 +578,7 @@ class Binned:
             return sign * self._lut_primary_branch.iloc[index+1].stress    # "+1", because the next higher class is used
 
     def strain(self, stress, load):
-        '''Get the strain of the primary path in the stress-strain diagram at a given stress and load
+        """Get the strain of the primary path in the stress-strain diagram at a given stress and load
         by using the value of the look-up table.
 
         This method performs the task for for multiple points at once,
@@ -594,7 +593,7 @@ class Binned:
         -------
         strain : array-like float
             The resulting strain
-        '''
+        """
         sign = np.sign(load)
 
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
@@ -651,7 +650,7 @@ class Binned:
             return sign * self._lut_primary_branch.iloc[index+1].strain     # "+1", because the next higher class is used
 
     def stress_secondary_branch(self, delta_load, *, rtol=1e-5, tol=1e-6):
-        '''Get the stress on secondary branches in the stress-strain diagram at a given load
+        """Get the stress on secondary branches in the stress-strain diagram at a given load
         by using the value of the look-up table (lut).
 
         This method performs the task for for multiple points at once,
@@ -672,7 +671,7 @@ class Binned:
         -------
         delta_stress : array-like float
             The resulting stress increment within the hysteresis
-        '''
+        """
 
         sign = np.sign(delta_load)
 
@@ -730,7 +729,7 @@ class Binned:
             return sign * self._lut_secondary_branch.iloc[index+1].delta_stress     # "+1", because the next higher class is used
 
     def strain_secondary_branch(self, delta_stress, delta_load):
-        '''Get the strain on secondary branches in the stress-strain diagram at a given stress and load
+        """Get the strain on secondary branches in the stress-strain diagram at a given stress and load
         by using the value of the look-up table (lut).
         The lut is a DataFrame with MultiIndex with levels class_index and node_id.
 
@@ -746,7 +745,7 @@ class Binned:
         -------
         strain : array-like float
             The resulting strain
-        '''
+        """
         #return self._notch_approximation_law.strain_secondary_branch(delta_stress, delta_load)
 
         sign = np.sign(delta_load)
