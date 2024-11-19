@@ -35,7 +35,7 @@ class TestFKMMemory1Inner(unittest.TestCase):
 
     def setUp(self):
 
-        signal = np.array([100,0,80,20,60,40])
+        signal = np.array([100, 0, 80, 20, 60, 40])
 
         self._recorder = RFR.FKMNonlinearRecorder()
         E = 206e3    # [MPa] Young's modulus
@@ -69,9 +69,16 @@ class TestFKMMemory1Inner(unittest.TestCase):
     def test_strain_values(self):
 
         # regression test
-        np.testing.assert_allclose(self._detector.strain_values, np.array([4.854492e-04, 1.169416e-08, 3.883614e-04, 9.709922e-05, 2.912740e-04, 1.941866e-04, 4.854492e-04, 1.169416e-08, 3.883614e-04, 9.709922e-05, 2.912740e-04, 1.941866e-04]), rtol=1e-3, atol=1e-5)
-        np.testing.assert_allclose(self._detector.strain_values_first_run, np.array([4.854492e-04, 1.169416e-08, 3.883614e-04, 9.709922e-05, 2.912740e-04]), rtol=1e-3, atol=1e-5)
-        np.testing.assert_allclose(self._detector.strain_values_second_run, np.array([1.941866e-04, 4.854492e-04, 1.169416e-08, 3.883614e-04, 9.709922e-05, 2.912740e-04, 1.941866e-04]), rtol=1e-3, atol=1e-5)
+
+        expected_first = np.array([4.85e-04, 1.17e-08, 3.88e-04, 9.70e-05, 2.91e-04])
+        expected_second = np.array(
+            [1.94e-04, 4.85e-04, 1.17e-08, 3.88e-04, 9.70e-05, 2.91e-04, 1.94e-04]
+        )
+        expected_total = np.concatenate((expected_first, expected_second))
+
+        np.testing.assert_allclose(self._detector.strain_values, expected_total, rtol=1e-3, atol=1e-5)
+        np.testing.assert_allclose(self._detector.strain_values_first_run, expected_first, rtol=1e-3, atol=1e-5)
+        np.testing.assert_allclose(self._detector.strain_values_second_run, expected_second, rtol=1e-3, atol=1e-5)
 
 
 class TestFKMMemory1_2_3(unittest.TestCase):
