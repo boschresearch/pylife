@@ -89,6 +89,18 @@ class TestFKMMemory1Inner(unittest.TestCase):
         np.testing.assert_allclose(self._detector.strain_values_first_run, expected_first, rtol=1e-3, atol=1e-5)
         np.testing.assert_allclose(self._detector.strain_values_second_run, expected_second, rtol=1e-3, atol=1e-5)
 
+    def test_epsilon_LF(self):
+        collective = self._recorder.collective
+
+        np.testing.assert_allclose(
+            collective.epsilon_min_LF.to_numpy(), np.array([0.0, 0.0, 0.0]), rtol=1e-2
+        )
+
+        np.testing.assert_allclose(
+            collective.epsilon_max_LF.to_numpy(),
+            np.array([0.485, 0.485, 0.485]) * 1e-3,
+            rtol=1e-2,
+        )
 
 class TestFKMMemory1_2_3(unittest.TestCase):
     """Example given in FKM nonlinear 3.2.2, p.150 """
@@ -146,6 +158,22 @@ class TestFKMMemory1_2_3(unittest.TestCase):
             9.71373378e-04,  4.74995178e-07,  9.71373378e-04, -9.713734e-04]), rtol=1e-3, atol=1e-5)
 
 
+    def test_epsilon_LF(self):
+        collective = self._recorder.collective
+
+        np.testing.assert_allclose(
+            collective.epsilon_min_LF.to_numpy(),
+            np.array([-0.485, -0.485, -0.971, -0.971, -0.971, -0.971, -0.971, -0.971, -0.971, -0.971]) * 1e-3,
+            rtol=1e-2
+        )
+
+        np.testing.assert_allclose(
+            collective.epsilon_max_LF.to_numpy(),
+            np.array([0.485, 0.485, 0.485, 0.971, 0.971, 0.971, 0.971, 0.971, 0.971, 0.971]) * 1e-3,
+            rtol=1e-2
+        )
+
+
 class TestHCMExample1(unittest.TestCase):
     """Example 2.7.1 "Akademisches Beispiel", p.74 """
 
@@ -198,6 +226,21 @@ class TestHCMExample1(unittest.TestCase):
         np.testing.assert_allclose(self._detector.strain_values, np.array([0.000704, -0.001551,  0.000632, -0.002099,  0.001529,  0.000121, 0.001529, -0.001574,  0.00061, -0.001574,  0.00061, -0.002099, 0.001529,  0.000121,  0.001529, -0.001574]), rtol=1e-3, atol=1e-5)
         np.testing.assert_allclose(self._detector.strain_values_first_run, np.array([0.000704, -0.001551,  0.000632, -0.002099,  0.001529,  0.000121, 0.001529, -0.001574]), rtol=1e-3, atol=1e-5)
         np.testing.assert_allclose(self._detector.strain_values_second_run, np.array([0.00061, -0.001574,  0.00061, -0.002099, 0.001529,  0.000121,  0.001529, -0.001574]), rtol=1e-3, atol=1e-5)
+
+    def test_epsilon_LF(self):
+        collective = self._recorder.collective
+        np.testing.assert_allclose(
+            collective.epsilon_min_LF.to_numpy(),
+            np.array([0.0, -1.55, -2.1, -2.1, -2.1, -2.1, -2.1]) * 1e-3,
+            rtol=1e-2
+        )
+
+        np.testing.assert_allclose(
+            collective.epsilon_max_LF.to_numpy(),
+            np.array([0.70, 0.70, 1.53, 1.53, 1.53, 1.53, 1.53]) * 1e-3,
+            rtol=1e-2
+        )
+
 
     def test_plotting(self):
 
@@ -375,6 +418,53 @@ class TestHCMExample2(unittest.TestCase):
 @pytest.mark.parametrize('vals, expected_loads_min, expected_loads_max', [
     (
         [200, 600, 1000, 60, 1500, 200, 80, 400, 1500, 700, 200],
+        [60, 80, 200, 60, 80],
+        [1000, 1500, 1000, 1500, 1500]
+    ),
+    (
+        [0, 500], [], []
+    ),
+    (
+        [100, -200, 100, -250, 200, 0, 200, -200],
+        [-200,  0,  -200, -200, -250, 0],
+        [100, 200, 100, 100, 200, 200]
+    )
+])
+def test_edge_case_value_in_sample_tail_simple_signal(vals, expected_loads_min, expected_loads_max):
+    signal = np.array(vals)
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.1148*(1251)**0.897 / (( np.min([0.338, 1033.*1251.**(-1.235)]) )**0.187)
+    #K = 2650.5   # [MPa]
+    n = 0.187    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(signal))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+    detector.process(signal).process(signal)
+
+    loads_min = detector.recorder.loads_min
+    loads_max = detector.recorder.loads_max
+
+    np.testing.assert_allclose(loads_min, np.array(expected_loads_min))
+    np.testing.assert_allclose(loads_max, np.array(expected_loads_max))
+
+    detector.recorder.collective
+
+
+@pytest.mark.parametrize('vals, expected_loads_min, expected_loads_max', [
+    (
+        [200, 600, 1000, 60, 1500, 200, 80, 400, 1500, 700, 200],
         [60, 120, 180, 80, 160, 240, 200, 400, 600, 60, 120, 180, 80, 160, 240],
         [1000, 2000, 3000, 1500, 3000, 4500, 1000, 2000, 3000, 1500, 3000, 4500, 1500, 3000, 4500]
     ),
@@ -421,6 +511,7 @@ def test_edge_case_value_in_sample_tail(vals, expected_loads_min, expected_loads
 
     detector.recorder.collective
 
+
 def test_flush_edge_case_load():
     mi_1 = pd.MultiIndex.from_product([range(9), range(3)], names=["load_step", "node_id"])
 
@@ -439,8 +530,8 @@ def test_flush_edge_case_load():
     ], index=mi_2)
 
     E = 206e3    # [MPa] Young's modulus
-    K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
-    #K = 2650.5   # [MPa]
+    #K = 3.048*(1251)**0.07 / ((np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
+    K = 2650.5   # [MPa]
     n = 0.07    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
@@ -483,6 +574,277 @@ def test_flush_edge_case_load():
 
     pd.testing.assert_series_equal(loads_min, expected_load_min)
     pd.testing.assert_series_equal(loads_max, expected_load_max)
+
+    collective = detector.recorder.collective
+
+    np.testing.assert_allclose(
+        collective.epsilon_min_LF.to_numpy(),
+        np.array([0., 0., 0., -1.4, -1.67, -0.31, -1.75, -2.08, -0.4, -1.75, -2.08, -0.4, -1.75, -2.08, -0.4, -1.75, -2.08, -0.4, -1.75, -2.08, -0.4 ]) * 1e-3,
+        rtol=1e-1
+    )
+
+    np.testing.assert_allclose(
+        collective.epsilon_max_LF.to_numpy(),
+        np.array([0.71, 0.83, 0.17, 0.71, 0.83, 0.17, 1.4, 1.67, 0.31, 1.4, 1.67, 0.31, 1.4, 1.67, 0.31, 1.4, 1.67, 0.31, 1.4, 1.67, 0.31]) * 1e-3,
+        rtol=1e-1
+    )
+
+
+
+def test_flush_edge_case_load_simple_signal():
+
+    signal_1 = np.array([0.0, 143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    mi_2 = pd.MultiIndex.from_product([range(9, 17), range(3)], names=["load_step", "node_id"])
+
+    signal_2 = np.array([143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
+    #K = 2650.5   # [MPa]
+    n = 0.07    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(np.concatenate([signal_1, signal_2])))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+
+    detector.process(signal_1, flush=True).process(signal_2, flush=True)
+
+    expected_load_min = np.array(
+        [-143.0, -287.0, 0.0, -287.0, -287.0, -359.0, 0.0],
+    )
+    expected_load_max = np.array(
+        [143.0, 143.0, 287.0, 143.0, 143.0, 287.0, 287.0],
+    )
+
+    loads_min = detector.recorder.loads_min
+    loads_max = detector.recorder.loads_max
+
+    np.testing.assert_allclose(loads_min, expected_load_min)
+    np.testing.assert_allclose(loads_max, expected_load_max)
+
+
+def test_flush_edge_case_S_simple_signal():
+
+    signal_1 = np.array([0.0, 143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    mi_2 = pd.MultiIndex.from_product([range(9, 17), range(3)], names=["load_step", "node_id"])
+
+    signal_2 = np.array([143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
+    #K = 2650.5   # [MPa]
+    n = 0.07    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(np.concatenate([signal_1, signal_2])))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+
+    detector.process(signal_1, flush=True).process(signal_2, flush=True)
+
+    expected_S_min = np.array(
+        [-49.096964, -96.75, -9.610801e-11, -96.75, -96.75, -121.298382, -9.610801e-11]
+    )
+    expected_S_max = pd.Series(
+        [49.096964, 49.096964, 96.749900, 49.096964, 49.096964, 96.749900, 96.749900],
+    )
+
+    S_min = detector.recorder.S_min
+    S_max = detector.recorder.S_max
+
+    np.testing.assert_allclose(S_min, expected_S_min)
+    np.testing.assert_allclose(S_max, expected_S_max)
+
+
+
+def test_flush_edge_case_load_simple_signal():
+
+    signal_1 = np.array([0.0, 143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    mi_2 = pd.MultiIndex.from_product([range(9, 17), range(3)], names=["load_step", "node_id"])
+
+    signal_2 = np.array([143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
+    #K = 2650.5   # [MPa]
+    n = 0.07    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(np.concatenate([signal_1, signal_2])))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+
+    detector.process(signal_1, flush=True).process(signal_2, flush=True)
+
+    expected_load_min = np.array(
+        [-143.0, -287.0, 0.0, -287.0, -287.0, -359.0, 0.0],
+    )
+    expected_load_max = np.array(
+        [143.0, 143.0, 287.0, 143.0, 143.0, 287.0, 287.0],
+    )
+
+    loads_min = detector.recorder.loads_min
+    loads_max = detector.recorder.loads_max
+
+    np.testing.assert_allclose(loads_min, expected_load_min)
+    np.testing.assert_allclose(loads_max, expected_load_max)
+
+
+def test_flush_edge_case_S_simple_signal():
+
+    signal_1 = np.array([0.0, 143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    mi_2 = pd.MultiIndex.from_product([range(9, 17), range(3)], names=["load_step", "node_id"])
+
+    signal_2 = np.array([143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
+    #K = 2650.5   # [MPa]
+    n = 0.07    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(np.concatenate([signal_1, signal_2])))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+
+    detector.process(signal_1, flush=True).process(signal_2, flush=True)
+
+    expected_S_min = np.array(
+        [-49.096964, -96.75, -9.610801e-11, -96.75, -96.75, -121.298382, -9.610801e-11]
+    )
+    expected_S_max = pd.Series(
+        [49.096964, 49.096964, 96.749900, 49.096964, 49.096964, 96.749900, 96.749900],
+    )
+
+    S_min = detector.recorder.S_min
+    S_max = detector.recorder.S_max
+
+    np.testing.assert_allclose(S_min, expected_S_min)
+    np.testing.assert_allclose(S_max, expected_S_max)
+
+
+
+def test_flush_edge_case_load_simple_signal():
+
+    signal_1 = np.array([0.0, 143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    mi_2 = pd.MultiIndex.from_product([range(9, 17), range(3)], names=["load_step", "node_id"])
+
+    signal_2 = np.array([143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
+    #K = 2650.5   # [MPa]
+    n = 0.07    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(np.concatenate([signal_1, signal_2])))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+
+    detector.process(signal_1, flush=True).process(signal_2, flush=True)
+
+    expected_load_min = np.array(
+        [-143.0, -287.0, 0.0, -287.0, -287.0, -359.0, 0.0],
+    )
+    expected_load_max = np.array(
+        [143.0, 143.0, 287.0, 143.0, 143.0, 287.0, 287.0],
+    )
+
+    loads_min = detector.recorder.loads_min
+    loads_max = detector.recorder.loads_max
+
+    np.testing.assert_allclose(loads_min, expected_load_min)
+    np.testing.assert_allclose(loads_max, expected_load_max)
+
+
+def test_flush_edge_case_S_simple_signal():
+
+    signal_1 = np.array([0.0, 143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    mi_2 = pd.MultiIndex.from_product([range(9, 17), range(3)], names=["load_step", "node_id"])
+
+    signal_2 = np.array([143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
+    #K = 2650.5   # [MPa]
+    n = 0.07    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(np.concatenate([signal_1, signal_2])))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+
+    detector.process(signal_1, flush=True).process(signal_2, flush=True)
+
+    expected_S_min = np.array([-48.0, -96.7, 1.42e-14, -96.7, -96.7, -121.0, 1.42e-14])
+    expected_S_max = pd.Series([49.1, 49.1, 96.74, 49.1, 49.1, 96.75, 96.75])
+
+    S_min = detector.recorder.S_min
+    S_max = detector.recorder.S_max
+
+    np.testing.assert_allclose(S_min, expected_S_min, rtol=1e-1, atol=0.0)
+    np.testing.assert_allclose(S_max, expected_S_max, rtol=1e-1, atol=0.0)
 
 
 def test_flush_edge_case_S():
