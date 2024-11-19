@@ -34,6 +34,15 @@ EPS_MAX_LF=4
 
 PRIMARY=0
 SECONDARY=1
+DISCONTINUITY=2
+DISCONTINUITY_MASK=0b01
+NO_DISCONTINUITY=0
+
+MEMORY_1_2 = 1
+MEMORY_3 = 0
+
+PHYSICAL_HIST_COLUMNS = ["load", "stress", "strain", "secondary_branch"]
+INDEX_HIST_LEVELS = ["load_segment", "load_step", "run_index", "hyst_from", "hyst_to", "hyst_close"]
 
 
 class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
@@ -64,6 +73,8 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         self._residuals_array = []
         self._residuals_ndarray = np.array([])
         self._record_vals_residuals = pd.DataFrame()
+
+        self._history_record = []
 
         self._recorded_deformation = pd.DataFrame()
         self._chunk_sizes = []
@@ -163,26 +174,13 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         assert not isinstance(samples, pd.DataFrame)
         multi_index = isinstance(samples, pd.Series) and len(samples.index.names) > 1
 
-        empty_index = [] if not isinstance(samples, pd.Series) else pd.DataFrame(columns=samples.index.names, dtype=np.int64).set_index(samples.index.names, drop=True).index
         self._is_zero_mean_stress_and_strain = []
-
-        # initialization of _epsilon_min_LF see FKM nonlinear p.122
-        if self._epsilon_min_LF is None:
-            self._epsilon_min_LF = pd.Series(0.0)
-
-        if self._epsilon_max_LF is None:
-            self._epsilon_max_LF = pd.Series(0.0)
-
-        # store all lists together
 
         previous_load = 0
 
         self._run_index += 1
 
-        # convert from Series to np.array
-
         old_head_index = self._head_index
-
 
         if multi_index:
             _samples = samples.groupby('load_step', sort=False).first().to_numpy().flatten()
@@ -222,7 +220,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         self._chunk_sizes.append(len(load_turning_points))
 
         li = load_turning_points.index.to_frame()['load_step']
-        load_step = (li != li.shift()).cumsum()
+        load_step = (li != li.shift()).cumsum() - 1
 
         self._current_load_indexer = load_turning_points.index.get_level_values("load_step").unique()
 
@@ -231,7 +229,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             for _, current_load in load_turning_points.groupby(load_step, sort=False)
         ])
 
-        self._hysts = []
+        self._hysts = np.zeros((len(load_turning_points_rep), 4), dtype=np.int64)
         self._record = -np.ones((len(load_turning_points_rep), 2), dtype=np.int64)
 
         self._index = 0
@@ -241,9 +239,9 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             previous_load=previous_load, iz=self._iz, ir=self._ir,
             load_max_seen=self._load_max_seen, load_turning_points=load_turning_points)
 
-        residuals_index = np.array([i for i, _, _ in self._residuals_array])
+        self._hysts = self._hysts[:self._hyst_index, :]
 
-        self._hysts = np.array(self._hysts)
+        residuals_index = np.array([i for i, _, _ in self._residuals_array])
 
         if self._last_record is None:
             self._last_record = np.zeros((5, self._group_size))
@@ -262,11 +260,28 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 prev_record = self._record_vals_residuals.iloc[l:u].to_numpy().T
             elif prev_index < i:
                 prev_record = record_vals[prev_index*self._group_size:(prev_index+1)*self._group_size].T
-            record_vals[sli:sli+len(load_turning_point)] = self.process_deformation(self._record[i, :], load_turning_point, prev_record).T
+            record_vals[sli:sli+len(load_turning_point)] = self._process_deformation(self._record[i, :], load_turning_point, prev_record).T
             sli += len(load_turning_point)
 
-        self._record_vals = pd.DataFrame(record_vals, columns=["load", "stress", "strain", "epsilon_min_LF", "epsilon_max_LF"], index=self._current_load_index)
+        self._record_vals = pd.DataFrame(
+            record_vals,
+            columns=["load", "stress", "strain", "epsilon_min_LF", "epsilon_max_LF"],
+            index=self._current_load_index,
+        )
 
+        record_repr = (
+            self._record_vals.groupby(load_step)
+            .first()
+            .reset_index(drop=False)
+            .drop(["epsilon_min_LF", "epsilon_max_LF"], axis=1)
+        )
+        record_repr["run_index"] = self._run_index
+        record_repr["secondary_branch"] = self._record[:, CASE] != 0
+
+        hysts = self._hysts.copy()
+        hysts[:, 1:] += sum(self._chunk_sizes[:-1])
+
+        self._history_record.append((record_repr, hysts))
 
         self._recorded_deformation = pd.concat([self._recorded_deformation, self._record_vals])
 
@@ -336,10 +351,10 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         return self
 
-    def process_deformation(self, record, load, prev_record):
+    def _process_deformation(self, record, load, prev_record):
         function_map = [self._primary, self._secondary]
 
-        function = function_map[record[CASE]]
+        function = function_map[record[CASE] & DISCONTINUITY_MASK]
 
         result = np.empty((5, self._group_size))
         result[:3, :] = function(prev_record, load)
@@ -356,7 +371,6 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
         self._last_record = result.copy()
 
         return result
-
 
     def load_memory_1_2(self, point_0, point_1):
         return (point_0, point_1, point_0, point_1) if point_0.values[0, 0] < point_1.values[0, 0] else (point_1, point_0, point_1, point_0)
@@ -391,7 +405,7 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
         index_max = []
 
-        memory_functions = [self.load_memory_3, self.load_memory_1_2, self.load_memory_1_2, self.load_memory_3]
+        memory_functions = [self.load_memory_3, self.load_memory_1_2]
 
         for i, hyst in enumerate(self._hysts):
             idx = (hyst[1:3] + start) * self._group_size
@@ -567,7 +581,10 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 if np.abs(current_load_representative) > load_max_seen:
                     # case a) i., "Memory 3"
                     self._record[self._index, :] = [record_index, PRIMARY]
-                    self._hysts.append([0, current_index-1, current_index+1])
+
+                    self._hysts[self._hyst_index, :] = [
+                        MEMORY_3, self._residuals_array[-1][0], current_index, -1
+                    ]
                     self._hyst_index += 1
                     self._is_zero_mean_stress_and_strain.append(True)
 
@@ -575,13 +592,11 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
 
                 else:
                     self._record[self._index, :] = [record_index, SECONDARY]
-                    self._hyst_index += 1
                 # end the inner loop and fetch the next load from the load sequence
                 break
 
             if iz < ir:
                 self._record[self._index, :] = [record_index, PRIMARY]
-                self._hyst_index += 1
                 # branch is fully part of the initial curve, case "Memory 1"
                 break
 
@@ -596,7 +611,6 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             # yes
             if current_load_extent < previous_load_extent:
                 self._record[self._index, :] = [record_index, SECONDARY]
-                self._hyst_index += 1
 
                 # continue with the next load value
                 break
@@ -622,7 +636,10 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 # closing even more hysteresis
 
                 self._hcm_message += ","
-                self._hysts.append([2, prev_idx_0, prev_idx_1])
+                self._hysts[self._hyst_index, :] = [
+                    MEMORY_1_2, prev_idx_0, prev_idx_1, current_index
+                ]
+
                 self._hyst_index += 1
                 continue
 
@@ -637,7 +654,11 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
             # Proceed on primary path for the rest, which was not part of the closed hysteresis
 
             self._record[self._index, :] = [record_index, PRIMARY]
-            self._hysts.append([1, prev_idx_0, prev_idx_1])
+            self._hysts[self._hyst_index, :] = [
+                MEMORY_1_2, prev_idx_0, prev_idx_1, current_index
+            ]
+
+            self._hyst_index += 1
 
             # store strain values, this is for the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm
 
@@ -674,39 +695,190 @@ class FKMNonlinearDetector(pylife.stress.rainflow.general.AbstractDetector):
                 self._epsilon_max_LF = pd.Series([0.0]*n_nodes, index=pd.Index(np.arange(n_nodes), name='node_id'))
 
 
-    def interpolated_deformation(self, *, load_step, run_index, n_points):
-        run_history = self._history.xs(run_index, level="run_index")
-        idx = run_history.index.droplevel(["hyst_from", "hyst_to"]).get_loc(load_step)
+    def interpolated_stress_strain_data(
+            self,
+            *,
+            load_segment=None,
+            hysteresis_index=None,
+            n_points_per_branch=100
+    ):
+        history = self.history()
 
-        to_value = run_history.iloc[idx]
+        if hysteresis_index is not None:
 
-        if idx == 0:
-            if run_index == self._history.index.get_level_values("run_index").min():
+            hyst_to = history.xs(hysteresis_index, level="hyst_to")
+            if hysteresis_index in history.index.get_level_values("hyst_close"):
+                hyst_close = history.xs(hysteresis_index, level="hyst_close")
+                load_segment_close = hyst_close.index.get_level_values("load_segment")[0]
+            else:
+                load_segment_close = None
+
+            load_segment_to = hyst_to.index.get_level_values("load_segment")[0]
+
+            segments = [
+                self._interpolate_deformation(load_segment_to, n_points_per_branch)
+            ]
+            if load_segment_close is not None:
+                segments.append(
+                    self._interpolate_deformation(
+                        load_segment_close, n_points_per_branch
+                    )
+                )
+
+            result = pd.concat(segments).reset_index(drop=True)
+            result["hyst_index"] = hysteresis_index
+
+            return result
+
+
+        if load_segment is not None:
+            return self._interpolate_deformation(load_segment, n_points_per_branch)
+
+
+        return (
+            pd.concat(
+                [
+                    self._interpolate_deformation(
+                        row.load_segment, n_points_per_branch
+                    )
+                    for _, row in history.reset_index().iterrows()
+                ]
+            )
+            .reset_index(drop=True)
+        )
+
+
+    def _interpolate_deformation(self, load_segment, n_points):
+        history = self.history()
+        idx = history.index.get_level_values("load_segment").get_loc(load_segment)
+
+        to_value = history.iloc[idx]
+
+        run_index = history.index.get_level_values("run_index")[idx]
+
+        hyst_open_idx = history.index.get_level_values("hyst_to")[idx]
+        hyst_close_idx = history.index.get_level_values("hyst_close")[idx]
+
+        hyst_index = hyst_open_idx if hyst_open_idx >= 0 else hyst_close_idx
+
+        if idx == 0 and run_index == history.index.get_level_values("run_index").min():
                 stress = np.linspace(0.0, to_value.stress, n_points)
                 strain = self._ramberg_osgood_relation.strain(stress)
 
-                return pd.DataFrame({"stress": stress, "strain": strain, "secondary_branch": False})
+                return pd.DataFrame(
+                    {
+                        "stress": stress,
+                        "strain": strain,
+                        "secondary_branch": False,
+                        "hyst_index": hyst_index,
+                        "load_segment": load_segment,
+                        "run_index": run_index,
+                    }
+                )
 
-            from_value = self._history.xs(run_index-1, level="run_index").iloc[-1]
+        if hyst_close_idx >= 0:
+            from_value = history.xs(hyst_close_idx, level="hyst_to").iloc[0]
+        elif hyst_open_idx >= 0:
+            from_value = history.xs(hyst_open_idx, level="hyst_from").iloc[0]
+        elif idx == 0:
+            from_value = history.xs(run_index-1, level="run_index").iloc[-1]
         else:
-            from_value = run_history.iloc[idx-1]
+            from_value = history.iloc[idx-1]
 
         stress = np.linspace(from_value.stress, to_value.stress, n_points)
 
         if to_value.secondary_branch:
-            secondary = np.ones(n_points, dtype=np.bool_)
+            delta_stress = from_value.stress - stress
+            strain = from_value.strain - self._ramberg_osgood_relation.delta_strain(delta_stress)
         else:
-            secondary = np.abs(stress) <= np.abs(from_value.stress)
+            strain = self._ramberg_osgood_relation.strain(stress)
 
-        delta_stress = from_value.stress - stress[secondary]
-        strain = np.empty(n_points)
-        strain[secondary] = from_value.strain - self._ramberg_osgood_relation.delta_strain(delta_stress)
-        strain[~secondary] = self._ramberg_osgood_relation.strain(stress[~secondary])
+        return pd.DataFrame(
+            {
+                "stress": stress,
+                "strain": strain,
+                "secondary_branch": to_value.secondary_branch,
+                "hyst_index": hyst_index,
+                "load_segment": load_segment,
+                "run_index": run_index,
+            }
+        )
 
-        return pd.DataFrame({"stress": stress, "strain": strain, "secondary_branch": secondary})
+    def history(self):
+        history = pd.DataFrame(
+            {c: pd.Series(dtype=np.float64) for c in PHYSICAL_HIST_COLUMNS}
+            | {l: pd.Series(dtype=np.int64) for l in INDEX_HIST_LEVELS}
+            | {"secondary_branch": pd.Series(dtype=np.bool_)},
+        ).set_index(INDEX_HIST_LEVELS, drop=True)
 
+        record_repr = pd.concat([rr for rr, _ in self._history_record]).reset_index(drop=True)
+        record_repr["load_segment"] = np.arange(1, len(record_repr) + 1)
 
-    def interpolated_deformation_history(self, n_points):
-        result = self._history.drop(["load", "epsilon_min_LF", "epsilon_max_LF"], axis=1).droplevel("hyst_to")
-        result.index = result.index.rename({"hyst_from": "hyst_index"})
-        return result
+        hysts = np.concatenate([hs for _, hs in self._history_record])
+
+        old_history_len = 0
+
+        hyst_index = np.concatenate(
+            [[np.arange(len(hysts))], hysts[:, 1:4].T + len(history), hysts[:, 0:1].T]
+        ).T
+
+        history.reset_index(inplace=True, drop=False)
+
+        history = pd.concat([history, record_repr]).reset_index(drop=True)
+
+        hyst_from_marker = pd.Series(-1, index=history.index)
+        hyst_to_marker = pd.Series(-1, index=history.index)
+        hyst_close_marker = pd.Series(-1, index=history.index)
+
+        if len(hysts):
+            hyst_from_marker.iloc[hyst_index[:, 1]] = hyst_index[:, 0]
+            hyst_to_marker.iloc[hyst_index[:, 2]] = hyst_index[:, 0]
+
+        history["hyst_from"] = hyst_from_marker
+        history["hyst_to"] = hyst_to_marker
+        history["hyst_close"] = hyst_close_marker
+
+        index = list(np.arange(len(record_repr)))
+
+        to_insert = []
+        negate = []
+        load_step_drop_idx = []
+        hyst_close_index = []
+        for hyst_index, hyst in enumerate(hysts):
+            if hyst[0] == MEMORY_1_2:
+                hyst_close = int(hyst[3])
+                hyst_from = int(hyst[1])
+                load_step_drop_idx.append(hyst_close+len(to_insert))
+                hyst_close_index.append([hyst_close+len(to_insert), hyst_index])
+                to_insert.append((hyst_close, hyst_from))
+            else:
+                hyst_from = int(hyst[1])
+                hyst_to = int(hyst[2])
+                negate.append(hyst_to+len(to_insert))
+                load_step_drop_idx.append(hyst_to+len(to_insert))
+                to_insert.append((hyst_to, hyst_from))
+
+        hyst_close_index = np.array(hyst_close_index, dtype=np.int64)
+
+        negate = np.array(negate, dtype=np.int64)
+
+        for target, idx in reversed(to_insert):
+            index.insert(target, int(idx))
+
+        history = history.iloc[index].reset_index(drop=True)
+
+        history.loc[load_step_drop_idx, ["load_step", "hyst_from", "hyst_to"]] = -1
+        history.loc[load_step_drop_idx, "secondary_branch"] = True
+        history.loc[negate, PHYSICAL_HIST_COLUMNS] = -history.loc[negate, PHYSICAL_HIST_COLUMNS]
+        history.loc[negate, "hyst_to"] = history.loc[negate+1, "hyst_to"].to_numpy()
+        history.loc[negate+1, "hyst_to"] = -1
+        history.loc[negate, "secondary_branch"] = True
+
+        if len(hyst_close_index):
+            history.loc[hyst_close_index[:, 0], "hyst_close"] = hyst_close_index[:, 1]
+
+        history["load_segment"] = np.arange(len(history), dtype=np.int64)
+
+        history.set_index(INDEX_HIST_LEVELS, inplace=True)
+
+        return history
