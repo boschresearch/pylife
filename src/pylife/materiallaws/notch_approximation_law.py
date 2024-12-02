@@ -20,7 +20,6 @@ __maintainer__ = __author__
 import numpy as np
 from scipy import optimize
 import pandas as pd
-import copy
 
 import pylife.materiallaws.rambgood
 
