@@ -133,7 +133,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         """
         stress = optimize.newton(
             func=self._stress_implicit,
-            x0=copy.copy(load),
+            x0=np.asarray(load),
             fprime=self._d_stress_implicit,
             args=([load]),
             rtol=rtol, tol=tol, maxiter=20
@@ -192,7 +192,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         # <=> self._ramberg_osgood_relation.strain(stress) / self._K_p * stress = L * e_star(L)
         load = optimize.newton(
             func=self._load_implicit,
-            x0=copy.copy(stress),
+            x0=np.asarray(stress),
             fprime=self._d_load_implicit,
             args=([stress]),
             rtol=rtol, tol=tol, maxiter=20
@@ -222,7 +222,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         """
         delta_stress = optimize.newton(
             func=self._stress_secondary_implicit,
-            x0=copy.copy(delta_load),
+            x0=np.asarray(delta_load),
             fprime=self._d_stress_secondary_implicit,
             args=([np.asarray(delta_load, dtype=np.float64)]),
             rtol=rtol, tol=tol, maxiter=20
@@ -280,7 +280,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         # <=> self._ramberg_osgood_relation.strain(stress) / self._K_p * stress = L * e_star(L)
         delta_load = optimize.newton(
             func=self._load_secondary_implicit,
-            x0=copy.copy(delta_stress),
+            x0=np.asarray(delta_stress),
             fprime=self._d_load_secondary_implicit,
             args=([delta_stress]),
             rtol=rtol, tol=tol, maxiter=20
