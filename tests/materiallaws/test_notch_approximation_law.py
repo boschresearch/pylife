@@ -32,7 +32,7 @@ def test_extended_neuber_example_1():
     K = 1184     # [MPa]
     n = 0.187    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
-
+    
     L = pd.Series([100, -200, 100, -250, 200, 0, 200, -200])
     c = 1.4
     gamma_L = (250+6.6)/250
@@ -52,7 +52,7 @@ def test_extended_neuber_example_1():
     assert np.isclose(maximum_absolute_load, 359.3, rtol=1e-3)
 
     binned_notch_approximation_law = pylife.materiallaws.notch_approximation_law.Binned(
-        notch_approximation_law, maximum_absolute_load)
+        notch_approximation_law, maximum_absolute_load, 100)
 
     # some rows of PFAD are given in the FKM nonlinear example on p.76
     pd.testing.assert_series_equal(binned_notch_approximation_law._lut_primary_branch.iloc[0], \
@@ -71,6 +71,8 @@ def test_extended_neuber_example_1():
     # matrix AST on page 162, chapter 3.4.1
     pd.testing.assert_frame_equal(
         binned_notch_approximation_law._lut_secondary_branch, expected_matrix_AST_162, rtol=1e-3, atol=1e-5)
+
+    assert np.isclose(binned_notch_approximation_law._lut_primary_branch.load.max(), maximum_absolute_load)
 
 
 def test_extended_neuber_example_2():
@@ -116,6 +118,22 @@ def test_extended_neuber_example_2():
 
     pd.testing.assert_frame_equal(
         binned_notch_approximation_law._lut_secondary_branch, expected_matrix_AST_171, rtol=1e-3, atol=1e-5)
+
+
+def test_extended_neuber_example_no_binning_vectorized():
+    E = 206e3    # [MPa] Young's modulus
+    K = 1184     # [MPa]
+    n = 0.187    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    notch_approximation_law = ExtendedNeuber(E, K, n, K_p)
+
+    load = np.array([150.0, 175.0, 200.0])
+    stress = notch_approximation_law.stress(load)
+    stress_secondary_branch = notch_approximation_law.stress_secondary_branch(load)
+
+    np.testing.assert_allclose(stress, np.array([148.463622, 171.674936, 193.702502]), rtol=1e-3)
+    np.testing.assert_allclose(stress_secondary_branch, np.array([149.92007905, 174.81829204, 199.63066067]), rtol=1e-3)
 
 
 @pytest.mark.parametrize('stress, load', [

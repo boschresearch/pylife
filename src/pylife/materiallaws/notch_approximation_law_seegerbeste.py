@@ -19,7 +19,6 @@ __maintainer__ = __author__
 
 import numpy as np
 from scipy import optimize
-import pandas as pd
 import warnings
 
 import pylife.materiallaws.rambgood
@@ -86,7 +85,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
 
             stress = optimize.newton(
                 func=self._stress_implicit,
-                x0=x0,
+                x0=np.asarray(x0),
                 args=([load]),
                 full_output=True,
                 rtol=rtol, tol=tol, maxiter=50
@@ -198,7 +197,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
 
             delta_stress = optimize.newton(
                 func=self._stress_secondary_implicit,
-                x0=x0,
+                x0=np.asarray(x0),
                 args=([delta_load]),
                 full_output=True,
                 rtol=rtol, tol=tol, maxiter=50
@@ -502,4 +501,3 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             if result[1].converged:
                 delta_stress[0][index_diverged] = result[0]
         return delta_stress
-
