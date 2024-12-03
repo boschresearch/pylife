@@ -170,3 +170,26 @@ def test_derivatives(stress, load):
     derivative = notch_approximation_law._d_stress_secondary_implicit(stress, load)
 
     assert np.isclose(numeric_derivative, derivative)
+
+@pytest.mark.parametrize('E, K, n, L', [
+    (260e3, 1184, 0.187, pd.Series([100, -200, 100, -250, 200, 100, 200, -200])),
+    (100e3, 1500, 0.4, pd.Series([-100, 100, -200])),
+    (200e3, 1000, 0.2, pd.Series([100, 10])),
+])
+def test_load(E, K, n, L):
+    c = 1.4
+    gamma_L = (250+6.6)/250
+    L = c * gamma_L * L
+
+    # initialize notch approximation law and damage parameter
+    notch_approximation_law = ExtendedNeuber(E, K, n, K_p=3.5)
+
+    # The "load" method is the inverse operation of "stress", 
+    # i.e., ``L = load(stress(L))`` and ``S = stress(load(stress))``.
+    stress = notch_approximation_law.stress(L)
+    load = notch_approximation_law.load(stress)
+    stress2 = notch_approximation_law.stress(load)
+
+    np.testing.assert_allclose(L, load, rtol=1e-3)
+    np.testing.assert_allclose(stress, stress2, rtol=1e-3)
+
