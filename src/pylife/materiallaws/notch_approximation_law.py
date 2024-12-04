@@ -519,18 +519,21 @@ class Binned:
         """
 
 
+
         # FIXME consolidate theese methods (duplicated code)
+
+        load = np.asarray(load)
         sign = np.sign(load)
 
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if isinstance(load, pd.Series) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+        if isinstance(self._lut_primary_branch.index, pd.MultiIndex):
 
             # the lut is a DataFrame with MultiIndex with levels class_index and node_id
 
             # find the corresponding class only for the first node, use the result for all nodes
             first_node_id = self._lut_primary_branch.index.get_level_values("node_id")[0]
             lut_for_first_node = self._lut_primary_branch.load[self._lut_primary_branch.index.get_level_values("node_id")==first_node_id]
-            first_abs_load = abs(load.iloc[0])
+            first_abs_load = abs(load[0])
 
             # get the class index of the corresponding bin/class
             class_index = lut_for_first_node.searchsorted(first_abs_load)
@@ -592,17 +595,18 @@ class Binned:
         strain : array-like float
             The resulting strain
         """
+        load = np.asarray(load)
         sign = np.sign(load)
 
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if isinstance(load, pd.Series) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+        if isinstance(self._lut_primary_branch.index, pd.MultiIndex):
 
             # the lut is a DataFrame with MultiIndex with levels class_index and node_id
 
             # find the corresponding class only for the first node, use the result for all nodes
             first_node_id = self._lut_primary_branch.index.get_level_values("node_id")[0]
             lut_for_first_node = self._lut_primary_branch.load[self._lut_primary_branch.index.get_level_values("node_id")==first_node_id]
-            first_abs_load = abs(load.iloc[0])
+            first_abs_load = abs(load[0])
 
             # get the class index of the corresponding bin/class
             class_index = lut_for_first_node.searchsorted(first_abs_load)
@@ -671,17 +675,18 @@ class Binned:
             The resulting stress increment within the hysteresis
         """
 
+        delta_load = np.asarray(delta_load)
         sign = np.sign(delta_load)
 
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if isinstance(delta_load, pd.Series) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+        if isinstance(self._lut_primary_branch.index, pd.MultiIndex):
 
             # the lut is a DataFrame with MultiIndex with levels class_index and node_id
 
             # find the corresponding class only for the first node, use the result for all nodes
             first_node_id = self._lut_primary_branch.index.get_level_values("node_id")[0]
             lut_for_first_node = self._lut_secondary_branch.delta_load[self._lut_secondary_branch.index.get_level_values("node_id")==first_node_id]
-            first_abs_load = abs(delta_load.iloc[0])
+            first_abs_load = abs(delta_load[0])
 
             # get the class index of the corresponding bin/class
             class_index = lut_for_first_node.searchsorted(first_abs_load)
@@ -724,7 +729,7 @@ class Binned:
                 raise ValueError(f"Binned class is initialized for a maximum absolute delta_load of {2*self._maximum_absolute_load}, "\
                                  f" but a higher absolute delta_load value of |{delta_load}| is requested (in stress_secondary_branch()).")
 
-            return sign * self._lut_secondary_branch.iloc[index+1].delta_stress     # "+1", because the next higher class is used
+            return sign * np.asarray(self._lut_secondary_branch.iloc[index+1].delta_stress)
 
     def strain_secondary_branch(self, delta_stress, delta_load):
         """Get the strain on secondary branches in the stress-strain diagram at a given stress and load
@@ -746,17 +751,18 @@ class Binned:
         """
         #return self._notch_approximation_law.strain_secondary_branch(delta_stress, delta_load)
 
+        delta_load = np.asarray(delta_load)
         sign = np.sign(delta_load)
 
         # if the assessment is performed for multiple points at once, i.e. load is a DataFrame with values for every node
-        if isinstance(delta_load, pd.Series) and isinstance(self._lut_primary_branch.index, pd.MultiIndex):
+        if isinstance(self._lut_primary_branch.index, pd.MultiIndex):
 
             # the lut is a DataFrame with MultiIndex with levels class_index and node_id
 
             # find the corresponding class only for the first node, use the result for all nodes
             first_node_id = self._lut_secondary_branch.index.get_level_values("node_id")[0]
             lut_for_first_node = self._lut_secondary_branch.delta_load[self._lut_secondary_branch.index.get_level_values("node_id")==first_node_id]
-            first_abs_load = abs(delta_load.iloc[0])
+            first_abs_load = abs(delta_load[0])
 
             # get the class index of the corresponding bin/class
             class_index = lut_for_first_node.searchsorted(first_abs_load)
@@ -799,7 +805,7 @@ class Binned:
                 raise ValueError(f"Binned class is initialized for a maximum absolute delta_load of {2*self._maximum_absolute_load}, "\
                                  f" but a higher absolute delta_load value of |{delta_load}| is requested (in strain_secondary_branch()).")
 
-            return sign * self._lut_secondary_branch.iloc[index+1].delta_strain     # "-1", transform to zero-based indices
+            return sign * np.asarray(self._lut_secondary_branch.iloc[index+1].delta_strain)   # "-1", transform to zero-based indices
 
     def _create_bins(self):
         """Initialize the lookup tables by precomputing the notch approximation law values.

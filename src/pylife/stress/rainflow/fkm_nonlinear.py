@@ -215,9 +215,11 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         li = load_turning_points.index.to_frame()['load_step']
         load_step = (li != li.shift()).cumsum() - 1
 
+        turning_groups = load_turning_points.groupby(load_step, sort=False)
+
         load_turning_points_rep = np.array([
             self._get_scalar_current_load(current_load)
-            for _, current_load in load_turning_points.groupby(load_step, sort=False)
+            for _, current_load in turning_groups
         ])
 
         record, hysts = self._perform_hcm_algorithm(load_turning_points_rep)
@@ -225,7 +227,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         if self._last_record is None:
             self._last_record = np.zeros((5, self._group_size))
 
-        record_vals = self._collect_record(load_turning_points, load_step, record)
+        record_vals = self._collect_record(load_turning_points, turning_groups, load_step, record)
 
         self._store_recordings_for_history(record, record_vals, load_step, hysts)
 
@@ -312,103 +314,131 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         self._history_record.append((record_repr, rec_hysts))
 
 
-    def _collect_record(self, load_turning_points, load_step, record):
-        record_vals = np.empty((len(load_turning_points), 5))
+    def _collect_record(self, load_turning_points, turning_groups, load_step, record):
+        record_vals = np.empty((5, len(turning_groups)*self._group_size))
 
-        for i, (_, load_turning_point) in enumerate(load_turning_points.groupby(load_step, sort=False)):
+        turning_points = load_turning_points.to_numpy()
+        for i in range(len(turning_groups)):
             prev_idx = int(record[i, INDEX])
-            prev_record = self._last_record
+
             if prev_idx < 0:
                 idx = len(self._record_vals_residuals) + prev_idx*self._group_size
                 prev_record = self._record_vals_residuals.iloc[idx:idx+self._group_size].to_numpy().T
             elif prev_idx < i:
-                prev_record = record_vals[prev_idx*self._group_size:(prev_idx+1)*self._group_size].T
+                idx = prev_idx * self._group_size
+                prev_record = record_vals[:, idx:idx+self._group_size]
+            else:
+                prev_record = self._last_record
             idx = i * self._group_size
-            record_vals[idx:idx+self._group_size] = self._process_deformation(record[i, :], load_turning_point, prev_record).T
+
+            load_turning_point = turning_points[idx:idx+self._group_size]
+            self._process_deformation(record[i, :], record_vals, idx, load_turning_point, prev_record)
 
         return pd.DataFrame(
-            record_vals,
+            record_vals.T,
             columns=["load", "stress", "strain", "epsilon_min_LF", "epsilon_max_LF"],
             index=load_turning_points.index,
         )
 
-
-    def _process_deformation(self, record, load, prev_record):
+    def _process_deformation(self, record, record_vals, idx, load, prev_record):
         function_map = [self._primary, self._secondary]
 
         function = function_map[record[CASE] & DISCONTINUITY_MASK]
 
-        result = np.empty((5, self._group_size))
+        result = record_vals[:, idx:idx+self._group_size]
         result[:3, :] = function(prev_record, load)
 
         old_load = self._last_record[LOAD]
 
-        if old_load[0] < load.iloc[0]:
+        if old_load[0] < load[0]:
             result[EPS_MAX_LF] = self._last_record[EPS_MAX_LF] if self._last_record[EPS_MAX_LF, 0] > result[STRAIN, 0] else result[STRAIN, :]
             result[EPS_MIN_LF] = self._last_record[EPS_MIN_LF]
         else:
             result[EPS_MIN_LF] = self._last_record[EPS_MIN_LF] if self._last_record[EPS_MIN_LF, 0] < result[STRAIN, 0] else result[STRAIN, :]
             result[EPS_MAX_LF] = self._last_record[EPS_MAX_LF]
 
-        self._last_record = result.copy()
+        self._last_record = record_vals[:, idx:idx+self._group_size]
 
-        return result
+    def _primary(self, _prev, load):
+        sigma = self._notch_approximation_law.stress(load)
+        epsilon = self._notch_approximation_law.strain(sigma, load)
+        return np.array([load, sigma, epsilon])
 
-    def load_memory_1_2(self, point_0, point_1):
-        return (point_0, point_1, point_0, point_1) if point_0.values[0, 0] < point_1.values[0, 0] else (point_1, point_0, point_1, point_0)
+    def _secondary(self, prev, load):
+        prev_load = prev[LOAD]
 
-    def load_memory_3(self, point_0, point_1):
-        abs_point = point_0.abs()
-        return (-abs_point, abs_point, point_0, point_0)
+        delta_L = load - prev_load
+        delta_sigma = self._notch_approximation_law.stress_secondary_branch(delta_L)
+        delta_epsilon = self._notch_approximation_law.strain_secondary_branch(delta_sigma, delta_L)
+
+        sigma = prev[STRESS] + delta_sigma
+        epsilon = prev[STRAIN] + delta_epsilon
+
+        return np.array([load, sigma, epsilon])
+
+    def load_memory_1_2(self, values_0, values_1, index_0, index_1):
+        return (values_0, values_1, index_0, index_1) if values_0[0, 0] < values_1[0, 0] else (values_1, values_0, index_1, index_0)
+
+    def load_memory_3(self, values_0, values_1, index_0, index_1):
+        abs_point = np.abs(values_0)
+        return (-abs_point, abs_point, index_0, index_0)
 
     def _process_recording(self, turning_points, record_vals, hysts):
         start = len(self._residuals_ndarray)
         if start:
             turning_points = np.concatenate((self._residuals_ndarray, turning_points))
         record_vals_with_residuals = pd.concat([self._record_vals_residuals, record_vals])
+
+        value_array = record_vals_with_residuals.to_numpy()
+        index_array = record_vals_with_residuals.index.to_frame().to_numpy()
+
         num = len(hysts)
 
         inames = self._current_load_index.names
 
-        results_min = pd.DataFrame(
-            np.zeros((num * self._group_size, len(inames) + 3)),
-            columns=["loads_min", "S_min", "epsilon_min"] + inames,
-        )
+        results_min = np.zeros((num * self._group_size, 3))
+        results_min_idx = np.zeros((num * self._group_size,  len(inames)), dtype=np.int64)
 
-        index_min = []
+        results_max = np.zeros((num * self._group_size, 3))
+        results_max_idx = np.zeros((num * self._group_size,  len(inames)), dtype=np.int64)
 
-        results_max = pd.DataFrame(
-            np.zeros((num * self._group_size, len(inames) + 3)),
-            columns=["loads_max", "S_max", "epsilon_max"] + inames
-        )
-
-        epsilon_min_LF = pd.Series(np.zeros((num * self._group_size)))
-        epsilon_max_LF = pd.Series(np.zeros((num * self._group_size)))
-
-        index_max = []
+        epsilon_min_LF = np.zeros(num * self._group_size)
+        epsilon_max_LF = np.zeros(num * self._group_size)
 
         memory_functions = [self.load_memory_3, self.load_memory_1_2]
 
         for i, hyst in enumerate(hysts):
             idx = (hyst[1:3] + start) * self._group_size
-            point_0 = record_vals_with_residuals[idx[0]:idx[0]+self._group_size]
-            point_1 = record_vals_with_residuals[idx[1]:idx[1]+self._group_size]
+            values_0 = value_array[idx[0]:idx[0]+self._group_size]
+            values_1 = value_array[idx[1]:idx[1]+self._group_size]
+            index_0 = index_array[idx[0]:idx[0]+self._group_size]
+            index_1 = index_array[idx[1]:idx[1]+self._group_size]
+
             hyst_type = hyst[0]
 
-            _min, _max, _lf_min, _lf_max = memory_functions[hyst_type](point_0, point_1)
-            rmin = _min.reset_index(drop=False)[["load", "stress", "strain"] + inames]
-            results_min.iloc[i*self._group_size:(i+1)*self._group_size] = rmin
-            results_max.iloc[i*self._group_size:(i+1)*self._group_size] = _max.reset_index(drop=False)[["load", "stress", "strain"] + inames]
-            index_min.append(_min.index)
-            index_max.append(_max.index)
+            _min, _max, _min_idx, _max_idx = memory_functions[hyst_type](values_0, values_1, index_0, index_1)
 
-            epsilon_min_LF.iloc[i*self._group_size:(i+1)*self._group_size] = _lf_min['epsilon_min_LF']
-            epsilon_max_LF.iloc[i*self._group_size:(i+1)*self._group_size] = _lf_max['epsilon_max_LF']
+            results_min[i*self._group_size:(i+1)*self._group_size] = _min[:, :3]
+            results_max[i*self._group_size:(i+1)*self._group_size] = _max[:, :3]
+            results_min_idx[i*self._group_size:(i+1)*self._group_size] = _min_idx
+            results_max_idx[i*self._group_size:(i+1)*self._group_size] = _max_idx
 
-        for iname in inames:
-            results_min[iname] = results_min[iname].astype(np.int64)
-            results_max[iname] = results_max[iname].astype(np.int64)
-        return results_min.set_index(inames, drop=True), results_max.set_index(inames), epsilon_min_LF, epsilon_max_LF
+            epsilon_min_LF[i*self._group_size:(i+1)*self._group_size] = _min[:, 3]
+            epsilon_max_LF[i*self._group_size:(i+1)*self._group_size] = _max[:, 4]
+
+        results_min = pd.DataFrame(
+            results_min,
+            columns=["loads_min", "S_min", "epsilon_min"],
+            index=pd.MultiIndex.from_arrays(results_min_idx.T, names=inames)
+        )
+        results_max = pd.DataFrame(
+            results_max,
+            columns=["loads_max", "S_max", "epsilon_max"],
+            index=pd.MultiIndex.from_arrays(results_max_idx.T, names=inames)
+        )
+
+
+        return results_min, results_max, pd.Series(epsilon_min_LF), pd.Series(epsilon_max_LF)
 
     @property
     def strain_values(self):
@@ -451,31 +481,6 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         return self.strain_values[self._chunk_sizes[0]:]
 
-
-
-    def _primary(self, _prev, load):
-        sigma = self._notch_approximation_law.stress(load)
-        epsilon = self._notch_approximation_law.strain(sigma, load)
-        return np.array([load, sigma, epsilon])
-
-    def _secondary(self, prev, load):
-        prev_load = prev[LOAD]
-        secondary_load = np.sign(load) * np.minimum(np.abs(load), np.abs(prev_load))
-
-        delta_L = load - prev_load
-        delta_sigma = self._notch_approximation_law.stress_secondary_branch(delta_L)
-        delta_epsilon = self._notch_approximation_law.strain_secondary_branch(delta_sigma, delta_L)
-
-        sigma = prev[STRESS] + delta_sigma
-        epsilon = prev[STRAIN] + delta_epsilon
-
-        return np.array([load, sigma, epsilon])
-
-        delta_L = load - secondary_load
-        delta_sigma = self._notch_approximation_law.stress_secondary_branch(delta_L)
-        delta_epsilon = self._notch_approximation_law.strain_secondary_branch(delta_sigma, delta_L)
-
-        return np.array([load, sigma, epsilon])
 
     def _adjust_samples_and_flush_for_hcm_first_run(self, samples):
 
