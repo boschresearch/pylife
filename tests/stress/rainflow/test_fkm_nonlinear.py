@@ -23,7 +23,6 @@ import numpy as np
 import pandas as pd
 import copy
 
-import pylife.stress.rainflow as RF
 from pylife.stress.rainflow.fkm_nonlinear import FKMNonlinearDetector
 import pylife.stress.rainflow.recorders as RFR
 import pylife.materiallaws.notch_approximation_law
@@ -616,8 +615,6 @@ def test_flush_edge_case_load_simple_signal():
 def test_flush_edge_case_S_simple_signal():
 
     signal_1 = np.array([0.0, 143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
-
-    mi_2 = pd.MultiIndex.from_product([range(9, 17), range(3)], names=["load_step", "node_id"])
 
     signal_2 = np.array([143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
 
