@@ -3,11 +3,9 @@ name: Build wheels and perform benchmarks
 on:
   pull_request:
     branches: [develop, master]
+  push:
+    branches: [ci-debug]
 
-env:
-  CIBW_BUILD: cp37-* cp38-* cp39-* cp310-* cp311-* cp312-*
-  CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-  CIBW_MANYLINUX_I686_IMAGE: manylinux2014
 
 jobs:
   build_wheels:
