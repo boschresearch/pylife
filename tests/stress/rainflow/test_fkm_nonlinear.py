@@ -1087,7 +1087,8 @@ def test_interpolation_everything_first_run(detector_seeger_beste):
 def test_history_guideline_at_once():
     # Fig 2.3 FKM NL Guideline
 
-    signal = np.array([0., 200., -50., 250., -300., 150., -120., 350., 349.])
+    signal = pd.Series([0., 200., -50., 250., -300., 150., -120., 350., 349.])
+    signal.index.name = "load_step"
 
     recorder = RFR.FKMNonlinearRecorder()
     E = 206e3    # [MPa] Young's modulus
@@ -1116,15 +1117,18 @@ def test_history_guideline_at_once():
             "stress": [2.0e+02, -4.9e+01, 2.0e+02, 2.5e+02, -2.5e+02, -3.0e+02, 1.5e+02, -1.2e+02, 1.5e+02, 3.0e+02, 3.5e+02],
             "strain": [9.9e-04, -2.4e-04, 9.9e-04, 1.2e-03, -1.2e-03, -1.5e-03, 7.3e-04, -6.0e-04, 7.3e-04, 1.5e-03, 1.7e-03],
             "secondary_branch": [False, True, True, False, True, False, True, True, True, True, False],
-            "load_step": [0, 1, -1, 2, -1, 3, 4, 5, -1, -1, 6],
+            "load_step": [1, 2, -1, 3, -1, 4, 5, 6, -1, -1, 7],
+            "turning_point": [0, 1, -1, 2, -1, 3, 4, 5, -1, -1, 6],
             "load_segment": np.arange(11),
             "run_index": 1,
             "hyst_from": [0, -1, -1,  1, -1,  3,  2, -1, -1, -1, -1],
             "hyst_to": [-1,  0, -1, -1,  1, -1, -1,  2, -1,  3, -1],
             "hyst_close": [-1, -1,  0, -1, -1, -1, -1, -1,  2, -1, -1],
         }
-    ).set_index(["load_segment", "load_step", "run_index", "hyst_from", "hyst_to", "hyst_close"])
+    ).set_index(["load_segment", "load_step", "run_index", "turning_point", "hyst_from", "hyst_to", "hyst_close"])
 
+    print(df["load"])
+    print(expected["load"])
     pd.testing.assert_frame_equal(df, expected, rtol=1e-1)
 
 
@@ -1132,7 +1136,8 @@ def test_history_guideline_at_once():
 def test_history_guideline_at_split(split_point):
     # Fig 2.3 FKM NL Guideline
 
-    signal = np.array([0., 200., -50., 250., -300., 150., -120., 350., 349.])
+    signal = pd.Series([0., 200., -50., 250., -300., 150., -120., 350., 349.])
+    signal.index.name = "load_step"
 
     recorder = RFR.FKMNonlinearRecorder()
     E = 206e3    # [MPa] Young's modulus
@@ -1154,9 +1159,6 @@ def test_history_guideline_at_split(split_point):
     detector.process(signal[:split_point]).process(signal[split_point:])
 
     df = detector.history()
-    df.index = df.index.droplevel("load_step")
-
-    run_index = [1] * split_point + [2] * (11-split_point)
 
     expected = pd.DataFrame(
         {
@@ -1164,13 +1166,14 @@ def test_history_guideline_at_split(split_point):
             "stress": [2.0e+02, -4.9e+01, 2.0e+02, 2.5e+02, -2.5e+02, -3.0e+02, 1.5e+02, -1.2e+02, 1.5e+02, 3.0e+02, 3.5e+02],
             "strain": [9.9e-04, -2.4e-04, 9.9e-04, 1.2e-03, -1.2e-03, -1.5e-03, 7.3e-04, -6.0e-04, 7.3e-04, 1.5e-03, 1.7e-03],
             "secondary_branch": [False, True, True, False, True, False, True, True, True, True, False],
-            #"load_step": [1, 2, -1, 3, -1, 4, 5, 6, -1, -1, 7],
+            "load_step": [1, 2, -1, 3, -1, 4, 5, 6, -1, -1, 7],
+            "turning_point": [0, 1, -1, 2, -1, 3, 4, 5, -1, -1, 6],
             "load_segment": np.arange(11),
             "run_index": [1] * split_point + [2] * (11-split_point),
             "hyst_from": [0, -1, -1,  1, -1,  3,  2, -1, -1, -1, -1],
             "hyst_to": [-1,  0, -1, -1,  1, -1, -1,  2, -1,  3, -1],
             "hyst_close": [-1, -1,  0, -1, -1, -1, -1, -1,  2, -1, -1],
         }
-    ).set_index(["load_segment", "run_index", "hyst_from", "hyst_to", "hyst_close"])
+    ).set_index(["load_segment", "load_step", "run_index", "turning_point", "hyst_from", "hyst_to", "hyst_close"])
 
     pd.testing.assert_frame_equal(df, expected, rtol=1e-1)

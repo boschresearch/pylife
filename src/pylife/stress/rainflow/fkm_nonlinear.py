@@ -41,7 +41,7 @@ MEMORY_3 = 0
 
 PHYSICAL_HIST_COLUMNS = ["load", "stress", "strain", "secondary_branch"]
 INDEX_HIST_LEVELS = [
-    "load_segment", "load_step", "run_index", "hyst_from", "hyst_to", "hyst_close"
+    "load_segment", "load_step", "run_index", "turning_point", "hyst_from", "hyst_to", "hyst_close"
 ]
 
 
@@ -199,7 +199,6 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         self._run_index += 1
 
         old_head_index = self._head_index
-
         if multi_index:
             _samples = samples.groupby('load_step', sort=False).first().to_numpy().flatten()
         else:
@@ -228,15 +227,16 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
             self._last_sample = samples.loc[idx]
 
         if not isinstance(load_turning_points, pd.Series):
-            load_turning_points = pd.Series(load_turning_points)
+            load_index = pd.Index(loads_indices, name="load_steps")
+            load_turning_points = pd.Series(load_turning_points, index=load_index)
             load_turning_points.index.name = 'load_step'
 
         self._current_load_index = load_turning_points.index
 
         li = load_turning_points.index.to_frame()['load_step']
-        load_step = (li != li.shift()).cumsum() - 1
+        turning_point = pd.Index((li != li.shift()).cumsum() - 1, name="turning_point")
 
-        turning_groups = load_turning_points.groupby(load_step, sort=False)
+        turning_groups = load_turning_points.groupby(turning_point, sort=False)
 
         load_turning_points_rep = np.array([
             self._get_scalar_current_load(current_load)
@@ -248,16 +248,16 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         if self._last_record is None:
             self._last_record = np.zeros((5, self._group_size))
 
-        record_vals = self._collect_record(load_turning_points, turning_groups, load_step, record)
+        record_vals = self._collect_record(load_turning_points, turning_groups, turning_point, record)
 
-        self._store_recordings_for_history(record, record_vals, load_step, hysts)
+        self._store_recordings_for_history(record, record_vals, turning_point, hysts)
 
         self._num_turning_points += (len(load_turning_points))
 
         results = self._process_recording(load_turning_points_rep, record_vals, hysts)
         results_min, results_max, epsilon_min_LF, epsilon_max_LF = results
 
-        self._update_residuals(record_vals, load_step, load_turning_points_rep)
+        self._update_residuals(record_vals, turning_point, load_turning_points_rep)
 
         # TODO: check if these are really that redundant
         is_closed_hysteresis = (hysts[:, 0] != MEMORY_3).tolist()
@@ -279,13 +279,14 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         return self
 
-    def _store_recordings_for_history(self, record, record_vals, load_step, hysts):
+    def _store_recordings_for_history(self, record, record_vals, turning_point, hysts):
         record_repr = (
-            record_vals.groupby(load_step)
+            record_vals.reset_index(["load_step", "turning_point"])
+            .groupby(turning_point)
             .first()
-            .reset_index(drop=False)
             .drop(["epsilon_min_LF", "epsilon_max_LF"], axis=1)
         )
+
         record_repr["run_index"] = self._run_index
         record_repr["secondary_branch"] = record[:, SECONDARY] != 0
 
@@ -294,7 +295,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         self._history_record.append((record_repr, rec_hysts))
 
-    def _update_residuals(self, record_vals, load_step, load_turning_points_rep):
+    def _update_residuals(self, record_vals, turning_point, load_turning_points_rep):
         residuals_index = self._residuals_record.index
 
         remaining_vals_residuals = (
@@ -305,24 +306,24 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
             else pd.DataFrame()
         )
 
-        # TODO: check if this can be simplified once `load_step` will be internalized
+        new_residuals_index = residuals_index[residuals_index >= 0]
 
-        index_series = record_vals.index.get_level_values("load_step").to_series()
+        # TODO: check if this can be simplified once `turning_point` will be internalized
+
+        index_series = record_vals.index.get_level_values("turning_point").to_series()
         indexer = pd.DataFrame(
             {
-                "load_step": index_series.values,
-                "load_num": load_step,
+                "turning_point": index_series.values,
+                "load_num": turning_point,
             },
-            index=load_step.index
-        ).groupby("load_num").first()["load_step"].values
-
-        new_residuals_index = residuals_index[residuals_index >= 0]
+            index=turning_point
+        ).groupby("load_num").first()["turning_point"].values
 
         new_vals_residuals = (
             record_vals.loc[
                 record_vals.index.isin(
                     indexer[new_residuals_index],
-                    level="load_step",
+                    level="turning_point",
                 )
             ]
             if len(new_residuals_index) > 0
@@ -337,11 +338,13 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         self._residuals_record.reindex()
 
-    def _collect_record(self, load_turning_points, turning_groups, load_step, record):
+    def _collect_record(self, load_turning_points, turning_groups, turning_point, record):
         record_vals = np.empty((5, len(turning_groups)*self._group_size))
 
         turning_points = load_turning_points.to_numpy()
-        for i in range(len(turning_groups)):
+        num_turning_groups = len(turning_groups)
+
+        for i in range(num_turning_groups):
             prev_idx = int(record[i, IS_CLOSED])
 
             if prev_idx < 0:
@@ -357,11 +360,18 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
             load_turning_point = turning_points[idx:idx+self._group_size]
             self._process_deformation(record[i, :], record_vals, idx, load_turning_point, prev_record)
 
-        return pd.DataFrame(
+        record_vals = pd.DataFrame(
             record_vals.T,
             columns=["load", "stress", "strain", "epsilon_min_LF", "epsilon_max_LF"],
             index=load_turning_points.index,
         )
+
+        new_sum_tp = self._num_turning_points + num_turning_groups
+        tp_index = [np.arange(self._num_turning_points, new_sum_tp)] * self._group_size
+
+        record_vals["turning_point"] = np.stack(tp_index).T.flatten()
+
+        return record_vals.set_index("turning_point", drop=True, append=True)
 
     def _process_deformation(self, record, record_vals, idx, load, prev_record):
         function_map = [self._primary, self._secondary]
@@ -426,8 +436,12 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         record_vals_with_residuals = pd.concat([self._record_vals_residuals, record_vals])
 
         value_array = record_vals_with_residuals.to_numpy()
-        index_array = record_vals_with_residuals.index.to_frame().to_numpy()
 
+        index_array = (
+            record_vals_with_residuals.index.droplevel("turning_point")
+            .to_frame()
+            .to_numpy()
+        )
         result_len = len(hysts) * self._group_size
 
         signal_index_names = self._current_load_index.names
@@ -804,21 +818,21 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         to_insert = []
         negate = []
-        load_step_drop_idx = []
+        turning_point_drop_idx = []
         hyst_close_index = []
 
         for hyst_index, hyst in enumerate(hysts):
             if hyst[IS_CLOSED] == MEMORY_1_2:
                 hyst_close = int(hyst[CLOSE]) + len(to_insert)
                 hyst_from = int(hyst[FROM])
-                load_step_drop_idx.append(hyst_close)
+                turning_point_drop_idx.append(hyst_close)
                 hyst_close_index.append([hyst_close, hyst_index])
                 to_insert.append((hyst_close, hyst_from))
             else:
                 hyst_from = int(hyst[FROM])
                 hyst_to = int(hyst[TO]) + len(to_insert)
                 negate.append(hyst_to)
-                load_step_drop_idx.append(hyst_to)
+                turning_point_drop_idx.append(hyst_to)
                 to_insert.append((hyst_to, hyst_from))
 
         hyst_close_index = np.array(hyst_close_index, dtype=np.int64)
@@ -832,8 +846,8 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         history = history.iloc[index].reset_index(drop=True)
 
-        history.loc[load_step_drop_idx, ["load_step", "hyst_from", "hyst_to"]] = -1
-        history.loc[load_step_drop_idx, "secondary_branch"] = True
+        history.loc[turning_point_drop_idx, ["turning_point", "load_step", "hyst_from", "hyst_to"]] = -1
+        history.loc[turning_point_drop_idx, "secondary_branch"] = True
         history.loc[negate, PHYSICAL_HIST_COLUMNS] = -history.loc[negate, PHYSICAL_HIST_COLUMNS]
         history.loc[negate, "hyst_to"] = history.loc[negate+1, "hyst_to"].to_numpy()
         history.loc[negate+1, "hyst_to"] = -1
