@@ -67,8 +67,8 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         self._is_load_sequence_start = True
 
         self._last_record = None
-        self._residuals_array = []
-        self._residuals_ndarray = np.array([])
+        self._residuals_record = []
+        self._residuals = np.array([])
         self._record_vals_residuals = pd.DataFrame()
 
         self._history_record = []
@@ -224,7 +224,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         results = self._process_recording(load_turning_points_rep, record_vals, hysts)
         results_min, results_max, epsilon_min_LF, epsilon_max_LF = results
 
-        residuals_index = np.array([i for i, _ in self._residuals_array])
+        residuals_index = np.array([i for i, _ in self._residuals_record])
 
         remaining_vals_residuals = (
             self._record_vals_residuals.loc[
@@ -260,12 +260,12 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         self._record_vals_residuals = pd.concat([remaining_vals_residuals, new_vals_residuals])
 
-        self._residuals_ndarray = (
+        self._residuals = (
             load_turning_points_rep[residuals_index] if len(residuals_index) else np.array([])
         )
 
-        res_len = len(self._residuals_array)
-        self._residuals_array = [(i-res_len, val) for i, (_, val) in enumerate(self._residuals_array)]
+        res_len = len(self._residuals_record)
+        self._residuals_record = [(i-res_len, val) for i, (_, val) in enumerate(self._residuals_record)]
 
         # TODO: check if these are really that redundant
         is_closed_hysteresis = (hysts[:, 0] != MEMORY_3).tolist()
@@ -386,9 +386,9 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         memory_functions = [turn_memory_3, turn_memory_1_2]
 
-        start = len(self._residuals_ndarray)
+        start = len(self._residuals)
         if start:
-            turning_points = np.concatenate((self._residuals_ndarray, turning_points))
+            turning_points = np.concatenate((self._residuals, turning_points))
         record_vals_with_residuals = pd.concat([self._record_vals_residuals, record_vals])
 
         value_array = record_vals_with_residuals.to_numpy()
@@ -548,7 +548,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
             self._iz += 1
 
-            self._residuals_array.append((rec_index, current_load))
+            self._residuals_record.append((rec_index, current_load))
 
             rec_index += 1
 
@@ -567,7 +567,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
                 if np.abs(current_load) > self._load_max_seen:  # case a) i, "Memory 3"
                     record[rec_index, :] = [record_index, PRIMARY]
 
-                    residuals_idx = self._residuals_array[-1][0]
+                    residuals_idx = self._residuals_record[-1][0]
                     hysts[hyst_index, :] = [MEMORY_3, residuals_idx, current_index, -1]
                     hyst_index += 1
 
@@ -583,8 +583,8 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
             # here we have iz > ir:
 
-            prev_idx_0, prev_load_0 = self._residuals_array[-2]
-            prev_idx_1, prev_load_1 = self._residuals_array[-1]
+            prev_idx_0, prev_load_0 = self._residuals_record[-2]
+            prev_idx_1, prev_load_1 = self._residuals_record[-1]
 
             current_load_extent = np.abs(current_load - prev_load_1)
             previous_load_extent = np.abs(prev_load_1 - prev_load_0)
@@ -595,11 +595,11 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
             # no -> we have a new hysteresis
 
-            self._residuals_array.pop()
-            self._residuals_array.pop()
+            self._residuals_record.pop()
+            self._residuals_record.pop()
 
-            if len(self._residuals_array):
-                record_index = self._residuals_array[-1][0]
+            if len(self._residuals_record):
+                record_index = self._residuals_record[-1][0]
 
             self._iz -= 2
 
