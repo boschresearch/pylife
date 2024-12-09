@@ -25,7 +25,7 @@ on how to do that. The newly created environment must be activated.
 
 The following command lines should do it
 ```
-conda create -n pylife-env python=3.11 --yes
+conda create -n pylife-env python=3.12 --yes
 conda activate pylife-env
 ```
 
@@ -41,7 +41,7 @@ That's not recommended. If you really want to do that, you probably know how to
 do it.
 
 
-### pip install
+### Install the pyLife package
 
 The simplest way to install pyLife is just using the pip package
 ```
@@ -75,7 +75,7 @@ Create an environment – usually a good idea to use a prefixed environment in
 your pyLife working directory and activate it.
 
 ```
-conda create -p .venv python=3.11 pip --yes
+conda create -p .venv python=3.12 pip --yes
 conda activate ./.venv
 ```
 
@@ -94,7 +94,7 @@ pytest
 
 If it creates an output ending like below, the installation was successful.
 ```
-================ 228 passed, 1 deselected, 13 warnings in 30.45s ===============
+================ 1171 passed, 7 skipped, 6 deselected, 3 warnings in 23.06s ===============
 ```
 
 There might be some `DeprecationWarning`s. Ignore them for now.
