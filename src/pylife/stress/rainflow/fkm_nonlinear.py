@@ -45,6 +45,39 @@ INDEX_HIST_LEVELS = [
 ]
 
 
+class _ResidualsRecord:
+
+    def __init__(self):
+        self._index = []
+        self._values = []
+
+    def append(self, idx, val):
+        self._index.append(idx)
+        self._values.append(val)
+
+    def pop(self):
+        return self._index.pop(), self._values.pop()
+
+    @property
+    def index(self):
+        return np.array(self._index, dtype=np.int64)
+
+    @property
+    def current_index(self):
+        return self._index[-1]
+
+    def reindex(self):
+        self._index = list(range(-len(self._values), 0))
+
+    def will_remain_open_by(self, load):
+        current_load_extent = np.abs(load - self._values[-1])
+        previous_load_extent = np.abs(self._values[-1] - self._values[-2])
+        return current_load_extent < previous_load_extent
+
+    def __len__(self):
+        return len(self._index)
+
+
 class FKMNonlinearDetector(RFG.AbstractDetector):
     """HCM-Algorithm detector as described in FKM nonlinear.
 
@@ -67,7 +100,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         self._is_load_sequence_start = True
 
         self._last_record = None
-        self._residuals_record = []
+        self._residuals_record = _ResidualsRecord()
         self._residuals = np.array([])
         self._record_vals_residuals = pd.DataFrame()
 
@@ -224,7 +257,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         results = self._process_recording(load_turning_points_rep, record_vals, hysts)
         results_min, results_max, epsilon_min_LF, epsilon_max_LF = results
 
-        residuals_index = np.array([i for i, _ in self._residuals_record])
+        residuals_index = self._residuals_record.index
 
         remaining_vals_residuals = (
             self._record_vals_residuals.loc[
@@ -264,8 +297,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
             load_turning_points_rep[residuals_index] if len(residuals_index) else np.array([])
         )
 
-        res_len = len(self._residuals_record)
-        self._residuals_record = [(i-res_len, val) for i, (_, val) in enumerate(self._residuals_record)]
+        self._residuals_record.reindex()
 
         # TODO: check if these are really that redundant
         is_closed_hysteresis = (hysts[:, 0] != MEMORY_3).tolist()
@@ -548,7 +580,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
             self._iz += 1
 
-            self._residuals_record.append((rec_index, current_load))
+            self._residuals_record.append(rec_index, current_load)
 
             rec_index += 1
 
@@ -567,7 +599,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
                 if np.abs(current_load) > self._load_max_seen:  # case a) i, "Memory 3"
                     record[rec_index, :] = [record_index, PRIMARY]
 
-                    residuals_idx = self._residuals_record[-1][0]
+                    residuals_idx = self._residuals_record.current_index
                     hysts[hyst_index, :] = [MEMORY_3, residuals_idx, current_index, -1]
                     hyst_index += 1
 
@@ -583,23 +615,17 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
             # here we have iz > ir:
 
-            prev_idx_0, prev_load_0 = self._residuals_record[-2]
-            prev_idx_1, prev_load_1 = self._residuals_record[-1]
-
-            current_load_extent = np.abs(current_load - prev_load_1)
-            previous_load_extent = np.abs(prev_load_1 - prev_load_0)
-
-            if current_load_extent < previous_load_extent:
+            if self._residuals_record.will_remain_open_by(current_load):
                 record[rec_index, :] = [record_index, SECONDARY]
                 break
 
             # no -> we have a new hysteresis
 
-            self._residuals_record.pop()
-            self._residuals_record.pop()
+            prev_idx_1, prev_load_1 = self._residuals_record.pop()
+            prev_idx_0, prev_load_0 = self._residuals_record.pop()
 
             if len(self._residuals_record):
-                record_index = self._residuals_record[-1][0]
+                record_index = self._residuals_record.current_index
 
             self._iz -= 2
 
