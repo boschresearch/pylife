@@ -5,6 +5,12 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 ## Unreleased
 
+
+### Breaking changes
+
+* Drop support for python-3.8 ast it is end of life
+
+
 ### Minor improvments
 
 * Connectivity information is now transfered from odbserver to odbclient as
