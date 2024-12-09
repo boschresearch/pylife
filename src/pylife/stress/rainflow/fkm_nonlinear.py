@@ -493,48 +493,6 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         return results_min, results_max, pd.Series(epsilon_min_LF), pd.Series(epsilon_max_LF)
 
-    @property
-    def strain_values(self):
-        """
-        Get the strain values of the turning points in the stress-strain diagram.
-        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
-
-        Returns
-        -------
-        list of float
-           The strain values of the turning points that are visited during the HCM algorithm.
-        """
-        return self.history().query("load_step >= 0").strain.to_numpy()
-
-    @property
-    def strain_values_first_run(self):
-        """
-        Get the strain values of the turning points in the stress-strain diagram, for the first run of the HCM algorithm.
-        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
-
-        Returns
-        -------
-        list of float
-           The strain values of the turning points that are visited during the first run of the HCM algorithm.
-        """
-
-        return self.history().query("load_step >= 0 and run_index == 1").strain.to_numpy()
-
-    @property
-    def strain_values_second_run(self):
-        """
-        Get the strain values of the turning points in the stress-strain diagram, for the second and any further run of the HCM algorithm.
-        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
-
-        Returns
-        -------
-        list of float
-           The strain values of the turning points that are visited during the second run of the HCM algorithm.
-        """
-
-        return self.history().query("load_step >= 0 and run_index == 2").strain.to_numpy()
-
-
     def _adjust_samples_and_flush_for_hcm_first_run(self, samples):
 
         is_multi_index = isinstance(samples, pd.Series) and len(samples.index.names) > 1
@@ -674,20 +632,151 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         return hyst_index
 
+    @property
+    def strain_values(self):
+        """
+        Get the strain values of the turning points in the stress-strain diagram.
+        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
 
-    def _get_scalar_current_load(self, current_load):
-        """Get a scalar value that represents the current load.
-        This is either the load itself if it is already scaler,
-        or the node from the first assessment point if multiple points are
-        considered at once."""
+        Returns
+        -------
+        list of float
+           The strain values of the turning points that are visited during the HCM algorithm.
+        """
+        return self.history().query("load_step >= 0").strain.to_numpy()
 
-        if isinstance(current_load, pd.Series):
-            current_load_representative = current_load.iloc[0]
-        else:
-            current_load_representative = current_load
-        return current_load_representative
+    @property
+    def strain_values_first_run(self):
+        """
+        Get the strain values of the turning points in the stress-strain diagram, for the first run of the HCM algorithm.
+        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
 
+        Returns
+        -------
+        list of float
+           The strain values of the turning points that are visited during the first run of the HCM algorithm.
+        """
 
+        return self.history().query("load_step >= 0 and run_index == 1").strain.to_numpy()
+
+    @property
+    def strain_values_second_run(self):
+        """
+        Get the strain values of the turning points in the stress-strain diagram, for the second and any further run of the HCM algorithm.
+        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
+
+        Returns
+        -------
+        list of float
+           The strain values of the turning points that are visited during the second run of the HCM algorithm.
+        """
+
+        return self.history().query("load_step >= 0 and run_index == 2").strain.to_numpy()
+
+    def history(self):
+        """Compile the history of noteworthy points.
+
+        Returns
+        -------
+
+        history : pd.DataFrame
+            The history containing of
+            ``load``, ``stress``, ``strain`` and ``secondary_branch``.
+            The ``secondary_branch`` column is ``bool`` and indicates if the point
+            is on secondary load branch.
+
+            The index consists of the following levels:
+                * ``load_segment``: the number of the point
+                * ``load_step``: the index of the point in the actual samples
+                * ``run_index``: the index of the run (usually 1 or 2)
+                * ``turning_point``: the number of the turning point (-1 if it is not a turning point)
+                * ``hyst_from``: the number of the hysteresis starting at the point (-1 if there isn't one)
+                * ``hyst_to``: the number of the hysteresis opened at the point (-1 if there isn't one)
+                * ``hyst_close``: the number hof the hysteresis closed at the point (-1 if there isn't one)
+
+        Notes
+        -----
+
+        The history contains all the turning points with two other kinds of points injected:
+          * The primary hysteresis opening (Memory 3 of the guidline)
+          * The closing points of a hysteresis
+
+        Note that the ``load_step`` index of the injected points is always `-1`, so you
+        can't use it to determine the index of a hysteresis closing in the original
+        signal.
+
+        """
+        history = pd.concat([rr for rr, _ in self._history_record]).reset_index(
+            drop=True
+        )
+        history["load_segment"] = np.arange(1, len(history) + 1)
+
+        hysts = np.concatenate([hs for _, hs in self._history_record])
+        hyst_index = np.concatenate(
+            [[np.arange(len(hysts))], hysts[:, FROM:CLOSE].T, [hysts[:, IS_CLOSED].T]]
+        ).T
+
+        hyst_from_marker = pd.Series(-1, index=history.index)
+        hyst_to_marker = pd.Series(-1, index=history.index)
+
+        if len(hysts):
+            hyst_from_marker.iloc[hyst_index[:, FROM]] = hyst_index[:, IS_CLOSED]
+            hyst_to_marker.iloc[hyst_index[:, TO]] = hyst_index[:, IS_CLOSED]
+
+        history["hyst_from"] = hyst_from_marker
+        history["hyst_to"] = hyst_to_marker
+        history["hyst_close"] = pd.Series(-1, index=history.index)
+
+        to_insert = []
+        negate = []
+        turning_point_drop_idx = []
+        hyst_close_index = []
+
+        for hyst_index, hyst in enumerate(hysts):
+            if hyst[IS_CLOSED] == MEMORY_1_2:
+                hyst_close = int(hyst[CLOSE]) + len(to_insert)
+                hyst_from = int(hyst[FROM])
+                turning_point_drop_idx.append(hyst_close)
+                hyst_close_index.append([hyst_close, hyst_index])
+                to_insert.append((hyst_close, hyst_from))
+            else:
+                hyst_from = int(hyst[FROM])
+                hyst_to = int(hyst[TO]) + len(to_insert)
+                negate.append(hyst_to)
+                turning_point_drop_idx.append(hyst_to)
+                to_insert.append((hyst_to, hyst_from))
+
+        hyst_close_index = np.array(hyst_close_index, dtype=np.int64)
+
+        negate = np.array(negate, dtype=np.int64)
+
+        index = list(np.arange(len(history)))
+
+        for target, idx in to_insert:
+            index.insert(target, int(idx))
+
+        history = history.iloc[index].reset_index(drop=True)
+
+        history.loc[
+            turning_point_drop_idx,
+            ["turning_point", "load_step", "hyst_from", "hyst_to"],
+        ] = -1
+        history.loc[turning_point_drop_idx, "secondary_branch"] = True
+        history.loc[negate, PHYSICAL_HIST_COLUMNS] = -history.loc[
+            negate, PHYSICAL_HIST_COLUMNS
+        ]
+        history.loc[negate, "hyst_to"] = history.loc[negate + 1, "hyst_to"].to_numpy()
+        history.loc[negate + 1, "hyst_to"] = -1
+        history.loc[negate, "secondary_branch"] = True
+
+        if len(hyst_close_index):
+            history.loc[hyst_close_index[:, 0], "hyst_close"] = hyst_close_index[:, 1]
+
+        history["load_segment"] = np.arange(len(history), dtype=np.int64)
+
+        history.set_index(INDEX_HIST_LEVELS, inplace=True)
+
+        return history
 
     def interpolated_stress_strain_data(
             self,
@@ -696,6 +785,32 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
             hysteresis_index=None,
             n_points_per_branch=100
     ):
+        """Caclulate interpolated stress and strain data.
+
+        Parameters
+        ----------
+        load_segment : int, Optional
+            The number of the load segment for which the stress strain data is to be
+            interpolated.
+        hysteresis_index : int, Optional
+            The number of the hysteresis for which the stress strain data is to be
+            interpolated.
+        n_points_per_branch : int, Optional
+            The number of points to be interpolated to of each load segment
+
+        Returns
+        -------
+        stress_strain_data : pd.DataFrame
+            The resulting ``DataFrame`` will contain the following columns:
+
+              * ``stress``, ``strain`` – the stress strain data
+              * ``secondary_branch``– a ``bool`` column indicating if the point is
+                on a secondary load branch
+              * ``hyst_index`` – the number of the hysteresis the load segment is part of (-1 if  there isn't one)
+              * ``load_segment`` the number of the load segment
+              * ``run_index`` the number of the run
+
+        """
         history = self.history()
 
         if hysteresis_index is not None:
@@ -795,69 +910,3 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
                 "run_index": run_index,
             }
         )
-
-    def history(self):
-        history = pd.concat([rr for rr, _ in self._history_record]).reset_index(drop=True)
-        history["load_segment"] = np.arange(1, len(history) + 1)
-
-        hysts = np.concatenate([hs for _, hs in self._history_record])
-        hyst_index = np.concatenate(
-            [[np.arange(len(hysts))], hysts[:, FROM:CLOSE].T, [hysts[:, IS_CLOSED].T]]
-        ).T
-
-        hyst_from_marker = pd.Series(-1, index=history.index)
-        hyst_to_marker = pd.Series(-1, index=history.index)
-
-        if len(hysts):
-            hyst_from_marker.iloc[hyst_index[:, FROM]] = hyst_index[:, IS_CLOSED]
-            hyst_to_marker.iloc[hyst_index[:, TO]] = hyst_index[:, IS_CLOSED]
-
-        history["hyst_from"] = hyst_from_marker
-        history["hyst_to"] = hyst_to_marker
-        history["hyst_close"] = pd.Series(-1, index=history.index)
-
-        to_insert = []
-        negate = []
-        turning_point_drop_idx = []
-        hyst_close_index = []
-
-        for hyst_index, hyst in enumerate(hysts):
-            if hyst[IS_CLOSED] == MEMORY_1_2:
-                hyst_close = int(hyst[CLOSE]) + len(to_insert)
-                hyst_from = int(hyst[FROM])
-                turning_point_drop_idx.append(hyst_close)
-                hyst_close_index.append([hyst_close, hyst_index])
-                to_insert.append((hyst_close, hyst_from))
-            else:
-                hyst_from = int(hyst[FROM])
-                hyst_to = int(hyst[TO]) + len(to_insert)
-                negate.append(hyst_to)
-                turning_point_drop_idx.append(hyst_to)
-                to_insert.append((hyst_to, hyst_from))
-
-        hyst_close_index = np.array(hyst_close_index, dtype=np.int64)
-
-        negate = np.array(negate, dtype=np.int64)
-
-        index = list(np.arange(len(history)))
-
-        for target, idx in to_insert:
-            index.insert(target, int(idx))
-
-        history = history.iloc[index].reset_index(drop=True)
-
-        history.loc[turning_point_drop_idx, ["turning_point", "load_step", "hyst_from", "hyst_to"]] = -1
-        history.loc[turning_point_drop_idx, "secondary_branch"] = True
-        history.loc[negate, PHYSICAL_HIST_COLUMNS] = -history.loc[negate, PHYSICAL_HIST_COLUMNS]
-        history.loc[negate, "hyst_to"] = history.loc[negate+1, "hyst_to"].to_numpy()
-        history.loc[negate+1, "hyst_to"] = -1
-        history.loc[negate, "secondary_branch"] = True
-
-        if len(hyst_close_index):
-            history.loc[hyst_close_index[:, 0], "hyst_close"] = hyst_close_index[:, 1]
-
-        history["load_segment"] = np.arange(len(history), dtype=np.int64)
-
-        history.set_index(INDEX_HIST_LEVELS, inplace=True)
-
-        return history
