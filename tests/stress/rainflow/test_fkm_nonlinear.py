@@ -1127,8 +1127,6 @@ def test_history_guideline_at_once():
         }
     ).set_index(["load_segment", "load_step", "run_index", "turning_point", "hyst_from", "hyst_to", "hyst_close"])
 
-    print(df["load"])
-    print(expected["load"])
     pd.testing.assert_frame_equal(df, expected, rtol=1e-1)
 
 
