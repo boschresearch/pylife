@@ -257,47 +257,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         results = self._process_recording(load_turning_points_rep, record_vals, hysts)
         results_min, results_max, epsilon_min_LF, epsilon_max_LF = results
 
-        residuals_index = self._residuals_record.index
-
-        remaining_vals_residuals = (
-            self._record_vals_residuals.loc[
-                self._record_vals_residuals.index[residuals_index[residuals_index < 0]]
-            ]
-            if len(residuals_index) > 0
-            else pd.DataFrame()
-        )
-
-        new_residuals_index = residuals_index[residuals_index >= 0]
-
-        # TODO: check if this can be simplified once `load_step` will be internalized
-
-        index_series = record_vals.index.get_level_values("load_step").to_series()
-        indexer = pd.DataFrame(
-            {
-                "load_step": index_series.values,
-                "load_num": load_step,
-            },
-            index=load_step.index
-        ).groupby("load_num").first()["load_step"].values
-
-        new_vals_residuals = (
-            record_vals.loc[
-                record_vals.index.isin(
-                    indexer[new_residuals_index],
-                    level="load_step",
-                )
-            ]
-            if len(new_residuals_index) > 0
-            else pd.DataFrame()
-        )
-
-        self._record_vals_residuals = pd.concat([remaining_vals_residuals, new_vals_residuals])
-
-        self._residuals = (
-            load_turning_points_rep[residuals_index] if len(residuals_index) else np.array([])
-        )
-
-        self._residuals_record.reindex()
+        self._update_residuals(record_vals, load_step, load_turning_points_rep)
 
         # TODO: check if these are really that redundant
         is_closed_hysteresis = (hysts[:, 0] != MEMORY_3).tolist()
@@ -334,6 +294,48 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         self._history_record.append((record_repr, rec_hysts))
 
+    def _update_residuals(self, record_vals, load_step, load_turning_points_rep):
+        residuals_index = self._residuals_record.index
+
+        remaining_vals_residuals = (
+            self._record_vals_residuals.loc[
+                self._record_vals_residuals.index[residuals_index[residuals_index < 0]]
+            ]
+            if len(residuals_index) > 0
+            else pd.DataFrame()
+        )
+
+        # TODO: check if this can be simplified once `load_step` will be internalized
+
+        index_series = record_vals.index.get_level_values("load_step").to_series()
+        indexer = pd.DataFrame(
+            {
+                "load_step": index_series.values,
+                "load_num": load_step,
+            },
+            index=load_step.index
+        ).groupby("load_num").first()["load_step"].values
+
+        new_residuals_index = residuals_index[residuals_index >= 0]
+
+        new_vals_residuals = (
+            record_vals.loc[
+                record_vals.index.isin(
+                    indexer[new_residuals_index],
+                    level="load_step",
+                )
+            ]
+            if len(new_residuals_index) > 0
+            else pd.DataFrame()
+        )
+
+        self._record_vals_residuals = pd.concat([remaining_vals_residuals, new_vals_residuals])
+
+        self._residuals = (
+            load_turning_points_rep[residuals_index] if len(residuals_index) else np.array([])
+        )
+
+        self._residuals_record.reindex()
 
     def _collect_record(self, load_turning_points, turning_groups, load_step, record):
         record_vals = np.empty((5, len(turning_groups)*self._group_size))
