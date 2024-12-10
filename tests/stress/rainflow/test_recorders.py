@@ -144,8 +144,6 @@ def test_full_rainflow_recorder_two_non_zero_collective():
         'index_to': pd.Series([it1, it2], dtype=np.uintp)
     })
 
-    print(expected)
-    print(expected.dtypes)
     pd.testing.assert_frame_equal(fr.collective, expected)
 
 
@@ -260,16 +258,16 @@ def test_loopvalue_rainflow_recorder_histogram_one_non_zero(value_from, value_to
 # fkm nonlinear recorder
 def test_fkm_nonlinear_recorder_record_two_values():
     a1, a2, b1, b2, c1, c2, d1, d2, e1, e2, f1, f2 = 23., 42.,  46., 84.,  2.5, -2.2,  4.8, 2.3,  4.5, -0.2,  1.8, 0.3
-    g1, g2 = 1, 2
-    h1, h2 = 4, 5
+    g1, g2 = 1., 2.
+    h1, h2 = 4., 5.
     fr = RFR.FKMNonlinearRecorder()
 
     # arguments: loads_min, loads_max, S_min, S_max, epsilon_min, epsilon_max, epsilon_min_LF, epsilon_max_LF,
-    # is_closed_hysteresis, is_zero_mean_stress_and_strain, run_index, debug_output
+    # is_closed_hysteresis, is_zero_mean_stress_and_strain, run_index
 
-    args_1 = [pd.Series([v]) for v in [a1, b1, c1, d1, e1, f1, g1, h1]] + [[False], [False], 1, [""]]
-    args_2 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [False], 2, [""]]
-    args_3 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [True], 2, [""]]
+    args_1 = [pd.Series([v]) for v in [a1, b1, c1, d1, e1, f1, g1, h1]] + [[False], [False], 1]
+    args_2 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [False], 2]
+    args_3 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [True], 2]
 
     fr.record_values_fkm_nonlinear(*args_1)
     fr.record_values_fkm_nonlinear(*args_2)
@@ -319,7 +317,6 @@ def test_fkm_nonlinear_recorder_empty_collective_default():
             "is_closed_hysteresis": [],
             "is_zero_mean_stress_and_strain": [],
             "run_index": np.array([], dtype=np.int64),
-            "debug_output": []
         }
     )
 
@@ -328,13 +325,13 @@ def test_fkm_nonlinear_recorder_empty_collective_default():
 
 def test_fkm_nonlinear_recorder_two_non_zero_collective():
     a1, a2, b1, b2, c1, c2, d1, d2, e1, e2, f1, f2 = 23., 42.,  46., 84.,  2.5, -2.2,  4.8, 2.3,  0.5, -0.2,  1.8, 0.3
-    g1, g2 = 1, 2
-    h1, h2 = 4, 5
+    g1, g2 = 1., 2.
+    h1, h2 = 4., 5.
     fr = RFR.FKMNonlinearRecorder()
 
-    args_1 = [pd.Series([v]) for v in [a1, b1, c1, d1, e1, f1, g1, h1]] + [[False], [False], 1, [""]]
-    args_2 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [False], 2, [""]]
-    args_3 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [True], 2, [""]]
+    args_1 = [pd.Series([v]) for v in [a1, b1, c1, d1, e1, f1, g1, h1]] + [[False], [False], 1]
+    args_2 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [False], 2]
+    args_3 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [True], 2]
 
     fr.record_values_fkm_nonlinear(*args_1)
     fr.record_values_fkm_nonlinear(*args_2)
@@ -359,7 +356,6 @@ def test_fkm_nonlinear_recorder_two_non_zero_collective():
             "is_closed_hysteresis": [False, True, True],
             "is_zero_mean_stress_and_strain": [False, False, True],
             "run_index": [1, 2, 2],
-            "debug_output": ["", "", ""],
         }
     )
 

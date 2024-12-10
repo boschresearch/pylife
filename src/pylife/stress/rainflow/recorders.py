@@ -162,7 +162,6 @@ class FKMNonlinearRecorder(AbstractRecorder):
         self._is_closed_hysteresis = []
         self._is_zero_mean_stress_and_strain = []
         self._run_index = []
-        self._debug_output = []
 
     @property
     def loads_min(self):
@@ -351,14 +350,14 @@ class FKMNonlinearRecorder(AbstractRecorder):
                     "epsilon_min_LF": self._epsilon_min_LF.values,
                     "epsilon_max_LF": self._epsilon_max_LF.values,
                     "is_closed_hysteresis": self._is_closed_hysteresis,  # FIXME .values
-                    "is_zero_mean_stress_and_strain": self._is_zero_mean_stress_and_strain, # FIXME .values,
+                    "is_zero_mean_stress_and_strain": self._is_zero_mean_stress_and_strain,  # FIXME .values,
                     "run_index": np.array(self._run_index, dtype=np.int64),
-                    "debug_output": self._debug_output, # FIXME .values,
-            })
+                },
+            )
 
     def record_values_fkm_nonlinear(self, loads_min, loads_max, S_min, S_max, epsilon_min, epsilon_max,
                       epsilon_min_LF, epsilon_max_LF,
-                      is_closed_hysteresis, is_zero_mean_stress_and_strain, run_index, debug_output):
+                      is_closed_hysteresis, is_zero_mean_stress_and_strain, run_index):
         """Record the loop values."""
 
         if len(loads_min) > 0:
@@ -377,10 +376,6 @@ class FKMNonlinearRecorder(AbstractRecorder):
         self._epsilon_max_LF = pd.concat([self._epsilon_max_LF, epsilon_max_LF])
         self._is_closed_hysteresis += is_closed_hysteresis
         self._is_zero_mean_stress_and_strain += is_zero_mean_stress_and_strain
-
-        if len(debug_output) == 0:
-            debug_output = [""] * len(S_min)
-        self._debug_output += debug_output
 
         self._run_index += [run_index] * len(S_min)
 

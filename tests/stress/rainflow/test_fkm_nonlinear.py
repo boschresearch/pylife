@@ -23,10 +23,83 @@ import numpy as np
 import pandas as pd
 import copy
 
-import pylife.stress.rainflow as RF
 from pylife.stress.rainflow.fkm_nonlinear import FKMNonlinearDetector
 import pylife.stress.rainflow.recorders as RFR
 import pylife.materiallaws.notch_approximation_law
+import pylife.materiallaws.notch_approximation_law_seegerbeste
+
+
+@pytest.fixture(autouse=True)
+def np_precision_2_print():
+    old_prec = pd.get_option("display.precision")
+    old_expand = pd.get_option("expand_frame_repr")
+    with np.printoptions(precision=2):
+        pd.set_option("display.precision", 2)
+        pd.set_option("expand_frame_repr", False)
+        yield
+    pd.set_option("display.precision", old_prec)
+    pd.set_option("expand_frame_repr", old_expand)
+
+
+class TestIncomplete(unittest.TestCase):
+
+    def setUp(self):
+
+        signal = np.array([0, 500.])
+
+        self._recorder = RFR.FKMNonlinearRecorder()
+        E = 206e3    # [MPa] Young's modulus
+        K = 2650     # 1184 [MPa]
+        n = 0.187    # [-]
+        K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+        # initialize notch approximation law
+        extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+        # wrap the notch approximation law by a binning class, which precomputes the values
+        maximum_absolute_load = max(abs(signal))
+        extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+            extended_neuber, maximum_absolute_load, 100)
+
+        # first run
+        detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber_binned)
+        detector.process(signal)
+
+        # second run
+        self._detector = detector.process(signal)
+
+    def test_values(self):
+        np.testing.assert_array_equal(self._recorder.loads_min, np.array([]))
+        np.testing.assert_array_equal(self._recorder.loads_max, np.array([]))
+        np.testing.assert_array_equal(self._recorder.S_min, np.array([]))
+        np.testing.assert_array_equal(self._recorder.S_max, np.array([]))
+        np.testing.assert_array_equal(self._recorder.epsilon_min, np.array([]))
+        np.testing.assert_array_equal(self._recorder.epsilon_max, np.array([]))
+
+    def test_strain_values(self):
+        np.testing.assert_array_equal(self._detector.strain_values_first_run, np.array([]))
+        np.testing.assert_allclose(self._detector.strain_values_second_run, np.array([2.48e-3, 5.65e-5]), rtol=1e-1)
+        np.testing.assert_allclose(self._detector.strain_values, np.array([2.48e-3, 5.65e-5]), rtol=1e-1)
+
+    def test_epsilon_LF(self):
+        collective = self._recorder.collective
+        np.testing.assert_allclose(collective.epsilon_min_LF.to_numpy(), np.array([]))
+        np.testing.assert_allclose(collective.epsilon_max_LF.to_numpy(), np.array([]))
+
+    def test_interpolation(self):
+        df = self._detector.interpolated_stress_strain_data(load_segment=0, n_points_per_branch=5)
+        expected = pd.DataFrame(
+            {
+                "stress": [0.0, 122.02, 244.04, 366.06, 488.08],
+                "strain": [0.0, 5.92e-4, 1.19e-3, 1.80e-3, 2.48e-3],
+                "secondary_branch": [False, False, False, False, False],
+                "hyst_index": -1,
+                "load_segment": 0,
+                "run_index": 2
+            }
+        )
+
+        pd.testing.assert_frame_equal(df, expected, rtol=1e-1)
 
 
 class TestFKMMemory1Inner(unittest.TestCase):
@@ -35,7 +108,7 @@ class TestFKMMemory1Inner(unittest.TestCase):
 
     def setUp(self):
 
-        signal = np.array([100,0,80,20,60,40])
+        signal = np.array([100, 0, 80, 20, 60, 40])
 
         self._recorder = RFR.FKMNonlinearRecorder()
         E = 206e3    # [MPa] Young's modulus
@@ -69,9 +142,43 @@ class TestFKMMemory1Inner(unittest.TestCase):
     def test_strain_values(self):
 
         # regression test
-        np.testing.assert_allclose(self._detector.strain_values, np.array([4.854492e-04, 1.169416e-08, 3.883614e-04, 9.709922e-05, 2.912740e-04, 1.941866e-04, 4.854492e-04, 1.169416e-08, 3.883614e-04, 9.709922e-05, 2.912740e-04, 1.941866e-04]), rtol=1e-3, atol=1e-5)
-        np.testing.assert_allclose(self._detector.strain_values_first_run, np.array([4.854492e-04, 1.169416e-08, 3.883614e-04, 9.709922e-05, 2.912740e-04]), rtol=1e-3, atol=1e-5)
-        np.testing.assert_allclose(self._detector.strain_values_second_run, np.array([1.941866e-04, 4.854492e-04, 1.169416e-08, 3.883614e-04, 9.709922e-05, 2.912740e-04, 1.941866e-04]), rtol=1e-3, atol=1e-5)
+
+        expected_first = np.array([4.85e-04, 1.17e-08, 3.88e-04, 9.70e-05, 2.91e-04])
+        expected_second = np.array(
+            [1.94e-04, 4.85e-04, 1.17e-08, 3.88e-04, 9.70e-05, 2.91e-04, 1.94e-04]
+        )
+        expected_total = np.concatenate((expected_first, expected_second))
+
+        np.testing.assert_allclose(self._detector.strain_values, expected_total, rtol=1e-3, atol=1e-5)
+        np.testing.assert_allclose(self._detector.strain_values_first_run, expected_first, rtol=1e-3, atol=1e-5)
+        np.testing.assert_allclose(self._detector.strain_values_second_run, expected_second, rtol=1e-3, atol=1e-5)
+
+    def test_epsilon_LF(self):
+        collective = self._recorder.collective
+
+        np.testing.assert_allclose(
+            collective.epsilon_min_LF.to_numpy(), np.array([0.0, 0.0, 0.0]), rtol=1e-2
+        )
+
+        np.testing.assert_allclose(
+            collective.epsilon_max_LF.to_numpy(),
+            np.array([0.485, 0.485, 0.485]) * 1e-3,
+            rtol=1e-2,
+        )
+
+    def test_interpolation(self):
+        df = self._detector.interpolated_stress_strain_data(load_segment=5, n_points_per_branch=5)
+        expected = pd.DataFrame(
+            {
+                "stress": [6.0e01, 5.5e01, 5.0e01, 4.5e01, 4.0e01],
+                "strain": [2.9e-04, 2.7e-04, 2.4e-04, 2.2e-04, 1.9e-04],
+                "secondary_branch": True,
+                "hyst_index": 0,
+                "load_segment": 5,
+                "run_index": 2,
+            }
+        )
+        pd.testing.assert_frame_equal(df, expected, rtol=1e-1)
 
 
 class TestFKMMemory1_2_3(unittest.TestCase):
@@ -130,6 +237,22 @@ class TestFKMMemory1_2_3(unittest.TestCase):
             9.71373378e-04,  4.74995178e-07,  9.71373378e-04, -9.713734e-04]), rtol=1e-3, atol=1e-5)
 
 
+    def test_epsilon_LF(self):
+        collective = self._recorder.collective
+
+        np.testing.assert_allclose(
+            collective.epsilon_min_LF.to_numpy(),
+            np.array([-0.485, -0.485, -0.971, -0.971, -0.971, -0.971, -0.971, -0.971, -0.971, -0.971]) * 1e-3,
+            rtol=1e-2
+        )
+
+        np.testing.assert_allclose(
+            collective.epsilon_max_LF.to_numpy(),
+            np.array([0.485, 0.485, 0.485, 0.971, 0.971, 0.971, 0.971, 0.971, 0.971, 0.971]) * 1e-3,
+            rtol=1e-2
+        )
+
+
 class TestHCMExample1(unittest.TestCase):
     """Example 2.7.1 "Akademisches Beispiel", p.74 """
 
@@ -183,106 +306,19 @@ class TestHCMExample1(unittest.TestCase):
         np.testing.assert_allclose(self._detector.strain_values_first_run, np.array([0.000704, -0.001551,  0.000632, -0.002099,  0.001529,  0.000121, 0.001529, -0.001574]), rtol=1e-3, atol=1e-5)
         np.testing.assert_allclose(self._detector.strain_values_second_run, np.array([0.00061, -0.001574,  0.00061, -0.002099, 0.001529,  0.000121,  0.001529, -0.001574]), rtol=1e-3, atol=1e-5)
 
-    def test_plotting(self):
+    def test_epsilon_LF(self):
+        collective = self._recorder.collective
+        np.testing.assert_allclose(
+            collective.epsilon_min_LF.to_numpy(),
+            np.array([0.0, -1.55, -2.1, -2.1, -2.1, -2.1, -2.1]) * 1e-3,
+            rtol=1e-2
+        )
 
-        plotting_data = self._detector.interpolated_stress_strain_data(n_points_per_branch=3, only_hystereses=False)
-
-        strain_values_primary = plotting_data["strain_values_primary"]
-        stress_values_primary = plotting_data["stress_values_primary"]
-        hysteresis_index_primary = plotting_data["hysteresis_index_primary"]
-        strain_values_secondary = plotting_data["strain_values_secondary"]
-        stress_values_secondary = plotting_data["stress_values_secondary"]
-        hysteresis_index_secondary = plotting_data["hysteresis_index_secondary"]
-
-        # plot resulting stress-strain curve
-        sampling_parameter = 50    # choose larger for smoother plot
-        plotting_data_fine = self._detector_1st.interpolated_stress_strain_data(n_points_per_branch=sampling_parameter)
-
-        strain_values_primary_fine = plotting_data_fine["strain_values_primary"]
-        stress_values_primary_fine = plotting_data_fine["stress_values_primary"]
-        hysteresis_index_primary_fine = plotting_data_fine["hysteresis_index_primary"]
-        strain_values_secondary_fine = plotting_data_fine["strain_values_secondary"]
-        stress_values_secondary_fine = plotting_data_fine["stress_values_secondary"]
-        hysteresis_index_secondary_fine = plotting_data_fine["hysteresis_index_secondary"]
-
-        # the following plots the test case for visual debugging
-        if False:
-            import matplotlib.pyplot as plt
-            fig, axes = plt.subplots(1, 2, figsize=(12,6))
-            # load-time diagram
-            import matplotlib
-            matplotlib.rcParams.update({'font.size': 14})
-            axes[0].plot(self.signal, "o-", lw=2)
-            axes[0].grid()
-            axes[0].set_xlabel("t [s]")
-            axes[0].set_ylabel("L [N]")
-            axes[0].set_title("Scaled load sequence")
-
-            # stress-strain diagram
-            axes[1].plot(strain_values_primary_fine, stress_values_primary_fine, "y-", lw=1)
-            axes[1].plot(strain_values_secondary_fine, stress_values_secondary_fine, "y-.", lw=1)
-            axes[1].grid()
-            axes[1].set_xlabel(r"$\epsilon$")
-            axes[1].set_ylabel(r"$\sigma$ [MPa]")
-            axes[1].set_title("Material response")
-
-            plt.savefig("test_fkm_nonlinear.png")
-
-
-        strain_values_primary_reference = np.array([
-             0.,          0.00034608,  0.00070365,         np.nan, -0.00070365, -0.00070365,
-            -0.00104958, -0.00155125,         np.nan, -0.00155125, -0.00155125, -0.00179771,
-            -0.00209921,         np.nan, -0.00178372, -0.00209921, -0.00209921, -0.00209921,])
-        stress_values_primary_reference = np.array([
-            0.,           71.23135917,  142.46271834,           np.nan, -142.46271834,
-            -142.46271834, -200.66910165, -258.87548495,           np.nan, -258.87548495,
-            -258.87548495, -279.28078419, -299.68608343,           np.nan, -299.68608343,
-            -299.68608343, -299.68608343, -299.68608343,
-        ])
-        hysteresis_index_primary_reference = np.array([0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 6, 6, 6, 6, 6])
-        strain_values_secondary_reference = np.array([
-            np.nan,  7.03647041e-04,  7.03647041e-04,  1.14870755e-05,
-            -7.03647041e-04,             np.nan, -1.55125063e-03, -1.55125063e-03,
-            -5.43592015e-04,  6.32115565e-04,  6.32115565e-04, -3.75543053e-04,
-            -1.55125063e-03,             np.nan, -2.09920894e-03, -2.09920894e-03,
-            -7.15382913e-04,  1.52864389e-03,  1.52864389e-03,  8.36483922e-04,
-            1.21349805e-04,  1.21349805e-04,  8.13509770e-04,  1.52864389e-03,
-                        np.nan,  1.52864389e-03,  1.52864389e-03,  1.52864389e-03,
-            1.52864389e-03,  2.57497805e-04, -1.57385738e-03, -1.57385738e-03,
-            -5.66198760e-04,  6.09508820e-04,  6.09508820e-04, -3.98149798e-04,
-            -1.57385738e-03,             np.nan, -1.57385738e-03, -1.57385738e-03,
-            -1.57385738e-03, -1.57385738e-03, -5.66198760e-04,  6.09508820e-04,
-            6.09508820e-04, -3.98149798e-04, -1.57385738e-03,             np.nan,
-            -1.57385738e-03, -1.67878923e-03, -1.78372203e-03,             np.nan,
-            -2.09920894e-03, -2.09920894e-03, -7.15382913e-04,  1.52864389e-03,
-            1.52864389e-03,  8.36483922e-04,  1.21349805e-04,  1.21349805e-04,
-            8.13509770e-04,  1.52864389e-03,             np.nan,  1.52864389e-03,
-            1.52864389e-03,  1.52864389e-03,  1.52864389e-03,  2.57497805e-04,
-            -1.57385738e-03])
-        stress_values_secondary_reference = np.array([
-            np.nan,  142.46271834,  142.46271834,    0.,         -142.46271834,
-                    np.nan, -258.87548495, -258.87548495,  -52.19191877,  154.4916474,
-            154.4916474,   -52.19191877, -258.87548495,           np.nan, -299.68608343,
-            -299.68608343,  -19.19464281,  261.29679782,  261.29679782,  118.83407947,
-            -23.62863887,  -23.62863887,  118.83407947,  261.29679782,           np.nan,
-            261.29679782,  261.29679782,  261.29679782,  261.29679782,    2.42131287,
-            -256.45417208, -256.45417208,  -49.77060591,  156.91296027,  156.91296027,
-            -49.77060591, -256.45417208,           np.nan, -256.45417208, -256.45417208,
-            -256.45417208, -256.45417208,  -49.77060591,  156.91296027,  156.91296027,
-            -49.77060591, -256.45417208,           np.nan, -256.45417208, -278.07012776,
-            -299.68608343,           np.nan, -299.68608343, -299.68608343,  -19.19464281,
-            261.29679782,  261.29679782,  118.83407947,  -23.62863887,  -23.62863887,
-            118.83407947,  261.29679782,           np.nan,  261.29679782,  261.29679782,
-            261.29679782,  261.29679782,    2.42131287, -256.45417208])
-        hysteresis_index_secondary_reference = np.array([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7])
-
-        np.testing.assert_allclose(strain_values_primary_reference, strain_values_primary, rtol=1e-3)
-        np.testing.assert_allclose(stress_values_primary_reference, stress_values_primary, rtol=1e-3)
-        np.testing.assert_allclose(hysteresis_index_primary_reference, hysteresis_index_primary)
-
-        np.testing.assert_allclose(strain_values_secondary_reference, strain_values_secondary, rtol=1e-3)
-        np.testing.assert_allclose(stress_values_secondary_reference, stress_values_secondary, rtol=1e-3)
-        np.testing.assert_allclose(hysteresis_index_secondary_reference, hysteresis_index_secondary)
+        np.testing.assert_allclose(
+            collective.epsilon_max_LF.to_numpy(),
+            np.array([0.70, 0.70, 1.53, 1.53, 1.53, 1.53, 1.53]) * 1e-3,
+            rtol=1e-2
+        )
 
 
 class TestHCMExample2(unittest.TestCase):
@@ -359,6 +395,53 @@ class TestHCMExample2(unittest.TestCase):
 @pytest.mark.parametrize('vals, expected_loads_min, expected_loads_max', [
     (
         [200, 600, 1000, 60, 1500, 200, 80, 400, 1500, 700, 200],
+        [60, 80, 200, 60, 80],
+        [1000, 1500, 1000, 1500, 1500]
+    ),
+    (
+        [0, 500], [], []
+    ),
+    (
+        [100, -200, 100, -250, 200, 0, 200, -200],
+        [-200,  0,  -200, -200, -250, 0],
+        [100, 200, 100, 100, 200, 200]
+    )
+])
+def test_edge_case_value_in_sample_tail_simple_signal(vals, expected_loads_min, expected_loads_max):
+    signal = np.array(vals)
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.1148*(1251)**0.897 / (( np.min([0.338, 1033.*1251.**(-1.235)]) )**0.187)
+    #K = 2650.5   # [MPa]
+    n = 0.187    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(signal))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+    detector.process(signal).process(signal)
+
+    loads_min = detector.recorder.loads_min
+    loads_max = detector.recorder.loads_max
+
+    np.testing.assert_allclose(loads_min, np.array(expected_loads_min))
+    np.testing.assert_allclose(loads_max, np.array(expected_loads_max))
+
+    detector.recorder.collective
+
+
+@pytest.mark.parametrize('vals, expected_loads_min, expected_loads_max', [
+    (
+        [200, 600, 1000, 60, 1500, 200, 80, 400, 1500, 700, 200],
         [60, 120, 180, 80, 160, 240, 200, 400, 600, 60, 120, 180, 80, 160, 240],
         [1000, 2000, 3000, 1500, 3000, 4500, 1000, 2000, 3000, 1500, 3000, 4500, 1500, 3000, 4500]
     ),
@@ -405,6 +488,7 @@ def test_edge_case_value_in_sample_tail(vals, expected_loads_min, expected_loads
 
     detector.recorder.collective
 
+
 def test_flush_edge_case_load():
     mi_1 = pd.MultiIndex.from_product([range(9), range(3)], names=["load_step", "node_id"])
 
@@ -423,8 +507,8 @@ def test_flush_edge_case_load():
     ], index=mi_2)
 
     E = 206e3    # [MPa] Young's modulus
-    K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
-    #K = 2650.5   # [MPa]
+    #K = 3.048*(1251)**0.07 / ((np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
+    K = 2650.5   # [MPa]
     n = 0.07    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
@@ -450,7 +534,8 @@ def test_flush_edge_case_load():
         ],
         index=pd.MultiIndex.from_product(
             [[1, 2, 6, 8, 10, 4, 14], range(3)], names=["load_step", "node_id"]
-        )
+        ),
+        name="loads_min"
     )
     expected_load_max = pd.Series(
         [
@@ -459,7 +544,8 @@ def test_flush_edge_case_load():
         ],
         index=pd.MultiIndex.from_product(
             [[1, 3, 5, 9, 11, 7, 13], range(3)], names=["load_step", "node_id"]
-        )
+        ),
+        name="loads_max"
     )
 
     loads_min = detector.recorder.loads_min
@@ -467,6 +553,100 @@ def test_flush_edge_case_load():
 
     pd.testing.assert_series_equal(loads_min, expected_load_min)
     pd.testing.assert_series_equal(loads_max, expected_load_max)
+
+    collective = detector.recorder.collective
+
+    np.testing.assert_allclose(
+        collective.epsilon_min_LF.to_numpy(),
+        np.array([0., 0., 0., -1.4, -1.67, -0.31, -1.75, -2.08, -0.4, -1.75, -2.08, -0.4, -1.75, -2.08, -0.4, -1.75, -2.08, -0.4, -1.75, -2.08, -0.4 ]) * 1e-3,
+        rtol=1e-1
+    )
+
+    np.testing.assert_allclose(
+        collective.epsilon_max_LF.to_numpy(),
+        np.array([0.71, 0.83, 0.17, 0.71, 0.83, 0.17, 1.4, 1.67, 0.31, 1.4, 1.67, 0.31, 1.4, 1.67, 0.31, 1.4, 1.67, 0.31, 1.4, 1.67, 0.31]) * 1e-3,
+        rtol=1e-1
+    )
+
+
+def test_flush_edge_case_load_simple_signal():
+
+    signal_1 = np.array([0.0, 143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    mi_2 = pd.MultiIndex.from_product([range(9, 17), range(3)], names=["load_step", "node_id"])
+
+    signal_2 = np.array([143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
+    #K = 2650.5   # [MPa]
+    n = 0.07    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(np.concatenate([signal_1, signal_2])))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+
+    detector.process(signal_1, flush=True).process(signal_2, flush=True)
+
+    expected_load_min = np.array(
+        [-143.0, -287.0, 0.0, -287.0, -287.0, -359.0, 0.0],
+    )
+    expected_load_max = np.array(
+        [143.0, 143.0, 287.0, 143.0, 143.0, 287.0, 287.0],
+    )
+
+    loads_min = detector.recorder.loads_min
+    loads_max = detector.recorder.loads_max
+
+    np.testing.assert_allclose(loads_min, expected_load_min)
+    np.testing.assert_allclose(loads_max, expected_load_max)
+
+
+def test_flush_edge_case_S_simple_signal():
+
+    signal_1 = np.array([0.0, 143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    signal_2 = np.array([143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.048*(1251)**0.07 / (( np.min([0.08, 1033.*1251.**(-1.05)]) )**0.07)
+    #K = 2650.5   # [MPa]
+    n = 0.07    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    maximum_absolute_load = max(abs(np.concatenate([signal_1, signal_2])))
+
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100
+    )
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(),
+        notch_approximation_law=extended_neuber_binned
+    )
+
+    detector.process(signal_1, flush=True).process(signal_2, flush=True)
+
+    expected_S_min = np.array([-48.0, -96.7, 1.42e-14, -96.7, -96.7, -121.0, 1.42e-14])
+    expected_S_max = pd.Series([49.1, 49.1, 96.74, 49.1, 49.1, 96.75, 96.75])
+
+    S_min = detector.recorder.S_min
+    S_max = detector.recorder.S_max
+
+    np.testing.assert_allclose(S_min, expected_S_min, rtol=1e-1, atol=0.0)
+    np.testing.assert_allclose(S_max, expected_S_max, rtol=1e-1, atol=0.0)
 
 
 def test_flush_edge_case_S():
@@ -516,7 +696,8 @@ def test_flush_edge_case_S():
         ],
         index=pd.MultiIndex.from_product(
             [[1, 2, 6, 8, 10, 4, 14], range(3)], names=["load_step", "node_id"]
-        )
+        ),
+        name="S_min"
     )
     expected_S_max = pd.Series(
         [
@@ -526,7 +707,8 @@ def test_flush_edge_case_S():
         ],
         index=pd.MultiIndex.from_product(
             [[1, 3, 5, 9, 11, 7, 13], range(3)], names=["load_step", "node_id"]
-        )
+        ),
+        name="S_max"
     )
 
     S_min = detector.recorder.S_min
@@ -614,11 +796,8 @@ def test_edge_case_value_in_sample_tail_compare_simple(vals, num):
 
     simple_collective = detector_simple.recorder.collective
     simple_collective.index = simple_collective.index.droplevel('assessment_point_index')
-    simple_collective.pop('debug_output')
     multi_collective = detector_multiindex.recorder.collective
 
-    if 'debug_output' in multi_collective:
-        multi_collective.pop('debug_output')
     pd.testing.assert_frame_equal(
         simple_collective,
         multi_collective.groupby('hysteresis_index').first(),
@@ -698,11 +877,7 @@ def test_hcm_first_second(vals, num):
 
     simple_collective = detector_simple.recorder.collective
     simple_collective.index = simple_collective.index.droplevel('assessment_point_index')
-    simple_collective.pop('debug_output')
     multi_collective = detector_multiindex.recorder.collective
-
-    if 'debug_output' in multi_collective:
-        multi_collective.pop('debug_output')
 
     pd.testing.assert_frame_equal(
         simple_collective,
@@ -713,3 +888,290 @@ def test_hcm_first_second(vals, num):
         reference = f.read()
 
     assert multi_collective.to_json(indent=4) == reference
+
+
+@pytest.fixture
+def detector_seeger_beste():
+    E = 206e3    # [MPa] Young's modulus
+    K = 1184.0   # [MPa]
+    n = 0.187    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    seeger_beste = pylife.materiallaws.notch_approximation_law_seegerbeste.SeegerBeste(E, K, n, K_p)
+    seeger_beste_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        seeger_beste, 800, 100
+    )
+
+    return FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=seeger_beste_binned
+    )
+
+
+@pytest.fixture
+def detector_interpolate(detector_seeger_beste):
+    vals = pd.Series([160, -200, 250, -250, 230, 0, 260]) * 800.0/260.0
+    return detector_seeger_beste.process(vals, flush=False).process(vals, flush=True)
+
+
+@pytest.mark.parametrize("load_segment, n_points_per_branch, expected", [
+    (
+        0, 10,
+        {
+            "stress": [0.0, -4.2e+1, -8.4e+1, -1.3e+2, -1.7e+2, -2.1e+2, -2.5e+2, -2.9e+2, -3.4e+2, -3.8e+2],
+            "strain": [0.0, -2.0e-4, -4.1e-4, -6.2e-4, -8.4e-4, -1.1e-3, -1.5e-3, -2.0e-3, -2.8e-3, -4.0e-3],
+            "secondary_branch": False,
+            "hyst_index": -1,
+            "load_segment": 0,
+            "run_index": 1,
+        }
+    ),
+    (
+        0, 5,
+        {
+            "stress": [0.0e+00, -9.4e+01, -1.9e+02, -2.8e+02, -3.8e+02],
+            "strain": [0.0e+00, -4.6e-04, -9.7e-04, -1.8e-03, -4.0e-03],
+            "secondary_branch": False,
+            "hyst_index": -1,
+            "load_segment": 0,
+            "run_index": 1
+        }
+    ),
+    (
+        1, 5,
+        {
+            "stress": [-3.77e+02, -1.89e+02, 0.00e+00, 1.89e+02, 3.77e+02],
+            "strain": [-4.03e-03, -3.11e-03, -2.09e-03, -3.40e-04, 4.03e-03],
+            "secondary_branch": True,
+            "hyst_index": 0,
+            "load_segment": 1,
+            "run_index": 1,
+        }
+    ),
+    (
+        2, 5,
+        {
+            "stress": [3.77e+02, 3.89e+02, 4.01e+02, 4.12e+02, 4.24e+02],
+            "strain": [4.03e-03, 4.48e-03, 4.98e-03, 5.55e-03, 6.18e-03],
+            "secondary_branch": False,
+            "hyst_index": -1,
+            "load_segment": 2,
+            "run_index": 1,
+        }
+    ),
+])
+def test_interpolation_like_in_demo_load_segment(detector_interpolate, load_segment, n_points_per_branch, expected):
+    df = detector_interpolate.interpolated_stress_strain_data(load_segment=load_segment, n_points_per_branch=n_points_per_branch)
+    expected = pd.DataFrame(expected)
+    pd.testing.assert_frame_equal(df, expected, rtol=1e-1)
+
+
+@pytest.mark.parametrize("hyst_index, expected", [
+    (
+        0,
+        {
+            "stress": [-3.77e+02, -1.89e+02, 0.00e+00, 1.89e+02, 3.77e+02],
+            "strain": [-4.03e-03, -3.11e-03, -2.09e-03, -3.40e-04, 4.03e-03],
+            "secondary_branch": [True, True, True, True, True],
+            "hyst_index": 0,
+            "load_segment": [1, 1, 1, 1, 1],
+            "run_index": 1,
+        }
+    ),
+    (
+        1,
+        {
+            "stress": [4.06e+02, 2.64e+02, 1.23e+02, -1.78e+01, -1.59e+02, -1.59e+02, -1.78e+01, 1.23e+02, 2.64e+02, 4.06e+02],
+            "strain": [5.19e-03, 4.50e-03, 3.80e-03, 2.93e-03, 1.51e-03, 1.51e-03, 2.20e-03, 2.91e-03, 3.77e-03, 5.19e-03],
+            "secondary_branch": [True, True, True, True, True, True, True, True, True, True],
+            "hyst_index": 1,
+            "load_segment": [5, 5, 5, 5, 5, 6, 6, 6, 6, 6],
+            "run_index": 1,
+        }
+    ),
+    (
+        5,
+        {
+            "stress": [4.31e+02, 2.17e+02, 3.44e+00, -2.10e+02, -4.24e+02, -4.24e+02, -2.10e+02, 3.44e+00, 2.17e+02, 4.31e+02],
+            "strain": [6.59e-03, 5.54e-03, 4.30e-03, 1.62e-03, -6.18e-03, -6.18e-03, -5.13e-03, -3.89e-03, -1.21e-03, 6.59e-03],
+            "secondary_branch": [True, True, True, True, True, True, True, True, True, True],
+            "hyst_index": 5,
+            "load_segment": [12, 12, 12, 12, 12, 16, 16, 16, 16, 16],
+            "run_index": 2,
+        }
+    )
+])
+def test_interpolation_like_in_demo_hyst_index(detector_interpolate, hyst_index, expected):
+    df = detector_interpolate.interpolated_stress_strain_data(hysteresis_index=hyst_index, n_points_per_branch=5)
+    expected = pd.DataFrame(expected)
+    pd.testing.assert_frame_equal(df, expected, rtol=1e-1)
+
+
+def test_interpolation_everything(detector_interpolate):
+    df = detector_interpolate.interpolated_stress_strain_data(n_points_per_branch=3)
+    expected = pd.DataFrame(
+        {
+            "stress": [
+                0.0e+00, -1.9e+02, -3.8e+02, -3.8e+02, 0.0e+00, 3.8e+02, 3.8e+02, 4.0e+02, 4.2e+02,
+                4.2e+02, 1.1e+00, -4.2e+02, -4.2e+02, -8.1e+00, 4.1e+02, 4.1e+02, 1.2e+02, -1.6e+02,
+                -1.6e+02, 1.2e+02, 4.1e+02, -4.2e+02, 1.1e+00, 4.2e+02, 4.2e+02, 4.3e+02, 4.3e+02,
+                4.3e+02, 2.6e+01, -3.8e+02, -3.8e+02, 2.3e+01, 4.2e+02, 4.2e+02, 2.3e+01, -3.8e+02,
+                4.3e+02, 3.4e+00, -4.2e+02, -4.2e+02, -1.0e+01, 4.0e+02, 4.0e+02, 1.2e+02, -1.6e+02,
+                -1.6e+02, 1.2e+02, 4.0e+02, -4.2e+02, 3.4e+00, 4.3e+02, 4.3e+02, 4.3e+02, 4.3e+02
+            ],
+            "strain": [
+                0.0e+00, -9.7e-04, -4.0e-03, -4.0e-03, -2.1e-03, 4.0e-03, 4.0e-03, 5.0e-03, 6.2e-03,
+                6.2e-03, 3.9e-03, -6.0e-03, -6.0e-03, -3.9e-03, 5.2e-03, 5.2e-03, 3.8e-03, 1.5e-03,
+                1.5e-03, 2.9e-03, 5.2e-03, -6.0e-03, -3.8e-03, 6.2e-03, 6.2e-03, 6.4e-03, 6.6e-03,
+                6.6e-03, 4.5e-03, -3.7e-03, -3.7e-03, -1.6e-03, 6.3e-03, 6.3e-03, 4.2e-03, -3.7e-03,
+                6.6e-03, 4.3e-03, -6.2e-03, -6.2e-03, -4.0e-03, 5.1e-03, 5.1e-03, 3.7e-03, 1.4e-03,
+                1.4e-03, 2.8e-03, 5.1e-03, -6.2e-03, -3.9e-03, 6.6e-03, 6.6e-03, 6.6e-03, 6.6e-03
+            ],
+            "secondary_branch": [
+                False, False, False, True, True, True, False, False, False, True, True, True,
+                True, True, True, True, True, True, True, True, True, True, True, True,
+                False, False, False, True, True, True, True, True, True, True, True, True,
+                True, True, True, True, True, True, True, True, True, True, True, True,
+                True, True, True, False, False, False
+            ],
+            "hyst_index": [
+                -1, -1, -1, 0, 0, 0, -1, -1, -1, 2, 2, 2, -1, -1, -1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
+                -1, -1, -1, -1, -1, -1, 3, 3, 3, 3, 3, 3, 5, 5, 5, -1, -1, -1, 4, 4, 4, 4, 4, 4,
+                5, 5, 5, -1, -1, -1
+            ],
+            "load_segment": [
+                0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7,
+                8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15,
+                16, 16, 16, 17, 17, 17],
+            "run_index": [
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
+            ],
+        }
+    )
+    pd.testing.assert_frame_equal(df, expected, rtol=1e-1)
+
+
+def test_interpolation_everything_first_run(detector_seeger_beste):
+    vals = pd.Series([160, -200, 250, -250, 230, 0, 260]) * 800.0/260.0
+    detector_seeger_beste.process(vals, flush=False)
+    df = detector_seeger_beste.interpolated_stress_strain_data(n_points_per_branch=3)
+
+    expected = pd.DataFrame(
+        {
+            "stress": [
+                0.00e+00, -1.89e+02, -3.77e+02, -3.77e+02, 0.00e+00, 3.77e+02, 3.77e+02, 4.01e+02, 4.24e+02,
+                4.24e+02, 1.15e+00, -4.22e+02, -4.22e+02, -8.06e+00, 4.06e+02, 4.06e+02, 1.23e+02, -1.59e+02
+            ],
+            "strain": [
+                0.00e+00, -9.69e-04, -4.03e-03, -4.03e-03, -2.09e-03, 4.03e-03, 4.03e-03, 4.98e-03, 6.18e-03,
+                6.18e-03, 3.92e-03, -6.05e-03, -6.05e-03, -3.86e-03, 5.19e-03, 5.19e-03, 3.79e-03, 1.51e-03
+            ],
+            "secondary_branch": [
+                False, False, False, True, True, True, False, False, False,
+                True, True, True, True, True, True, True, True, True
+            ],
+            "hyst_index": [
+                -1, -1, -1, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+            ],
+            "load_segment": [
+                0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5
+            ],
+            "run_index": [
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+            ],
+        }
+    )
+    pd.testing.assert_frame_equal(df, expected, rtol=1e-1)
+
+
+def test_history_guideline_at_once():
+    # Fig 2.3 FKM NL Guideline
+
+    signal = pd.Series([0., 200., -50., 250., -300., 150., -120., 350., 349.])
+    signal.index.name = "load_step"
+
+    recorder = RFR.FKMNonlinearRecorder()
+    E = 206e3    # [MPa] Young's modulus
+    K = 2650     # 1184 [MPa]
+    n = 0.187    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    # initialize notch approximation law
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    # wrap the notch approximation law by a binning class, which precomputes the values
+    maximum_absolute_load = max(abs(signal))
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100)
+
+    # first run
+    detector = FKMNonlinearDetector(recorder=recorder, notch_approximation_law=extended_neuber_binned)
+
+    detector.process(signal)
+
+    df = detector.history()
+
+    expected = pd.DataFrame(
+        {
+            "load": [200., -50., 200., 250., -250., -300., 150., -120., 150., 300., 350.],
+            "stress": [2.0e+02, -4.9e+01, 2.0e+02, 2.5e+02, -2.5e+02, -3.0e+02, 1.5e+02, -1.2e+02, 1.5e+02, 3.0e+02, 3.5e+02],
+            "strain": [9.9e-04, -2.4e-04, 9.9e-04, 1.2e-03, -1.2e-03, -1.5e-03, 7.3e-04, -6.0e-04, 7.3e-04, 1.5e-03, 1.7e-03],
+            "secondary_branch": [False, True, True, False, True, False, True, True, True, True, False],
+            "load_step": [1, 2, -1, 3, -1, 4, 5, 6, -1, -1, 7],
+            "turning_point": [0, 1, -1, 2, -1, 3, 4, 5, -1, -1, 6],
+            "load_segment": np.arange(11),
+            "run_index": 1,
+            "hyst_from": [0, -1, -1,  1, -1,  3,  2, -1, -1, -1, -1],
+            "hyst_to": [-1,  0, -1, -1,  1, -1, -1,  2, -1,  3, -1],
+            "hyst_close": [-1, -1,  0, -1, -1, -1, -1, -1,  2, -1, -1],
+        }
+    ).set_index(["load_segment", "load_step", "run_index", "turning_point", "hyst_from", "hyst_to", "hyst_close"])
+
+    pd.testing.assert_frame_equal(df, expected, rtol=1e-1)
+
+
+@pytest.mark.parametrize("split_point", [5])
+def test_history_guideline_at_split(split_point):
+    # Fig 2.3 FKM NL Guideline
+
+    signal = pd.Series([0., 200., -50., 250., -300., 150., -120., 350., 349.])
+    signal.index.name = "load_step"
+
+    recorder = RFR.FKMNonlinearRecorder()
+    E = 206e3    # [MPa] Young's modulus
+    K = 2650     # 1184 [MPa]
+    n = 0.187    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    # initialize notch approximation law
+    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+
+    # wrap the notch approximation law by a binning class, which precomputes the values
+    maximum_absolute_load = max(abs(signal))
+    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
+        extended_neuber, maximum_absolute_load, 100)
+
+    # first run
+    detector = FKMNonlinearDetector(recorder=recorder, notch_approximation_law=extended_neuber_binned)
+
+    detector.process(signal[:split_point]).process(signal[split_point:])
+
+    df = detector.history()
+
+    expected = pd.DataFrame(
+        {
+            "load": [200., -50., 200., 250., -250., -300., 150., -120., 150., 300., 350.],
+            "stress": [2.0e+02, -4.9e+01, 2.0e+02, 2.5e+02, -2.5e+02, -3.0e+02, 1.5e+02, -1.2e+02, 1.5e+02, 3.0e+02, 3.5e+02],
+            "strain": [9.9e-04, -2.4e-04, 9.9e-04, 1.2e-03, -1.2e-03, -1.5e-03, 7.3e-04, -6.0e-04, 7.3e-04, 1.5e-03, 1.7e-03],
+            "secondary_branch": [False, True, True, False, True, False, True, True, True, True, False],
+            "load_step": [1, 2, -1, 3, -1, 4, 5, 6, -1, -1, 7],
+            "turning_point": [0, 1, -1, 2, -1, 3, 4, 5, -1, -1, 6],
+            "load_segment": np.arange(11),
+            "run_index": [1] * split_point + [2] * (11-split_point),
+            "hyst_from": [0, -1, -1,  1, -1,  3,  2, -1, -1, -1, -1],
+            "hyst_to": [-1,  0, -1, -1,  1, -1, -1,  2, -1,  3, -1],
+            "hyst_close": [-1, -1,  0, -1, -1, -1, -1, -1,  2, -1, -1],
+        }
+    ).set_index(["load_segment", "load_step", "run_index", "turning_point", "hyst_from", "hyst_to", "hyst_close"])
+
+    pd.testing.assert_frame_equal(df, expected, rtol=1e-1)
