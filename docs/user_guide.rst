@@ -59,7 +59,7 @@ components based on load sequences and material data.
 
 * :mod:`pylife.strength.fkm_nonlinear.assessment_nonlinear_standard` – Local strain concept / FKM guideline nonlinear
 
-See also the tutorial about :doc:`FKM nonlinear <tutorials/fkm_nonlinear>`.
+See also the tutorial about :doc:`FKM nonlinear <demos/fkm_nonlinear>`.
 
 Mesh operations
 ---------------

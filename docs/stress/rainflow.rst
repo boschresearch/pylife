@@ -38,8 +38,6 @@ Utility functions
 .. toctree::
    :maxdepth: 1
 
-   rainflow/fkm_nonlinear_hysteresis_plotter
-
 .. autofunction:: pylife.stress.rainflow.find_turns
 
 
