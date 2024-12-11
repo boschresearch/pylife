@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 
 import pylife.strength.damage_parameter
-from pylife.materiallaws.notch_approximation_law import ExtendedNeuber
+from pylife.materiallaws.notch_approximation_law import ExtendedNeuber, NotchApproxBinner
 from .data import *
 
 def test_extended_neuber_example_1():
@@ -32,7 +32,7 @@ def test_extended_neuber_example_1():
     K = 1184     # [MPa]
     n = 0.187    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
-    
+
     L = pd.Series([100, -200, 100, -250, 200, 0, 200, -200])
     c = 1.4
     gamma_L = (250+6.6)/250
@@ -171,10 +171,11 @@ def test_derivatives(stress, load):
 
     assert np.isclose(numeric_derivative, derivative)
 
+
 @pytest.mark.parametrize('E, K, n, L', [
-    (260e3, 1184, 0.187, pd.Series([100, -200, 100, -250, 200, 100, 200, -200])),
-    (100e3, 1500, 0.4, pd.Series([-100, 100, -200])),
-    (200e3, 1000, 0.2, pd.Series([100, 10])),
+    (260e3, 1184, 0.187, np.array([100, -200, 100, -250, 200, 100, 200, -200])),
+    (100e3, 1500, 0.4, np.array([-100, 100, -200])),
+    (200e3, 1000, 0.2, np.array([100, 10])),
 ])
 def test_load(E, K, n, L):
     c = 1.4
@@ -184,7 +185,7 @@ def test_load(E, K, n, L):
     # initialize notch approximation law and damage parameter
     notch_approximation_law = ExtendedNeuber(E, K, n, K_p=3.5)
 
-    # The "load" method is the inverse operation of "stress", 
+    # The "load" method is the inverse operation of "stress",
     # i.e., ``L = load(stress(L))`` and ``S = stress(load(stress))``.
     stress = notch_approximation_law.stress(L)
     load = notch_approximation_law.load(stress)
@@ -193,3 +194,199 @@ def test_load(E, K, n, L):
     np.testing.assert_allclose(L, load, rtol=1e-3)
     np.testing.assert_allclose(stress, stress2, rtol=1e-3)
 
+
+@pytest.mark.parametrize("L, expected", [
+    (150.0, [148.5, 7.36e-4]),
+    (175.0, [171.7, 8.67e-4]),
+    (200.0, [193.7, 1.00e-3])
+])
+def test_load_primary_scalar(L, expected):
+    notch_approximation_law = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    result = notch_approximation_law.primary(L)
+
+    assert result.shape == (2, )
+    np.testing.assert_allclose(result, expected, rtol=1e-2)
+
+
+def test_load_primary_vectorized():
+    notch_approximation_law = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+
+    result = notch_approximation_law.primary([150.0, 175.0, 200.0])
+    expected = [[148.4, 7.36e-4], [171.7, 8.67e-4], [193.7, 1.00e-3]]
+
+    assert result.shape == (3, 2)
+    np.testing.assert_allclose(result, expected, rtol=1e-2)
+
+
+@pytest.mark.parametrize("L, expected", [
+    (100.0, [100.0, 4.88e-4]),
+    (400.0, [386.0, 1.99e-3]),
+    (600.0, [533.0, 3.28e-3])
+])
+def test_load_secondary_scalar(L, expected):
+    notch_approximation_law = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    result = notch_approximation_law.secondary(L)
+
+    assert result.shape == (2, )
+    np.testing.assert_allclose(result, expected, rtol=1e-2)
+
+
+def test_load_secondary_vectorized():
+    notch_approximation_law = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+
+    result = notch_approximation_law.secondary([100.0, 400.0, 600.0])
+    expected = [[100.0, 4.88e-4], [386.0, 1.99e-3], [533.0, 3.28e-3]]
+
+    assert result.shape == (3, 2)
+    np.testing.assert_allclose(result, expected, rtol=1e-2)
+
+
+def test_binner_uninitialized():
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    binned = NotchApproxBinner(unbinned)
+
+    with pytest.raises(RuntimeError, match="NotchApproxBinner not initialized."):
+        binned.primary(100.0)
+
+    with pytest.raises(RuntimeError, match="NotchApproxBinner not initialized."):
+        binned.secondary(100.0)
+
+
+@pytest.mark.parametrize("L, expected", [
+    (120.0, [148.0, 7.36e-4]),
+    (160.0, [193.7, 1.00e-3]),
+    (200.0, [193.7, 1.00e-3]),
+])
+def test_binner_initialized_five_points_primary_scalar(L, expected):
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    binned = NotchApproxBinner(unbinned, number_of_bins=4).initialize(max_load=200.0)
+
+    result = binned.primary(L)
+
+    np.testing.assert_allclose(result, np.array([expected]), rtol=1e-2)
+
+
+@pytest.mark.parametrize("L, expected", [
+    (-120.0, [-148.0, -7.36e-4]),
+    (-160.0, [-193.7, -1.00e-3]),
+    (-200.0, [-193.7, -1.00e-3]),
+])
+def test_binner_initialized_five_points_primary_scalar_symmetry(L, expected):
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    binned = NotchApproxBinner(unbinned, number_of_bins=4).initialize(max_load=200.0)
+
+    result = binned.primary(L)
+
+    np.testing.assert_allclose(result, np.array([expected]), rtol=1e-2)
+
+
+@pytest.mark.parametrize("L, expected", [
+    (120.0, [124.0, 6.10e-4]),
+    (160.0, [171.7, 8.67e-4]),
+    (200.0, [193.7, 1.00e-3])
+])
+def test_binner_initialized_nine_points_primary_scalar(L, expected):
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    binned = NotchApproxBinner(unbinned, number_of_bins=8).initialize(max_load=200.0)
+
+    result = binned.primary(L)
+
+    np.testing.assert_allclose(result, np.array([expected]), rtol=1e-2)
+
+
+def test_binner_initialized_nine_points_primary_out_of_scale():
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    binned = NotchApproxBinner(unbinned, number_of_bins=8).initialize(max_load=200.0)
+
+    with pytest.raises(
+        ValueError,
+        match="Requested load `400.0`, higher than initialized maximum load `200.0`",
+    ):
+        binned.primary(400.0)
+
+
+@pytest.mark.parametrize("L, expected", [
+    (120.0, [[148.0, 7.36e-4], [182.9, 9.34e-4], [214.3, 1.15e-3]]),
+    (160.0, [[193.7, 1.00e-3], [233.3, 1.30e-3], [266.7, 1.64e-3]]),
+    (200.0, [[193.7, 1.00e-3], [233.3, 1.30e-3], [266.7, 1.64e-3]])
+])
+def test_binner_initialized_five_points_primary_vectorized(L, expected):
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    binned = NotchApproxBinner(unbinned, number_of_bins=4).initialize(
+        max_load=[200.0, 250.0, 300.0]
+    )
+
+    result = binned.primary([L, 1.25*L, 1.5*L])
+
+    assert result.shape == (3, 2)
+
+    np.testing.assert_allclose(result, expected, rtol=1e-2)
+
+
+@pytest.mark.parametrize("L, expected", [
+    (20.0, [297.0, 1.48e-3]),
+    (340.0, [533.0, 3.28e-3]),
+    (600.0, [533.0, 3.28e-3])
+])
+def test_binner_initialized_one_bin_secondary_scalar(L, expected):
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    binned = NotchApproxBinner(unbinned, number_of_bins=1).initialize(max_load=300.0)
+
+    result = binned.secondary(L)
+
+    np.testing.assert_allclose(result, np.array([expected]), rtol=1e-2)
+
+
+@pytest.mark.parametrize("L, expected", [
+    (-20.0, [-297.0, -1.48e-3]),
+    (-340.0, [-533.0, -3.28e-3]),
+    (-600.0, [-533.0, -3.28e-3])
+])
+def test_binner_initialized_one_bin_secondary_scalar_symmetry(L, expected):
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    binned = NotchApproxBinner(unbinned, number_of_bins=1).initialize(max_load=300.0)
+
+    result = binned.secondary(L)
+
+    np.testing.assert_allclose(result, np.array([expected]), rtol=1e-2)
+
+
+@pytest.mark.parametrize("L, expected", [
+    (20.0, [100.0, 4.88e-4]),
+    (400.0, [386.0, 1.99e-3]),
+    (600.0, [533.0, 3.28e-3])
+])
+def test_binner_initialized_three_points_secondary_scalar(L, expected):
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    binned = NotchApproxBinner(unbinned, number_of_bins=3).initialize(max_load=300.0)
+
+    result = binned.secondary(L)
+
+    np.testing.assert_allclose(result, np.array([expected]), rtol=1e-2)
+
+
+def test_binner_initialized_three_points_secondary_out_of_scale():
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    binned = NotchApproxBinner(unbinned, number_of_bins=3).initialize(max_load=300.0)
+
+    with pytest.raises(
+        ValueError,
+        match="Requested load `700.0`, higher than initialized maximum delta load `600.0`",
+    ):
+        binned.secondary(700.0)
+
+
+@pytest.mark.parametrize("L, expected", [
+    (20.0, [[100.0, 4.88e-4], [133.3, 6.47e-4], [200.0, 9.74e-4]]),
+    (400.0, [[386.0, 1.99e-3], [490.0, 2.81e-3], [638.2, 4.90e-3]]),
+    (600.0, [[533.0, 3.28e-3], [638.2, 4.90e-03], [784.8, 9.26e-3]])
+])
+def test_binner_initialized_three_points_secondary_vectorized(L, expected):
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    binned = NotchApproxBinner(unbinned, number_of_bins=3).initialize(max_load=[300.0, 400.0, 600.0])
+
+    result = binned.secondary(([L, 1.25*L, 1.5*L]))
+
+    assert result.shape == (3, 2)
+
+    np.testing.assert_allclose(result, expected, rtol=1e-2)

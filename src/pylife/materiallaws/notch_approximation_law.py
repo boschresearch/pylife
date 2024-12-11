@@ -198,6 +198,19 @@ class ExtendedNeuber(NotchApproximationLawBase):
         )
         return load
 
+    def primary(self, load):
+        load = np.asarray(load)
+        stress = self.stress(load)
+        strain = self.strain(stress, None)
+        return np.stack([stress, strain], axis=len(load.shape))
+
+    def secondary(self, delta_load):
+        delta_load = np.asarray(delta_load)
+        delta_stress = self.stress_secondary_branch(delta_load)
+        delta_strain = self.strain_secondary_branch(delta_stress, None)
+        return np.stack([delta_stress, delta_strain], axis=len(delta_load.shape))
+
+
     def stress_secondary_branch(self, delta_load, *, rtol=1e-4, tol=1e-4):
         """Calculate the stress on secondary branches in the stress-strain diagram at a given
         elastic-plastic stress (load), from a FE computation.
@@ -906,3 +919,61 @@ class Binned:
         self._lut_secondary_branch.delta_strain \
             = self._notch_approximation_law.strain_secondary_branch(
                 self._lut_secondary_branch.delta_stress, self._lut_secondary_branch.delta_load)
+
+
+
+class NotchApproxBinner:
+
+    def __init__(self, notch_approximation_law, number_of_bins=100):
+        self._n_bins = number_of_bins
+        self._notch_approximation_law = notch_approximation_law
+        self.ramberg_osgood_relation = notch_approximation_law.ramberg_osgood_relation
+        self._max_load_rep = None
+
+    def initialize(self, max_load):
+        max_load = np.asarray(max_load)
+        self._max_load_rep, _ = self._rep_abs_and_sign(max_load)
+
+        load = self._param_for_lut(self._n_bins, max_load)
+        self._lut_primary = self._notch_approximation_law.primary(load)
+
+        delta_load = self._param_for_lut(2 * self._n_bins, 2.0*max_load)
+        self._lut_secondary = self._notch_approximation_law.secondary(delta_load)
+
+        return self
+
+    def primary(self, load):
+        self._raise_if_uninitialized()
+        load_rep, sign = self._rep_abs_and_sign(load)
+
+        if load_rep > self._max_load_rep:
+            msg = f"Requested load `{load_rep}`, higher than initialized maximum load `{self._max_load_rep}`"
+            raise ValueError(msg)
+
+        idx = int(np.ceil(load_rep / self._max_load_rep * self._n_bins)) - 1
+        return sign * self._lut_primary[idx, :]
+
+    def secondary(self, delta_load):
+        self._raise_if_uninitialized()
+        delta_load_rep, sign = self._rep_abs_and_sign(delta_load)
+
+        if delta_load_rep > 2.0 * self._max_load_rep:
+            msg = f"Requested load `{delta_load_rep}`, higher than initialized maximum delta load `{2.0*self._max_load_rep}`"
+            raise ValueError(msg)
+
+        idx = int(np.ceil(delta_load_rep / (2.0*self._max_load_rep) * 2*self._n_bins)) - 1
+        return sign * self._lut_secondary[idx, :]
+
+    def _raise_if_uninitialized(self):
+        if self._max_load_rep is None:
+            raise RuntimeError("NotchApproxBinner not initialized.")
+
+    def _param_for_lut(self, number_of_bins, max_val):
+        scale = np.linspace(0.0, 1.0, number_of_bins + 1)[1:]
+        max_val, scale_m = np.meshgrid(max_val, scale)
+        return (max_val * scale_m)
+
+    def _rep_abs_and_sign(self, value):
+        value = np.asarray(value)
+        value_rep = value if len(value.shape) == 0 else value[0]
+        return np.abs(value_rep), np.sign(value_rep)
