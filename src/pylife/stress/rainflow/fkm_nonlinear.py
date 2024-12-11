@@ -318,21 +318,15 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
     def _collect_record(self, load_turning_points, num_turning_points, record):
         def primary(_prev, load):
-            sigma = self._notch_approximation_law.stress(load)
-            epsilon = self._notch_approximation_law.strain(sigma, load)
-            return np.array([load, sigma, epsilon])
+            return self._notch_approximation_law.primary(load)
 
         def secondary(prev, load):
             prev_load = prev[LOAD]
 
             delta_L = load - prev_load
-            delta_sigma = self._notch_approximation_law.stress_secondary_branch(delta_L)
-            delta_epsilon = self._notch_approximation_law.strain_secondary_branch(delta_sigma, delta_L)
+            delta = self._notch_approximation_law.secondary(delta_L)
 
-            sigma = prev[STRESS] + delta_sigma
-            epsilon = prev[STRAIN] + delta_epsilon
-
-            return np.array([load, sigma, epsilon])
+            return prev[STRESS:STRAIN+1].T + delta
 
         def determine_prev_record(prev_idx):
             if prev_idx < 0:
@@ -372,7 +366,9 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         return record_vals.set_index("turning_point", drop=True, append=True)
 
     def _process_deformation(self, deformation_func, result_buf, load, prev_record):
-        result_buf[:3] = deformation_func(prev_record, load)
+        result_buf[0] = load
+        res = deformation_func(prev_record, load).T
+        result_buf[1:3] = res
 
         old_load = self._last_record[LOAD, 0]
 

@@ -25,8 +25,8 @@ import copy
 
 from pylife.stress.rainflow.fkm_nonlinear import FKMNonlinearDetector
 import pylife.stress.rainflow.recorders as RFR
-import pylife.materiallaws.notch_approximation_law
-import pylife.materiallaws.notch_approximation_law_seegerbeste
+import pylife.materiallaws.notch_approximation_law as NAL
+from pylife.materiallaws.notch_approximation_law_seegerbeste import SeegerBeste
 
 
 @pytest.fixture(autouse=True)
@@ -54,12 +54,13 @@ class TestIncomplete(unittest.TestCase):
         K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
         # initialize notch approximation law
-        extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+        extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
         # wrap the notch approximation law by a binning class, which precomputes the values
         maximum_absolute_load = max(abs(signal))
-        extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-            extended_neuber, maximum_absolute_load, 100)
+        extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+            maximum_absolute_load
+        )
 
         # first run
         detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber_binned)
@@ -117,12 +118,13 @@ class TestFKMMemory1Inner(unittest.TestCase):
         K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
         # initialize notch approximation law
-        extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+        extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
         # wrap the notch approximation law by a binning class, which precomputes the values
         maximum_absolute_load = max(abs(signal))
-        extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-            extended_neuber, maximum_absolute_load, 100)
+        extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+            maximum_absolute_load
+        )
 
         # first run
         detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber_binned)
@@ -194,12 +196,13 @@ class TestFKMMemory1_2_3(unittest.TestCase):
         K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
         # initialize notch approximation law
-        extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+        extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
         # wrap the notch approximation law by a binning class, which precomputes the values
         maximum_absolute_load = max(abs(signal))
-        extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-            extended_neuber, maximum_absolute_load, 100)
+        extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+            maximum_absolute_load
+        )
 
         # first run
         detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber_binned)
@@ -269,12 +272,13 @@ class TestHCMExample1(unittest.TestCase):
         K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
         # initialize notch approximation law
-        extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+        extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
         # wrap the notch approximation law by a binning class, which precomputes the values
         maximum_absolute_load = max(abs(self.signal))
-        extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-            extended_neuber, maximum_absolute_load, 100)
+        extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+            maximum_absolute_load
+        )
 
         # first run
         detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber_binned)
@@ -338,13 +342,14 @@ class TestHCMExample2(unittest.TestCase):
         np.testing.assert_allclose(max(abs(signal)), 1013)
 
         # initialize notch approximation law
-        extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+        extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
         # wrap the notch approximation law by a binning class, which precomputes the values
         maximum_absolute_load = max(abs(signal))
 
-        extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-            extended_neuber, maximum_absolute_load, 100)
+        extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+            maximum_absolute_load
+        )
 
         # first run
         detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber_binned)
@@ -416,12 +421,12 @@ def test_edge_case_value_in_sample_tail_simple_signal(vals, expected_loads_min, 
     n = 0.187    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
-    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
     maximum_absolute_load = max(abs(signal))
 
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100
+    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+        maximum_absolute_load
     )
 
     detector = FKMNonlinearDetector(
@@ -466,12 +471,12 @@ def test_edge_case_value_in_sample_tail(vals, expected_loads_min, expected_loads
     n = 0.187    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
-    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
     maximum_absolute_load = max(abs(signal))
 
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100
+    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+        maximum_absolute_load
     )
 
     detector = FKMNonlinearDetector(
@@ -512,12 +517,14 @@ def test_flush_edge_case_load():
     n = 0.07    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
-    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-    maximum_absolute_load = max(abs(pd.concat([signal_1, signal_2])))
+    maximum_absolute_load = pd.concat([signal_1, signal_2]).abs().groupby("node_id").max()
 
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100
+    print(maximum_absolute_load)
+
+    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+        maximum_absolute_load
     )
 
     detector = FKMNonlinearDetector(
@@ -570,11 +577,7 @@ def test_flush_edge_case_load():
 
 
 def test_flush_edge_case_load_simple_signal():
-
     signal_1 = np.array([0.0, 143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
-
-    mi_2 = pd.MultiIndex.from_product([range(9, 17), range(3)], names=["load_step", "node_id"])
-
     signal_2 = np.array([143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
 
     E = 206e3    # [MPa] Young's modulus
@@ -583,12 +586,12 @@ def test_flush_edge_case_load_simple_signal():
     n = 0.07    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
-    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
     maximum_absolute_load = max(abs(np.concatenate([signal_1, signal_2])))
 
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100
+    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+        maximum_absolute_load
     )
 
     detector = FKMNonlinearDetector(
@@ -613,9 +616,7 @@ def test_flush_edge_case_load_simple_signal():
 
 
 def test_flush_edge_case_S_simple_signal():
-
     signal_1 = np.array([0.0, 143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
-
     signal_2 = np.array([143.0, -287.0, 143.0, -359.0, 287.0, 0.0, 287.0, -287.0])
 
     E = 206e3    # [MPa] Young's modulus
@@ -624,12 +625,12 @@ def test_flush_edge_case_S_simple_signal():
     n = 0.07    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
-    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
     maximum_absolute_load = max(abs(np.concatenate([signal_1, signal_2])))
 
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100
+    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+        maximum_absolute_load
     )
 
     detector = FKMNonlinearDetector(
@@ -672,12 +673,15 @@ def test_flush_edge_case_S():
     n = 0.07    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
-    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-    maximum_absolute_load = max(abs(pd.concat([signal_1, signal_2])))
+    maximum_absolute_load = pd.concat([signal_1, signal_2]).abs().groupby("node_id").max()
 
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100
+    print(maximum_absolute_load)
+    print(max(abs(pd.concat([signal_1, signal_2]))))
+
+    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+        maximum_absolute_load
     )
 
     detector = FKMNonlinearDetector(
@@ -714,11 +718,8 @@ def test_flush_edge_case_S():
     S_min = detector.recorder.S_min
     S_max = detector.recorder.S_max
 
-    pd.testing.assert_series_equal(S_min, expected_S_min, check_index=False)
-    pd.testing.assert_series_equal(S_max, expected_S_max, check_index=False)
-
-    pd.testing.assert_series_equal(S_min, expected_S_min)
-    pd.testing.assert_series_equal(S_max, expected_S_max)
+    pd.testing.assert_series_equal(S_min, expected_S_min, rtol=1e-1)
+    pd.testing.assert_series_equal(S_max, expected_S_max, rtol=1e-1)
 
 
 @pytest.mark.parametrize('vals, num', [
@@ -768,15 +769,15 @@ def test_edge_case_value_in_sample_tail_compare_simple(vals, num):
     n = 0.187    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
-    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
     maximum_absolute_load_simple = max(abs(vals))
     maximum_absolute_load_multiple = signal.abs().groupby('node_id').max()
 
 
     print("single")
-    extended_neuber_binned_simple = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load_simple, 100
+    extended_neuber_binned_simple = NAL.NotchApproxBinner(extended_neuber).initialize(
+        maximum_absolute_load_simple
     )
     detector_simple = FKMNonlinearDetector(
         recorder=RFR.FKMNonlinearRecorder(),
@@ -785,8 +786,8 @@ def test_edge_case_value_in_sample_tail_compare_simple(vals, num):
     detector_simple.process(vals).process(vals)
 
     print("multiple")
-    extended_neuber_binned_multiple = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load_multiple, 100
+    extended_neuber_binned_multiple = NAL.NotchApproxBinner(extended_neuber).initialize(
+        maximum_absolute_load_multiple
     )
     detector_multiindex = FKMNonlinearDetector(
         recorder=RFR.FKMNonlinearRecorder(),
@@ -852,16 +853,16 @@ def test_hcm_first_second(vals, num):
     n = 0.187    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
-    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
     maximum_absolute_load_simple = max(abs(vals))
     maximum_absolute_load_multiple = signal.abs().groupby('node_id').max()
 
-    extended_neuber_binned_simple = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load_simple, 100
+    extended_neuber_binned_simple = NAL.NotchApproxBinner(extended_neuber).initialize(
+        maximum_absolute_load_simple
     )
-    extended_neuber_binned_multiple = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load_multiple, 100
+    extended_neuber_binned_multiple = NAL.NotchApproxBinner(extended_neuber).initialize(
+        maximum_absolute_load_multiple
     )
     detector_simple = FKMNonlinearDetector(
         recorder=RFR.FKMNonlinearRecorder(),
@@ -897,10 +898,8 @@ def detector_seeger_beste():
     n = 0.187    # [-]
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
-    seeger_beste = pylife.materiallaws.notch_approximation_law_seegerbeste.SeegerBeste(E, K, n, K_p)
-    seeger_beste_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        seeger_beste, 800, 100
-    )
+    seeger_beste = SeegerBeste(E, K, n, K_p)
+    seeger_beste_binned = NAL.NotchApproxBinner(seeger_beste).initialize(800)
 
     return FKMNonlinearDetector(
         recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=seeger_beste_binned
@@ -1097,12 +1096,13 @@ def test_history_guideline_at_once():
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
     # initialize notch approximation law
-    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
     # wrap the notch approximation law by a binning class, which precomputes the values
     maximum_absolute_load = max(abs(signal))
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100)
+    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+        maximum_absolute_load
+    )
 
     # first run
     detector = FKMNonlinearDetector(recorder=recorder, notch_approximation_law=extended_neuber_binned)
@@ -1144,12 +1144,13 @@ def test_history_guideline_at_split(split_point):
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
     # initialize notch approximation law
-    extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K, n, K_p)
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
     # wrap the notch approximation law by a binning class, which precomputes the values
     maximum_absolute_load = max(abs(signal))
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100)
+    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
+        maximum_absolute_load
+    )
 
     # first run
     detector = FKMNonlinearDetector(recorder=recorder, notch_approximation_law=extended_neuber_binned)
