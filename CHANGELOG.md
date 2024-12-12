@@ -11,10 +11,15 @@ In this file noteworthy changes of new releases of pyLife are documented since
 * Drop support for python-3.8 ast it is end of life
 
 
-### Minor improvments
+### Minor improvements
 
-* Connectivity information is now transfered from odbserver to odbclient as
+* Connectivity information is now transferred from odbserver to odbclient as
   ints.
+
+
+### Bugfixes
+
+* Fix unnecessary and harmful copy of pandas object in Wöhler classes (#146)
 
 
 ## pylife-2.1.3

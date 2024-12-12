@@ -52,10 +52,6 @@ class WoehlerCurve(PylifeSignal):
                or calculated from ``TN`` if given.
     """
 
-    def __init__(self, pandas_obj):
-        self._obj = pandas_obj.copy()
-        self._validate()
-
     def _validate(self):
         self.fail_if_key_missing(['k_1', 'ND', 'SD'])
         self._k_2 = self._obj.get('k_2', np.inf)
