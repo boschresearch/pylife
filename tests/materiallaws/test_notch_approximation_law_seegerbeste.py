@@ -176,7 +176,7 @@ def test_seeger_beste_load(E, K, n, L):
     # initialize notch approximation law and damage parameter
     notch_approximation_law = SeegerBeste(E, K, n, K_p=3.5)
 
-    # The "load" method is the inverse operation of "stress", 
+    # The "load" method is the inverse operation of "stress",
     # i.e., ``L = load(stress(L))`` and ``S = stress(load(stress))``.
     stress = notch_approximation_law.stress(L)
     load = notch_approximation_law.load(stress)
@@ -200,7 +200,7 @@ def test_seeger_beste_load_secondary_branch(E, K, n, L):
     # initialize notch approximation law and damage parameter
     notch_approximation_law = SeegerBeste(E, K, n, K_p=3.5)
 
-    # The "load" method is the inverse operation of "stress", 
+    # The "load" method is the inverse operation of "stress",
     # i.e., ``L = load(stress(L))`` and ``S = stress(load(stress))``.
     stress = notch_approximation_law.stress_secondary_branch(L)
     load = notch_approximation_law.load_secondary_branch(stress)
@@ -209,3 +209,49 @@ def test_seeger_beste_load_secondary_branch(E, K, n, L):
     np.testing.assert_allclose(L, load, rtol=1e-3)
     np.testing.assert_allclose(stress, stress2, rtol=1e-3)
 
+
+
+@pytest.mark.parametrize("L, expected", [
+    (7.18, [7.18, 3.50e-5]),
+    (179.6, [172.9, 8.73e-4]),
+    (359.2, [283.7, 1.86e-3])
+]) # Values from FKM NL Guideline p. 135
+def test_primary_scalar(L, expected):
+    notch_approximation_law = SeegerBeste(E=206e3, K=1184., n=0.187, K_p=3.5)
+    result = notch_approximation_law.primary(L)
+
+    assert result.shape == (2, )
+    np.testing.assert_allclose(result, expected, rtol=1e-2)
+
+
+def test_primary_vectorized():
+    notch_approximation_law = SeegerBeste(E=206e3, K=1184., n=0.187, K_p=3.5)
+
+    result = notch_approximation_law.primary([7.18, 179.6, 359.2])
+    expected = [[7.18, 3.50e-5], [172.9, 8.73e-4], [283.7, 1.86e-3]]
+
+    assert result.shape == (3, 2)
+    np.testing.assert_allclose(result, expected, rtol=1e-2)
+
+
+@pytest.mark.parametrize("L, expected", [
+    (359.2, [345.9, 1.75e-3]),
+    (362.8, [348.9, 1.77e-3]),
+    (718.5, [567.7, 3.72e-3])
+])
+def test_secondary_scalar(L, expected):
+    notch_approximation_law = SeegerBeste(E=206e3, K=1184., n=0.187, K_p=3.5)
+    result = notch_approximation_law.secondary(L)
+
+    assert result.shape == (2, )
+    np.testing.assert_allclose(result, expected, rtol=1e-2)
+
+
+def test_secondary_vectorized():
+    notch_approximation_law = SeegerBeste(E=206e3, K=1184., n=0.187, K_p=3.5)
+
+    result = notch_approximation_law.secondary([359.2, 362.8, 718.5])
+    expected = [[345.9, 1.75e-3], [348.9, 1.77e-3], [567.7, 3.72e-3]]
+
+    assert result.shape == (3, 2)
+    np.testing.assert_allclose(result, expected, rtol=1e-2)

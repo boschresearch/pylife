@@ -96,7 +96,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             # or (value, converged, zero_der) for vector-valued invocation
 
         # only for multiple points at once, if some points diverged
-        if len(stress) == 3 and sum(stress[1]) < len(stress[1]):
+        if len(stress) == 3 and not stress[1].all():
             stress = self._stress_fix_not_converged_values(stress, load, x0, rtol, tol)
 
         return stress[0]
@@ -189,6 +189,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         '''
 
         # initial value as given by correction document to FKM nonlinear
+        delta_load = np.asarray(delta_load)
         x0 = delta_load * (1 - (1 - 1/self._K_p)/1000)
 
         # suppress the divergence warnings
@@ -197,7 +198,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
 
             delta_stress = optimize.newton(
                 func=self._stress_secondary_implicit,
-                x0=np.asarray(x0),
+                x0=x0,
                 args=([delta_load]),
                 full_output=True,
                 rtol=rtol, tol=tol, maxiter=50
@@ -208,7 +209,9 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             # or (value, converged, zero_der) for vector-valued invocation
 
         # only for multiple points at once, if some points diverged
-        if len(delta_stress) == 3 and sum(delta_stress[1]) < len(delta_stress[1]):
+
+        multidim = len(x0.shape) > 1 and x0.shape[1] > 1
+        if multidim and x0.shape[1] > 1 and not delta_stress[1].all():
             delta_stress = self._stress_secondary_fix_not_converged_values(delta_stress, delta_load, x0, rtol, tol)
 
         return delta_stress[0]
@@ -482,22 +485,21 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         '''For the values that did not converge in the previous vectorized call to optimize.newton,
         call optimize.newton again on the scalar value. This usually finds the correct solution.'''
 
-        indices_diverged = [index for index, is_converged in enumerate(delta_stress[1]) if not is_converged]
+        indices_diverged = np.where(~delta_stress[1].all(axis=1))[0]
         x0_array = np.asarray(x0)
         delta_load_array = np.asarray(delta_load)
 
         # recompute previously failed points individually
         for index_diverged in indices_diverged:
-            x0_diverged = x0_array[index_diverged]
-            delta_load_diverged = delta_load_array[index_diverged]
+            x0_diverged = x0_array[index_diverged, 0]
+            delta_load_diverged = delta_load_array[index_diverged, 0]
             result = optimize.newton(
                 func=self._stress_secondary_implicit,
-                x0=x0_diverged,
+                x0=np.asarray(x0_diverged),
                 args=([delta_load_diverged]),
                 full_output=True,
                 rtol=rtol, tol=tol, maxiter=50
             )
-
             if result[1].converged:
                 delta_stress[0][index_diverged] = result[0]
         return delta_stress

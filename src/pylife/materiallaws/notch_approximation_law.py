@@ -79,6 +79,18 @@ class NotchApproximationLawBase:
         """Set the strain hardening coefficient"""
         self.K_prime = value
 
+    def primary(self, load):
+        load = np.asarray(load)
+        stress = self.stress(load)
+        strain = self.strain(stress, None)
+        return np.stack([stress, strain], axis=len(load.shape))
+
+    def secondary(self, delta_load):
+        delta_load = np.asarray(delta_load)
+        delta_stress = self.stress_secondary_branch(delta_load)
+        delta_strain = self.strain_secondary_branch(delta_stress, None)
+        return np.stack([delta_stress, delta_strain], axis=len(delta_load.shape))
+
 
 class ExtendedNeuber(NotchApproximationLawBase):
     r"""Implementation of the extended Neuber notch approximation material relation.
@@ -197,19 +209,6 @@ class ExtendedNeuber(NotchApproximationLawBase):
             rtol=rtol, tol=tol, maxiter=20
         )
         return load
-
-    def primary(self, load):
-        load = np.asarray(load)
-        stress = self.stress(load)
-        strain = self.strain(stress, None)
-        return np.stack([stress, strain], axis=len(load.shape))
-
-    def secondary(self, delta_load):
-        delta_load = np.asarray(delta_load)
-        delta_stress = self.stress_secondary_branch(delta_load)
-        delta_strain = self.strain_secondary_branch(delta_stress, None)
-        return np.stack([delta_stress, delta_strain], axis=len(delta_load.shape))
-
 
     def stress_secondary_branch(self, delta_load, *, rtol=1e-4, tol=1e-4):
         """Calculate the stress on secondary branches in the stress-strain diagram at a given

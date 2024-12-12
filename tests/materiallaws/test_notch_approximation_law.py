@@ -200,7 +200,7 @@ def test_load(E, K, n, L):
     (175.0, [171.7, 8.67e-4]),
     (200.0, [193.7, 1.00e-3])
 ])
-def test_load_primary_scalar(L, expected):
+def test_primary_scalar(L, expected):
     notch_approximation_law = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
     result = notch_approximation_law.primary(L)
 
@@ -208,7 +208,7 @@ def test_load_primary_scalar(L, expected):
     np.testing.assert_allclose(result, expected, rtol=1e-2)
 
 
-def test_load_primary_vectorized():
+def test_primary_vectorized():
     notch_approximation_law = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
 
     result = notch_approximation_law.primary([150.0, 175.0, 200.0])
@@ -223,7 +223,7 @@ def test_load_primary_vectorized():
     (400.0, [386.0, 1.99e-3]),
     (600.0, [533.0, 3.28e-3])
 ])
-def test_load_secondary_scalar(L, expected):
+def test_secondary_scalar(L, expected):
     notch_approximation_law = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
     result = notch_approximation_law.secondary(L)
 
@@ -231,7 +231,7 @@ def test_load_secondary_scalar(L, expected):
     np.testing.assert_allclose(result, expected, rtol=1e-2)
 
 
-def test_load_secondary_vectorized():
+def test_secondary_vectorized():
     notch_approximation_law = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
 
     result = notch_approximation_law.secondary([100.0, 400.0, 600.0])
