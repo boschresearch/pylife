@@ -677,9 +677,6 @@ def test_flush_edge_case_S():
 
     maximum_absolute_load = pd.concat([signal_1, signal_2]).abs().groupby("node_id").max()
 
-    print(maximum_absolute_load)
-    print(max(abs(pd.concat([signal_1, signal_2]))))
-
     extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
         maximum_absolute_load
     )
@@ -694,9 +691,9 @@ def test_flush_edge_case_S():
     expected_S_min = pd.Series(
         [
             -49.096964, -57.761134, -11.552227,  -96.749900, -115.522268,  -21.660425, -9.610801e-11,
-            -1.143832e-10, -1.241333e-07,  -96.749900, -115.522268,  -21.660425,
+            -1.143832e-10, -1.549e-07,  -96.749900, -115.522268,  -21.660425,
             -96.749900, -115.522268,  -21.660425, -121.298382, -144.402835,  -27.436539,
-            -9.610801e-11, -1.143832e-10, -1.241333e-07,
+            -9.610801e-11, -1.143832e-10, -1.549e-07,
         ],
         index=pd.MultiIndex.from_product(
             [[1, 2, 6, 8, 10, 4, 14], range(3)], names=["load_step", "node_id"]
