@@ -94,8 +94,11 @@ def test_woehler_curve_P_RAM_collective_has_no_index():
 
     # wrap the notch approximation law by a binning class, which precomputes the values
     maximum_absolute_load = max(np.abs(load_sequence_list))
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100)
+    extended_neuber_binned = (
+        pylife.materiallaws.notch_approximation_law.NotchApproxBinner(
+            extended_neuber
+        ).initialize(maximum_absolute_load)
+    )
 
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
@@ -200,8 +203,11 @@ def test_woehler_curve_P_RAM_collective_has_MultiIndex():
 
     # wrap the notch approximation law by a binning class, which precomputes the values
     maximum_absolute_load = max(np.abs(load_sequence_list))
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100)
+    extended_neuber_binned = (
+        pylife.materiallaws.notch_approximation_law.NotchApproxBinner(
+            extended_neuber
+        ).initialize(maximum_absolute_load)
+    )
 
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
@@ -295,8 +301,9 @@ def test_woehler_curve_P_RAJ_has_no_index():
 
     # wrap the notch approximation law by a binning class, which precomputes the values
     maximum_absolute_load = max(np.abs(load_sequence_list))
-    seeger_beste_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        seeger_beste, maximum_absolute_load, 100)
+    seeger_beste_binned = pylife.materiallaws.notch_approximation_law.NotchApproxBinner(
+        seeger_beste
+    ).initialize(maximum_absolute_load)
 
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
@@ -402,8 +409,9 @@ def test_woehler_curve_P_RAJ_has_MultiIndex():
 
     # wrap the notch approximation law by a binning class, which precomputes the values
     maximum_absolute_load = max(np.abs(load_sequence_list))
-    seeger_beste_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        seeger_beste, maximum_absolute_load, 100)
+    seeger_beste_binned = pylife.materiallaws.notch_approximation_law.NotchApproxBinner(
+        seeger_beste
+    ).initialize(maximum_absolute_load)
 
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()

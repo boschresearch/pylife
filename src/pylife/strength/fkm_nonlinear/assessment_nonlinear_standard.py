@@ -398,8 +398,11 @@ def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence, maximum_absolu
     extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K_prime, n_prime, K_p)
 
     # wrap the notch approximation law by a binning class, which precomputes the values
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100)
+    extended_neuber_binned = (
+        pylife.materiallaws.notch_approximation_law.NotchApproxBinner(
+            extended_neuber
+        ).initialize(maximum_absolute_load)
+    )
 
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
@@ -491,8 +494,9 @@ def _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence, maximum_absolu
     seeger_beste = pylife.materiallaws.notch_approximation_law_seegerbeste.SeegerBeste(E, K_prime, n_prime, K_p)
 
     # wrap the notch approximation law by a binning class, which precomputes the values
-    seeger_beste_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        seeger_beste, maximum_absolute_load, 100)
+    seeger_beste_binned = pylife.materiallaws.notch_approximation_law.NotchApproxBinner(
+        seeger_beste
+    ).initialize(maximum_absolute_load)
 
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
