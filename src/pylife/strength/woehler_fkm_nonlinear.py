@@ -27,7 +27,6 @@ from pylife import PylifeSignal
 
 
 @pd.api.extensions.register_series_accessor('woehler_P_RAM')
-@pd.api.extensions.register_dataframe_accessor('woehler_P_RAM')
 class WoehlerCurvePRAM(PylifeSignal):
     """This class represents the type of (component) Wöhler curve that is used
     in the FKM nonlinear fatigue assessment with damage parameter P_RAM.
@@ -172,7 +171,6 @@ class WoehlerCurvePRAM(PylifeSignal):
 
 
 @pd.api.extensions.register_series_accessor('woehler_P_RAJ')
-@pd.api.extensions.register_dataframe_accessor('woehler_P_RAJ')
 class WoehlerCurvePRAJ(PylifeSignal):
     """This class represents the type of (component) Wöhler curve that is used in the
     FKM nonlinear fatigue assessment with damage parameter P_RAJ.

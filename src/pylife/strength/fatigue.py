@@ -23,7 +23,6 @@ from pylife.materiallaws import WoehlerCurve
 
 
 @pd.api.extensions.register_series_accessor('fatigue')
-@pd.api.extensions.register_dataframe_accessor('fatigue')
 class Fatigue(WoehlerCurve):
     """Extension for ``WoehlerCurve`` accessor class for fatigue calculations.
 

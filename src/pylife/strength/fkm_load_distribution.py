@@ -74,7 +74,6 @@ import numpy as np
 import pandas as pd
 from pylife import PylifeSignal
 
-@pd.api.extensions.register_dataframe_accessor("fkm_load_sequence")
 @pd.api.extensions.register_series_accessor("fkm_load_sequence")
 class FKMLoadSequence(PylifeSignal):
     """Base class used by the safety scaling method. It is used to compute the beta parameter
@@ -253,7 +252,6 @@ class FKMLoadSequence(PylifeSignal):
         raise ValueError(f"P_A={input_parameters.P_A} has to be one of "+"{"+", ".join(P_A_list)+"}.")
 
 
-@pd.api.extensions.register_dataframe_accessor("fkm_safety_normal_from_stddev")
 @pd.api.extensions.register_series_accessor("fkm_safety_normal_from_stddev")
 class FKMLoadDistributionNormal(FKMLoadSequence):
     r"""Series accessor to get a scaled up load series.
@@ -355,7 +353,6 @@ class FKMLoadDistributionNormal(FKMLoadSequence):
         return self.scaled_by_constant(gamma_L)
 
 
-@pd.api.extensions.register_dataframe_accessor("fkm_safety_lognormal_from_stddev")
 @pd.api.extensions.register_series_accessor("fkm_safety_lognormal_from_stddev")
 class FKMLoadDistributionLognormal(FKMLoadSequence):
     r"""Series accessor to get a scaled up load series.
@@ -447,7 +444,6 @@ class FKMLoadDistributionLognormal(FKMLoadSequence):
         return self.scaled_by_constant(gamma_L)
 
 
-@pd.api.extensions.register_dataframe_accessor("fkm_safety_blanket")
 @pd.api.extensions.register_series_accessor("fkm_safety_blanket")
 class FKMLoadDistributionBlanket(FKMLoadSequence):
     r"""Series accessor to get a scaled up load series, i.e., a list of load values with included load safety,

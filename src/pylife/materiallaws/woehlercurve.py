@@ -24,7 +24,6 @@ from pylife import PylifeSignal
 
 
 @pd.api.extensions.register_series_accessor('woehler')
-@pd.api.extensions.register_dataframe_accessor('woehler')
 class WoehlerCurve(PylifeSignal):
     """A PylifeSignal accessor for Wöhler Curve data.
 
