@@ -922,6 +922,31 @@ class Binned:
 
 
 class NotchApproxBinner:
+    """Binning for notch approximation laws, as described in FKM nonlinear 2.5.8.2, p.55.
+    The implicitly defined stress function of the notch approximation law is precomputed
+    for various loads at a fixed number of equispaced `bins`. The values are stored in two
+    look-up tables for the primary and secondary branches of the stress-strain hysteresis
+    curves. When stress and strain values are needed for a given load, the nearest value
+    of the corresponding bin is retrived. This is faster than invoking the nonlinear
+    root finding algorithm for every new load.
+
+    There are two variants of the data structure.
+
+    * First, for a single assessment point, the lookup-table contains one load,
+      strain and stress value in every bin.
+    * Second, for vectorized assessment of multiple nodes at once, the lookup-table
+      contains at every load bin an array with stress and strain values for every node.
+      The representative load, stored in the lookup table and used for the lookup
+      is the first element of the given load array.
+
+    Parameters
+    ----------
+    notch_approximation_law : NotchApproximationLawBase
+       The law for the notch approximation to be used.
+
+    number_of_bins : int, optional
+       The number of bins in the lookup table, default 100
+    """
 
     def __init__(self, notch_approximation_law, number_of_bins=100):
         self._n_bins = number_of_bins
@@ -930,6 +955,18 @@ class NotchApproxBinner:
         self._max_load_rep = None
 
     def initialize(self, max_load):
+        """Initialize with a maximum expected load.
+
+        Parameters
+        ----------
+        max_load : array_like
+            The state of the maximum nominal load that is expected.  The first
+            element is chosen as representative to caclulate the lookup table.
+
+        Returns
+        -------
+        self
+        """
         max_load = np.asarray(max_load)
         self._max_load_rep, _ = self._rep_abs_and_sign(max_load)
 
@@ -942,6 +979,27 @@ class NotchApproxBinner:
         return self
 
     def primary(self, load):
+        """Lookup the stress strain of the primary branch.
+
+        Parameters
+        ----------
+        load : array-like
+            The load as argument for the stress strain laws.
+            If non-scalar, the first element will be used to look it up in the
+            lookup table.
+
+        Returns
+        -------
+        stress strain : ndarray
+            The resulting stress strain data.
+
+            If the argument is scalar, the resulting array is of the strucuture
+            ``[<σ>, <ε>]``
+
+            If the argument is an 1D-array with length `n`the resulting array is of the
+            structure ``[[<σ1>, <σ2>, <σ3>, ... <σn>], [<ε1>, <ε2>, <ε3>, ... <εn>]]``
+
+        """
         self._raise_if_uninitialized()
         load_rep, sign = self._rep_abs_and_sign(load)
 
@@ -953,6 +1011,27 @@ class NotchApproxBinner:
         return sign * self._lut_primary[idx, :]
 
     def secondary(self, delta_load):
+        """Lookup the stress strain of the secondary branch.
+
+        Parameters
+        ----------
+        load : array-like
+            The load as argument for the stress strain laws.
+            If non-scalar, the first element will be used to look it up in the
+            lookup table.
+
+        Returns
+        -------
+        stress strain : ndarray
+            The resulting stress strain data.
+
+            If the argument is scalar, the resulting array is of the strucuture
+            ``[<σ>, <ε>]``
+
+            If the argument is an 1D-array with length `n`the resulting array is of the
+            structure ``[[<σ1>, <σ2>, <σ3>, ..., <σn>], [<ε1>, <ε2>, <ε3>, ..., <εn>]]``
+
+        """
         self._raise_if_uninitialized()
         delta_load_rep, sign = self._rep_abs_and_sign(delta_load)
 
