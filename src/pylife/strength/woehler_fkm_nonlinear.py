@@ -46,10 +46,6 @@ class WoehlerCurvePRAM(PylifeSignal):
     * ``P_RAM_D`` : The damage parameter value of the endurance limit of the component, computed as P_RAM_D_WS / f_RAM (FKM nonlinear, eq. 2.6-89)
     """
 
-    def __init__(self, pandas_obj):
-        self._obj = pandas_obj.copy()
-        self._validate()
-
     def _validate(self):
         self.fail_if_key_missing(['P_RAM_Z', 'P_RAM_D', 'd_1', 'd_2'])
 
@@ -195,13 +191,6 @@ class WoehlerCurvePRAJ(PylifeSignal):
     * ``P_RAJ_D_0`` : The initial load level of the endurance limit
     """
 
-    def __init__(self, pandas_obj):
-        self._obj = pandas_obj.copy()
-        self._validate()
-
-        # eq. (2.9-27)
-        self._P_RAJ_D = self._obj.P_RAJ_D_0
-
     def _validate(self):
         self.fail_if_key_missing(['P_RAJ_Z', 'P_RAJ_D_0', 'd_RAJ'])
 
@@ -211,6 +200,10 @@ class WoehlerCurvePRAJ(PylifeSignal):
 
         if self._obj.d_RAJ >= 0:
             raise ValueError(f"d_RAJ ({self._obj.d_RAJ}) has to be negative!")
+
+        # eq. (2.9-27)
+        self._P_RAJ_D = self._obj.P_RAJ_D_0
+
 
     def update_P_RAJ_D(self, P_RAJ_D):
         """This method is used to update the fatigue strength P_RAJ_D, which is stored in this woehler curve.

@@ -550,3 +550,19 @@ def test_load_is_basquin_load(SD, k_1, ND, cycles):
 def test_cycles_is_basquin_cycles(SD, k_1, ND, load):
     wc = WoehlerCurve.from_parameters(SD=SD, k_1=k_1, ND=ND)
     assert wc.cycles(load) == wc.basquin_cycles(load)
+
+
+def test_changed_TN():
+    wc = pd.Series({
+        'k_1': 7.,
+        'TN': 1.75,
+        'ND': 1e6,
+        'SD': 300.0
+    })
+
+    _ = wc.woehler
+
+    wc['TN'] = 1.48
+    new_wc = wc.woehler.to_pandas()
+
+    assert new_wc['TN'] == 1.48

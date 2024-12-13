@@ -151,6 +151,21 @@ def test_woehler_curve_P_RAM_exceptions(P_RAM_Z, P_RAM_D, d_1, d_2):
         component_woehler_curve_P_RAM = assessment_parameters.woehler_P_RAM
 
 
+def test_woehler_curve_P_RAM_change_params():
+    ap = pd.Series({
+        "P_RAM_Z": 400.0,
+        "P_RAM_D": 150.0,
+        "d_1": -0.3,
+        "d_2": -0.2
+    })
+
+    _ = ap.woehler_P_RAM
+
+    ap["d_2"] = -0.9
+
+    assert ap.woehler_P_RAM.to_pandas()["d_2"] == -0.9
+
+
 # ---------- P_RAJ --------------
 @pytest.mark.parametrize(
     "P_RAJ_Z, P_RAJ_D_0, d_RAJ", [
@@ -260,3 +275,17 @@ def test_woehler_curve_P_RAJ_exceptions(P_RAJ_Z, P_RAJ_D_0, d_RAJ):
 
     with pytest.raises(ValueError, match="has to be"):
         component_woehler_curve_P_RAJ = assessment_parameters.woehler_P_RAJ
+
+
+def test_woehler_curve_P_RAJ_change_params():
+    ap = pd.Series({
+        "P_RAJ_Z": 150.0,
+        "P_RAJ_D_0": 0.1,
+        "d_RAJ": -0.5,
+    })
+
+    _ = ap.woehler_P_RAJ
+
+    ap["d_RAJ"] = -0.7
+
+    assert ap.woehler_P_RAJ.to_pandas()["d_RAJ"] == -0.7
