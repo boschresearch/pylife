@@ -389,7 +389,7 @@ def _compute_component_woehler_curves(assessment_parameters):
     return assessment_parameters, component_woehler_curve_P_RAM, component_woehler_curve_P_RAJ
 
 
-def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence, maximum_absolute_load):
+def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence, maximum_absolute_):
     """Perform the HCM rainflow counting with the extended Neuber notch approximation.
     The HCM algorithm is executed twice, as described in the FKM nonlinear guideline."""
 
@@ -397,19 +397,13 @@ def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence, maximum_absolu
     E, K_prime, n_prime, K_p = assessment_parameters[["E", "K_prime", "n_prime", "K_p"]]
     extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K_prime, n_prime, K_p)
 
-    # wrap the notch approximation law by a binning class, which precomputes the values
-    extended_neuber_binned = (
-        pylife.materiallaws.notch_approximation_law.NotchApproxBinner(
-            extended_neuber
-        ).initialize(maximum_absolute_load)
-    )
-
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=extended_neuber_binned, binner=None)
+        recorder=recorder, notch_approximation_law=extended_neuber
+    )
 
     # perform HCM algorithm, first run
     detector.process_hcm_first(scaled_load_sequence)
@@ -418,7 +412,7 @@ def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence, maximum_absolu
     # perform HCM algorithm, second run
     detector.process_hcm_second(scaled_load_sequence)
 
-    return detector_1st, detector, extended_neuber_binned, recorder
+    return detector_1st, detector, extended_neuber, recorder
 
 
 def _compute_damage_and_lifetimes_RAM(assessment_parameters, recorder, component_woehler_curve_P_RAM, result):
@@ -493,17 +487,13 @@ def _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence, maximum_absolu
     E, K_prime, n_prime, K_p = assessment_parameters[["E", "K_prime", "n_prime", "K_p"]]
     seeger_beste = pylife.materiallaws.notch_approximation_law_seegerbeste.SeegerBeste(E, K_prime, n_prime, K_p)
 
-    # wrap the notch approximation law by a binning class, which precomputes the values
-    seeger_beste_binned = pylife.materiallaws.notch_approximation_law.NotchApproxBinner(
-        seeger_beste
-    ).initialize(maximum_absolute_load)
-
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=seeger_beste_binned, binner=None)
+        recorder=recorder, notch_approximation_law=seeger_beste
+    )
     detector_1st = copy.deepcopy(detector)
 
     # perform HCM algorithm, first run
@@ -512,7 +502,7 @@ def _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence, maximum_absolu
     # perform HCM algorithm, second run
     detector.process_hcm_second(scaled_load_sequence)
 
-    return detector_1st, detector, seeger_beste_binned, recorder
+    return detector_1st, detector, seeger_beste, recorder
 
 
 def _compute_damage_and_lifetimes_RAJ(assessment_parameters, recorder, component_woehler_curve_P_RAJ, result):

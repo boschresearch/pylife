@@ -77,7 +77,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             The resulting stress
         '''
         # initial value as given by correction document to FKM nonlinear
-        x0 = load * (1 - (1 - 1/self._K_p)/1000)
+        x0 = np.asarray(load * (1 - (1 - 1/self._K_p)/1000))
 
         # suppress the divergence warnings
         with warnings.catch_warnings():
@@ -96,7 +96,8 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             # or (value, converged, zero_der) for vector-valued invocation
 
         # only for multiple points at once, if some points diverged
-        if len(stress) == 3 and not stress[1].all():
+        multidim = len(x0.shape) > 1 and x0.shape[1] > 1
+        if multidim and not stress[1].all():
             stress = self._stress_fix_not_converged_values(stress, load, x0, rtol, tol)
 
         return stress[0]
@@ -461,7 +462,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         '''For the values that did not converge in the previous vectorized call to optimize.newton,
         call optimize.newton again on the scalar value. This usually finds the correct solution.'''
 
-        indices_diverged = [index for index, is_converged in enumerate(stress[1]) if not is_converged]
+        indices_diverged = np.where(~stress[1].all(axis=1))[0]
         x0_array = np.asarray(x0)
         load_array = np.asarray(load)
 
@@ -471,13 +472,13 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             load_diverged = load_array[index_diverged]
             result = optimize.newton(
                 func=self._stress_implicit,
-                x0=x0_diverged,
+                x0=np.asarray(x0_diverged),
                 args=([load_diverged]),
                 full_output=True,
                 rtol=rtol, tol=tol, maxiter=50
             )
 
-            if result[1].converged:
+            if result.converged.all():
                 stress[0][index_diverged] = result[0]
         return stress
 
