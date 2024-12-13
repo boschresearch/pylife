@@ -105,7 +105,8 @@ def test_woehler_curve_P_RAM_collective_has_no_index():
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=extended_neuber_binned)
+        recorder=recorder, notch_approximation_law=extended_neuber_binned, binner=None
+    )
 
     # perform HCM algorithm, first run
     detector.process_hcm_first(load_sequence_list)
@@ -214,7 +215,8 @@ def test_woehler_curve_P_RAM_collective_has_MultiIndex():
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=extended_neuber_binned)
+        recorder=recorder, notch_approximation_law=extended_neuber_binned, binner=None
+    )
 
     # perform HCM algorithm, first run
     detector.process_hcm_first(load_sequence_list)
@@ -310,7 +312,8 @@ def test_woehler_curve_P_RAJ_has_no_index():
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=seeger_beste_binned)
+        recorder=recorder, notch_approximation_law=seeger_beste_binned, binner=None
+    )
 
     # perform HCM algorithm, first run
     detector.process_hcm_first(load_sequence_list)
@@ -418,7 +421,8 @@ def test_woehler_curve_P_RAJ_has_MultiIndex():
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=seeger_beste_binned)
+        recorder=recorder, notch_approximation_law=seeger_beste_binned, binner=None
+    )
 
     # perform HCM algorithm, first run
     detector.process_hcm_first(load_sequence_list)

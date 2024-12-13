@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 
 import pylife.stress.rainflow.general as RFG
+import pylife.materiallaws.notch_approximation_law as NAL
 
 INDEX = 0
 LOAD_TYPE = 1
@@ -86,9 +87,15 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
     """
 
-    def __init__(self, recorder, notch_approximation_law):
+    def __init__(self, recorder, notch_approximation_law, binner=NAL.NotchApproxBinner):
         super().__init__(recorder)
-        self._notch_approximation_law = notch_approximation_law
+
+        if binner is not None:
+            self._binner = binner(notch_approximation_law)
+            self._notch_approximation_law = self._binner
+        else:
+            self._binner = None
+            self._notch_approximation_law = notch_approximation_law
 
         if notch_approximation_law is not None:
             self._ramberg_osgood_relation = self._notch_approximation_law.ramberg_osgood_relation
@@ -251,6 +258,14 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
             rep_samples = samples.groupby('load_step', sort=False).first().to_numpy()
         else:
             rep_samples = np.asarray(samples)
+
+        if self._binner is not None:
+            if have_multi_index:
+                load_max_idx = samples.groupby("load_step").first().abs().idxmax()
+                load_max = samples.xs(load_max_idx, level="load_step").abs()
+            else:
+                load_max = np.abs(samples).max()
+            self._binner.initialize(load_max)
 
         loads_indices, load_turning_points = self._new_turns(rep_samples, flush)
 

@@ -56,14 +56,8 @@ class TestIncomplete(unittest.TestCase):
         # initialize notch approximation law
         extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-        # wrap the notch approximation law by a binning class, which precomputes the values
-        maximum_absolute_load = max(abs(signal))
-        extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-            maximum_absolute_load
-        )
-
         # first run
-        detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber_binned)
+        detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber)
         detector.process(signal)
 
         # second run
@@ -103,6 +97,31 @@ class TestIncomplete(unittest.TestCase):
         pd.testing.assert_frame_equal(df, expected, rtol=1e-1)
 
 
+def test_no_binning_class():
+    signal = np.array([100, 0, 80, 20, 60, 40])
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 2650     # 1184 [MPa]
+    n = 0.187    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    # initialize notch approximation law
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=extended_neuber, binner=None
+    )
+    detector.process_hcm_first(signal).process_hcm_second(signal)
+
+    recorder = detector.recorder
+    np.testing.assert_array_equal(recorder.loads_min, np.array([40., 20., 0.]))
+    np.testing.assert_array_equal(recorder.loads_max, np.array([60., 80., 100.]))
+    np.testing.assert_allclose(recorder.S_min, np.array([39.997581, 19.997582, -0.002388]), rtol=1e-3, atol=1e-6)
+    np.testing.assert_allclose(recorder.S_max, np.array([59.997581, 79.997574, 99.997488]), rtol=1e-3, atol=1e-6)
+    np.testing.assert_allclose(recorder.epsilon_min, np.array([1.941866e-04, 9.709922e-05, 1.169416e-08]), rtol=1e-3, atol=1e-6)
+    np.testing.assert_allclose(recorder.epsilon_max, np.array([0.000291, 0.000388, 0.000485]), rtol=1e-3, atol=1e-6)
+
+
 class TestFKMMemory1Inner(unittest.TestCase):
     """Example given in FKM nonlinear 3.2.1, p.147 """
 
@@ -120,14 +139,8 @@ class TestFKMMemory1Inner(unittest.TestCase):
         # initialize notch approximation law
         extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-        # wrap the notch approximation law by a binning class, which precomputes the values
-        maximum_absolute_load = max(abs(signal))
-        extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-            maximum_absolute_load
-        )
-
         # first run
-        detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber_binned)
+        detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber)
         detector.process_hcm_first(signal)
 
         # second run
@@ -198,14 +211,8 @@ class TestFKMMemory1_2_3(unittest.TestCase):
         # initialize notch approximation law
         extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-        # wrap the notch approximation law by a binning class, which precomputes the values
-        maximum_absolute_load = max(abs(signal))
-        extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-            maximum_absolute_load
-        )
-
         # first run
-        detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber_binned)
+        detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber)
         detector.process_hcm_first(signal)
 
         # second run
@@ -274,14 +281,8 @@ class TestHCMExample1(unittest.TestCase):
         # initialize notch approximation law
         extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-        # wrap the notch approximation law by a binning class, which precomputes the values
-        maximum_absolute_load = max(abs(self.signal))
-        extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-            maximum_absolute_load
-        )
-
         # first run
-        detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber_binned)
+        detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber)
         detector.process_hcm_first(self.signal)
         self._detector_1st = copy.deepcopy(detector)
 
@@ -344,15 +345,8 @@ class TestHCMExample2(unittest.TestCase):
         # initialize notch approximation law
         extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-        # wrap the notch approximation law by a binning class, which precomputes the values
-        maximum_absolute_load = max(abs(signal))
-
-        extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-            maximum_absolute_load
-        )
-
         # first run
-        detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber_binned)
+        detector = FKMNonlinearDetector(recorder=self._recorder, notch_approximation_law=extended_neuber)
         detector.process_hcm_first(signal)
 
         # second run
@@ -423,15 +417,8 @@ def test_edge_case_value_in_sample_tail_simple_signal(vals, expected_loads_min, 
 
     extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-    maximum_absolute_load = max(abs(signal))
-
-    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-        maximum_absolute_load
-    )
-
     detector = FKMNonlinearDetector(
-        recorder=RFR.FKMNonlinearRecorder(),
-        notch_approximation_law=extended_neuber_binned
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=extended_neuber
     )
     detector.process(signal).process(signal)
 
@@ -473,15 +460,8 @@ def test_edge_case_value_in_sample_tail(vals, expected_loads_min, expected_loads
 
     extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-    maximum_absolute_load = max(abs(signal))
-
-    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-        maximum_absolute_load
-    )
-
     detector = FKMNonlinearDetector(
-        recorder=RFR.FKMNonlinearRecorder(),
-        notch_approximation_law=extended_neuber_binned
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=extended_neuber
     )
     detector.process(signal).process(signal)
 
@@ -519,17 +499,8 @@ def test_flush_edge_case_load():
 
     extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-    maximum_absolute_load = pd.concat([signal_1, signal_2]).abs().groupby("node_id").max()
-
-    print(maximum_absolute_load)
-
-    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-        maximum_absolute_load
-    )
-
     detector = FKMNonlinearDetector(
-        recorder=RFR.FKMNonlinearRecorder(),
-        notch_approximation_law=extended_neuber_binned
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=extended_neuber
     )
 
     detector.process(signal_1, flush=True).process(signal_2, flush=True)
@@ -588,15 +559,8 @@ def test_flush_edge_case_load_simple_signal():
 
     extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-    maximum_absolute_load = max(abs(np.concatenate([signal_1, signal_2])))
-
-    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-        maximum_absolute_load
-    )
-
     detector = FKMNonlinearDetector(
-        recorder=RFR.FKMNonlinearRecorder(),
-        notch_approximation_law=extended_neuber_binned
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=extended_neuber
     )
 
     detector.process(signal_1, flush=True).process(signal_2, flush=True)
@@ -627,15 +591,8 @@ def test_flush_edge_case_S_simple_signal():
 
     extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-    maximum_absolute_load = max(abs(np.concatenate([signal_1, signal_2])))
-
-    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-        maximum_absolute_load
-    )
-
     detector = FKMNonlinearDetector(
-        recorder=RFR.FKMNonlinearRecorder(),
-        notch_approximation_law=extended_neuber_binned
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=extended_neuber
     )
 
     detector.process(signal_1, flush=True).process(signal_2, flush=True)
@@ -675,15 +632,8 @@ def test_flush_edge_case_S():
 
     extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-    maximum_absolute_load = pd.concat([signal_1, signal_2]).abs().groupby("node_id").max()
-
-    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-        maximum_absolute_load
-    )
-
     detector = FKMNonlinearDetector(
-        recorder=RFR.FKMNonlinearRecorder(),
-        notch_approximation_law=extended_neuber_binned
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=extended_neuber
     )
 
     detector.process(signal_1, flush=True).process(signal_2, flush=True)
@@ -768,27 +718,16 @@ def test_edge_case_value_in_sample_tail_compare_simple(vals, num):
 
     extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-    maximum_absolute_load_simple = max(abs(vals))
-    maximum_absolute_load_multiple = signal.abs().groupby('node_id').max()
-
 
     print("single")
-    extended_neuber_binned_simple = NAL.NotchApproxBinner(extended_neuber).initialize(
-        maximum_absolute_load_simple
-    )
     detector_simple = FKMNonlinearDetector(
-        recorder=RFR.FKMNonlinearRecorder(),
-        notch_approximation_law=extended_neuber_binned_simple
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=extended_neuber
     )
     detector_simple.process(vals).process(vals)
 
     print("multiple")
-    extended_neuber_binned_multiple = NAL.NotchApproxBinner(extended_neuber).initialize(
-        maximum_absolute_load_multiple
-    )
     detector_multiindex = FKMNonlinearDetector(
-        recorder=RFR.FKMNonlinearRecorder(),
-        notch_approximation_law=extended_neuber_binned_multiple
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=extended_neuber
     )
     detector_multiindex.process(signal).process(signal)
 
@@ -852,24 +791,13 @@ def test_hcm_first_second(vals, num):
 
     extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-    maximum_absolute_load_simple = max(abs(vals))
-    maximum_absolute_load_multiple = signal.abs().groupby('node_id').max()
-
-    extended_neuber_binned_simple = NAL.NotchApproxBinner(extended_neuber).initialize(
-        maximum_absolute_load_simple
-    )
-    extended_neuber_binned_multiple = NAL.NotchApproxBinner(extended_neuber).initialize(
-        maximum_absolute_load_multiple
-    )
     detector_simple = FKMNonlinearDetector(
-        recorder=RFR.FKMNonlinearRecorder(),
-        notch_approximation_law=extended_neuber_binned_simple
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=extended_neuber
     )
     detector_simple.process_hcm_first(vals).process_hcm_second(vals)
 
     detector_multiindex = FKMNonlinearDetector(
-        recorder=RFR.FKMNonlinearRecorder(),
-        notch_approximation_law=extended_neuber_binned_multiple
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=extended_neuber
     )
     detector_multiindex.process_hcm_first(signal).process_hcm_second(signal)
 
@@ -896,10 +824,8 @@ def detector_seeger_beste():
     K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
 
     seeger_beste = SeegerBeste(E, K, n, K_p)
-    seeger_beste_binned = NAL.NotchApproxBinner(seeger_beste).initialize(800)
-
     return FKMNonlinearDetector(
-        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=seeger_beste_binned
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=seeger_beste
     )
 
 
@@ -1095,14 +1021,8 @@ def test_history_guideline_at_once():
     # initialize notch approximation law
     extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-    # wrap the notch approximation law by a binning class, which precomputes the values
-    maximum_absolute_load = max(abs(signal))
-    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-        maximum_absolute_load
-    )
-
     # first run
-    detector = FKMNonlinearDetector(recorder=recorder, notch_approximation_law=extended_neuber_binned)
+    detector = FKMNonlinearDetector(recorder=recorder, notch_approximation_law=extended_neuber)
 
     detector.process(signal)
 
@@ -1143,14 +1063,8 @@ def test_history_guideline_at_split(split_point):
     # initialize notch approximation law
     extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
 
-    # wrap the notch approximation law by a binning class, which precomputes the values
-    maximum_absolute_load = max(abs(signal))
-    extended_neuber_binned = NAL.NotchApproxBinner(extended_neuber).initialize(
-        maximum_absolute_load
-    )
-
     # first run
-    detector = FKMNonlinearDetector(recorder=recorder, notch_approximation_law=extended_neuber_binned)
+    detector = FKMNonlinearDetector(recorder=recorder, notch_approximation_law=extended_neuber)
 
     detector.process(signal[:split_point]).process(signal[split_point:])
 

@@ -409,7 +409,7 @@ def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence, maximum_absolu
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=extended_neuber_binned)
+        recorder=recorder, notch_approximation_law=extended_neuber_binned, binner=None)
 
     # perform HCM algorithm, first run
     detector.process_hcm_first(scaled_load_sequence)
@@ -503,7 +503,7 @@ def _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence, maximum_absolu
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=seeger_beste_binned)
+        recorder=recorder, notch_approximation_law=seeger_beste_binned, binner=None)
     detector_1st = copy.deepcopy(detector)
 
     # perform HCM algorithm, first run
