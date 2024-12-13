@@ -34,7 +34,7 @@ def test_extended_neuber_primary_example_1(load, strain, stress):
     notch_approximation_law = ExtendedNeuber(E=206e3, K=1184, n=0.187, K_p=3.5)
 
     assert np.isclose(notch_approximation_law.stress(load), stress, rtol=1e-3)
-    assert np.isclose(notch_approximation_law.strain(stress, None), strain, rtol=1e-1)
+    assert np.isclose(notch_approximation_law.strain(stress), strain, rtol=1e-1)
     assert np.isclose(notch_approximation_law.load(stress), load, rtol=1e-3)
 
 
@@ -49,7 +49,7 @@ def test_extended_neuber_secondary_example_1(delta_load, delta_strain, delta_str
     notch_approximation_law = ExtendedNeuber(E=206e3, K=1184, n=0.187, K_p=3.5)
 
     assert np.isclose(notch_approximation_law.stress_secondary_branch(delta_load), delta_stress, rtol=1e-3)
-    assert np.isclose(notch_approximation_law.strain_secondary_branch(delta_stress, None), delta_strain, rtol=1e-3)
+    assert np.isclose(notch_approximation_law.strain_secondary_branch(delta_stress), delta_strain, rtol=1e-3)
     assert np.isclose(notch_approximation_law.load_secondary_branch(delta_stress), delta_load, rtol=1e-3)
 
 
@@ -63,11 +63,8 @@ def test_extended_neuber_primary_example_2(load, strain, stress):
     notch_approximation_law = ExtendedNeuber(E=206e3, K=2650.5, n=0.187, K_p=3.5)
 
     assert np.isclose(notch_approximation_law.stress(load), stress, rtol=1e-1)
-    assert np.isclose(notch_approximation_law.strain(stress, None), strain, rtol=1e-1)
+    assert np.isclose(notch_approximation_law.strain(stress), strain, rtol=1e-1)
     assert np.isclose(notch_approximation_law.load(stress), load, rtol=1e-1)
-
-    assert np.isclose(notch_approximation_law.stress_secondary_branch(10.13), 10.130)
-    assert np.isclose(notch_approximation_law.strain_secondary_branch(10.30, 10.13), 0.0049174e-2, rtol=1e-1)
 
 
 @pytest.mark.parametrize('delta_load, delta_strain, delta_stress', [
@@ -82,7 +79,7 @@ def test_extended_neuber_secondary_example_2(delta_load, delta_strain, delta_str
     notch_approximation_law = ExtendedNeuber(E=206e3, K=2650.5, n=0.187, K_p=3.5)
 
     assert np.isclose(notch_approximation_law.stress_secondary_branch(delta_load), delta_stress, rtol=1e-3)
-    assert np.isclose(notch_approximation_law.strain_secondary_branch(delta_stress, None), delta_strain, rtol=1e-3)
+    assert np.isclose(notch_approximation_law.strain_secondary_branch(delta_stress), delta_strain, rtol=1e-3)
     assert np.isclose(notch_approximation_law.load_secondary_branch(delta_stress), delta_load, rtol=1e-3)
 
 

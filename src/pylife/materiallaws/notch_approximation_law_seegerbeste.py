@@ -101,7 +101,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
 
         return stress[0]
 
-    def strain(self, stress, load):
+    def strain(self, stress):
         '''Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
         The formula is given by eq. 2.8-39 of FKM nonlinear.
         load / stress * self._K_p * e_star
@@ -216,7 +216,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
 
         return delta_stress[0]
 
-    def strain_secondary_branch(self, delta_stress, delta_load):
+    def strain_secondary_branch(self, delta_stress):
         '''Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
         The formula is given by eq. 2.8-43 of FKM nonlinear.
 

@@ -82,13 +82,13 @@ class NotchApproximationLawBase:
     def primary(self, load):
         load = np.asarray(load)
         stress = self.stress(load)
-        strain = self.strain(stress, None)
+        strain = self.strain(stress)
         return np.stack([stress, strain], axis=len(load.shape))
 
     def secondary(self, delta_load):
         delta_load = np.asarray(delta_load)
         delta_stress = self.stress_secondary_branch(delta_load)
-        delta_strain = self.strain_secondary_branch(delta_stress, None)
+        delta_strain = self.strain_secondary_branch(delta_stress)
         return np.stack([delta_stress, delta_strain], axis=len(delta_load.shape))
 
 
@@ -151,7 +151,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         )
         return stress
 
-    def strain(self, stress, load):
+    def strain(self, stress):
         """Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
         The formula is given by eq. 2.5-42 of FKM nonlinear.
         load / stress * self._K_p * e_star
@@ -240,7 +240,7 @@ class ExtendedNeuber(NotchApproximationLawBase):
         )
         return delta_stress
 
-    def strain_secondary_branch(self, delta_stress, delta_load):
+    def strain_secondary_branch(self, delta_stress):
         """Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
         The formula is given by eq. 2.5-46 of FKM nonlinear.
 
