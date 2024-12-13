@@ -29,13 +29,28 @@ from .data import *
     (176.057, 8.71e-4, 172.639),
     (359.3, 0.0021, 299.78)
 ])
-def test_extended_neuber_example_1(load, strain, stress):
+def test_extended_neuber_primary_example_1(load, strain, stress):
     """ example under 2.7.1, p.74 of FKM nonlinear "Akademisches Beispiel" """
     notch_approximation_law = ExtendedNeuber(E=206e3, K=1184, n=0.187, K_p=3.5)
 
-    assert np.isclose(notch_approximation_law.stress(load), stress, rtol=1e-1)
+    assert np.isclose(notch_approximation_law.stress(load), stress, rtol=1e-3)
     assert np.isclose(notch_approximation_law.strain(stress, None), strain, rtol=1e-1)
-    assert np.isclose(notch_approximation_law.load(stress), load, rtol=1e-1)
+    assert np.isclose(notch_approximation_law.load(stress), load, rtol=1e-3)
+
+
+@pytest.mark.parametrize('delta_load, delta_strain, delta_stress', [
+    (100.587, 0.0488e-2, 100.578),
+    (201.174, 0.0978e-2, 200.794),
+    (402.349, 0.2019e-2, 389.430),
+    (700.518, 0.4051e-2, 590.289)
+]) # values from matrix AST in FKM guideline nonlinear on page 162, chapter 3.4.1
+def test_extended_neuber_secondary_example_1(delta_load, delta_strain, delta_stress):
+    """ example under 2.7.1, p.74 of FKM nonlinear "Akademisches Beispiel" """
+    notch_approximation_law = ExtendedNeuber(E=206e3, K=1184, n=0.187, K_p=3.5)
+
+    assert np.isclose(notch_approximation_law.stress_secondary_branch(delta_load), delta_stress, rtol=1e-3)
+    assert np.isclose(notch_approximation_law.strain_secondary_branch(delta_stress, None), delta_strain, rtol=1e-3)
+    assert np.isclose(notch_approximation_law.load_secondary_branch(delta_stress), delta_load, rtol=1e-3)
 
 
 @pytest.mark.parametrize('load, strain, stress', [
@@ -43,7 +58,7 @@ def test_extended_neuber_example_1(load, strain, stress):
     (20.26, 0.0098e-2, 20.260),
     (1013.00, 0.6035e-2, 829.681),
 ])
-def test_extended_neuber_example_2(load, strain, stress):
+def test_extended_neuber_primary_example_2(load, strain, stress):
     """ example under 2.7.2, p.78 of FKM nonlinear, "Welle mit V-Kerbe" """
     notch_approximation_law = ExtendedNeuber(E=206e3, K=2650.5, n=0.187, K_p=3.5)
 
@@ -54,10 +69,21 @@ def test_extended_neuber_example_2(load, strain, stress):
     assert np.isclose(notch_approximation_law.stress_secondary_branch(10.13), 10.130)
     assert np.isclose(notch_approximation_law.strain_secondary_branch(10.30, 10.13), 0.0049174e-2, rtol=1e-1)
 
-    # matrix AST on page 171, chapter 3.4.2
 
-    # pd.testing.assert_frame_equal(
-    #     binned_notch_approximation_law._lut_secondary_branch, expected_matrix_AST_171, rtol=1e-3, atol=1e-5)
+@pytest.mark.parametrize('delta_load, delta_strain, delta_stress', [
+    (101.30, 0.0492e-2, 101.300),
+    (506.50, 0.2462e-2, 505.784),
+    (1002.87, 0.4990e-2, 978.725),
+    (1499.24, 0.8017e-2, 1362.884),
+    (2005.74, 1.1897e-2, 1649.573)
+]) # values from matrix AST in FKM guideline nonlinear on page 171, chapter 3.4.2
+def test_extended_neuber_secondary_example_2(delta_load, delta_strain, delta_stress):
+    """ example under 2.7.1, p.74 of FKM nonlinear "Akademisches Beispiel" """
+    notch_approximation_law = ExtendedNeuber(E=206e3, K=2650.5, n=0.187, K_p=3.5)
+
+    assert np.isclose(notch_approximation_law.stress_secondary_branch(delta_load), delta_stress, rtol=1e-3)
+    assert np.isclose(notch_approximation_law.strain_secondary_branch(delta_stress, None), delta_strain, rtol=1e-3)
+    assert np.isclose(notch_approximation_law.load_secondary_branch(delta_stress), delta_load, rtol=1e-3)
 
 
 def test_extended_neuber_example_no_binning_vectorized():

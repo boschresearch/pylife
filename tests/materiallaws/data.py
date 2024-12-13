@@ -417,8 +417,8 @@ expected_matrix_AST_171 = pd.DataFrame(
     ]
 )
 
-# matrix AST on page 162, chapter 3.4.1
-expected_matrix_AST_162_seeger_beste = pd.DataFrame(
+# matrix AST on page 180, chapter 3.5.1
+expected_matrix_AST_180_seeger_beste = pd.DataFrame(
     index=pd.Index(np.arange(1, 200+1), name="class_index"),
     columns=["delta_load", "delta_strain", "delta_stress"],
     data=[
@@ -625,8 +625,8 @@ expected_matrix_AST_162_seeger_beste = pd.DataFrame(
     ]
 )
 
-# matrix AST on page 171, chapter 3.4.2
-expected_matrix_AST_171_seeger_beste = pd.DataFrame(
+# matrix AST on page 189, chapter 3.5.2
+expected_matrix_AST_189_seeger_beste = pd.DataFrame(
     index=pd.Index(np.arange(1, 200+1), name="class_index"),
     columns=["delta_load", "delta_strain", "delta_stress"],
     data=[

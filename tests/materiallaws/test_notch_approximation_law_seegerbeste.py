@@ -32,7 +32,7 @@ from .data import *
     (176.057, 8.71e-4, 172.639),
     (359.3, 0.0019, 283.86)
 ])
-def test_seeger_beste_example_1(load, strain, stress):
+def test_seeger_beste_primary_example_1(load, strain, stress):
     """ example under 2.7.1, p.74 of FKM nonlinear "Akademisches Beispiel" """
     notch_approximation_law = SeegerBeste(E=206e3, K=1184, n=0.187, K_p=3.5)
 
@@ -41,11 +41,19 @@ def test_seeger_beste_example_1(load, strain, stress):
     assert np.isclose(notch_approximation_law.load(stress), load, rtol=1e-1)
 
 
-    # matrix AST on page 162, chapter 3.4.1
-    # pd.testing.assert_frame_equal(
-    #     binned_notch_approximation_law._lut_secondary_branch, expected_matrix_AST_162_seeger_beste, rtol=1e-3, atol=1e-5)
+@pytest.mark.parametrize('delta_load, delta_strain, delta_stress', [
+    (100.59, 0.000488, 100.568),
+    (301.76, 0.001466, 295.844),
+    (499.34, 0.002456, 449.183),
+    (700.52, 0.003605, 559.407),
+]) # values from matrix AST in FKM guideline nonlinear on page 180, chapter 3.5.1
+def test_seeger_beste_secondary_example_1(delta_load, delta_strain, delta_stress):
+    """ example under 2.7.1, p.74 of FKM nonlinear "Akademisches Beispiel" """
+    notch_approximation_law = SeegerBeste(E=206e3, K=1184, n=0.187, K_p=3.5)
 
-    # assert np.isclose(binned_notch_approximation_law._lut_primary_branch.load.max(), maximum_absolute_load)
+    assert np.isclose(notch_approximation_law.stress_secondary_branch(delta_load), delta_stress, rtol=1e-3)
+    assert np.isclose(notch_approximation_law.strain_secondary_branch(delta_stress, None), delta_strain, rtol=1e-3)
+    assert np.isclose(notch_approximation_law.load_secondary_branch(delta_stress), delta_load, rtol=1e-3)
 
 
 @pytest.mark.parametrize('load, strain, stress', [
@@ -62,9 +70,20 @@ def test_seeger_beste_example_2(load, strain, stress):
     assert np.isclose(notch_approximation_law.load(stress), load, rtol=1e-1)
 
 
-    # # matrix AST on page 171, chapter 3.4.2
-    # pd.testing.assert_frame_equal(
-    #     binned_notch_approximation_law._lut_secondary_branch, expected_matrix_AST_171_seeger_beste, rtol=2e-3, atol=1e-5)
+@pytest.mark.parametrize('delta_load, delta_strain, delta_stress', [
+    (101.3, 0.000492, 101.3),
+    (496.37, 0.00241, 495.095),
+    (1002.87, 0.004879, 960.634),
+    (1499.24, 0.007441, 1304.533),
+    (2005.74, 0.010471, 1560.847),
+]) # values from matrix AST in FKM guideline nonlinear on page 189, chapter 3.5.2
+def test_seeger_beste_secondary_example_2(delta_load, delta_strain, delta_stress):
+    """ example under 2.7.1, p.74 of FKM nonlinear "Akademisches Beispiel" """
+    notch_approximation_law = SeegerBeste(E=206e3, K=2650.5, n=0.187, K_p=3.5)
+
+    assert np.isclose(notch_approximation_law.stress_secondary_branch(delta_load), delta_stress, rtol=1e-3)
+    assert np.isclose(notch_approximation_law.strain_secondary_branch(delta_stress, None), delta_strain, rtol=1e-3)
+    assert np.isclose(notch_approximation_law.load_secondary_branch(delta_stress), delta_load, rtol=1e-3)
 
 
 def test_seeger_beste_example_no_binning():
