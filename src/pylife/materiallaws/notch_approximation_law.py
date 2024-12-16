@@ -80,12 +80,50 @@ class NotchApproximationLawBase:
         self.K_prime = value
 
     def primary(self, load):
+        """Calculate stress and strain for primary branch.
+
+        Parameters
+        ----------
+        load : array-like
+            The load for which the stress and strain are to be calculated
+
+        Returns
+        -------
+        stress strain : ndarray
+            The resulting stress strain data.
+
+            If the argument is scalar, the resulting array is of the strucuture
+            ``[<σ>, <ε>]``
+
+            If the argument is an 1D-array with length `n`the resulting array is of the
+            structure ``[[<σ1>, <σ2>, <σ3>, ... <σn>], [<ε1>, <ε2>, <ε3>, ... <εn>]]``
+
+        """
         load = np.asarray(load)
         stress = self.stress(load)
         strain = self.strain(stress)
         return np.stack([stress, strain], axis=len(load.shape))
 
     def secondary(self, delta_load):
+        """Calculate stress and strain for secondary branch.
+
+        Parameters
+        ----------
+        load : array-like
+            The load for which the stress and strain are to be calculated
+
+        Returns
+        -------
+        stress strain : ndarray
+            The resulting stress strain data.
+
+            If the argument is scalar, the resulting array is of the strucuture
+            ``[<σ>, <ε>]``
+
+            If the argument is an 1D-array with length `n`the resulting array is of the
+            structure ``[[<σ1>, <σ2>, <σ3>, ... <σn>], [<ε1>, <ε2>, <ε3>, ... <εn>]]``
+
+        """
         delta_load = np.asarray(delta_load)
         delta_stress = self.stress_secondary_branch(delta_load)
         delta_strain = self.strain_secondary_branch(delta_stress)
