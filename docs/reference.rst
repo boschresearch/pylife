@@ -16,8 +16,7 @@ Stress
    stress/index
    stress/equistress
    stress/rainflow
-   stress/load_collective
-   stress/load_histogram
+   stress/collective
    stress/stresssignal
    stress/timesignal
    stress/frequencysignal
