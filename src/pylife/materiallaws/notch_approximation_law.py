@@ -17,13 +17,15 @@
 __author__ = ["Benjamin Maier"]
 __maintainer__ = __author__
 
+from abc import ABC, abstractmethod
+
 import numpy as np
 from scipy import optimize
 import pandas as pd
 
 import pylife.materiallaws.rambgood
 
-class NotchApproximationLawBase:
+class NotchApproximationLawBase(ABC):
     """This is a base class for any notch approximation law, e.g., the extended Neuber and the Seeger-Beste laws.
 
     It initializes the internal variables used by the derived classes and provides getters and setters.
@@ -78,6 +80,30 @@ class NotchApproximationLawBase:
     def K(self, value):
         """Set the strain hardening coefficient"""
         self.K_prime = value
+
+    @abstractmethod
+    def load(self, load, *, rtol=1e-4, tol=1e-4):
+        ...
+
+    @abstractmethod
+    def stress(self, load, *, rtol=1e-4, tol=1e-4):
+        ...
+
+    @abstractmethod
+    def strain(self, load):
+        ...
+
+    @abstractmethod
+    def load_secondary_branch(self, load, *, rtol=1e-4, tol=1e-4):
+        ...
+
+    @abstractmethod
+    def stress_secondary_branch(self, load, *, rtol=1e-4, tol=1e-4):
+        ...
+
+    @abstractmethod
+    def strain_secondary_branch(self, load):
+        ...
 
     def primary(self, load):
         """Calculate stress and strain for primary branch.
