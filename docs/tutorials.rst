@@ -14,8 +14,8 @@ computer, you can use `MyBinder
 .. toctree::
    :maxdepth: 1
 
-   tutorials/woehler_curve.nblink
-   tutorials/load_collective.nblink
-   tutorials/stress-strength.rst
-   demos/fkm_nonlinear.nblink
-   demos/fkm_nonlinear_full.nblink
+   tutorials/woehler_curve
+   tutorials/load_collective
+   tutorials/stress-strength
+   demos/fkm_nonlinear
+   demos/fkm_nonlinear_full

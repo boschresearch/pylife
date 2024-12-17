@@ -14,6 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+There are two ways to deal with a load collective.
+
+* :class:`~pylife.stress.LoadCollective` lets you keep every load hysteresis in
+  and then calculate the amplitude, meanstress and damage for each and every
+  hyteresis indivudually.
+
+* :class:`~pylife.stress.LoadHistogram` keeps the load information in a binned
+  histogram.  That means that not each and every hystresis is stored
+  individually but there are bin classes for the load levels the hysteresis is
+  originating from and one for the levels the hysteresis is open.
+
+This :doc:`tutorial </tutorials/load_collective>` shows the difference and how
+to use the two.
+
+"""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
