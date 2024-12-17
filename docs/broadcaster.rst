@@ -147,6 +147,132 @@ example the the calls to the :class:`pylife.Broadcaster` are done inside
 You do need to deal with the :class:`pylife.Broadcaster` when you implement new
 calculation methods.  Let's go through an example.
 
-.. todo::
+Lets assume we have a collective of seasonal flood events on the river Vitava
+in Prague.  This is an oversimplified damage model, which assumes that we
+multiply the water level of a flood event with a sensitivity value of a bridge
+to calculate the damage that the flood events causes to the bridge.
 
-   **Sorry**, this is still to be written.
+.. jupyter-execute::
+
+    from pylife import Broadcaster
+
+    flood_events = pd.Series(
+        [10., 13., 9., 5.],
+        name="water_level",
+        index=pd.Index(
+            ["spring", "summer", "autumn", "winter"],
+            name="flood_event"
+        )
+    )
+    flood_events
+
+Lets assume some sensitivity value for the bridges of Prague.
+
+.. jupyter-execute::
+
+    sensitivities = pd.Series([2.3, 0.7, 2.7, 6.4, 3.9, 0.8],
+        name="sensitivity",
+        index=pd.Index(
+            [
+                "Palackého most",
+                "Jiraskův most",
+                "Most Legií",
+                "Karlův most",
+                "Mánesův most",
+                "Centrův most"
+            ],
+            name="bridge"
+        )
+    )
+    sensitivities
+
+
+Now we want to multiply the water levels with the sensitivity value in order
+to get a damage value:
+
+.. jupyter-execute::
+
+    damage = flood_events * sensitivities
+    damage
+
+As we can see, this multiplication failed, as the indices of our two series do
+not match.  First we need to broadcast the two indices to a mapped hierarchical
+index.
+
+.. jupyter-execute::
+
+    sens_mapped, flood_mapped = Broadcaster(flood_events).broadcast(sensitivities)
+
+Now we have a mapped flood values
+
+.. jupyter-execute::
+
+    flood_mapped
+
+and the mapped sensitivity values
+
+.. jupyter-execute::
+
+    sens_mapped
+
+These mapped series we can multiply.
+
+.. jupyter-execute::
+
+    damage = flood_mapped * sens_mapped
+    damage
+
+Now we can see for every bridge for every flood event the expected damage to
+every bridge. We can now reduce this map to get the total damage of every
+bridge during all flood events:
+
+.. jupyter-execute::
+
+    damage.groupby("bridge").sum()
+
+
+Now let's assume that we have for each bridge some kind of protection measure
+that reduces the damage.
+
+.. jupyter-execute::
+
+    protection = pd.Series(
+        [10.0, 15.0, 12.0, 25.0, 13.0, 17.0],
+        name="dwell_time",
+        index=pd.Index(
+            [
+                "Palackého most",
+                "Jiraskův most",
+                "Most Legií",
+                "Karlův most",
+                "Mánesův most",
+                "Centrův most"
+            ],
+            name="bridge"
+        )
+    )
+    protection
+
+We also need divide the damage value by the protection value. Therefore we need
+to broadcast the protection values to the damage values
+
+.. jupyter-execute::
+
+    protection_mapped, _ = Broadcaster(damage).broadcast(protection)
+    protection_mapped
+
+As you can see, the broadcaster recognized the common index name "bridge" and
+did not spread it again.
+
+Now we can easily multiply the mapped protection values to the damage.
+
+.. jupyter-execute::
+
+    damage_with_protection = damage / protection
+
+
+And we can again easily calculate the damage for a certain bridge
+
+.. jupyter-execute::
+
+    damage_with_protection.groupby("bridge").sum()
