@@ -223,7 +223,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         self._store_recordings_for_history(record, record_vals, turning_point_idx, hysts)
 
         results = self._process_recording(load_turning_points_rep, record_vals, hysts)
-        results_min, results_max, epsilon_min_LF, epsilon_max_LF = results
+        results_min, results_max = results
 
         self._update_residuals(record_vals, turning_point_idx, load_turning_points_rep)
 
@@ -234,14 +234,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         is_zero_mean_stress_and_strain = (hysts[:, 0] == MEMORY_3).tolist()
 
         self._recorder.record_values_fkm_nonlinear(
-            loads_min=results_min["loads_min"],
-            loads_max=results_max["loads_max"],
-            S_min=results_min["S_min"],
-            S_max=results_max["S_max"],
-            epsilon_min=results_min["epsilon_min"],
-            epsilon_max=results_max["epsilon_max"],
-            epsilon_min_LF=epsilon_min_LF,
-            epsilon_max_LF=epsilon_max_LF,
+            results_min, results_max,
             is_closed_hysteresis=is_closed_hysteresis,
             is_zero_mean_stress_and_strain=is_zero_mean_stress_and_strain,
             run_index=self._run_index
@@ -433,14 +426,11 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         result_len = len(hysts) * self._group_size
 
-        results_min = np.zeros((result_len, 3))
+        results_min = np.zeros((result_len, 4))
         results_min_idx = np.zeros((result_len, signal_index_num), dtype=np.int64)
 
-        results_max = np.zeros((result_len, 3))
+        results_max = np.zeros((result_len, 4))
         results_max_idx = np.zeros((result_len, signal_index_num), dtype=np.int64)
-
-        epsilon_min_LF = np.zeros(result_len)
-        epsilon_max_LF = np.zeros(result_len)
 
         for i, hyst in enumerate(hysts):
             idx = (hyst[FROM:CLOSE] + start) * self._group_size
@@ -457,27 +447,27 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
             beg = i * self._group_size
             end = beg + self._group_size
 
-            results_min[beg:end] = min_val[:, :3]
-            results_max[beg:end] = max_val[:, :3]
+            results_min[beg:end, :3] = min_val[:, :3]
+            results_max[beg:end, :3] = max_val[:, :3]
 
             results_min_idx[beg:end] = min_idx
             results_max_idx[beg:end] = max_idx
 
-            epsilon_min_LF[beg:end] = min_val[:, EPS_MIN_LF]
-            epsilon_max_LF[beg:end] = max_val[:, EPS_MAX_LF]
+            results_min[beg:end, -1] = min_val[:, EPS_MIN_LF]
+            results_max[beg:end, -1] = max_val[:, EPS_MAX_LF]
 
         results_min = pd.DataFrame(
             results_min,
-            columns=["loads_min", "S_min", "epsilon_min"],
+            columns=["loads_min", "S_min", "epsilon_min", "epsilon_min_LF"],
             index=pd.MultiIndex.from_arrays(results_min_idx.T, names=signal_index_names)
         )
         results_max = pd.DataFrame(
             results_max,
-            columns=["loads_max", "S_max", "epsilon_max"],
+            columns=["loads_max", "S_max", "epsilon_max", "epsilon_max_LF"],
             index=pd.MultiIndex.from_arrays(results_max_idx.T, names=signal_index_names)
         )
 
-        return results_min, results_max, pd.Series(epsilon_min_LF), pd.Series(epsilon_max_LF)
+        return results_min, results_max
 
     def _adjust_samples_and_flush_for_hcm_first_run(self, samples):
 
