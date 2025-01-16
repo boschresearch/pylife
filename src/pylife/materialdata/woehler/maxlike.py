@@ -140,12 +140,7 @@ class MaxLikeFull(Elementary):
             maxfun=1e4,
         )[0]
 
-        # TODO: Change to following line when python 3.8 is dropped
-        #r esult = fixed_prms | dict(zip(prms_to_optimize, optimized_prms))
-
-        result = {}
-        result.update(fixed_prms)
-        result.update(zip(prms_to_optimize, optimized_prms))
+        result = fixed_prms | dict(zip(prms_to_optimize, optimized_prms))
 
         return self.__make_parameters(result)
 
@@ -153,11 +148,5 @@ class MaxLikeFull(Elementary):
         return {k: np.abs(v) for k, v in params.items()}
 
     def __likelihood_wrapper(self, var_args, var_keys, fix_args):
-        # TODO: Change to following line when python 3.8 is dropped
-        # args = self.__make_parameters(fix_args | dict(zip(var_keys, var_args)))
-
-        args = {}
-        args.update(fix_args)
-        args.update(zip(var_keys, var_args))
-        args = self.__make_parameters(args)
+        args = self.__make_parameters(fix_args | dict(zip(var_keys, var_args)))
         return -self._lh.likelihood_total(**args)

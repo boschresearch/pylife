@@ -367,15 +367,12 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         if axis is None:
             return LoadHistogram(make_histogram(range_mean))
 
-        # TODO: Warning filter can be dropped as soon as python-3.8 support is dropped
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=FutureWarning)
-            result = pd.Series(
-                range_mean.groupby(self._levels_from_axis(axis))
-                .apply(make_histogram)
-                .stack(['range', 'mean']),
-                name="cycles",
-            )
+        result = pd.Series(
+            range_mean.groupby(self._levels_from_axis(axis))
+            .apply(make_histogram)
+            .stack(['range', 'mean'], future_stack=True),
+            name="cycles",
+        )
 
         return LoadHistogram(result)
 

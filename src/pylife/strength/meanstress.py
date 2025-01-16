@@ -241,14 +241,11 @@ class HaighDiagram(PylifeSignal):
 
         all_but_R = [n or 0 for n in self._obj.index.names if n != 'R']
 
-        # TODO: remove once we drop python 3.8 support
-        include_groups = {} if pd.__version__ < "2.2" else {'include_groups': False}
-
         return (
             self
             ._obj.index.to_frame(index=False)
             .groupby(all_but_R)
-            .apply(lambda g: check_func(g.set_index('R').index), **include_groups)
+            .apply(lambda g: check_func(g.set_index('R').index), include_groups=False)
             .any()
         )
 
@@ -458,9 +455,6 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
 
         range_itv_idx, means_itg_idx = resulting_intervals()
 
-        # TODO: remove once we drop python 3.8 support
-        future_stack = {} if pd.__version__ < "2.1" else {'future_stack': True}
-
         if len(self._remaining_names) > 0:
             remaining_idx = self._obj.index.to_frame(index=False).groupby(self._remaining_names).first().index
             result = (
@@ -469,7 +463,7 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
             )
             result.index = remaining_idx
             result.columns = pd.MultiIndex.from_arrays([result.columns, means_itg_idx])
-            result = result.stack(['range', 'mean'], **future_stack).reorder_levels(
+            result = result.stack(['range', 'mean'], future_stack=True).reorder_levels(
                 ['range', 'mean'] + self._remaining_names
             )
         else:

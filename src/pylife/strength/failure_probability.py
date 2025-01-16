@@ -153,8 +153,4 @@ class FailureProbability:
 
         strength_cdf = norm.cdf(load_values, loc=self.s_50, scale=self.s_std)
 
-
-        # TODO: remove this once we drop python 3.8 support
-        trapezoid = np.trapezoid if hasattr(np, 'trapezoid') else np.trapz
-
-        return trapezoid(load_pdf * strength_cdf, x = load_values)
+        return np.trapezoid(load_pdf * strength_cdf, x = load_values)
