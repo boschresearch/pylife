@@ -181,6 +181,7 @@ class TestFKMMemory1Inner(unittest.TestCase):
             rtol=1e-2,
         )
 
+
     def test_interpolation(self):
         df = self._detector.interpolated_stress_strain_data(load_segment=5, n_points_per_branch=5)
         expected = pd.DataFrame(
@@ -1087,3 +1088,95 @@ def test_history_guideline_at_split(split_point):
     ).set_index(["load_segment", "load_step", "run_index", "turning_point", "hyst_from", "hyst_to", "hyst_close"])
 
     pd.testing.assert_frame_equal(df, expected, rtol=1e-1)
+
+
+def test_epsilon_max_LF_unclosed_hysteresis():
+    # Fig 2.3 FKM NL Guideline
+
+    signal = pd.Series([0.0, -100.0, 100.0, 0.0, 200.0, 100.0])
+    signal.index.name = "load_step"
+
+    recorder = RFR.FKMNonlinearRecorder()
+    E = 1.0    # [MPa] Young's modulus
+    K = 1e6     # 1184 [MPa]
+    n = 1.0    # [-]
+    K_p = 1.0    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    # initialize notch approximation law
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
+
+    detector = FKMNonlinearDetector(recorder=recorder, notch_approximation_law=extended_neuber)
+
+    detector.process(signal)
+
+    print(detector.recorder.loads_min)
+    print(detector.recorder.loads_max)
+    print(detector.recorder.epsilon_min_LF)
+    print(detector.recorder.epsilon_max_LF)
+
+    print(detector.recorder.collective)
+    print(detector.history())
+
+    print([np.diff(recorder.epsilon_min_LF) <= 0.0])
+    assert np.all([np.diff(recorder.epsilon_min_LF) <= 0.0])
+
+    print([np.diff(recorder.epsilon_max_LF) >= 0.0])
+    assert np.all([np.diff(recorder.epsilon_max_LF) >= 0.0])
+
+
+def test_epsilon_min_LF_flip():
+    signal = pd.Series([10.0, -1.0, 260.0, -250.0, 60.0, -280.0, -100.0])
+    signal.index.name = "load_step"
+
+    recorder = RFR.FKMNonlinearRecorder()
+    E = 1.0    # [MPa] Young's modulus
+    K = 1e6     # 1184 [MPa]
+    n = 1.0    # [-]
+    K_p = 1.0    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    # initialize notch approximation law
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
+
+    detector = FKMNonlinearDetector(recorder=recorder, notch_approximation_law=extended_neuber)
+
+    detector.process(signal)
+
+    print(detector.recorder.loads_min)
+    print(detector.recorder.loads_max)
+    print(detector.recorder.epsilon_min_LF)
+    print(detector.recorder.epsilon_max_LF)
+
+    print(detector.recorder.collective)
+    print(detector.history())
+
+    print([np.diff(recorder.epsilon_min_LF) <= 0.0])
+    assert np.all([np.diff(recorder.epsilon_min_LF) <= 0.0])
+
+
+def test_epsilon_max_LF_flip():
+    signal = -1.0 * pd.Series([10.0, -1.0, 260.0, -250.0, 60.0, -280.0, -100.0])
+    signal.index.name = "load_step"
+
+    recorder = RFR.FKMNonlinearRecorder()
+    E = 1.0    # [MPa] Young's modulus
+    K = 1e6     # 1184 [MPa]
+    n = 1.0    # [-]
+    K_p = 1.0    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    # initialize notch approximation law
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
+
+    detector = FKMNonlinearDetector(recorder=recorder, notch_approximation_law=extended_neuber)
+
+    detector.process(signal)
+
+    print(detector.recorder.loads_min)
+    print(detector.recorder.loads_max)
+    print(detector.recorder.epsilon_min_LF)
+    print(detector.recorder.epsilon_max_LF)
+
+    print(detector.recorder.collective)
+    print(detector.history())
+
+    print([np.diff(recorder.epsilon_max_LF) >= 0.0])
+    assert np.all([np.diff(recorder.epsilon_max_LF) >= 0.0])

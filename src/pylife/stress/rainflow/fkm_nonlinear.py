@@ -405,7 +405,11 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         def turn_memory_3(values, index):
             abs_point = np.abs(values[0])
-            return (-abs_point, abs_point, index[0], index[0])
+            point_min = -abs_point
+            point_max = abs_point
+            point_min[:, EPS_MIN_LF:] = values[1][:, EPS_MIN_LF:]
+            point_max[:, EPS_MIN_LF:] = values[1][:, EPS_MIN_LF:]
+            return (point_min, point_max, index[0], index[0])
 
         memory_functions = [turn_memory_3, turn_memory_1_2]
 
@@ -435,13 +439,17 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         for i, hyst in enumerate(hysts):
             idx = (hyst[FROM:CLOSE] + start) * self._group_size
 
-            beg0, beg1 = idx[0], idx[1]
-            end0, end1 = beg0 + self._group_size, beg1 + self._group_size
+            hyst_type = hyst[IS_CLOSED]
 
-            values = value_array[beg0:end0], value_array[beg1:end1]
+            beg0, beg1 = idx[0], idx[1]
+            vbeg1 = beg1 - self._group_size if hyst_type == MEMORY_3 else beg1
+
+            end0, end1 = beg0 + self._group_size, beg1 + self._group_size
+            vend1 = vbeg1 + self._group_size
+
+            values = value_array[beg0:end0], value_array[vbeg1:vend1]
             index = index_array[beg0:end0], index_array[beg1:end1]
 
-            hyst_type = hyst[IS_CLOSED]
             min_val, max_val, min_idx, max_idx = memory_functions[hyst_type](values, index)
 
             beg = i * self._group_size

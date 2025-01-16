@@ -195,6 +195,14 @@ class FKMNonlinearRecorder(AbstractRecorder):
         return self._results_max["epsilon_max"]
 
     @property
+    def epsilon_min_LF(self):
+        return self._results_min["epsilon_min_LF"]
+
+    @property
+    def epsilon_max_LF(self):
+        return self._results_max["epsilon_max_LF"]
+
+    @property
     def S_a(self):
         """1-D numpy array containing the stress amplitudes of the recorded hystereses."""
         return 0.5 * (np.array(self.S_max) - np.array(self.S_min))
