@@ -12,10 +12,7 @@ env:
 jobs:
   build_wheels:
     name: Build wheels on for various systems
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest] #, windows-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
@@ -48,14 +45,16 @@ jobs:
         with:
           name: wheel
           path: dist/
-      - uses: actions/setup-python@v4
-        name: Install Python
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: '3.12'
+      - name: Set up Python
+        run: uv python install
       - name: Install wheel
-        run: pip install $(ls -1 dist/*.whl)
+        run: uv pip install $(ls -1 dist/*.whl)
       - name: Install pytest
-        run: pip install pytest pytest-cov
+        run: uv pip install pytest pytest-cov
       - name: Generate test signal
         run: python benchmarks/generate_time_signal.py
       - name: Run benchmarks
