@@ -817,6 +817,31 @@ def test_hcm_first_second(vals, num):
     assert multi_collective.to_json(indent=4) == reference
 
 
+def test_element_id():
+    vals = np.array([100., -200., 100., -250., 200., 0., 200., -200.]) * (250+6.6)/250 * 1.4
+    signal = pd.DataFrame({11: vals, 12: 2*vals, 13: 3*vals, 'load_step': range(len(vals))}).set_index('load_step').stack()
+    signal.index.names = ['load_step', 'element_id']
+
+    E = 206e3    # [MPa] Young's modulus
+    K = 3.1148*(1251)**0.897 / (( np.min([0.338, 1033.*1251.**(-1.235)]) )**0.187)
+    #K = 2650.5   # [MPa]
+    n = 0.187    # [-]
+    K_p = 3.5    # [-] (de: Traglastformzahl) K_p = F_plastic / F_yield (3.1.1)
+
+    extended_neuber = NAL.ExtendedNeuber(E, K, n, K_p)
+
+    detector = FKMNonlinearDetector(
+        recorder=RFR.FKMNonlinearRecorder(), notch_approximation_law=extended_neuber
+    )
+    detector.process_hcm_first(signal).process_hcm_second(signal)
+
+    with open(f'tests/stress/rainflow/reference-fkm-nonlinear/reference_first_second-7.json') as f:
+        reference = f.read()
+
+    assert detector.recorder.collective.to_json(indent=4) == reference
+    assert detector.recorder.loads_max.index.names == ["load_step", "element_id"]
+
+
 @pytest.fixture
 def detector_seeger_beste():
     E = 206e3    # [MPa] Young's modulus
