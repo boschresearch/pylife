@@ -1,10 +1,28 @@
 # Contributing
 
-Want to contribute? Great! You can do so through the standard GitHub pull
-request model. For large contributions we do encourage you to file a ticket in
-the GitHub issues tracking system prior to any code development to coordinate
-with the pyLife development team early in the process. Coordinating up
-front helps to avoid frustration later on.
+Want to contribute? Great!
+
+
+## Modus operandi
+
+In principle we are using the standard GitHub pull request model. So in theory
+you could simply file a pull request to us out of the blue and we merge it. In
+practice that is not the ideal way of doing things. It is way better to get in
+contact with us, before you start coding. Coordinating up front helps to avoid
+frustration later on.
+
+The natural way for that is to use the [issue
+tracker](https://github.com/boschresearch/pylife/issues).  You can check what
+we are currently working on and what is planned and discuss it with us in the
+comments. Feel free to create your own issue if needed.
+
+If you want to contribute something bigger, it is probably a good idea to first
+start a discussion about it on the [discussion
+page](https://github.com/boschresearch/pylife/discussions).  There we can
+discuss if your contribution makes sense for pyLife and who can do what and how
+long it will take. Probably we will setup a Kanban project or find some way to
+split your contribution plan down to smaller pieces, that are better
+reviewable.
 
 ## Test driven development
 
@@ -24,13 +42,20 @@ development, i. e. follow the [Three Rules of Test Driven
 Development][rrugamba]:
 
 1. Do not change production code without writing a failing unit test
-   first. Cleanups and refactorings are not changes in that sense.
+   first. Cleanups and refactoring as well as performance optimizations are not
+   changes in that sense.
 2. Write only enough test code as is sufficient to fail.
 3. Only write or change minimal production code as is sufficient to make the
    failing test pass.
 
 We are measuring the testing coverage. Your pull request should not decrease
-the test coverage.
+the test coverage although we are not enforcing that by our CI/CD. However, we
+are manually checking during review if there are appropriate tests and we will
+reject your contribution if they are missing and you are not adding them.
+
+If you are modifying an existing test, you must deliver a very good reason for
+it in your commit message. Otherwise we will probably reject your PR as being a
+breaking change.
 
 ## Coding style
 
@@ -74,16 +99,12 @@ Pull requests must be filed against the `develop` branch, except for urgent
 bugfixes requiring a special bugfix release. Those can be filed against
 `master`.
 
-Branches should have meaningful names and whenever it makes sense use one of
-the following prefixes.
+Branches should have meaningful names. Ideally there is an issue that the
+branch addresses. Then the branch name should be prefixed with the number of
+the issue.
 
-* `bugfix/` for bugfixes, that do not change the API
-* `feature/` if a new feature is added
-* `doc/` if documentation is added or improved
-* `cleanup/` if code is cleaned or refactored without changing the behavior
-
-If your branch does not fit any of those, you can also come up with another
-appropriate prefix.
+Not that branches are meant to be short lived. That is why we don't have a
+complex branch naming policy.
 
 ## License
 
