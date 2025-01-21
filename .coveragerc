@@ -5,6 +5,7 @@ source = pylife
 omit =
      src/pylife/strength/helpers.py
      src/pylife/strength/sn_curve.py
+     src/pylife/materialdata/woehler/bayesian.py
 
 [paths]
 source =
