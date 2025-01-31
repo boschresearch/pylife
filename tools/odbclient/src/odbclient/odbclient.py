@@ -129,17 +129,20 @@ class OdbClient:
     """
 
     def __init__(self, odb_file, abaqus_bin=None, python_env_path=None):
-        self._proc = None
-        env = os.environ
-        env['PYTHONPATH'] = _guess_pythonpath(python_env_path)
-
-        lock_file_exists = os.path.isfile(os.path.splitext(odb_file)[0] + '.lck')
-
         abaqus_bin = abaqus_bin or _guess_abaqus_bin()
 
-        self._proc = sp.Popen([abaqus_bin, 'python', '-m', 'odbserver', odb_file],
-                              stdout=sp.PIPE, stdin=sp.PIPE, stderr=sp.PIPE,
-                              env=env)
+        self._proc = None
+
+        env = os.environ | {"PYTHONPATH": _guess_pythonpath(python_env_path, abaqus_bin)}
+        lock_file_exists = os.path.isfile(os.path.splitext(odb_file)[0] + '.lck')
+
+        self._proc = sp.Popen(
+            [abaqus_bin, 'python', '-m', 'odbserver', odb_file],
+            stdout=sp.PIPE,
+            stdin=sp.PIPE,
+            stderr=sp.PIPE,
+            env=env,
+        )
 
         if lock_file_exists:
             self._gulp_lock_file_warning()
@@ -491,9 +494,9 @@ class OdbClient:
         pickle_data = b''
         while True:
             line = self._proc.stdout.readline().rstrip() + b'\n'
-            pickle_data += line
-            if line == b'.\n':
+            if line == b'\n':
                 break
+            pickle_data += line
         return pickle.loads(pickle_data, encoding='bytes')
 
     def __del__(self):
@@ -555,14 +558,29 @@ def _guess_abaqus_bin_windows():
     raise OSError("Could not guess abaqus binary path! Please submit as abaqus_bin parameter!")
 
 
-def _guess_pythonpath(python_env_path):
+def _guess_pythonpath(python_env_path, abaqus_bin):
     python_env_path = _guess_python_env_path(python_env_path)
     if python_env_path is None:
         raise OSError("No odbserver environment found.\n"
                       "Please see https://github.com/boschresearch/pylife/blob/develop/tools/odbserver/README.md")
     if sys.platform == 'win32':
         return os.path.join(python_env_path, 'lib', 'site-packages')
-    return os.path.join(python_env_path, 'lib', 'python2.7', 'site-packages')
+
+    python_version = _determine_server_python_version(abaqus_bin)
+    return os.path.join(python_env_path, 'lib', f'python{python_version}', 'site-packages')
+
+
+def _determine_server_python_version(abaqus_bin):
+    proc = sp.Popen(
+        [abaqus_bin, 'python', '--version'],
+        stdout=sp.PIPE,
+        stdin=sp.PIPE,
+        stderr=sp.PIPE,
+    )
+    msg = proc.stdout.readline() or proc.stderr.readline()
+    version_string = msg.decode().split(" ")[1]
+    return version_string[:version_string.rfind(".")]
+
 
 
 def _guess_python_env_path(python_env_path):

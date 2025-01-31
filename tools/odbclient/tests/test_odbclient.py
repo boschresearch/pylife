@@ -23,6 +23,8 @@ need an Abaqus installation to run.
 import os
 import pytest
 import json
+import shutil
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -32,8 +34,23 @@ import odbclient
 from odbclient.odbclient import OdbServerError
 
 @pytest.fixture
-def client():
-    return odbclient.OdbClient('tests/beam_3d_hex_quad.odb')
+def datapath():
+    base = os.path.dirname(__file__)
+
+    def join_path(filename):
+        return os.path.join(base, filename)
+
+    return join_path
+
+
+@pytest.fixture(params=["2022", "2023", "2024"])
+def client(datapath, request):
+    abaqus_version = request.param
+    abaqus_bin = shutil.which(f"abaqus{abaqus_version}")
+
+    python_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}")
+    odb_file = datapath(f"beam_3d_hex_quad-{abaqus_version}.odb")
+    return odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path)
 
 
 def test_not_existing_odbserver_env():
@@ -54,8 +71,9 @@ def test_odbclient_invalid_instance(client):
     with pytest.raises(KeyError):
         client.node_coordinates("FOO-1-1")
 
-def test_odbclient_node_coordinates(client):
-    expected = pd.read_csv('tests/node_coordinates.csv', index_col='node_id')
+
+def test_odbclient_node_coordinates(client, datapath):
+    expected = pd.read_csv(datapath('node_coordinates.csv'), index_col='node_id')
     pd.testing.assert_frame_equal(client.node_coordinates('PART-1-1'), expected)
 
 
@@ -106,10 +124,8 @@ def test_odbclient_elset_names_invalid_instance_name(client):
         client.elset_names('nonexistent')
 
 
-def test_element_connectivity(client):
-    expected = pd.read_json(
-        'tests/connectivity.json', orient="index"
-    )
+def test_element_connectivity(client, datapath):
+    expected = pd.read_json(datapath('connectivity.json'), orient="index")
     expected.index.names = ["element_id"]
 
     result = client.element_connectivity('PART-1-1')
@@ -141,8 +157,8 @@ def test_variable_names(client):
     np.testing.assert_array_equal(result, expected)
 
 
-def test_variable_stress_element_nodal(client):
-    expected = pd.read_csv('tests/stress_element_nodal.csv', index_col=['node_id', 'element_id'])
+def test_variable_stress_element_nodal(client, datapath):
+    expected = pd.read_csv(datapath('stress_element_nodal.csv'), index_col=['node_id', 'element_id'])
     result = client.variable('S', 'PART-1-1', 'Load', 1)
 
     pd.testing.assert_frame_equal(result, expected)
@@ -160,17 +176,23 @@ def test_variable_invalid_instance_name(client):
         client.variable('S', 'nonexistent', 'Load', 1)
 
 
-def test_variable_stress_integration_point(client):
-    expected = pd.read_csv('tests/stress_integration_point.csv',
-                           index_col=['element_id', 'ipoint_id'])
+def test_variable_stress_integration_point(client, datapath):
+    expected = pd.read_csv(
+        datapath('stress_integration_point.csv'), index_col=['element_id', 'ipoint_id']
+    )
     result = client.variable('S', 'PART-1-1', 'Load', 1, position='INTEGRATION POINTS')
-    result.to_csv('tests/stress_integration_point.csv')
+    result.to_csv(datapath('stress_integration_point.csv'))
     pd.testing.assert_frame_equal(result, expected)
 
 
-@pytest.fixture
-def client_history():
-    return odbclient.OdbClient('tests/history_output_test.odb')
+@pytest.fixture(params=["2022", "2023", "2024"])
+def client_history(datapath, request):
+    abaqus_version = request.param
+    abaqus_bin = shutil.which(f"abaqus{abaqus_version}")
+
+    python_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}")
+    odb_file = datapath(f"history_output_test-{abaqus_version}.odb")
+    return odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path)
 
 
 def test_history_region_empty(client):
@@ -202,15 +224,14 @@ def test_history_outputs(client_history):
         'CUR3',
     ]
 
+
 def test_history_output_values(client_history):
     assert client_history.history_output_values("Step-1", 'Element ASSEMBLY.1', 'CTF1').array[1] == pytest.approx(0.09999854117631912)
 
 
 def test_history_region_description(client_history):
-    assert (
-        client_history.history_region_description("Step-1", 'Element ASSEMBLY.1')
-        == "Output at assembly ASSEMBLY instance ASSEMBLY element 1"
-    )
+    result = client_history.history_region_description("Step-1", 'Element ASSEMBLY.1')
+    assert result == "Output at assembly ASSEMBLY instance ASSEMBLY element 1"
 
 
 def test_history_info(client_history):

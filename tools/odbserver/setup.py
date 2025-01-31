@@ -16,7 +16,7 @@ def setup_package():
     needs_sphinx = {'build_sphinx', 'upload_docs'}.intersection(sys.argv)
     sphinx = ['sphinx'] if needs_sphinx else []
     setup(
-        python_requires = "<3",
+#        python_requires = "<3,=3.10",
         use_scm_version = {
             "root": "../..",
             "relative_to": __file__,

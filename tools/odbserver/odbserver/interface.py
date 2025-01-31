@@ -18,9 +18,10 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 import sys
+
 import numpy as np
 import odbAccess as ODB
-import json
+
 
 class OdbInterface:
 
@@ -46,7 +47,7 @@ class OdbInterface:
     def nodes(self, instance_name, node_set_name):
         instance = self._instance_or_rootasm(instance_name)
 
-        if node_set_name == b'':
+        if node_set_name == '':
             nodes = instance.nodes
         elif node_set_name in instance.nodeSets.keys():
             nodes = instance.nodeSets[node_set_name].nodes
@@ -67,7 +68,7 @@ class OdbInterface:
     def connectivity(self, instance_name, element_set_name):
         instance = self._instance_or_rootasm(instance_name)
 
-        if element_set_name == b'':
+        if element_set_name == '':
             elements = instance.elements
         elif element_set_name in instance.elementSets.keys():
             elements = instance.elementSets[element_set_name].elements
@@ -101,7 +102,7 @@ class OdbInterface:
         except Exception as e:
             return e
 
-        nodes = node_set.nodes[0] if instance_name == b'' else node_set.nodes
+        nodes = node_set.nodes[0] if instance_name == '' else node_set.nodes
 
         return np.array([node.label for node in nodes], dtype=np.int32)
 
@@ -113,7 +114,7 @@ class OdbInterface:
         except Exception as e:
             return e
 
-        elements = element_set.elements[0] if instance_name == b'' else element_set.elements
+        elements = element_set.elements[0] if instance_name == '' else element_set.elements
 
         return np.array([element.label for element in elements], dtype=np.int32)
 
@@ -179,7 +180,7 @@ class OdbInterface:
         instance = self._asm.instances[instance_name]
 
         region = None
-        if node_set_name != b'':
+        if node_set_name != '':
             if node_set_name in instance.nodeSets.keys():
                 node_set = instance.nodeSets[node_set_name]
             elif node_set_name in self._asm.nodeSets.keys():
@@ -188,7 +189,7 @@ class OdbInterface:
                 raise KeyError(node_set_name)
             region = node_set
 
-        if element_set_name != b'':
+        if element_set_name != '':
             if element_set_name in instance.elementSets.keys():
                 element_set = instance.elementSets[element_set_name]
             elif element_set_name in self._asm.elementSets.keys():
@@ -238,7 +239,7 @@ class OdbInterface:
         return (complabels, index_labels, index[:i, :], values[:i])
 
     def _instance_or_rootasm(self, instance_name):
-        if instance_name == b'':
+        if instance_name == '':
             instance = self._asm
         else:
             instance = self._asm.instances[instance_name]
@@ -365,9 +366,7 @@ class OdbInterface:
         """
         try:
            required_step = self._odb.steps[step_name]
-
            history_description = required_step.historyRegions[historyregion_name].description
-
            return history_description
 
         except Exception as e:
