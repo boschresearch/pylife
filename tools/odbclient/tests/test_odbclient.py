@@ -20,6 +20,7 @@ Note that these tests are not part of pyLife's usual CI test pipeline as they
 need an Abaqus installation to run.
 """
 
+import sys
 import os
 import pytest
 import json
@@ -47,6 +48,8 @@ def datapath():
 def client(datapath, request):
     abaqus_version = request.param
     abaqus_bin = shutil.which(f"abaqus{abaqus_version}")
+    if sys.platform == 'win32':
+        abaqus_bin = f"C:/Program Files/SIMULIA/{abaqus_version}/EstProducts/win_b64/code/bin/SMALauncher.exe"
 
     python_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}")
     odb_file = datapath(f"beam_3d_hex_quad-{abaqus_version}.odb")
@@ -189,6 +192,8 @@ def test_variable_stress_integration_point(client, datapath):
 def client_history(datapath, request):
     abaqus_version = request.param
     abaqus_bin = shutil.which(f"abaqus{abaqus_version}")
+    if sys.platform == 'win32':
+        abaqus_bin = f"C:/Program Files/SIMULIA/{abaqus_version}/EstProducts/win_b64/code/bin/SMALauncher.exe"
 
     python_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}")
     odb_file = datapath(f"history_output_test-{abaqus_version}.odb")

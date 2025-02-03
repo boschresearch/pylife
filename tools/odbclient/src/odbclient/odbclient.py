@@ -551,6 +551,9 @@ def _guess_abaqus_bin_windows():
         r"C:/Program Files/SIMULIA/2020/EstProducts/win_b64/code/bin/ABQLauncher.exe",
         r"C:/Program Files/SIMULIA/2020/Products/win_b64/code/bin/ABQLauncher.exe",
         r"C:/Program Files/SIMULIA/2021/EstProducts/win_b64/code/bin/ABQLauncher.exe",
+        r"C:/Program Files/SIMULIA/2022/EstProducts/win_b64/code/bin/SMALauncher.exe",
+        r"C:/Program Files/SIMULIA/2023/EstProducts/win_b64/code/bin/SMALauncher.exe",
+        r"C:/Program Files/SIMULIA/2024/EstProducts/win_b64/code/bin/SMALauncher.exe",
     ]
     for guess in guesses:
         if os.path.exists(guess):
