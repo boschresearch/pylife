@@ -144,10 +144,6 @@ def main():
         if isinstance(parameters, bytes):
             return parameters.decode('ascii')
 
-
-    global log
-    log = open('/tmp/server.log', 'a')
-
     def pickle_load_2():
         return pickle.load(sys.stdin)
 
