@@ -240,7 +240,90 @@ def test_history_region_description(client_history):
 
 
 def test_history_info(client_history):
-    expected = json.loads("""
-{"Output at assembly ASSEMBLY instance ASSEMBLY node 1 region RP-1": {"History Outputs": ["RF1", "RF2", "RF3", "RM1", "RM2", "RM3", "U1", "U2", "U3", "UR1", "UR2", "UR3"], "History Region": "Node ASSEMBLY.1", "Steps ": ["Step-1", "Step-2"]}, "Output at assembly ASSEMBLY instance ASSEMBLY element 1": {"History Outputs": ["CTF1", "CTF2", "CTF3", "CTM1", "CTM2", "CTM3", "CU1", "CU2", "CU3", "CUR1", "CUR2", "CUR3"], "History Region": "Element ASSEMBLY.1", "Steps ": ["Step-1", "Step-2"]}, "Output at assembly ASSEMBLY instance ASSEMBLY node 2 region SET-5": {"History Outputs": ["RF1", "RF2", "RF3", "RM1", "RM2", "RM3", "U1", "U2", "U3", "UR1", "UR2", "UR3"], "History Region": "Node ASSEMBLY.2", "Steps ": ["Step-1", "Step-2"]}, "Output at assembly ASSEMBLY": {"History Outputs": ["ALLAE", "ALLCCDW", "ALLCCE", "ALLCCEN", "ALLCCET", "ALLCCSD", "ALLCCSDN", "ALLCCSDT", "ALLCD", "ALLDMD", "ALLDTI", "ALLEE", "ALLFD", "ALLIE", "ALLJD", "ALLKE", "ALLKL", "ALLPD", "ALLQB", "ALLSD", "ALLSE", "ALLVD", "ALLWK", "ETOTAL"], "History Region": "Assembly ASSEMBLY", "Steps ": ["Step-1", "Step-2"]}}
-    """)
+    expected = {
+        "Output at assembly ASSEMBLY region Whole Model": {
+            "History Outputs": [
+                "ALLAE",
+                "ALLCCDW",
+                "ALLCCE",
+                "ALLCCEN",
+                "ALLCCET",
+                "ALLCCSD",
+                "ALLCCSDN",
+                "ALLCCSDT",
+                "ALLCD",
+                "ALLDMD",
+                "ALLDTI",
+                "ALLEE",
+                "ALLFD",
+                "ALLIE",
+                "ALLJD",
+                "ALLKE",
+                "ALLKL",
+                "ALLPD",
+                "ALLQB",
+                "ALLSD",
+                "ALLSE",
+                "ALLVD",
+                "ALLWK",
+                "ETOTAL",
+            ],
+            "History Region": "Assembly ASSEMBLY",
+            "Steps ": ["Step-1", "Step-2"],
+        },
+        "Output at assembly ASSEMBLY instance ASSEMBLY node 1 region RP-1": {
+            "History Outputs": [
+                "RF1",
+                "RF2",
+                "RF3",
+                "RM1",
+                "RM2",
+                "RM3",
+                "U1",
+                "U2",
+                "U3",
+                "UR1",
+                "UR2",
+                "UR3",
+            ],
+            "History Region": "Node ASSEMBLY.1",
+            "Steps ": ["Step-1", "Step-2"],
+        },
+        "Output at assembly ASSEMBLY instance ASSEMBLY element 1": {
+            "History Outputs": [
+                "CTF1",
+                "CTF2",
+                "CTF3",
+                "CTM1",
+                "CTM2",
+                "CTM3",
+                "CU1",
+                "CU2",
+                "CU3",
+                "CUR1",
+                "CUR2",
+                "CUR3",
+            ],
+            "History Region": "Element ASSEMBLY.1",
+            "Steps ": ["Step-1", "Step-2"],
+        },
+        "Output at assembly ASSEMBLY instance ASSEMBLY node 2 region SET-5": {
+            "History Outputs": [
+                "RF1",
+                "RF2",
+                "RF3",
+                "RM1",
+                "RM2",
+                "RM3",
+                "U1",
+                "U2",
+                "U3",
+                "UR1",
+                "UR2",
+                "UR3",
+            ],
+            "History Region": "Node ASSEMBLY.2",
+            "Steps ": ["Step-1", "Step-2"],
+        },
+    }
     assert client_history.history_info() == expected
