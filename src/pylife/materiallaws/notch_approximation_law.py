@@ -569,7 +569,7 @@ class NotchApproxBinner:
     def __init__(self, notch_approximation_law, number_of_bins=100):
         self._n_bins = number_of_bins
         self._notch_approximation_law = notch_approximation_law
-        self.ramberg_osgood_relation = notch_approximation_law.ramberg_osgood_relation
+        self._ramberg_osgood_relation = notch_approximation_law.ramberg_osgood_relation
         self._max_load_rep = None
 
     def initialize(self, max_load):
@@ -579,14 +579,14 @@ class NotchApproxBinner:
         ----------
         max_load : array_like
             The state of the maximum nominal load that is expected.  The first
-            element is chosen as representative to caclulate the lookup table.
+            element is chosen as representative to calculate the lookup table.
 
         Returns
         -------
         self
         """
         max_load = np.asarray(max_load)
-        self._max_load_rep, _ = self._rep_abs_and_sign(max_load)
+        self._max_load_rep, _ = self._representative_value_and_sign(max_load)
 
         load = self._param_for_lut(self._n_bins, max_load)
         self._lut_primary = self._notch_approximation_law.primary(load)
@@ -595,6 +595,13 @@ class NotchApproxBinner:
         self._lut_secondary = self._notch_approximation_law.secondary(delta_load)
 
         return self
+
+    @property
+    def ramberg_osgood_relation(self):
+        """the Ramberg-Osgood relation object, i.e., an object of type RambergOsgood
+        provided by the notch approximation law.
+        """
+        return self._ramberg_osgood_relation
 
     def primary(self, load):
         """Lookup the stress strain of the primary branch.
@@ -619,7 +626,7 @@ class NotchApproxBinner:
 
         """
         self._raise_if_uninitialized()
-        load_rep, sign = self._rep_abs_and_sign(load)
+        load_rep, sign = self._representative_value_and_sign(load)
 
         if load_rep > self._max_load_rep:
             msg = f"Requested load `{load_rep}`, higher than initialized maximum load `{self._max_load_rep}`"
@@ -651,7 +658,7 @@ class NotchApproxBinner:
 
         """
         self._raise_if_uninitialized()
-        delta_load_rep, sign = self._rep_abs_and_sign(delta_load)
+        delta_load_rep, sign = self._representative_value_and_sign(delta_load)
 
         if delta_load_rep > 2.0 * self._max_load_rep:
             msg = f"Requested load `{delta_load_rep}`, higher than initialized maximum delta load `{2.0*self._max_load_rep}`"
@@ -669,7 +676,7 @@ class NotchApproxBinner:
         max_val, scale_m = np.meshgrid(max_val, scale)
         return (max_val * scale_m)
 
-    def _rep_abs_and_sign(self, value):
+    def _representative_value_and_sign(self, value):
         value = np.asarray(value)
         value_rep = value if len(value.shape) == 0 else value[0]
         return np.abs(value_rep), np.sign(value_rep)
