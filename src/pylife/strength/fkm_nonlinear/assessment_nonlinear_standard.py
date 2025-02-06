@@ -602,6 +602,7 @@ def _compute_lifetimes_P_RAJ(assessment_parameters, result, scaled_load_sequence
     """
 
     detector_1st, detector, seeger_beste_binned, recorder = _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence)
+    result["seeger_beste_binned"] = seeger_beste_binned
 
     result, damage_calculator = _compute_damage_and_lifetimes_RAJ(assessment_parameters, recorder, component_woehler_curve_P_RAJ, result)
 
@@ -621,6 +622,7 @@ def _compute_lifetimes_P_RAM(assessment_parameters, result, scaled_load_sequence
     * Do statistical assessment and store all results in a dict.
     """
     detector_1st, detector, extended_neuber_binned, recorder = _compute_hcm_RAM(assessment_parameters, scaled_load_sequence)
+    result["extended_neuber_binned"] = extended_neuber_binned
 
     result, damage_calculator = _compute_damage_and_lifetimes_RAM(assessment_parameters, recorder, component_woehler_curve_P_RAM, result)
 
