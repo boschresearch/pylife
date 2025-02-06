@@ -353,3 +353,22 @@ def test_binner_initialized_three_points_secondary_vectorized(L, expected):
     assert result.shape == (3, 2)
 
     np.testing.assert_allclose(result, expected, rtol=1e-2)
+
+
+def test_binner_zero_first_load():
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    binned = NotchApproxBinner(unbinned, number_of_bins=3).initialize(max_load=[0.0, 300.0])
+
+    result = binned.secondary(([0.0, 400.0]))
+
+    expected = [[0.0, 0.0], [386.0, 1.99e-3]]
+    np.testing.assert_allclose(result, expected, rtol=1e-2)
+
+
+def test_binner_total_zero_load():
+    unbinned = ExtendedNeuber(E=206e3, K=1184., n=0.187, K_p=3.5)
+    with pytest.raises(
+        ValueError,
+        match="NotchApproxBinner must have at least one non zero point in max_load",
+    ):
+        NotchApproxBinner(unbinned, number_of_bins=3).initialize(max_load=[0.0, 0.0])

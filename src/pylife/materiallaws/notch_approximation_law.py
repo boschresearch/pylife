@@ -571,6 +571,7 @@ class NotchApproxBinner:
         self._notch_approximation_law = notch_approximation_law
         self._ramberg_osgood_relation = notch_approximation_law.ramberg_osgood_relation
         self._max_load_rep = None
+        self._max_load_index = None
 
     def initialize(self, max_load):
         """Initialize with a maximum expected load.
@@ -678,5 +679,24 @@ class NotchApproxBinner:
 
     def _representative_value_and_sign(self, value):
         value = np.asarray(value)
-        value_rep = value if len(value.shape) == 0 else value[0]
+
+        single_point = len(value.shape) == 0
+
+        if self._max_load_index is None and single_point:
+            self._max_load_index = 0
+
+        value_rep = value if single_point else self._first_or_maximum_load_of_mesh(value)
+
         return np.abs(value_rep), np.sign(value_rep)
+
+    def _first_or_maximum_load_of_mesh(self, mesh_values):
+        if self._max_load_index is None:
+            if mesh_values[0] != 0.0:
+                self._max_load_index = 0
+            else:
+                self._max_load_index = np.argmax(np.abs(mesh_values))
+            if mesh_values[self._max_load_index] == 0.0:
+                raise ValueError(
+                    "NotchApproxBinner must have at least one non zero point in max_load."
+                )
+        return mesh_values[self._max_load_index]
