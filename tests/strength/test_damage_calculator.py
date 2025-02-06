@@ -92,17 +92,13 @@ def test_woehler_curve_P_RAM_collective_has_no_index():
 
     load_sequence_list = pd.Series([143.696, -287.392, 143.696, -359.240, 287.392, 0.000, 287.392, -287.392])
 
-    # wrap the notch approximation law by a binning class, which precomputes the values
-    maximum_absolute_load = max(np.abs(load_sequence_list))
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100)
-
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=extended_neuber_binned)
+        recorder=recorder, notch_approximation_law=extended_neuber
+    )
 
     # perform HCM algorithm, first run
     detector.process_hcm_first(load_sequence_list)
@@ -198,17 +194,13 @@ def test_woehler_curve_P_RAM_collective_has_MultiIndex():
 
     load_sequence_list = pd.Series([143.696, -287.392, 143.696, -359.240, 287.392, 0.000, 287.392, -287.392])
 
-    # wrap the notch approximation law by a binning class, which precomputes the values
-    maximum_absolute_load = max(np.abs(load_sequence_list))
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100)
-
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=extended_neuber_binned)
+        recorder=recorder, notch_approximation_law=extended_neuber
+    )
 
     # perform HCM algorithm, first run
     detector.process_hcm_first(load_sequence_list)
@@ -292,18 +284,13 @@ def test_woehler_curve_P_RAJ_has_no_index():
     seeger_beste = pylife.materiallaws.notch_approximation_law_seegerbeste.SeegerBeste(E, K_prime, n_prime, K_p)
 
     load_sequence_list = pd.Series([143.696, -287.392, 143.696, -359.240, 287.392, 0.000, 287.392, -287.392])
-
-    # wrap the notch approximation law by a binning class, which precomputes the values
-    maximum_absolute_load = max(np.abs(load_sequence_list))
-    seeger_beste_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        seeger_beste, maximum_absolute_load, 100)
-
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=seeger_beste_binned)
+        recorder=recorder, notch_approximation_law=seeger_beste
+    )
 
     # perform HCM algorithm, first run
     detector.process_hcm_first(load_sequence_list)
@@ -400,17 +387,13 @@ def test_woehler_curve_P_RAJ_has_MultiIndex():
 
     load_sequence_list = pd.Series([143.696, -287.392, 143.696, -359.240, 287.392, 0.000, 287.392, -287.392])
 
-    # wrap the notch approximation law by a binning class, which precomputes the values
-    maximum_absolute_load = max(np.abs(load_sequence_list))
-    seeger_beste_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        seeger_beste, maximum_absolute_load, 100)
-
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=seeger_beste_binned)
+        recorder=recorder, notch_approximation_law=seeger_beste
+    )
 
     # perform HCM algorithm, first run
     detector.process_hcm_first(load_sequence_list)

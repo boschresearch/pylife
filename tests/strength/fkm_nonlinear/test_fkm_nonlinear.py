@@ -511,19 +511,6 @@ def test_assessment_multiple_points_p_ram():
 
     # assert that the results are equal
     for i in range(3):
-        # assert that the lookup table in the notch approximation law is the same
-        # lut for primary branch
-        assert np.allclose(
-            result_multiple["extended_neuber_binned"]._lut_primary_branch[
-                result_multiple["extended_neuber_binned"]._lut_primary_branch.index.get_level_values("node_id")==i].values,
-            result[i]["extended_neuber_binned"]._lut_primary_branch.values)
-
-        # lut for secondary branch
-        assert np.allclose(
-            result_multiple["extended_neuber_binned"]._lut_secondary_branch[
-                result_multiple["extended_neuber_binned"]._lut_secondary_branch.index.get_level_values("node_id")==i].values,
-            result[i]["extended_neuber_binned"]._lut_secondary_branch.values)
-
         assert result[i]["P_RAM_is_life_infinite"] == result_multiple["P_RAM_is_life_infinite"][i]
         assert np.isclose(result[i]["P_RAM_lifetime_n_cycles"], result_multiple["P_RAM_lifetime_n_cycles"][i])
         assert np.isclose(result[i]["P_RAM_lifetime_n_times_load_sequence"], result_multiple["P_RAM_lifetime_n_times_load_sequence"][i])
@@ -585,19 +572,6 @@ def test_assessment_multiple_points_p_raj():
 
     # assert that the results are equal
     for i in range(3):
-        # assert that the lookup tabe in the notch approximation law is the same
-        # lut for primary branch
-        assert np.allclose(
-            result_multiple["seeger_beste_binned"]._lut_primary_branch[
-                result_multiple["seeger_beste_binned"]._lut_primary_branch.index.get_level_values("node_id")==i].values,
-            result[i]["seeger_beste_binned"]._lut_primary_branch.values)
-
-        # lut for secondary branch
-        assert np.allclose(
-            result_multiple["seeger_beste_binned"]._lut_secondary_branch[
-                result_multiple["seeger_beste_binned"]._lut_secondary_branch.index.get_level_values("node_id")==i].values,
-            result[i]["seeger_beste_binned"]._lut_secondary_branch.values, rtol=1e-3)
-
         assert result[i]["P_RAJ_is_life_infinite"] == result_multiple["P_RAJ_is_life_infinite"][i]
         assert np.isclose(result[i]["P_RAJ_lifetime_n_cycles"], result_multiple["P_RAJ_lifetime_n_cycles"][i])
         assert np.isclose(result[i]["P_RAJ_lifetime_n_times_load_sequence"], result_multiple["P_RAJ_lifetime_n_times_load_sequence"][i])
@@ -666,19 +640,6 @@ def test_assessment_multiple_points_p_ram_with_spatially_varying_gradient():
 
     # assert that the results are equal
     for i in range(3):
-        # assert that the lookup table in the notch approximation law is the same
-        # lut for primary branch
-        assert np.allclose(
-            result_multiple["extended_neuber_binned"]._lut_primary_branch[
-                result_multiple["extended_neuber_binned"]._lut_primary_branch.index.get_level_values("node_id")==i].values,
-            result[i]["extended_neuber_binned"]._lut_primary_branch.values)
-
-        # lut for secondary branch
-        assert np.allclose(
-            result_multiple["extended_neuber_binned"]._lut_secondary_branch[
-                result_multiple["extended_neuber_binned"]._lut_secondary_branch.index.get_level_values("node_id")==i].values,
-            result[i]["extended_neuber_binned"]._lut_secondary_branch.values)
-
         assert result[i]["P_RAM_is_life_infinite"] == result_multiple["P_RAM_is_life_infinite"][i]
         assert np.isclose(result[i]["P_RAM_lifetime_n_cycles"], result_multiple["P_RAM_lifetime_n_cycles"][i])
         assert np.isclose(result[i]["P_RAM_lifetime_n_times_load_sequence"], result_multiple["P_RAM_lifetime_n_times_load_sequence"][i])
@@ -746,19 +707,6 @@ def test_assessment_multiple_points_p_raj_with_spatially_varying_gradient():
 
     # assert that the results are equal
     for i in range(3):
-        # assert that the lookup tabe in the notch approximation law is the same
-        # lut for primary branch
-        assert np.allclose(
-            result_multiple["seeger_beste_binned"]._lut_primary_branch[
-                result_multiple["seeger_beste_binned"]._lut_primary_branch.index.get_level_values("node_id")==i].values,
-            result[i]["seeger_beste_binned"]._lut_primary_branch.values)
-
-        # lut for secondary branch
-        assert np.allclose(
-            result_multiple["seeger_beste_binned"]._lut_secondary_branch[
-                result_multiple["seeger_beste_binned"]._lut_secondary_branch.index.get_level_values("node_id")==i].values,
-            result[i]["seeger_beste_binned"]._lut_secondary_branch.values, rtol=1e-3)
-
         assert result[i]["P_RAJ_is_life_infinite"] == result_multiple["P_RAJ_is_life_infinite"][i]
         assert np.isclose(result[i]["P_RAJ_lifetime_n_cycles"], result_multiple["P_RAJ_lifetime_n_cycles"][i])
         assert np.isclose(result[i]["P_RAJ_lifetime_n_times_load_sequence"], result_multiple["P_RAJ_lifetime_n_times_load_sequence"][i])

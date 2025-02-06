@@ -213,17 +213,15 @@ def perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, calcu
     assessment_parameters, component_woehler_curve_P_RAM, component_woehler_curve_P_RAJ \
         = _compute_component_woehler_curves(assessment_parameters)
 
-    maximum_absolute_load = _get_maximum_absolute_load(assessment_parameters, scaled_load_sequence)
-
     result = {}
 
     # HCM rainflow counting and damage computation for P_RAM
     if calculate_P_RAM:
-        result = _compute_lifetimes_P_RAM(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAM, maximum_absolute_load)
+        result = _compute_lifetimes_P_RAM(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAM)
 
     # HCM rainflow counting and damage computation for P_RAJ
     if calculate_P_RAJ:
-        result = _compute_lifetimes_P_RAJ(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAJ, maximum_absolute_load)
+        result = _compute_lifetimes_P_RAJ(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAJ)
 
     # additional quantities
     result["assessment_parameters"] = assessment_parameters
@@ -389,7 +387,7 @@ def _compute_component_woehler_curves(assessment_parameters):
     return assessment_parameters, component_woehler_curve_P_RAM, component_woehler_curve_P_RAJ
 
 
-def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence, maximum_absolute_load):
+def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence):
     """Perform the HCM rainflow counting with the extended Neuber notch approximation.
     The HCM algorithm is executed twice, as described in the FKM nonlinear guideline."""
 
@@ -397,16 +395,13 @@ def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence, maximum_absolu
     E, K_prime, n_prime, K_p = assessment_parameters[["E", "K_prime", "n_prime", "K_p"]]
     extended_neuber = pylife.materiallaws.notch_approximation_law.ExtendedNeuber(E, K_prime, n_prime, K_p)
 
-    # wrap the notch approximation law by a binning class, which precomputes the values
-    extended_neuber_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        extended_neuber, maximum_absolute_load, 100)
-
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=extended_neuber_binned)
+        recorder=recorder, notch_approximation_law=extended_neuber
+    )
 
     # perform HCM algorithm, first run
     detector.process_hcm_first(scaled_load_sequence)
@@ -415,7 +410,7 @@ def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence, maximum_absolu
     # perform HCM algorithm, second run
     detector.process_hcm_second(scaled_load_sequence)
 
-    return detector_1st, detector, extended_neuber_binned, recorder
+    return detector_1st, detector, extended_neuber, recorder
 
 
 def _compute_damage_and_lifetimes_RAM(assessment_parameters, recorder, component_woehler_curve_P_RAM, result):
@@ -482,7 +477,7 @@ def _store_additional_objects_in_result_RAM(result, recorder, damage_calculator,
     return result
 
 
-def _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence, maximum_absolute_load):
+def _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence):
     """Perform the HCM rainflow counting with the Seeger-Beste notch approximation.
     The HCM algorithm is executed twice, as described in the FKM nonlinear guideline."""
 
@@ -490,16 +485,13 @@ def _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence, maximum_absolu
     E, K_prime, n_prime, K_p = assessment_parameters[["E", "K_prime", "n_prime", "K_p"]]
     seeger_beste = pylife.materiallaws.notch_approximation_law_seegerbeste.SeegerBeste(E, K_prime, n_prime, K_p)
 
-    # wrap the notch approximation law by a binning class, which precomputes the values
-    seeger_beste_binned = pylife.materiallaws.notch_approximation_law.Binned(
-        seeger_beste, maximum_absolute_load, 100)
-
     # create recorder object
     recorder = pylife.stress.rainflow.recorders.FKMNonlinearRecorder()
 
     # create detector object
     detector = pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector(
-        recorder=recorder, notch_approximation_law=seeger_beste_binned)
+        recorder=recorder, notch_approximation_law=seeger_beste
+    )
     detector_1st = copy.deepcopy(detector)
 
     # perform HCM algorithm, first run
@@ -508,7 +500,7 @@ def _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence, maximum_absolu
     # perform HCM algorithm, second run
     detector.process_hcm_second(scaled_load_sequence)
 
-    return detector_1st, detector, seeger_beste_binned, recorder
+    return detector_1st, detector, seeger_beste, recorder
 
 
 def _compute_damage_and_lifetimes_RAJ(assessment_parameters, recorder, component_woehler_curve_P_RAJ, result):
@@ -601,23 +593,7 @@ def _store_additional_objects_in_result_RAJ(result, recorder, damage_calculator,
     return result
 
 
-def _get_maximum_absolute_load(assessment_parameters, scaled_load_sequence):
-    """Compute the maximum absolute load, separately for every node (max_load_independently_for_nodes=True).
-    # The value is used to initialize the binning in the notch approximation schemes. Using 'True' yields smaller bin sizes
-    # and higher accuracy but takes longer runtime. Using 'False' generates only one lookup-table for the whole assessment, which is
-    # most accurate for the nodes with the highest loads.
-    """
-
-    if "max_load_independently_for_nodes" not in assessment_parameters:
-        assessment_parameters["max_load_independently_for_nodes"] = False
-
-    maximum_absolute_load = scaled_load_sequence.fkm_load_sequence.maximum_absolute_load(
-        max_load_independently_for_nodes=assessment_parameters.max_load_independently_for_nodes)
-
-    return maximum_absolute_load
-
-
-def _compute_lifetimes_P_RAJ(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAJ, maximum_absolute_load):
+def _compute_lifetimes_P_RAJ(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAJ):
     """Compute the lifetimes using the given parameters and woehler curve, with P_RAJ.
 
     * Execute the HCM algorithm to detect closed hysteresis.
@@ -625,7 +601,7 @@ def _compute_lifetimes_P_RAJ(assessment_parameters, result, scaled_load_sequence
     * Do statistical assessment and store all results in a dict.
     """
 
-    detector_1st, detector, seeger_beste_binned, recorder = _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence, maximum_absolute_load)
+    detector_1st, detector, seeger_beste_binned, recorder = _compute_hcm_RAJ(assessment_parameters, scaled_load_sequence)
     result["seeger_beste_binned"] = seeger_beste_binned
 
     result, damage_calculator = _compute_damage_and_lifetimes_RAJ(assessment_parameters, recorder, component_woehler_curve_P_RAJ, result)
@@ -638,14 +614,14 @@ def _compute_lifetimes_P_RAJ(assessment_parameters, result, scaled_load_sequence
     return result
 
 
-def _compute_lifetimes_P_RAM(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAM, maximum_absolute_load):
+def _compute_lifetimes_P_RAM(assessment_parameters, result, scaled_load_sequence, component_woehler_curve_P_RAM):
     """Compute the lifetimes using the given parameters and woehler curve, with P_RAM.
 
     * Execute the HCM algorithm to detect closed hysteresis.
     * Use the woehler curve and the damage parameter to predict lifetimes.
     * Do statistical assessment and store all results in a dict.
     """
-    detector_1st, detector, extended_neuber_binned, recorder = _compute_hcm_RAM(assessment_parameters, scaled_load_sequence, maximum_absolute_load)
+    detector_1st, detector, extended_neuber_binned, recorder = _compute_hcm_RAM(assessment_parameters, scaled_load_sequence)
     result["extended_neuber_binned"] = extended_neuber_binned
 
     result, damage_calculator = _compute_damage_and_lifetimes_RAM(assessment_parameters, recorder, component_woehler_curve_P_RAM, result)

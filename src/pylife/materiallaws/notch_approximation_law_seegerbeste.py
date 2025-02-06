@@ -77,7 +77,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             The resulting stress
         '''
         # initial value as given by correction document to FKM nonlinear
-        x0 = load * (1 - (1 - 1/self._K_p)/1000)
+        x0 = np.asarray(load * (1 - (1 - 1/self._K_p)/1000))
 
         # suppress the divergence warnings
         with warnings.catch_warnings():
@@ -96,12 +96,13 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             # or (value, converged, zero_der) for vector-valued invocation
 
         # only for multiple points at once, if some points diverged
-        if len(stress) == 3 and sum(stress[1]) < len(stress[1]):
+        multidim = len(x0.shape) > 1 and x0.shape[1] > 1
+        if multidim and not stress[1].all():
             stress = self._stress_fix_not_converged_values(stress, load, x0, rtol, tol)
 
         return stress[0]
 
-    def strain(self, stress, load):
+    def strain(self, stress):
         '''Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
         The formula is given by eq. 2.8-39 of FKM nonlinear.
         load / stress * self._K_p * e_star
@@ -189,6 +190,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         '''
 
         # initial value as given by correction document to FKM nonlinear
+        delta_load = np.asarray(delta_load)
         x0 = delta_load * (1 - (1 - 1/self._K_p)/1000)
 
         # suppress the divergence warnings
@@ -197,7 +199,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
 
             delta_stress = optimize.newton(
                 func=self._stress_secondary_implicit,
-                x0=np.asarray(x0),
+                x0=x0,
                 args=([delta_load]),
                 full_output=True,
                 rtol=rtol, tol=tol, maxiter=50
@@ -208,12 +210,14 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             # or (value, converged, zero_der) for vector-valued invocation
 
         # only for multiple points at once, if some points diverged
-        if len(delta_stress) == 3 and sum(delta_stress[1]) < len(delta_stress[1]):
+
+        multidim = len(x0.shape) > 1 and x0.shape[1] > 1
+        if multidim and x0.shape[1] > 1 and not delta_stress[1].all():
             delta_stress = self._stress_secondary_fix_not_converged_values(delta_stress, delta_load, x0, rtol, tol)
 
         return delta_stress[0]
 
-    def strain_secondary_branch(self, delta_stress, delta_load):
+    def strain_secondary_branch(self, delta_stress):
         '''Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
         The formula is given by eq. 2.8-43 of FKM nonlinear.
 
@@ -458,7 +462,7 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         '''For the values that did not converge in the previous vectorized call to optimize.newton,
         call optimize.newton again on the scalar value. This usually finds the correct solution.'''
 
-        indices_diverged = [index for index, is_converged in enumerate(stress[1]) if not is_converged]
+        indices_diverged = np.where(~stress[1].all(axis=1))[0]
         x0_array = np.asarray(x0)
         load_array = np.asarray(load)
 
@@ -468,13 +472,13 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
             load_diverged = load_array[index_diverged]
             result = optimize.newton(
                 func=self._stress_implicit,
-                x0=x0_diverged,
+                x0=np.asarray(x0_diverged),
                 args=([load_diverged]),
                 full_output=True,
                 rtol=rtol, tol=tol, maxiter=50
             )
 
-            if result[1].converged:
+            if result.converged.all():
                 stress[0][index_diverged] = result[0]
         return stress
 
@@ -482,22 +486,21 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         '''For the values that did not converge in the previous vectorized call to optimize.newton,
         call optimize.newton again on the scalar value. This usually finds the correct solution.'''
 
-        indices_diverged = [index for index, is_converged in enumerate(delta_stress[1]) if not is_converged]
+        indices_diverged = np.where(~delta_stress[1].all(axis=1))[0]
         x0_array = np.asarray(x0)
         delta_load_array = np.asarray(delta_load)
 
         # recompute previously failed points individually
         for index_diverged in indices_diverged:
-            x0_diverged = x0_array[index_diverged]
-            delta_load_diverged = delta_load_array[index_diverged]
+            x0_diverged = x0_array[index_diverged, 0]
+            delta_load_diverged = delta_load_array[index_diverged, 0]
             result = optimize.newton(
                 func=self._stress_secondary_implicit,
-                x0=x0_diverged,
+                x0=np.asarray(x0_diverged),
                 args=([delta_load_diverged]),
                 full_output=True,
                 rtol=rtol, tol=tol, maxiter=50
             )
-
             if result[1].converged:
                 delta_stress[0][index_diverged] = result[0]
         return delta_stress

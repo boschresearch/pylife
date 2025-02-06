@@ -262,12 +262,21 @@ def test_fkm_nonlinear_recorder_record_two_values():
     h1, h2 = 4., 5.
     fr = RFR.FKMNonlinearRecorder()
 
-    # arguments: loads_min, loads_max, S_min, S_max, epsilon_min, epsilon_max, epsilon_min_LF, epsilon_max_LF,
-    # is_closed_hysteresis, is_zero_mean_stress_and_strain, run_index
-
-    args_1 = [pd.Series([v]) for v in [a1, b1, c1, d1, e1, f1, g1, h1]] + [[False], [False], 1]
-    args_2 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [False], 2]
-    args_3 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [True], 2]
+    results_min_1 = pd.DataFrame(
+        {"loads_min": [a1], "S_min": [c1], "epsilon_min": [e1], "epsilon_min_LF": [g1]},
+    )
+    results_max_1 = pd.DataFrame(
+        {"loads_max": [b1], "S_max": [d1], "epsilon_max": [f1], "epsilon_max_LF": [h1]},
+    )
+    results_min_2 = pd.DataFrame(
+        {"loads_min": [a2], "S_min": [c2], "epsilon_min": [e2], "epsilon_min_LF": [g2]},
+    )
+    results_max_2 = pd.DataFrame(
+        {"loads_max": [b2], "S_max": [d2], "epsilon_max": [f2], "epsilon_max_LF": [h2]},
+    )
+    args_1 = [results_min_1, results_max_1] + [[False], [False], 1]
+    args_2 = [results_min_2, results_max_2] + [[True], [False], 2]
+    args_3 = [results_min_2, results_max_2] + [[True], [True], 2]
 
     fr.record_values_fkm_nonlinear(*args_1)
     fr.record_values_fkm_nonlinear(*args_2)
@@ -329,9 +338,21 @@ def test_fkm_nonlinear_recorder_two_non_zero_collective():
     h1, h2 = 4., 5.
     fr = RFR.FKMNonlinearRecorder()
 
-    args_1 = [pd.Series([v]) for v in [a1, b1, c1, d1, e1, f1, g1, h1]] + [[False], [False], 1]
-    args_2 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [False], 2]
-    args_3 = [pd.Series([v]) for v in [a2, b2, c2, d2, e2, f2, g2, h2]] + [[True], [True], 2]
+    results_min_1 = pd.DataFrame(
+        {"loads_min": [a1], "S_min": [c1], "epsilon_min": [e1], "epsilon_min_LF": [g1]},
+    )
+    results_max_1 = pd.DataFrame(
+        {"loads_max": [b1], "S_max": [d1], "epsilon_max": [f1], "epsilon_max_LF": [h1]},
+    )
+    results_min_2 = pd.DataFrame(
+        {"loads_min": [a2], "S_min": [c2], "epsilon_min": [e2], "epsilon_min_LF": [g2]},
+    )
+    results_max_2 = pd.DataFrame(
+        {"loads_max": [b2], "S_max": [d2], "epsilon_max": [f2], "epsilon_max_LF": [h2]},
+    )
+    args_1 = [results_min_1, results_max_1] + [[False], [False], 1]
+    args_2 = [results_min_2, results_max_2] + [[True], [False], 2]
+    args_3 = [results_min_2, results_max_2] + [[True], [True], 2]
 
     fr.record_values_fkm_nonlinear(*args_1)
     fr.record_values_fkm_nonlinear(*args_2)
