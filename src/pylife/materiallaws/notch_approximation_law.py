@@ -82,27 +82,147 @@ class NotchApproximationLawBase(ABC):
         self.K_prime = value
 
     @abstractmethod
-    def load(self, load, *, rtol=1e-4, tol=1e-4):
+    def load(self, stress, *, rtol=1e-4, tol=1e-4):
+        """Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
+
+        This is to be reimplemented by derived classes
+
+        Parameters
+        ----------
+        stress : array-like float
+            The elastic-plastic stress as computed by the notch approximation
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the load gets solved,
+            by default 1e-4
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the load gets solved,
+            by default 1e-4
+
+        Returns
+        -------
+        load : array-like float
+            The resulting load or lienar-elastic stress.
+
+        """
         ...
 
     @abstractmethod
     def stress(self, load, *, rtol=1e-4, tol=1e-4):
+        r"""Calculate the stress of the primary path in the stress-strain diagram at a given
+
+        This is to be reimplemented by derived classes
+
+        Parameters
+        ----------
+        load : array-like float
+            The elastic von Mises stress from a linear elastic FEA.
+            In the FKM nonlinear document, this is also called load "L", because it is derived
+            from a load-time series. Note that this value is scaled to match the actual loading
+            in the assessment, it equals the FEM solution times the transfer factor.
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the stress gets solved,
+            by default 1e-4
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the stress gets solved,
+            by default 1e-4
+
+        Returns
+        -------
+        stress : array-like float
+            The resulting elastic-plastic stress according to the notch-approximation law.
+        """        "Compute the local notch stress from the local nominal load."
         ...
 
     @abstractmethod
     def strain(self, load):
+        """Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
+
+        This is to be reimplemented by derived classes
+
+        Parameters
+        ----------
+        stress : array-like float
+            The stress
+        load : array-like float
+            The load
+
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        """
         ...
 
     @abstractmethod
     def load_secondary_branch(self, load, *, rtol=1e-4, tol=1e-4):
+        """Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear) from the elastic-plastic stress as from the notch approximation.
+
+        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
+
+        This is to be reimplemented by derived classes
+
+        Parameters
+        ----------
+        delta_stress : array-like float
+            The increment of the elastic-plastic stress as computed by the notch approximation
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the stress gets solved,
+            by default 1e-4
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the stress gets solved,
+            by default 1e-4
+
+        Returns
+        -------
+        delta_load : array-like float
+            The resulting load or lienar-elastic stress.
+
+        """
         ...
 
     @abstractmethod
     def stress_secondary_branch(self, load, *, rtol=1e-4, tol=1e-4):
+        """Calculate the stress on secondary branches in the stress-strain diagram at a given
+        elastic-plastic stress (load), from a FE computation.
+
+        This is to be reimplemented by derived classes
+
+        Parameters
+        ----------
+        delta_load : array-like float
+            The load increment of the hysteresis
+        rtol : float, optional
+            The relative tolerance to which the implicit formulation of the stress gets solved,
+            by default 1e-4
+        tol : float, optional
+            The absolute tolerance to which the implicit formulation of the stress gets solved,
+            by default 1e-4
+
+        Returns
+        -------
+        delta_stress : array-like float
+            The resulting stress increment within the hysteresis
+        """
         ...
 
     @abstractmethod
     def strain_secondary_branch(self, load):
+        """Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
+
+        This is to be reimplemented by derived classes
+
+        Parameters
+        ----------
+        delta_sigma : array-like float
+            The stress increment
+        delta_load : array-like float
+            The load increment
+
+        Returns
+        -------
+        strain : array-like float
+            The resulting strain
+        """
         ...
 
     def primary(self, load):
