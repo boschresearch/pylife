@@ -288,11 +288,12 @@ class FKMNonlinearRecorder(AbstractRecorder):
         """
 
         if len(self.S_min) > 0 and len(self.S_min.index.names) > 1:
-            n_nodes = self.S_min.groupby('node_id').first().count()
-            n_hystereses = int(len(self.S_min) / n_nodes)
+            assessment_levels = [name for name in self.S_min.index.names if name != "load_step"]
+            n_assessment_points = self.S_min.groupby(assessment_levels).first().count()
+            n_hystereses = int(len(self.S_min) / n_assessment_points)
 
             index = pd.MultiIndex.from_product(
-                [range(n_hystereses), range(n_nodes)],
+                [range(n_hystereses), range(n_assessment_points)],
                 names=["hysteresis_index", "assessment_point_index"],
             )
         else:

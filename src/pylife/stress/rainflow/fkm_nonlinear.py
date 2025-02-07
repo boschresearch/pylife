@@ -543,17 +543,17 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         if not is_multi_index:
             samples = np.concatenate([[0], np.asarray(samples)])
         else:
-            # get the index with all node_id`s
-            node_id_index = samples.groupby("node_id").first().index
+            assessment_levels = [name for name in samples.index.names if name != "load_step"]
+            assessment_idx = samples.groupby(assessment_levels).first().index
 
             # create a new sample with 0 load for all nodes
-            multi_index = pd.MultiIndex.from_product([[0], node_id_index], names=["load_step","node_id"])
+            multi_index = pd.MultiIndex.from_product([[0], assessment_idx], names=samples.index.names)
             first_sample = pd.Series(0, index=multi_index)
 
             # increase the load_step index value by one for all samples
             samples_without_index = samples.reset_index()
             samples_without_index.load_step += 1
-            samples = samples_without_index.set_index(["load_step", "node_id"])[0]
+            samples = samples_without_index.set_index(samples.index.names)[0]
 
             # prepend the new zero load sample
             samples = pd.concat([first_sample, samples], axis=0)
@@ -568,9 +568,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         scalar_samples_twice = np.concatenate([scalar_samples, scalar_samples])
         turn_indices, _ = RFG.find_turns(scalar_samples_twice)
 
-        flush = True
-        if len(scalar_samples)-1 not in turn_indices:
-            flush = False
+        flush = len(scalar_samples)-1 in turn_indices
 
         return samples, flush
 
