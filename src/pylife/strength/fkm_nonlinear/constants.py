@@ -147,12 +147,15 @@ def for_material_group(assessment_parameters):
         All constants that are defined by FKM nonlinear for the given material group.
 
     """
+    # call user hook to modify constants if necessary
+    global all_constants
+    if "user_hook" in assessment_parameters:
+        all_constants = assessment_parameters["user_hook"](all_constants)
 
     # select set of constants according to given material group
     assert "MatGroupFKM" in assessment_parameters
 
     material_group = assessment_parameters["MatGroupFKM"]
-    assert material_group in ["Steel", "SteelCast", "Al_wrought"]
 
     resulting_constants = all_constants[material_group]
 
