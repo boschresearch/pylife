@@ -39,7 +39,7 @@ def test_compute_beta_success(P_A, expected_beta):
     assert np.isclose(beta, expected_beta)
 
 
-@pytest.mark.parametrize("P_A", [-1,0,1,2])
+@pytest.mark.parametrize("P_A", [-1.0, 0.0, 1.01, 2.0])
 def test_compute_beta_fails(P_A):
 
     expected_error_message = f"Could not compute the value of beta for P_A={P_A}, " \
