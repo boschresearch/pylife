@@ -45,12 +45,19 @@ def datapath():
 
 
 @pytest.fixture(params=["2022", "2023", "2024"])
-def client(datapath, request):
-    abaqus_version = request.param
-    abaqus_bin = shutil.which(f"abaqus{abaqus_version}")
-    if sys.platform == 'win32':
-        abaqus_bin = f"C:/Program Files/SIMULIA/{abaqus_version}/EstProducts/win_b64/code/bin/SMALauncher.exe"
+def abaqus_version(request):
+    return request.param
 
+
+@pytest.fixture
+def abaqus_bin(abaqus_version):
+    if sys.platform == 'win32':
+        return f"C:/Program Files/SIMULIA/{abaqus_version}/EstProducts/win_b64/code/bin/SMALauncher.exe"
+    return shutil.which(f"abaqus{abaqus_version}")
+
+
+@pytest.fixture
+def client(datapath, abaqus_version, abaqus_bin):
     python_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}")
     odb_file = datapath(f"beam_3d_hex_quad-{abaqus_version}.odb")
     return odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path)
@@ -188,13 +195,8 @@ def test_variable_stress_integration_point(client, datapath):
     pd.testing.assert_frame_equal(result, expected)
 
 
-@pytest.fixture(params=["2022", "2023", "2024"])
-def client_history(datapath, request):
-    abaqus_version = request.param
-    abaqus_bin = shutil.which(f"abaqus{abaqus_version}")
-    if sys.platform == 'win32':
-        abaqus_bin = f"C:/Program Files/SIMULIA/{abaqus_version}/EstProducts/win_b64/code/bin/SMALauncher.exe"
-
+@pytest.fixture()
+def client_history(datapath, abaqus_version, abaqus_bin):
     python_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}")
     odb_file = datapath(f"history_output_test-{abaqus_version}.odb")
     return odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path)
@@ -234,14 +236,17 @@ def test_history_output_values(client_history):
     assert client_history.history_output_values("Step-1", 'Element ASSEMBLY.1', 'CTF1').array[1] == pytest.approx(0.09999854117631912)
 
 
-def test_history_region_description(client_history):
+def test_history_region_description(client_history, abaqus_version):
     result = client_history.history_region_description("Step-1", 'Element ASSEMBLY.1')
-    assert result == "Output at assembly ASSEMBLY instance ASSEMBLY element 1"
+    expected = "Output at assembly ASSEMBLY instance ASSEMBLY element 1"
+    if abaqus_version == "2024":
+        expected += " region _PICKEDSET21"
+    assert result == expected
 
 
-def test_history_info(client_history):
+def test_history_info(client_history, abaqus_version):
     expected = {
-        "Output at assembly ASSEMBLY region Whole Model": {
+        "Output at assembly ASSEMBLY": {
             "History Outputs": [
                 "ALLAE",
                 "ALLCCDW",
@@ -326,4 +331,11 @@ def test_history_info(client_history):
             "Steps ": ["Step-1", "Step-2"],
         },
     }
-    assert client_history.history_info() == expected
+    if abaqus_version == "2024":
+        expected["Output at assembly ASSEMBLY region Whole Model"] = expected.pop("Output at assembly ASSEMBLY")
+        element_1 = expected.pop("Output at assembly ASSEMBLY instance ASSEMBLY element 1")
+        expected["Output at assembly ASSEMBLY instance ASSEMBLY element 1 region _PICKEDSET21"] = element_1
+        expected["Output at assembly ASSEMBLY instance ASSEMBLY element 1 region _PICKEDSET22"] = element_1
+
+    result = client_history.history_info()
+    assert result == expected
