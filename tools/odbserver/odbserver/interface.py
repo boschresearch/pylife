@@ -18,9 +18,10 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 import sys
+
 import numpy as np
 import odbAccess as ODB
-import json
+
 
 class OdbInterface:
 
@@ -46,7 +47,7 @@ class OdbInterface:
     def nodes(self, instance_name, node_set_name):
         instance = self._instance_or_rootasm(instance_name)
 
-        if node_set_name == b'':
+        if node_set_name == '':
             nodes = instance.nodes
         elif node_set_name in instance.nodeSets.keys():
             nodes = instance.nodeSets[node_set_name].nodes
@@ -67,7 +68,7 @@ class OdbInterface:
     def connectivity(self, instance_name, element_set_name):
         instance = self._instance_or_rootasm(instance_name)
 
-        if element_set_name == b'':
+        if element_set_name == '':
             elements = instance.elements
         elif element_set_name in instance.elementSets.keys():
             elements = instance.elementSets[element_set_name].elements
@@ -101,7 +102,7 @@ class OdbInterface:
         except Exception as e:
             return e
 
-        nodes = node_set.nodes[0] if instance_name == b'' else node_set.nodes
+        nodes = node_set.nodes[0] if instance_name == '' else node_set.nodes
 
         return np.array([node.label for node in nodes], dtype=np.int32)
 
@@ -113,7 +114,7 @@ class OdbInterface:
         except Exception as e:
             return e
 
-        elements = element_set.elements[0] if instance_name == b'' else element_set.elements
+        elements = element_set.elements[0] if instance_name == '' else element_set.elements
 
         return np.array([element.label for element in elements], dtype=np.int32)
 
@@ -179,7 +180,7 @@ class OdbInterface:
         instance = self._asm.instances[instance_name]
 
         region = None
-        if node_set_name != b'':
+        if node_set_name != '':
             if node_set_name in instance.nodeSets.keys():
                 node_set = instance.nodeSets[node_set_name]
             elif node_set_name in self._asm.nodeSets.keys():
@@ -188,7 +189,7 @@ class OdbInterface:
                 raise KeyError(node_set_name)
             region = node_set
 
-        if element_set_name != b'':
+        if element_set_name != '':
             if element_set_name in instance.elementSets.keys():
                 element_set = instance.elementSets[element_set_name]
             elif element_set_name in self._asm.elementSets.keys():
@@ -238,7 +239,7 @@ class OdbInterface:
         return (complabels, index_labels, index[:i, :], values[:i])
 
     def _instance_or_rootasm(self, instance_name):
-        if instance_name == b'':
+        if instance_name == '':
             instance = self._asm
         else:
             instance = self._asm.instances[instance_name]
@@ -270,7 +271,6 @@ class OdbInterface:
             It is a list of hist regions
         """
         try:
-
             required_step = self._odb.steps[step_name]
             histRegions = required_step.historyRegions.keys()
 
@@ -278,7 +278,6 @@ class OdbInterface:
 
         except Exception as e:
             return e
-
 
     def history_outputs(self, step_name, historyregion_name):
         """Get history outputs, which belongs to the given step and history region.
@@ -297,11 +296,9 @@ class OdbInterface:
 
         """
         try:
-           required_step = self._odb.steps[step_name]
-
-           history_data = required_step.historyRegions[historyregion_name].historyOutputs.keys()
-
-           return history_data
+            required_step = self._odb.steps[step_name]
+            history_data = required_step.historyRegions[historyregion_name].historyOutputs.keys()
+            return history_data
 
         except Exception as e:
             return e
@@ -328,21 +325,20 @@ class OdbInterface:
 
         """
         try:
-           required_step = self._odb.steps[step_name]
+            required_step = self._odb.steps[step_name]
 
-           history_data = required_step.historyRegions[historyregion_name].historyOutputs[historyoutput_name].data
+            history_data = required_step.historyRegions[historyregion_name].historyOutputs[historyoutput_name].data
+            step_time = required_step.totalTime
 
-           step_time = required_step.totalTime
+            xdata = []
+            ydata = []
+            for ith in history_data:
+                xdata.append(ith[0]+step_time)
+                ydata.append(ith[1])
 
-           xdata = []
-           ydata = []
-           for ith in history_data:
-               xdata.append(ith[0]+step_time)
-               ydata.append(ith[1])
-
-           x = np.array(xdata)
-           y = np.array(ydata)
-           return x,y
+            x = np.array(xdata)
+            y = np.array(ydata)
+            return x, y
 
         except Exception as e:
             return e
@@ -359,16 +355,14 @@ class OdbInterface:
 
         Returns
         -------
-        history_description : description for history region, which is visible in Abaqus. In case of error it gives an error message.
-            It is string.
+        history_description : str
+            The description for history region, which is visible in Abaqus. In case of error it gives an error message.
 
         """
         try:
-           required_step = self._odb.steps[step_name]
-
-           history_description = required_step.historyRegions[historyregion_name].description
-
-           return history_description
+            required_step = self._odb.steps[step_name]
+            history_description = required_step.historyRegions[historyregion_name].description
+            return history_description
 
         except Exception as e:
             return e
@@ -384,40 +378,37 @@ class OdbInterface:
         In case of error it gives an error message.
 
         """
-        dict1 = {}
+        hist_info = {}
         try:
             steps = self._odb.steps.keys()
 
-            for istep in steps:
-                regions = self.history_regions(step_name=istep)
+            for step in steps:
+                regions = self.history_regions(step_name=step)
 
-                for iregion in regions:
+                for reg in regions:
+                    description = self.history_region_description(step, reg)
 
-                    idescription = self.history_region_description(step_name= istep, historyregion_name= iregion)
-
-                    outputs = self.history_outputs(step_name= istep, historyregion_name= iregion)
-
-                    for ioutputs in outputs:
-                        if "Repeated: key" in ioutputs:
-                            outputs.remove(ioutputs)
+                    outputs = [
+                        output
+                        for output in self.history_outputs(step, reg)
+                        if "Repeated: key" not in output
+                    ]
 
                     steplist = []
                     for istep2 in steps:
                         try:
-                            self._odb.steps[istep2].historyRegions[iregion].description
+                            self._odb.steps[istep2].historyRegions[reg].description
                             steplist.append(istep2)
-                        except Exception as e:
-                             continue
+                        except Exception:
+                            continue
 
-                    dict5 = {
-                        "History Region" : iregion,
+                    hist_info[description] = {
+                        "History Region" : reg,
                         "History Outputs" : outputs,
                         "Steps " : steplist
                     }
 
-                    dict1[idescription] = dict(dict5)
-
-            return dict1
+            return hist_info
         except Exception as e:
             return e
 
