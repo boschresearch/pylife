@@ -23,6 +23,7 @@ import pandas as pd
 import numpy.testing as testing
 import pylife
 import pylife.strength.fkm_nonlinear
+from pylife.strength.fkm_nonlinear.constants import FKMNLConstants
 import pylife.strength.fkm_nonlinear.parameter_calculations
 import pylife.strength.fkm_nonlinear.parameter_calculations as parameter_calculations
 
@@ -74,9 +75,9 @@ def test_material_constants():
     columns = ['CaseHard_Steel', 'Stainless_Steel', 'SteelCast', 'Steel', 'Al_wrought']
 
     df_reference = pd.DataFrame(data=data, index=index, columns=columns)
-    df_to_test = pylife.strength.fkm_nonlinear.constants.all_constants
+    df_to_test = FKMNLConstants().to_pandas()
 
-    # check if previously defined constants match the constants defined in pylife.strength.fkm_nonlinear.constant.all_constants
+    # check if previously defined constants match the constants defined in FKMNLConstants()
     pd.testing.assert_series_equal(df_to_test.loc["E",:], df_reference.loc["E",["Steel", "SteelCast", "Al_wrought"]])
     pd.testing.assert_series_equal(df_to_test.loc["a_sigma",:], df_reference.loc["a_sig",["Steel", "SteelCast", "Al_wrought"]], check_names=False)
     pd.testing.assert_series_equal(df_to_test.loc["a_epsilon",:], df_reference.loc["a_eps",["Steel", "SteelCast", "Al_wrought"]], check_names=False)
@@ -99,6 +100,46 @@ def test_material_constants():
     pd.testing.assert_series_equal(df_to_test.loc["R_m_N_min",:], df_reference.loc["RmNmin",["Steel", "SteelCast", "Al_wrought"]], check_names=False)
     pd.testing.assert_series_equal(df_to_test.loc["a_M",:], df_reference.loc["a_M",["Steel", "SteelCast", "Al_wrought"]], check_names=False)
     pd.testing.assert_series_equal(df_to_test.loc["b_M",:], df_reference.loc["b_M",["Steel", "SteelCast", "Al_wrought"]], check_names=False)
+
+
+def test_material_constants_existing_material():
+    assessment_parameters = {
+        "MatGroupFKM": "Al_wrought",
+    }
+    constants = FKMNLConstants().for_material_group(assessment_parameters=assessment_parameters)
+    assert constants["E"] == 70e3
+
+
+def test_material_constants_unknown_material_fails():
+    assessment_parameters = {
+        "MatGroupFKM": "new_material",
+    }
+    with pytest.raises(KeyError, match="new_material"):
+        FKMNLConstants().for_material_group(assessment_parameters=assessment_parameters)
+
+
+def test_material_constants_new_material():
+
+    assert "new_material" not in FKMNLConstants()
+
+    FKMNLConstants().add_custom_material("new_material", {"E": 99e3, "n_prime": 0.123})
+
+    assessment_parameters = {"MatGroupFKM": "new_material"}
+
+    # retrieve constants
+    constants = FKMNLConstants().for_material_group(assessment_parameters=assessment_parameters)
+
+    assert constants["E"] == 99e3
+    assert constants["n_prime"] == 0.123
+
+    # constants are now also updated directly in the module
+    assert "new_material" in FKMNLConstants()
+    assert FKMNLConstants()["new_material"]["E"] == 99e3
+
+
+def test_material_constants_new_material_conflict():
+    with pytest.raises(ValueError, match="Material `Al_wrought` already exists."):
+        FKMNLConstants().add_custom_material("Al_wrought", {"E": 99e3, "n_prime": 0.123})
 
 
 def test_computation_functions_1():

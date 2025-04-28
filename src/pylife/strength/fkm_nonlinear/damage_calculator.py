@@ -24,6 +24,7 @@ import scipy.optimize
 
 import pylife.strength.woehler_fkm_nonlinear
 import pylife.strength.fkm_nonlinear.parameter_calculations
+from pylife.strength.fkm_nonlinear.constants import FKMNLConstants
 
 class DamageCalculatorPRAM:
     """This class performs the lifetime assessment according to the FKM nonlinear assessment.
@@ -189,7 +190,7 @@ class DamageCalculatorPRAM:
             python function, ``failure_probability(N)``
         """
 
-        constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
+        constants = FKMNLConstants().for_material_group(assessment_parameters)
 
         f_25 = constants.f_25percent_material_woehler_RAM
 
@@ -449,7 +450,7 @@ class DamageCalculatorPRAJ:
             python function, ``failure_probability(N)``
         """
 
-        constants = pylife.strength.fkm_nonlinear.constants.for_material_group(self._assessment_parameters)
+        constants = FKMNLConstants().for_material_group(self._assessment_parameters)
         f_25 = constants.f_25percent_material_woehler_RAJ
         slope_woehler = abs(1/self._component_woehler_curve_P_RAJ.d)
         lifetime_n_cycles = self.lifetime_n_cycles
