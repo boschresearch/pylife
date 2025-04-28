@@ -77,7 +77,7 @@ def test_material_constants():
     df_reference = pd.DataFrame(data=data, index=index, columns=columns)
     df_to_test = FKMNLConstants().to_pandas()
 
-    # check if previously defined constants match the constants defined in pylife.strength.fkm_nonlinear.constant.all_constants
+    # check if previously defined constants match the constants defined in FKMNLConstants()
     pd.testing.assert_series_equal(df_to_test.loc["E",:], df_reference.loc["E",["Steel", "SteelCast", "Al_wrought"]])
     pd.testing.assert_series_equal(df_to_test.loc["a_sigma",:], df_reference.loc["a_sig",["Steel", "SteelCast", "Al_wrought"]], check_names=False)
     pd.testing.assert_series_equal(df_to_test.loc["a_epsilon",:], df_reference.loc["a_eps",["Steel", "SteelCast", "Al_wrought"]], check_names=False)
