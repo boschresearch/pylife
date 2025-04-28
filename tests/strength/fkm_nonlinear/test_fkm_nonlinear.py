@@ -137,6 +137,11 @@ def test_material_constants_new_material():
     assert FKMNLConstants()["new_material"]["E"] == 99e3
 
 
+def test_material_constants_new_material_conflict():
+    with pytest.raises(ValueError, match="Material `Al_wrought` already exists."):
+        FKMNLConstants().add_custom_material("Al_wrought", {"E": 99e3, "n_prime": 0.123})
+
+
 def test_computation_functions_1():
     """Example 2.10.2, "Welle mit V-Kerbe", p.138 """
 

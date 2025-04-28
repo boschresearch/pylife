@@ -22,6 +22,9 @@ import pandas as pd
 
 
 class FKMNLConstants:
+    """A singleton class that contains all the FKM non-linear constants."""
+
+
     _instance = None
 
     def __new__(cls):
@@ -172,8 +175,29 @@ class FKMNLConstants:
 
         return resulting_constants
 
-    def add_custom_material(self, material_group_nme, material_constants):
-        self._all_constants[material_group_nme] = pd.Series(material_constants)
+    def add_custom_material(self, material_group_name, material_constants):
+        """Add a custom material to the global FKMNL constants.
+
+
+        Paramters
+        ---------
+        material_group_name : str
+            The name of the custom material
+
+        material_constants : pd.Series | dict
+            The constants for the custom material
+
+        Return
+        ------
+        self
+
+        Raises
+        ------
+        ValueError if the material already exists.
+        """
+        if material_group_name in self._all_constants:
+            raise ValueError(f"Material `{material_group_name}` already exists.")
+        self._all_constants[material_group_name] = pd.Series(material_constants)
         return self
 
     def __iter__(self):
@@ -184,4 +208,5 @@ class FKMNLConstants:
         return self._all_constants[material_group_name].copy()
 
     def to_pandas(self):
+        """Optiain a copy of all material constants."""
         return self._all_constants.copy()
