@@ -24,6 +24,7 @@ import scipy.optimize
 import pylife.strength.fkm_nonlinear
 import pylife.materiallaws.rambgood
 import pylife.strength.woehler_fkm_nonlinear
+from pylife.strength.fkm_nonlinear.constants import FKMNLConstants
 
 class P_RAM:
     """This class implements the damage parameter P_RAM according to guideline FKM nonlinear.
@@ -58,7 +59,7 @@ class P_RAM:
         self._assessment_parameters = assessment_parameters
 
         # select set of constants according to given material group
-        self._constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
+        self._constants = FKMNLConstants().for_material_group(assessment_parameters)
 
         # check if collective contains required columns
         assert "S_a" in self._collective.columns
@@ -150,7 +151,7 @@ class P_RAJ:
         self._P_RAJ_D_0 = self._component_woehler_curve_P_RAJ.fatigue_strength_limit
 
         # select set of constants according to given material group
-        self._constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters)
+        self._constants = FKMNLConstants().for_material_group(assessment_parameters)
 
         # check if collective contains required columns
         assert "S_a" in self._collective.columns

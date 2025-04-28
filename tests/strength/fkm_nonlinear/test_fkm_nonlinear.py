@@ -23,7 +23,7 @@ import pandas as pd
 import numpy.testing as testing
 import pylife
 import pylife.strength.fkm_nonlinear
-import pylife.strength.fkm_nonlinear.constants
+from pylife.strength.fkm_nonlinear.constants import FKMNLConstants
 import pylife.strength.fkm_nonlinear.parameter_calculations
 import pylife.strength.fkm_nonlinear.parameter_calculations as parameter_calculations
 
@@ -75,7 +75,7 @@ def test_material_constants():
     columns = ['CaseHard_Steel', 'Stainless_Steel', 'SteelCast', 'Steel', 'Al_wrought']
 
     df_reference = pd.DataFrame(data=data, index=index, columns=columns)
-    df_to_test = pylife.strength.fkm_nonlinear.constants.all_constants
+    df_to_test = FKMNLConstants().to_pandas()
 
     # check if previously defined constants match the constants defined in pylife.strength.fkm_nonlinear.constant.all_constants
     pd.testing.assert_series_equal(df_to_test.loc["E",:], df_reference.loc["E",["Steel", "SteelCast", "Al_wrought"]])
@@ -106,7 +106,7 @@ def test_material_constants_existing_material():
     assessment_parameters = {
         "MatGroupFKM": "Al_wrought",
     }
-    constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters=assessment_parameters)
+    constants = FKMNLConstants().for_material_group(assessment_parameters=assessment_parameters)
     assert constants["E"] == 70e3
 
 
@@ -115,40 +115,26 @@ def test_material_constants_unknown_material_fails():
         "MatGroupFKM": "new_material",
     }
     with pytest.raises(KeyError, match="new_material"):
-        pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters=assessment_parameters)
+        FKMNLConstants().for_material_group(assessment_parameters=assessment_parameters)
 
 
 def test_material_constants_new_material():
 
-    # define user function to extend the parameter set
-    def add_new_material(constants):
-        
-        if "new_material" in constants:
-            return constants
-        
-        new_material_constants = pd.DataFrame({
-            "new_material": {
-                "E": 99e3,
-                "n_prime": 0.123,
-            }
-        })
-        return pd.concat([constants, new_material_constants], axis="columns")
-    
-    # add user function
-    assessment_parameters = {
-        "MatGroupFKM": "new_material",
-        "user_hook": add_new_material
-    }
+    assert "new_material" not in FKMNLConstants()
+
+    FKMNLConstants().add_custom_material("new_material", {"E": 99e3, "n_prime": 0.123})
+
+    assessment_parameters = {"MatGroupFKM": "new_material"}
 
     # retrieve constants
-    constants = pylife.strength.fkm_nonlinear.constants.for_material_group(assessment_parameters=assessment_parameters)
+    constants = FKMNLConstants().for_material_group(assessment_parameters=assessment_parameters)
 
     assert constants["E"] == 99e3
     assert constants["n_prime"] == 0.123
 
     # constants are now also updated directly in the module
-    assert "new_material" in pylife.strength.fkm_nonlinear.constants.all_constants
-    assert pylife.strength.fkm_nonlinear.constants.all_constants["new_material"]["E"] == 99e3
+    assert "new_material" in FKMNLConstants()
+    assert FKMNLConstants()["new_material"]["E"] == 99e3
 
 
 def test_computation_functions_1():
