@@ -149,7 +149,7 @@ def fs_calc(df):
 
     """
     try:
-        fs = 1 / np.mean(np.diff(df.index))
+        fs = np.rint(1 / np.mean(np.diff(df.index)))
     except TypeError:
         print("Index has to be a number not a string. We assume fs = 1")
         fs = 1
@@ -232,7 +232,9 @@ def psd_df(df_ts, nfft=512, nperseg=256):
     fs = fs_calc(df_ts)
     df_psd = pd.DataFrame()
     for col in df_ts:
-        freq, df_psd[col] = signal.welch(df_ts[col], fs=fs, nperseg=nperseg, nfft=nfft)
+        freq, df_psd[col] = signal.welch(
+            df_ts[col].values, fs=fs, nperseg=nperseg, nfft=nfft
+        )
     df_psd.index = pd.Index(freq, name="frequency")
     return df_psd
 
