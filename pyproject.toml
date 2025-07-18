@@ -34,6 +34,7 @@ dev = [
   "pytest-timeout",
   "hypothesis",
   "testbook",
+  "pytest-xdist>=3.8.0",
 ]
 visuals = [
   "pyvista",
