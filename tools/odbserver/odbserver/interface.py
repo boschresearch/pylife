@@ -245,15 +245,15 @@ class OdbInterface:
             instance = self._asm.instances[instance_name]
 
         element_types = {el.type for el in instance.elements}
-        unsupported_types = {et for et in element_types if et[0] != "C"}
-        if unsupported_types:
-            raise ValueError(
-                "Only continuum elements (C...) are supported at this point, sorry. "
-                "Please submit an issue to https://github.com/boschresearch/pylife/issues "
-                "if you need to support other types. "
-                "(Unsupported types %s found in instance %s)" % (
-                    ", ".join(unsupported_types), instance_name
-                ))
+        # unsupported_types = {et for et in element_types if et[0] != "C"}
+        # if unsupported_types:
+        #     raise ValueError(
+        #         "Only continuum elements (C...) are supported at this point, sorry. "
+        #         "Please submit an issue to https://github.com/boschresearch/pylife/issues "
+        #         "if you need to support other types. "
+        #         "(Unsupported types %s found in instance %s)" % (
+        #             ", ".join(unsupported_types), instance_name
+        #         ))
 
         return instance
 
