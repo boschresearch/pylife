@@ -491,13 +491,15 @@ class OdbClient:
         self._proc.stdin.flush()
 
     def _parse_response(self):
-        pickle_data = b''
-        while True:
-            line = self._proc.stdout.readline().rstrip() + b'\n'
-            if line == b'\n':
-                break
-            pickle_data += line
-        return pickle.loads(pickle_data, encoding='bytes')
+        try:
+            return pickle.load(self._proc.stdout)
+
+        except Exception as e:
+            try:
+                stderr = self._proc.stderr.read().decode(errors="ignore")
+            except Exception:
+                stderr = "(could not read server stderr)"
+            raise RuntimeError(f"Failed to parse server response: {e}\nServer stderr:\n{stderr}") from e
 
     def __del__(self):
         if self._proc is not None:
