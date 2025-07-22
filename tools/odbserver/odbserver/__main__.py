@@ -127,11 +127,14 @@ class OdbServer:
 def _send_response(pickle_data, numpy_arrays=None):
     stdout = sys.stdout if sys.version_info.major == 2 else sys.stdout.buffer
     numpy_arrays = numpy_arrays or []
-    s = pickle.dumps((len(numpy_arrays), pickle_data))
-    stdout.write(s+b'\n\n')
-    sys.stdout.flush()
-    for nparr in numpy_arrays:
-        np.lib.format.write_array(sys.stdout, nparr)
+    # Dump tuple: (number of arrays, the actual pickle_data)
+    pickle.dump((len(numpy_arrays), pickle_data), stdout, protocol=pickle.HIGHEST_PROTOCOL)
+    stdout.flush()
+
+    # Send any numpy arrays as raw .npy streams
+    for arr in numpy_arrays:
+        np.lib.format.write_array(stdout, arr)
+    stdout.flush()
 
 
 def main():
