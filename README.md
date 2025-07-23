@@ -28,6 +28,8 @@ The company [Viktor](https://viktor.ai) has set up a [web application for Wöhle
 test analysis](https://cloud.viktor.ai/public/wohler-fatigue-test-analysis)
 based on pyLife code.
 
+![bosch-pylife-woehler-fatigue-test-webapp-preview](demos/bosch-pylife-woehler-fatigue-test-webapp-preview.png)
+**Figure 1:** Web application for Wöhler test analysis 
 
 ## Status
 
