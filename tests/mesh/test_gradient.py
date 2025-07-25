@@ -39,7 +39,7 @@ def test_grad_constant():
     pd.testing.assert_frame_equal(grad, expected)
 
 
-def test_grad_dx():
+def test_grad_dx_continous():
     fkt = [1, 4, 4, 7, 1, 1, 4, 4, 4, 4, 7, 7, 1, 4, 4, 7]
     df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
                        'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
@@ -58,6 +58,48 @@ def test_grad_dx():
     grad = df.gradient.gradient_of('fct')
 
     pd.testing.assert_frame_equal(grad, expected)
+
+
+def test_grad_dx_gap_in_elset():
+    fkt = [1, 4, 4, 7, 1, 1, 4, 4, 4, 4, 7, 7, 1, 4, 4, 7]
+    df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9],
+                       'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 14, 2, 14, 3, 3, 14, 14],
+                       'x': [0, 1, 1, 2, 0, 0, 1, 1, 1, 1, 2, 2, 0, 1, 1, 2],
+                       'y': [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2],
+                       'z': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                       'fct': fkt})
+    df = df.set_index(['node_id', 'element_id'])
+
+    expected = pd.DataFrame({
+        'dfct_dx': np.full(9, 3.0),
+        'dfct_dy': np.zeros(9),
+        'dfct_dz': np.zeros(9)
+    }, index=pd.RangeIndex(1, 10, name='node_id'))
+
+    grad = df.gradient.gradient_of('fct')
+
+    pd.testing.assert_frame_equal(grad, expected, rtol=1e-12)
+
+
+def test_grad_dx_gap_in_node_set():
+    fkt = [1, 4, 4, 7, 1, 1, 4, 4, 4, 4, 7, 7, 1, 4, 4, 7]
+    df = pd.DataFrame({'node_id': [1, 2, 2, 3, 4, 4, 15, 15, 15, 15, 16, 16, 17, 18, 18, 19],
+                       'element_id': [1, 1, 2, 2, 1, 3, 1, 2, 3, 4, 2, 4, 3, 3, 4, 4],
+                       'x': [0, 1, 1, 2, 0, 0, 1, 1, 1, 1, 2, 2, 0, 1, 1, 2],
+                       'y': [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2],
+                       'z': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                       'fct': fkt})
+    df = df.set_index(['node_id', 'element_id'])
+
+    expected = pd.DataFrame({
+        'dfct_dx': np.full(9, 3.0),
+        'dfct_dy': np.zeros(9),
+        'dfct_dz': np.zeros(9)
+    }, index=pd.Index([1, 2, 3, 4, 15, 16, 17, 18, 19], name='node_id'))
+
+    grad = df.gradient.gradient_of('fct')
+
+    pd.testing.assert_frame_equal(grad, expected, rtol=1e-12)
 
 
 def test_grad_dx_flipped_index_levels():
