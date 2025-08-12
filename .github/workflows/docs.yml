@@ -34,7 +34,7 @@ jobs:
       run: sudo apt-get install pandoc
     - name: Install dependencies
       run: |
-        uv pip install ".[all,docs]"
+        uv sync --group docs --all-extras
         uv pip install "./tools/odbclient"
     - name: Build docs
       run: sphinx-build -b html docs _build/html

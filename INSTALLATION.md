@@ -15,6 +15,7 @@ You need a python installation e.g. a virtual environment with `pip` a recent
 (brand new ones might not work) python versions installed. There are several
 ways to achieve that.
 
+
 #### Using miniconda or anaconda
 
 Install [miniconda](https://conda.io/miniconda.html) or
@@ -58,6 +59,11 @@ There is no conda package as of now, unfortunately.
 
 For general contribution guidelines please read [CONTRIBUTING.md](CONTRIBUTING.md)
 
+#### Install uv
+
+* Install the [uv](https://docs.astral.sh/uv/) python management tool.
+
+
 ### Clone the git repository
 
 Depending on your tools. From the command line
@@ -68,28 +74,17 @@ will do it.
 
 ### Install the dependencies
 
-Install anaconda or miniconda [http://anaconda.com]. Create an anaconda
-environment with all the requirements by running
-
-Create an environment – usually a good idea to use a prefixed environment in
-your pyLife working directory and activate it.
+Install pylife and all the dependencies into the environment using
 
 ```
-conda create -p .venv python=3.12 pip --yes
-conda activate ./.venv
-```
-
-Then install the pyLife into that environment.
-
-```
-pip install -e .[testing,all]
+uv sync --dev --all-extras
 ```
 
 ### Test the installation
 
 You can run the test suite by the command
 ```
-pytest
+uv run pytest
 ```
 
 If it creates an output ending like below, the installation was successful.
