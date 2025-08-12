@@ -5,6 +5,15 @@ on:
   release:
     types: [published]
 
+  push:
+    branches: [ci-debug]
+
+  pull_request:
+    branches:
+      - master
+      - develop
+
+
 defaults:
   run:
     working-directory: tools/odbclient
@@ -63,7 +72,10 @@ jobs:
   upload_pypi:
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
+    environment: release
+    permissions:
+      # IMPORTANT: this permission is mandatory for Trusted Publishing
+      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -75,9 +87,13 @@ jobs:
           name: artifact-wheel
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.9.0
+      - name: Publish package distributions to PyPI
+        if: github.event_name == 'release' && github.event.action == 'published'
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Publish package distributions to PyPI test
+        if: github.event_name != 'release'
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.upload_pypi }}
-          # password: ${{ secrets.test_pypi }}
-          # repository_url: https://test.pypi.org/legacy/
+          verbose: true
+          repository-url: https://test.pypi.org/legacy/

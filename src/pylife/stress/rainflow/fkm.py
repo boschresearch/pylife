@@ -17,7 +17,6 @@
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
-import cython
 import numpy as np
 
 from .general import AbstractDetector
@@ -69,12 +68,6 @@ class FKMDetector(AbstractDetector):
         self._residuals = []
         self._max_turn = 0.0
 
-    @cython.locals(
-        turns=cython.double[:],
-        iz=cython.int, ir=cython.int,
-        last0=cython.double, last1=cython.double,
-        loop_assumed=cython.int,
-        max_turn=cython.double)
     def process(self, samples):
         """Process a sample chunk.
 
