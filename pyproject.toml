@@ -152,3 +152,6 @@ dist
 .eggs
 docs/source/conf.py
 .venv"""
+
+[tool.cibuildwheel]
+environment = "CI=true"
