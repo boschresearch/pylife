@@ -6,6 +6,7 @@
     PyScaffold helps you to put up the scaffold of your new Python project.
     Learn more under: https://pyscaffold.org/
 """
+import os
 from setuptools import setup
 from distutils.core import Extension
 import numpy
@@ -18,9 +19,12 @@ ext = Extension(
 )
 
 if __name__ == "__main__":
+    scm_version_setup = {"version_scheme": "no-guess-dev"}
+    if os.environ.get("CI") == "true":
+        scm_version_setup |= {"local_scheme": "no-local-version"}
     try:
         setup(
-            use_scm_version={"version_scheme": "no-guess-dev"},
+            use_scm_version=scm_version_setup,
             ext_modules=[ext]
         )
     except:  # noqa

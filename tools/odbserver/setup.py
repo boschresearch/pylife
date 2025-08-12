@@ -8,6 +8,7 @@
     http://pyscaffold.readthedocs.org/
 """
 
+import os
 import sys
 from setuptools import setup
 
@@ -15,13 +16,15 @@ from setuptools import setup
 def setup_package():
     needs_sphinx = {'build_sphinx', 'upload_docs'}.intersection(sys.argv)
     sphinx = ['sphinx'] if needs_sphinx else []
+    scm_version_setup = {
+        "root": "../..",
+        "relative_to": __file__,
+    }
+    if os.environ.get("CI") == "true":
+        scm_version_setup.update({"local_scheme": "no-local-version"})
     setup(
-        python_requires = "<3",
-        use_scm_version = {
-            "root": "../..",
-            "relative_to": __file__,
-            "local_scheme": "node-and-timestamp"
-        },
+        python_requires="<3",
+        use_scm_version=scm_version_setup,
         setup_requires=['six', 'setuptools_scm'] + sphinx
     )
 
