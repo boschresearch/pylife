@@ -21,9 +21,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-        include:
-          - python-version: "3.13"
-            only-minimal: true
+
     steps:
     - uses: actions/checkout@v4
 
@@ -31,20 +29,16 @@ jobs:
       uses: astral-sh/setup-uv@v5
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Set up Python
-      run: uv python install
-    - name: Install python essentials
-      run: uv pip install -U setuptools setuptools_scm wheel pytest-xdist
     - name: Install dependencies complete
       if: matrix.only-minimal != true
-      run: uv pip install -e .[all,testing]
+      run: uv sync --dev --all-extras
     - name: Install dependencies minimal
       if: matrix.only-minimal == true
-      run: uv pip install -e .[testing]
+      run: uv sync --dev
     - name: Unit tests
-      run: pytest -n auto
+      run: uv run pytest -n auto
     - name: Notebook flow tests
       if: matrix.only-minimal != true
       uses: coactions/setup-xvfb@v1
       with:
-        run: python -m pytest -m demos
+        run: uv run pytest -m demos

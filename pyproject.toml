@@ -1,8 +1,157 @@
 [build-system]
-# AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
 requires = ["setuptools>=46.1.0", "setuptools_scm[toml]>=5", "wheel", "cython", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-# See configuration details in https://github.com/pypa/setuptools_scm
 version_scheme = "no-guess-dev"
+
+[project]
+name = "pylife"
+description = "General Fatigue library"
+authors = [{name = "pyLife developer team @ Bosch Research", email = "johannes.mueller4@de.bosch.com"}]
+license = {text = "Apache-2"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.23.5",
+    "scipy",
+    "pandas>=2.2",
+    "h5py!=3.7.0",
+    "pickleshare>=0.7.5 ; python_full_version < '3.11'",
+]
+dynamic = ["version"]
+
+[dependency-groups]
+dev = [
+  "setuptools",
+  "pytest",
+  "pytest-cov",
+  "pytest-timeout",
+  "hypothesis",
+  "testbook",
+  "pytest-xdist>=3.8.0",
+]
+visuals = [
+  "pyvista",
+  "xvfbwrapper",
+  "ipykernel",
+  "ipywidgets",
+  "ipython",
+  "pickleshare",
+
+]
+testing = [
+  {include-group = "dev"},
+  {include-group = "visuals"}
+]
+docs = [
+  "sphinx",
+  "nbsphinx",
+  "nbsphinx-link",
+  "sphinx_rtd_theme>=1.0",
+  "plotly",
+  "jupyter_sphinx",
+  "myst_parser",
+  "pyvista[all,jupyter]",
+  "trame<3",
+  {include-group = "visuals"}
+]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown; charset=UTF-8"
+# Add here related links, for example:
+
+[project.urls]
+Homepage = "https://github.com/boschresearch/pylife/"
+Documentation = "https://pylife.readthedocs.io"
+Source = "https://github.com/boschresearch/pylife/"
+Changelog = "https://pylife.readthedocs.io/en/stable/CHANGELOG.html"
+Tracker = "https://github.com/boschresearch/pylife/issues"
+Download = "https://pypi.org/project/pylife/#files"
+
+[project.optional-dependencies]
+tsfresh = [
+  "tsfresh>=0.21.0",
+  "numba>=0.60",
+]
+extras = [
+  "jupyter",
+  "matplotlib",
+  "pyvista",
+  "plotly",
+  "ansys-mapdl-reader",
+]
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+package-dir = {"" = "src"}
+# Require a min/specific Python version (comma-separated conditions)
+# Add here dependencies of your project (line-separated), e.g. requests>=2.2,<3.0.
+# Version specifiers like >=2.2,<3.0 avoid problems due to API changes in
+# new major versions. This works if the required packages follow Semantic Versioning.
+# For more information, check out https://semver.org/.
+platforms = ["any"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = [
+    "tests",
+    "demos",
+    "tools",
+    "docs",
+    "batch_scripts",
+]
+namespaces = false
+
+[tool.pytest.ini_options]
+# Specify command line options as you would do when invoking pytest directly.
+# e.g. --cov-report html (or xml) for html/xml output or --junitxml junit.xml
+# in order to write a coverage file that can be read by Jenkins.
+# CAUTION: --cov flags may prohibit setting breakpoints while debugging.
+# Comment those flags to avoid this py.test issue.
+addopts = '''
+--cov src/pylife --cov-append -m "not slow_acceptance and not demos"
+--doctest-modules
+--ignore=src/pylife/materialdata/woehler/bayesian.py
+--ignore=src/pylife/strength/helpers.py
+--ignore=src/pylife/strength/sn_curve.py'''
+norecursedirs = [
+    "dist",
+    "build",
+    ".tox",
+]
+testpaths = ["tests", "src/pylife"]
+markers = [
+    "slow_acceptance: long running acceptance test (not run by default)",
+    "demos: demo notebooks by testbook",
+]
+doctest_optionflags = "NORMALIZE_WHITESPACE IGNORE_EXCEPTION_DETAIL"
+
+[tool.distutils.bdist_wheel]
+# Use this option if your package is pure-python
+universal = 1
+
+
+[tool.flake8]
+# Some sane defaults for the code style checker flake8
+max_line_length = "120"
+extend_ignore = "E203, W503"
+# ^  Black-compatible
+# E203 and W503 have edge cases handled by black
+exclude = """
+.tox
+build
+dist
+.eggs
+docs/source/conf.py
+.venv"""
+
+[tool.cibuildwheel]
+environment = "CI=true"
