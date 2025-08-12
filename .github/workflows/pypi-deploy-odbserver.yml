@@ -8,6 +8,11 @@ on:
   push:
     branches: [ci-debug]
 
+  pull_request:
+    branches:
+      - master
+      - develop
+
 defaults:
   run:
     working-directory: tools/odbserver
@@ -86,7 +91,8 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
 
       - name: Publish package distributions to PyPI test
-        if: github.event_name == 'push'
+        if: github.event_name != 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          verbose: true
           repository-url: https://test.pypi.org/legacy/
