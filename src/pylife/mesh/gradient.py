@@ -65,8 +65,10 @@ class Gradient(Mesh):
         self._node_data = np.zeros((len(groups), 4), order='F')
         self._node_data[:, :3] = groups.first()[['x', 'y', 'z']]
         self._node_data[:, 3] = groups[self.value_key].mean()
+        node_index = groups.first().index
         for node, row in zip(groups.first().index, np.nditer(self._node_data.T, flags=['external_loop'], order='F')):
-            diff = self._node_data[self.neighbors[node]-1, :] - row
+            idx = node_index.get_indexer_for(self.neighbors[node])
+            diff = self._node_data[idx, :] - row
             dx, dy, dz = np.linalg.lstsq(diff[:, :3], diff[:, 3], rcond=None)[0]
             self.lst_sqr_grad_dx[node] = dx
             self.lst_sqr_grad_dy[node] = dy
@@ -399,4 +401,3 @@ class Gradient3D(Mesh):
 
         # remove duplicate indices, keep the first node
         return result[~result.index.duplicated(keep='first')]
-
