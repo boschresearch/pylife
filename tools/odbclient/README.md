@@ -1,22 +1,25 @@
 # pylife-odbclient
 
-A Python 3 client for odbAccess using pylife-odbserver
+A Modern Python client for odbAccess using pylife-odbserver
 
 
 ## Purpose
 
-Unfortunately Abaqus still comes with a python-2.x engine. So you can't access
-an Abaqus odb file from within modern python code. This python package is the
-client part of a client server setup to make odb files accessible from within
-python-3.x code in a transparent way.
+Unfortunately Abaqus usually comes with an outdated python engine. So you can't
+access an Abaqus odb file from within modern python code using the latest
+packages. This python package is the client part of a client server setup to
+make odb files accessible from within python code using a current python
+version in a transparent way.
+
 
 
 ## Solution
 
-The sibling package `pylife-odbserver` provides a slim server that as
-python-2.7 software, that can be run inside the Abaqus python engine. It
-accepts command via `sys.stdin` and according to the command is querying data
-from the `odbAccess` interface and returning them in a pickle object.
+The sibling package `pylife-odbserver` provides a slim server that as python
+software that is running with old python versions of Abaqus (even 2.7), that
+can be run inside the Abaqus python engine. It accepts command via `sys.stdin`
+and according to the command is querying data from the `odbAccess` interface
+and returning them in a pickle object.
 
 This package comes with a python class `OdbClient` that spawns the server in
 the background when an instance of `OdbClient` is instantiated. Then the client
