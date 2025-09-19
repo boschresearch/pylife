@@ -23,7 +23,6 @@ def setup_package():
     if os.environ.get("CI") == "true":
         scm_version_setup.update({"local_scheme": "no-local-version"})
     setup(
-        python_requires="<3",
         use_scm_version=scm_version_setup,
         setup_requires=['six', 'setuptools_scm'] + sphinx
     )
