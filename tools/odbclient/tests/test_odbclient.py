@@ -339,3 +339,23 @@ def test_history_info(client_history, abaqus_version):
 
     result = client_history.history_info()
     assert result == expected
+
+
+def test_bigger_file(datapath, abaqus_version, abaqus_bin):
+    python_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}")
+    odb_file = datapath(f"midsized-{abaqus_version}.odb")
+    csv_file = datapath("midsized-reference.csv")
+
+    client = odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path)
+
+    instances = client.instance_names()
+    instance = instances[0]
+    step_names = client.step_names()
+    step = step_names[0]
+    increment = 1
+
+    pylife_mesh_tot = client.variable('S', instance, step, increment)
+
+    expected = pd.read_csv(csv_file).set_index(["node_id", "element_id"])
+
+    pd.testing.assert_frame_equal(pylife_mesh_tot, expected)
