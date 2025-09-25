@@ -21,8 +21,8 @@ __maintainer__ = __author__
 
 import sys
 import os
-
 import pickle
+import struct
 
 import numpy as np
 
@@ -127,8 +127,12 @@ class OdbServer:
 def _send_response(pickle_data, numpy_arrays=None):
     stdout = sys.stdout if sys.version_info.major == 2 else sys.stdout.buffer
     numpy_arrays = numpy_arrays or []
-    s = pickle.dumps((len(numpy_arrays), pickle_data))
-    stdout.write(s+b'\n\n')
+
+    message = pickle.dumps((len(numpy_arrays), pickle_data), protocol=2)
+    data_size_8_bytes = struct.pack("Q", len(message))
+
+    stdout.write(data_size_8_bytes)
+    stdout.write(message)
     sys.stdout.flush()
     for nparr in numpy_arrays:
         np.lib.format.write_array(sys.stdout, nparr)

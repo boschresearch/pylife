@@ -21,6 +21,7 @@ import os
 import sys
 import time
 import pickle
+import struct
 import subprocess as sp
 import shutil
 
@@ -491,12 +492,8 @@ class OdbClient:
         self._proc.stdin.flush()
 
     def _parse_response(self):
-        pickle_data = b''
-        while True:
-            line = self._proc.stdout.readline().rstrip() + b'\n'
-            if line == b'\n':
-                break
-            pickle_data += line
+        expected_size,  = struct.unpack("Q", self._proc.stdout.read(8))
+        pickle_data = self._proc.stdout.read(expected_size)
         return pickle.loads(pickle_data, encoding='bytes')
 
     def __del__(self):
