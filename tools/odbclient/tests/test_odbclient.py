@@ -57,11 +57,12 @@ def abaqus_version(request):
 @pytest.fixture(scope="session")
 def pyenvs(abaqus_version):
     pyenv_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}")
-    pip_path = os.path.join(pyenv_path, "bin/pip")
+    bin_path = "Scripts" if sys.platform == "win32" else "bin"
+    pip_path = os.path.join(pyenv_path, bin_path, "pip")
 
     this_file_path = Path(os.path.dirname(__file__))
     odbserver_path = os.path.normpath(
-        os.path.join(this_file_path,  "../", "../", "odbserver")
+        os.path.join(this_file_path,  "..", "..", "odbserver")
     )
     subprocess.call([pip_path, "install", "-U", odbserver_path])
     return pyenv_path
