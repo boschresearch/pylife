@@ -31,6 +31,8 @@ import queue as QU
 import numpy as np
 import pandas as pd
 
+import odbclient
+
 
 class OdbServerError(Exception):
     """Raised when the ODB Server launch fails."""
@@ -148,7 +150,8 @@ class OdbClient:
         if lock_file_exists:
             self._gulp_lock_file_warning()
 
-        self._wait_for_server_ready_sign()
+        server_version = self._wait_for_server_ready_sign()
+        _raise_if_version_mismatch(server_version)
 
     def _gulp_lock_file_warning(self):
         self._proc.stdout.readline()
@@ -158,6 +161,8 @@ class OdbClient:
         def wait_for_input(stdout, queue):
             sign = stdout.read(5)
             queue.put(sign)
+            version_sign = stdout.readline()
+            queue.put(version_sign)
 
         queue = QU.Queue()
         thread = THR.Thread(target=wait_for_input, args=(self._proc.stdout, queue))
@@ -173,6 +178,12 @@ class OdbClient:
             else:
                 if sign != b'ready':
                     raise OdbServerError("Expected ready sign from server, received %s" % sign)
+
+                try:
+                    sign = queue.get_nowait()
+                    return _ascii(_decode, sign).strip()
+                except QU.Empty:
+                    return "unannounced"
                 return
 
     def instance_names(self):
@@ -203,8 +214,11 @@ class OdbClient:
         """
         self._fail_if_instance_invalid(instance_name)
         index, node_data = self._query('get_nodes', (instance_name, nset_name))
-        return pd.DataFrame(data=node_data, columns=['x', 'y', 'z'],
-                            index=pd.Index(index, name='node_id', dtype=np.int64))
+        return pd.DataFrame(
+            data=node_data,
+            columns=['x', 'y', 'z'],
+            index=pd.Index(index, name='node_id', dtype=np.int64),
+        )
 
     def element_connectivity(self, instance_name, elset_name=''):
         """Query the element connectivity of an instance.
@@ -536,6 +550,7 @@ def _decode(arg):
         return [_decode(element) for element in arg]
     return arg
 
+
 def _guess_abaqus_bin():
     if sys.platform == 'win32':
         return _guess_abaqus_bin_windows()
@@ -582,9 +597,24 @@ def _determine_server_python_version(abaqus_bin):
     return version_string[:version_string.rfind(".")]
 
 
-
 def _guess_python_env_path(python_env_path):
     cand = python_env_path or os.path.join(os.environ['HOME'], '.conda', 'envs', 'odbserver')
     if os.path.exists(cand):
         return cand
     return None
+
+
+def _raise_if_version_mismatch(server_version):
+    def strip_version(version):
+        pos = version.find("+")
+        if pos == -1:
+            return version
+        return version[:pos]
+
+    client_version = odbclient.__version__
+
+    if strip_version(odbclient.__version__) != strip_version(server_version):
+        raise RuntimeError(
+            "Version mismatch: "
+            f"odbserver version {server_version} != odbclient version {client_version}"
+        )

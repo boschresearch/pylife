@@ -27,12 +27,14 @@ import struct
 import numpy as np
 
 from .interface import OdbInterface
+import odbserver
 
 class OdbServer:
 
     def __init__(self, odbfile):
         self._odb = OdbInterface(odbfile)
         self.command_dict = {
+            "get_version": self.version,
             "get_instances": self.instances,
             "get_steps": self.steps,
             "get_frames": self.frames,
@@ -50,6 +52,9 @@ class OdbServer:
             "get_history_region_description": self.history_region_description,
             "get_history_info": self.history_info
         }
+
+    def version(self, _args):
+        _send_response("some version")
 
     def instances(self, _args):
         _send_response(self._odb.instance_names())
@@ -164,7 +169,8 @@ def main():
         print(str(e), file=sys.stderr)
         sys.exit(1)
 
-    sys.stdout.write('ready')
+    ready_message = "ready %s\n" % odbserver.__version__
+    sys.stdout.write(ready_message)
     sys.stdout.flush()
 
     command = ''
@@ -176,10 +182,9 @@ def main():
         if command == 'QUIT':
             break
 
-        func = server.command_dict.get(command)
-        if func is not None:
-            func(parameters)
-            sys.stdout.flush()
+        func = server.command_dict.get(command, )
+        func(parameters)
+        sys.stdout.flush()
 
 
 if __name__ == "__main__":
