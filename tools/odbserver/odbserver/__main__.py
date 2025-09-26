@@ -133,8 +133,13 @@ def _send_response(pickle_data, numpy_arrays=None):
     stdout = sys.stdout if sys.version_info.major == 2 else sys.stdout.buffer
     numpy_arrays = numpy_arrays or []
 
-    message = pickle.dumps((len(numpy_arrays), pickle_data), protocol=2)
-    data_size_8_bytes = struct.pack("Q", len(message))
+    message = pickle.dumps((len(numpy_arrays), pickle_data))
+    data_size = len(message)
+
+    if sys.platform == "win32":
+        data_size += message.count(b"\n")
+
+    data_size_8_bytes = struct.pack("Q", data_size)
 
     stdout.write(data_size_8_bytes)
     stdout.write(message)

@@ -508,6 +508,8 @@ class OdbClient:
     def _parse_response(self):
         expected_size,  = struct.unpack("Q", self._proc.stdout.read(8))
         pickle_data = self._proc.stdout.read(expected_size)
+        if sys.platform == "win32":
+            pickle_data = pickle_data.replace(b"\r\n", b"\n")
         return pickle.loads(pickle_data, encoding='bytes')
 
     def __del__(self):
@@ -616,5 +618,5 @@ def _raise_if_version_mismatch(server_version):
     if strip_version(odbclient.__version__) != strip_version(server_version):
         raise RuntimeError(
             "Version mismatch: "
-            f"odbserver version {server_version} != odbclient version {client_version}"
+            f"odbserver version {strip_version(server_version)} != odbclient version {strip_version(client_version)}"
         )
