@@ -608,15 +608,16 @@ def _guess_python_env_path(python_env_path):
 
 def _raise_if_version_mismatch(server_version):
     def strip_version(version):
-        pos = version.find("+")
+        pos = version.find(".post")
         if pos == -1:
             return version
         return version[:pos]
 
-    client_version = odbclient.__version__
+    server_version = strip_version(server_version)
+    client_version = strip_version(odbclient.__version__)
 
-    if strip_version(odbclient.__version__) != strip_version(server_version):
+    if client_version != server_version:
         raise RuntimeError(
             "Version mismatch: "
-            f"odbserver version {strip_version(server_version)} != odbclient version {strip_version(client_version)}"
+            f"odbserver version {server_version} != odbclient version {client_version}"
         )
