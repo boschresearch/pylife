@@ -19,6 +19,7 @@ def setup_package():
     scm_version_setup = {
         "root": "../..",
         "relative_to": __file__,
+        "version_scheme": "no-guess-dev",
     }
     if os.environ.get("CI") == "true":
         scm_version_setup.update({"local_scheme": "no-local-version"})

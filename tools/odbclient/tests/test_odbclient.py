@@ -25,7 +25,11 @@ import os
 import pytest
 import json
 import shutil
+
+import subprocess
+
 from pathlib import Path
+import pylife
 
 import numpy as np
 import pandas as pd
@@ -33,6 +37,7 @@ import pandas as pd
 import odbclient
 
 from odbclient.odbclient import OdbServerError
+
 
 @pytest.fixture
 def datapath():
@@ -44,9 +49,14 @@ def datapath():
     return join_path
 
 
-@pytest.fixture(params=["2022", "2023", "2024"])
+@pytest.fixture(params=["2022", "2023", "2024"], scope="session")
 def abaqus_version(request):
     return request.param
+
+
+@pytest.fixture(scope="session")
+def pyenvs(abaqus_version):
+    return os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}")
 
 
 @pytest.fixture
@@ -57,10 +67,14 @@ def abaqus_bin(abaqus_version):
 
 
 @pytest.fixture
-def client(datapath, abaqus_version, abaqus_bin):
-    python_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}")
+def client(datapath, pyenvs, abaqus_version, abaqus_bin):
+    python_path = pyenvs
     odb_file = datapath(f"beam_3d_hex_quad-{abaqus_version}.odb")
     return odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path)
+
+
+def test_odbclient_version():
+    assert odbclient.__version__ == pylife.__version__
 
 
 def test_not_existing_odbserver_env():
@@ -71,6 +85,15 @@ def test_not_existing_odbserver_env():
 def test_not_existing_abaqus_path():
     with pytest.raises(FileNotFoundError):
         odbclient.OdbClient('foo.odb', abaqus_bin='/foo/bar/abaqus')
+
+
+
+def test_version_mismatch(datapath, abaqus_version, abaqus_bin):
+    python_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}-version-mismatch")
+    odb_file = datapath(f"beam_3d_hex_quad-{abaqus_version}.odb")
+    with pytest.raises(RuntimeError, match="Version mismatch"):
+        odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path)
+
 
 
 def test_odbclient_instances(client):
@@ -84,7 +107,10 @@ def test_odbclient_invalid_instance(client):
 
 def test_odbclient_node_coordinates(client, datapath):
     expected = pd.read_csv(datapath('node_coordinates.csv'), index_col='node_id')
-    pd.testing.assert_frame_equal(client.node_coordinates('PART-1-1'), expected)
+    result = client.node_coordinates('PART-1-1')
+    print("comparing")
+    pd.testing.assert_frame_equal(result, expected)
+    print("test finished")
 
 
 def test_odbclient_node_ids(client):

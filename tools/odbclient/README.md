@@ -77,5 +77,23 @@ So far only names made of `ascii` strings are supported.  That means that
 instance names, node that names and the like containing non-ascii characters
 like German umlauts will not work.
 
+
+## Development
+
+Due to the server client architechture running the unit tests is not completely
+trivial. Here are some instructions on how to get them running.
+
+### Setting up the environments
+
+As of now, we are assuming that conda is used to setup the server
+environments. Probably we will change for `uv` in the future.
+
+We provide a bash script in `tests/create_server_envs.sh` that you can run from
+within the root folder of `odbclient` (the folder this `README.md` resides
+in). Then it should generate all the necessary environments. You will have to
+run the script again, if there has been a release update in between.
+
+The script is not well tested. So please be prepared for some manual steps.
+
 ___
 [1]: https://pylife.readthedocs.io/en/latest/tools/odbclient/odbclient.html

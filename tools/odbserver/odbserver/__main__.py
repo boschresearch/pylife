@@ -27,6 +27,7 @@ import struct
 import numpy as np
 
 from .interface import OdbInterface
+import odbserver
 
 class OdbServer:
 
@@ -124,18 +125,37 @@ class OdbServer:
         _send_response(self._odb.history_info())
 
 
-def _send_response(pickle_data, numpy_arrays=None):
-    stdout = sys.stdout if sys.version_info.major == 2 else sys.stdout.buffer
+def _send_response_py2(pickle_data, numpy_arrays=None):
+    numpy_arrays = numpy_arrays or []
+    s = pickle.dumps((len(numpy_arrays), pickle_data))
+    sys.stdout.write(s + '\n')
+    sys.stdout.flush()
+    for nparr in numpy_arrays:
+        np.lib.format.write_array(sys.stdout, nparr)
+
+
+def _send_response_py3(pickle_data, numpy_arrays=None):
+    stdout = os.fdopen(sys.stdout.fileno(), 'wb', closefd=False)
     numpy_arrays = numpy_arrays or []
 
-    message = pickle.dumps((len(numpy_arrays), pickle_data), protocol=2)
-    data_size_8_bytes = struct.pack("Q", len(message))
+    message = pickle.dumps((len(numpy_arrays), pickle_data))
+
+    data_size = len(message)
+
+    data_size_8_bytes = struct.pack("Q", data_size)
 
     stdout.write(data_size_8_bytes)
     stdout.write(message)
     sys.stdout.flush()
     for nparr in numpy_arrays:
         np.lib.format.write_array(sys.stdout, nparr)
+
+
+if sys.version_info.major == 2:
+    _send_response = _send_response_py2
+else:
+    _send_response = _send_response_py3
+
 
 
 def main():
@@ -164,7 +184,8 @@ def main():
         print(str(e), file=sys.stderr)
         sys.exit(1)
 
-    sys.stdout.write('ready')
+    ready_message = "ready %s %s\n" % (odbserver.__version__, sys.version_info.major)
+    sys.stdout.write(ready_message)
     sys.stdout.flush()
 
     command = ''
@@ -176,10 +197,9 @@ def main():
         if command == 'QUIT':
             break
 
-        func = server.command_dict.get(command)
-        if func is not None:
-            func(parameters)
-            sys.stdout.flush()
+        func = server.command_dict.get(command, )
+        func(parameters)
+        sys.stdout.flush()
 
 
 if __name__ == "__main__":
