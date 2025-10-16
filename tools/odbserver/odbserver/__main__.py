@@ -34,7 +34,6 @@ class OdbServer:
     def __init__(self, odbfile):
         self._odb = OdbInterface(odbfile)
         self.command_dict = {
-            "get_version": self.version,
             "get_instances": self.instances,
             "get_steps": self.steps,
             "get_frames": self.frames,
@@ -52,9 +51,6 @@ class OdbServer:
             "get_history_region_description": self.history_region_description,
             "get_history_info": self.history_info
         }
-
-    def version(self, _args):
-        _send_response("some version")
 
     def instances(self, _args):
         _send_response(self._odb.instance_names())
@@ -129,15 +125,22 @@ class OdbServer:
         _send_response(self._odb.history_info())
 
 
-def _send_response(pickle_data, numpy_arrays=None):
-    stdout = sys.stdout if sys.version_info.major == 2 else sys.stdout.buffer
+def _send_response_py2(pickle_data, numpy_arrays=None):
+    numpy_arrays = numpy_arrays or []
+    s = pickle.dumps((len(numpy_arrays), pickle_data))
+    sys.stdout.write(s + '\n')
+    sys.stdout.flush()
+    for nparr in numpy_arrays:
+        np.lib.format.write_array(sys.stdout, nparr)
+
+
+def _send_response_py3(pickle_data, numpy_arrays=None):
+    stdout = os.fdopen(sys.stdout.fileno(), 'wb', closefd=False)
     numpy_arrays = numpy_arrays or []
 
     message = pickle.dumps((len(numpy_arrays), pickle_data))
-    data_size = len(message)
 
-    if sys.platform == "win32":
-        data_size += message.count(b"\n")
+    data_size = len(message)
 
     data_size_8_bytes = struct.pack("Q", data_size)
 
@@ -146,6 +149,13 @@ def _send_response(pickle_data, numpy_arrays=None):
     sys.stdout.flush()
     for nparr in numpy_arrays:
         np.lib.format.write_array(sys.stdout, nparr)
+
+
+if sys.version_info.major == 2:
+    _send_response = _send_response_py2
+else:
+    _send_response = _send_response_py3
+
 
 
 def main():
@@ -174,7 +184,7 @@ def main():
         print(str(e), file=sys.stderr)
         sys.exit(1)
 
-    ready_message = "ready %s\n" % odbserver.__version__
+    ready_message = "ready %s %s\n" % (odbserver.__version__, sys.version_info.major)
     sys.stdout.write(ready_message)
     sys.stdout.flush()
 

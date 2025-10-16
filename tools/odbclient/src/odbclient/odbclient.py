@@ -150,8 +150,13 @@ class OdbClient:
         if lock_file_exists:
             self._gulp_lock_file_warning()
 
-        server_version = self._wait_for_server_ready_sign()
+        server_version, server_python_version = self._wait_for_server_ready_sign()
         _raise_if_version_mismatch(server_version)
+        if server_python_version == "2":
+            self._parse_response = self._parse_response_py2
+        else:
+            self._parse_response = self._parse_response_py3
+
 
     def _gulp_lock_file_warning(self):
         self._proc.stdout.readline()
@@ -181,9 +186,9 @@ class OdbClient:
 
                 try:
                     sign = queue.get_nowait()
-                    return _ascii(_decode, sign).strip()
+                    return _ascii(_decode, sign).strip().split()
                 except QU.Empty:
-                    return "unannounced"
+                    return "unannounced", "2"
                 return
 
     def instance_names(self):
@@ -461,6 +466,7 @@ class OdbClient:
          """Query the description of a history Regions of a given step.
 
          Parameters
+
          ----------
          step_name : string
              The name of the step
@@ -505,12 +511,20 @@ class OdbClient:
         pickle.dump((command, args), self._proc.stdin, protocol=2)
         self._proc.stdin.flush()
 
-    def _parse_response(self):
-        expected_size,  = struct.unpack("Q", self._proc.stdout.read(8))
-        pickle_data = self._proc.stdout.read(expected_size)
-        if sys.platform == "win32":
-            pickle_data = pickle_data.replace(b"\r\n", b"\n")
+    def _parse_response_py2(self):
+        pickle_data = b''
+        while True:
+            line = self._proc.stdout.readline().rstrip() + b'\n'
+            pickle_data += line
+            if line == b'.\n':
+                break
         return pickle.loads(pickle_data, encoding='bytes')
+
+    def _parse_response_py3(self):
+        msg = self._proc.stdout.read(8)
+        expected_size,  = struct.unpack("Q", msg)
+        pickle_data = self._proc.stdout.read(expected_size)
+        return pickle.loads(pickle_data)
 
     def __del__(self):
         if self._proc is not None:

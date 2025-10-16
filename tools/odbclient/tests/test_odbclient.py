@@ -64,7 +64,7 @@ def pyenvs(abaqus_version):
     odbserver_path = os.path.normpath(
         os.path.join(this_file_path,  "..", "..", "odbserver")
     )
-    subprocess.call([pip_path, "install", "-U", odbserver_path])
+    #subprocess.call([pip_path, "install", "-U", odbserver_path])
     return pyenv_path
 
 
@@ -116,7 +116,10 @@ def test_odbclient_invalid_instance(client):
 
 def test_odbclient_node_coordinates(client, datapath):
     expected = pd.read_csv(datapath('node_coordinates.csv'), index_col='node_id')
-    pd.testing.assert_frame_equal(client.node_coordinates('PART-1-1'), expected)
+    result = client.node_coordinates('PART-1-1')
+    print("comparing")
+    pd.testing.assert_frame_equal(result, expected)
+    print("test finished")
 
 
 def test_odbclient_node_ids(client):
