@@ -4,6 +4,13 @@ In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
 
+## pylife-2.1.4
+
+### Bugfixes
+
+Fix gradient calculation for non continous nodes in mesh.
+
+
 ## pylife-2.1.3
 
 ### Improvements
