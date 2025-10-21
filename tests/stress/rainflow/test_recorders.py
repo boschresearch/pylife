@@ -161,6 +161,34 @@ def test_full_rainflow_recorder_empty_histogram_5_bins():
     np.testing.assert_array_equal(histogram, np.zeros((5, 5)))
 
 
+def test_full_rainflow_recorder_empty_histogram_interval_index_success():
+    fr = RFR.FullRecorder()
+    interval_bins = pd.interval_range(start=-10.0, end=10.0, periods=5)
+    histogram, _, _ = fr.histogram_numpy(bins=interval_bins)
+    np.testing.assert_array_equal(histogram, np.zeros((5, 5)))
+
+
+def test_full_rainflow_recorder_empty_histogram_interval_array_success():
+    fr = RFR.FullRecorder()
+    interval_bins = pd.arrays.IntervalArray.from_breaks(np.linspace(-10.0, 10.0, 6))
+    histogram, _, _ = fr.histogram_numpy(bins=interval_bins)
+    np.testing.assert_array_equal(histogram, np.zeros((5, 5)))
+
+
+def test_full_rainflow_recorder_empty_histogram_interval_bins_overlapping():
+    fr = RFR.FullRecorder()
+    interval_bins = pd.IntervalIndex.from_tuples([(0.0, 2.0), (1.0, 3.0), (2.0, 4.0)])
+    with pytest.raises(ValueError, match="Intervals must not overlap and must be continuous and monotonic."):
+        histogram, _, _ = fr.histogram_numpy(bins=interval_bins)
+
+
+def test_full_rainflow_recorder_empty_histogram_interval_bins_non_continous():
+    fr = RFR.FullRecorder()
+    interval_bins = pd.IntervalIndex.from_tuples([(0.0, 1.0), (2.0, 3.0), (4.0, 5.0)])
+    with pytest.raises(ValueError, match="Intervals must not overlap and must be continuous and monotonic."):
+        histogram, _, _ = fr.histogram_numpy(bins=interval_bins)
+
+
 @pytest.mark.parametrize('value_from, value_to, index_from, index_to', [
     (23., 42., 11, 17),
     (46., 84., 22, 34)
