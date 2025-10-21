@@ -73,6 +73,19 @@ class LoopValueRecorder(AbstractRecorder):
         yedges : ndarray, shape(ny+1,)
             The bin edges along the second dimension.
         """
+        def is_non_continous(intervals):
+            lefts = intervals.left
+            rights = intervals.right
+            return np.any(lefts[1:] != rights[:-1])
+
+        if isinstance(bins, pd.IntervalIndex) or isinstance(bins, pd.arrays.IntervalArray):
+            if not bins.is_non_overlapping_monotonic or is_non_continous(bins):
+                raise ValueError("Intervals must not overlap and must be continuous and monotonic.")
+            new_bins = np.empty(len(bins) + 1)
+            new_bins[:-1] = bins.left
+            new_bins[-1] = bins.right[-1]
+            bins = new_bins
+
         return np.histogram2d(self._values_from, self._values_to, bins)
 
     def histogram(self, bins=10):
