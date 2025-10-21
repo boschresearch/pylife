@@ -22,6 +22,13 @@ In this file noteworthy changes of new releases of pyLife are documented since
 * Fix unnecessary and harmful copy of pandas object in Wöhler classes (#146)
 
 
+## pylife-2.1.4
+
+### Bugfixes
+
+Fix gradient calculation for non continous nodes in mesh.
+
+
 ## pylife-2.1.3
 
 ### Improvements
