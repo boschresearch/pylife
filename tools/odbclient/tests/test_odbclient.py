@@ -70,7 +70,9 @@ def abaqus_bin(abaqus_version):
 def client(datapath, pyenvs, abaqus_version, abaqus_bin):
     python_path = pyenvs
     odb_file = datapath(f"beam_3d_hex_quad-{abaqus_version}.odb")
-    return odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path)
+    return odbclient.OdbClient(
+        odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path
+    )
 
 
 def test_odbclient_version():
@@ -87,13 +89,33 @@ def test_not_existing_abaqus_path():
         odbclient.OdbClient('foo.odb', abaqus_bin='/foo/bar/abaqus')
 
 
-
 def test_version_mismatch(datapath, abaqus_version, abaqus_bin):
-    python_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}-version-mismatch")
+    python_path = os.path.join(
+        Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}-version-mismatch"
+    )
     odb_file = datapath(f"beam_3d_hex_quad-{abaqus_version}.odb")
     with pytest.raises(RuntimeError, match="Version mismatch"):
-        odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path)
+        odbclient.OdbClient(
+            odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path
+        )
 
+
+def test_guess_python_path_with_home_var(datapath):
+    odbclient.OdbClient(datapath("beam_3d_hex_quad-2024.odb"))
+    assert True
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows specific")
+def test_guess_python_path_without_home_var_set(datapath):
+    try:
+        home = os.environ.get("HOME")
+        if home is not None:
+            os.environ.pop("HOME")
+        odbclient.OdbClient(datapath("beam_3d_hex_quad-2024.odb"))
+        assert True
+    finally:
+        if home is not None:
+            os.environ["HOME"] = home
 
 
 def test_odbclient_instances(client):
