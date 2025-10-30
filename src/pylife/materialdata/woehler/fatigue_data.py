@@ -36,11 +36,14 @@ class FatigueData(PylifeSignal):
 
     def _validate(self):
         self.fail_if_key_missing(['load', 'cycles', 'fracture'])
+        self._finite_infinite_transition = None
+
+    def sanitize_check(self):
+        """Perform sanitize checks on the fatigue data and raise on failure."""
         if not self._obj.fracture.any():
             raise ValueError("Need at least one fracture.")
         if self.fractures.cycles.max() == self.fractures.cycles.min():
             raise ValueError("There must be a variance in fracture cycles.")
-        self._finite_infinite_transition = None
 
     @property
     def num_tests(self):

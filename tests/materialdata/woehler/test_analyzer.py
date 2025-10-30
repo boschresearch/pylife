@@ -670,15 +670,17 @@ def test_drop_irreverent_pure_runout_levels_no_data_change():
 # GH-108
 def test_at_least_one_fracture():
     data = pd.DataFrame({'cycles': [1e7, 1e7], 'load': [320, 360]})
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
     with pytest.raises(ValueError, match=r"^.*[N|n]eed at least one fracture."):
-        woehler.determine_fractures(data, 1e7).fatigue_data
+        woehler.Elementary(fd).analyze()
 
 
 # GH-108
 def test_fracture_cycle_spread():
     data = pd.DataFrame({'cycles': [1e5, 1e5], 'load': [320, 360]})
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
     with pytest.raises(ValueError, match=r"There must be a variance in fracture cycles."):
-        woehler.determine_fractures(data, 1e7).fatigue_data
+        woehler.Elementary(fd).analyze()
 
 
 def test_fracture_finite_zone_spread():
