@@ -51,15 +51,26 @@ pip install pylife[all]
 That installs pyLife with all the dependencies to use pyLife in python
 programs. You might want to install some further packages like `jupyter` in
 order to work with jupyter notebooks.
-
-There is no conda package as of now, unfortunately.
+```
+pip install pylife[all,extras]
+```
+might be a good start.
 
 
 ## Installation to develop pyLife
 
 For general contribution guidelines please read [CONTRIBUTING.md](CONTRIBUTING.md)
 
-#### Install uv
+
+### Prerequisites
+
+As pyLife now is using Cython extensions for performance reasons. Therefore you
+will need a C-compiler available on your system. On Linux systems, there
+usually is a `gcc` compiler available. On Windows you will need a current
+version of Microsoft Visual C++.
+
+
+### Install uv
 
 * Install the [uv](https://docs.astral.sh/uv/) python management tool.
 

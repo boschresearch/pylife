@@ -80,6 +80,10 @@ tsfresh = [
   "tsfresh>=0.21.0",
   "numba>=0.60",
 ]
+all = [
+  "tsfresh>=0.21.0",
+  "numba>=0.60",
+]
 extras = [
   "jupyter",
   "matplotlib",
