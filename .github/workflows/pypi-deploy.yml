@@ -26,10 +26,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build wheels
+      - name: Build wheels release
+        if: github.event_name == 'release' && github.event.action == 'published'
         uses: pypa/cibuildwheel@v2.21.1
         env:
           CIBW_BUILD: cp39-* cp310-* cp311-* cp312-* cp313-*
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+
+      - name: Build wheels test
+        if: github.event_name != 'release'
+        uses: pypa/cibuildwheel@v2.21.1
+        env:
+          CIBW_BUILD: cp313-*
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
 
       - uses: actions/upload-artifact@v4
