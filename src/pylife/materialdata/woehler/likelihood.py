@@ -17,6 +17,8 @@
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
+from abc import ABC, abstractmethod
+
 import numpy as np
 from scipy import stats
 
@@ -24,46 +26,58 @@ from scipy import stats
 from pylife.utils.functions import scattering_range_to_std, std_to_scattering_range
 
 
-class Likelihood:
-    """Calculate the likelihood a fatigue dataset matches with Wöhler curve parameters."""
+class AbstractLikelihood(ABC):
+    """Calculate the likelihood a fatigue dataset matches with Wöhler curve parameters.
+
+    This is an abstract base class that must be subclassed from.
+    """
 
     def __init__(self, fatigue_data):
         self._fd = fatigue_data
 
     def likelihood_total(self, SD, TS, k_1, ND, TN):
-        """
-        Produces the likelihood functions that are needed to compute the parameters of the woehler curve.
-        The likelihood functions are represented by probability and cummalative distribution functions.
-        The likelihood function of a runout is 1-Li(fracture). The functions are added together, and the
-        negative value is returned to the optimizer.
+        """Determine the likelihood for a certain Wöhler curve.
 
         Parameters
         ----------
-        SD:
-            Endurnace limit start value to be optimzed, unless the user fixed it.
-        TS:
-            The scatter in load direction 1/TS to be optimzed, unless the user fixed it.
-        k_1:
-            The slope k_1 to be optimzed, unless the user fixed it.
-        ND:
-            Load-cycle endurance start value to be optimzed, unless the user fixed it.
-        TN:
-            The scatter in load-cycle direction 1/TN to be optimzed, unless the user fixed it.
+        SD: float
+            The tested endurance infinite limit
+        k_1: float
+            The tested slope for the finite zone of the Wöhler curve
+        TN: float
+            The tested scatter of the finite endurance limit
+        ND: float
+            The testsd finite limit cycle of the Wöhler curve
 
         Returns
         -------
-        neg_sum_lolli :
-            Sum of the log likelihoods. The negative value is taken since optimizers in statistical
-            packages usually work by minimizing the result of a function. Performing the maximum likelihood
-            estimate of a function is the same as minimizing the negative log likelihood of the function.
-
+        likelihood : float
+            The likelihood that the parameters are correct.
         """
         return self.likelihood_finite(SD, k_1, ND, TN) + self.likelihood_infinite(SD, TS)
 
     def likelihood_finite(self, SD, k_1, ND, TN):
-        if not (SD > 0.0).all():
+        """Determine the likelihood for a certain finite endurance curve.
+
+        Parameters
+        ----------
+        SD: float
+            The tested endurance infinite limit
+        k_1: float
+            The tested slope for the finite zone of the Wöhler curve
+        TN: float
+            The tested scatter of the finite endurance limit
+        ND: float
+            The testsd finite limit cycle of the Wöhler curve
+
+        Returns
+        -------
+        likelihood : float
+            The likelihood that the parameters are correct.
+        """
+        if SD <= 0.0:
             return -np.inf
-        fractures = self._fd.fractures
+        fractures = self._fractures_for_finite_likelihood()
         x = np.log10(fractures.cycles * ((fractures.load/SD)**k_1))
         mu = np.log10(ND)
         std_log = scattering_range_to_std(TN)
@@ -72,32 +86,68 @@ class Likelihood:
         return log_likelihood.sum()
 
     def likelihood_infinite(self, SD, TS):
-        """
-        Produces the likelihood functions that are needed to compute the endurance limit and the scatter
-        in load direction. The likelihood functions are represented by a cummalative distribution function.
-        The likelihood function of a runout is 1-Li(fracture).
+        """Determine the likelihood for a certain inifinite endurance limit.
 
         Parameters
         ----------
         SD:
             Endurnace limit start value to be optimzed, unless the user fixed it.
         TS:
-            The scatter in load direction 1/TS to be optimzed, unless the user fixed it.
+            The scatter in load direction TS to be optimzed, unless the user fixed it.
 
         Returns
         -------
-        neg_sum_lolli :
-            Sum of the log likelihoods. The negative value is taken since optimizers in statistical
-            packages usually work by minimizing the result of a function. Performing the maximum likelihood
-            estimate of a function is the same as minimizing the negative log likelihood of the function.
+        likelihood : float
+            The likelihood that the parameters are correct.
 
         """
-        infinite_zone = self._fd.infinite_zone
+        relevant_zone = self._zone_for_infinite_likelihood()
         std_log = scattering_range_to_std(TS)
-        t = np.logical_not(self._fd.infinite_zone.fracture).astype(np.float64)
-        likelihood = stats.norm.cdf(np.log10(infinite_zone.load/SD),  scale=abs(std_log))
+        t = np.logical_not(relevant_zone.fracture).astype(np.float64)
+        likelihood = stats.norm.cdf(np.log10(relevant_zone.load/SD),  scale=abs(std_log))
         non_log_likelihood = t+(1.-2.*t)*likelihood
         if non_log_likelihood.eq(0.0).any():
             return -np.inf
 
         return np.log(non_log_likelihood).sum()
+
+    def _zone_for_infinite_likelihood(self):
+        """The zone for the infinite likelihood. By default the whole dataset."""
+        return self._fd
+
+    @abstractmethod
+    def _fractures_for_finite_likelihood(self):
+        """The fractures for the finite likelihood. Must be implemented by subclasses."""
+        ...
+
+
+class LikelihoodPureFiniteZone(AbstractLikelihood):
+    def _zone_for_infinite_likelihood(self):
+        return self._fd
+
+    def _fractures_for_finite_likelihood(self):
+        finite_zone = self._fd.finite_zone
+        return finite_zone[finite_zone.fracture]
+
+
+class LikelihoodHighestMixedLevel(AbstractLikelihood):
+    def _fractures_for_finite_likelihood(self):
+        fractures = self._fd.fractures
+        loads = fractures.load
+        new_limit = loads[loads < self._fd.finite_infinite_transition].max()
+
+        return fractures[loads >= new_limit]
+
+
+class LikelihoodAllFractures(AbstractLikelihood):
+    def _fractures_for_finite_likelihood(self):
+        return self._fd.fractures
+
+
+class LikelihoodLegacy(AbstractLikelihood):
+
+    def _zone_for_infinite_likelihood(self):
+        return self._fd.infinite_zone
+
+    def _fractures_for_finite_likelihood(self):
+        return self._fd.fractures

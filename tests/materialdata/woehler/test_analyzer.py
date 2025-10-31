@@ -24,6 +24,7 @@ import unittest.mock as mock
 
 
 from pylife.materialdata import woehler
+from pylife.materialdata.woehler.likelihood import LikelihoodLegacy
 
 from .data import *
 
@@ -506,10 +507,90 @@ def test_woehler_max_likelihood_full_without_fixed_params():
         'failure_probability': 0.5
     }).sort_index()
 
-    bic = 45.35256860035525
+    bic = 47.86
 
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
     we = woehler.MaxLikeFull(fd)
+    wc = we.analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+    np.testing.assert_almost_equal(we.bayesian_information_criterion(), bic, decimal=2)
+
+
+def test_woehler_max_likelihood_full_without_fixed_params_all_fractures():
+    expected = pd.Series(
+        {
+            'SD': 335,
+            'TS': 1.19,
+            'k_1': 6.94,
+            'ND': 463000.0,
+            'TN': 4.7,
+            'failure_probability': 0.5,
+        }
+    ).sort_index()
+
+    bic = 45.84
+
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    we = woehler.MaxLikeFull(fd).use_all_fractures()
+    wc = we.analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+    np.testing.assert_almost_equal(we.bayesian_information_criterion(), bic, decimal=2)
+
+
+def test_woehler_max_likelihood_full_without_fixed_params_pure_fracture_levels():
+    expected = pd.Series(
+        {
+            'SD': 333.0,
+            'TS': 1.17,
+            'k_1': 9.88,
+            'ND': 950208.0,
+            'TN': 5.25,
+            'failure_probability': 0.5,
+        }
+    ).sort_index()
+
+    bic = 46.52
+
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    we = woehler.MaxLikeFull(fd).use_only_pure_fracture_levels()
+    wc = we.analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+    np.testing.assert_almost_equal(we.bayesian_information_criterion(), bic, decimal=2)
+
+
+def test_woehler_max_likelihood_full_without_fixed_params_old_likelihood_estimation():
+    expected = pd.Series({
+        'SD': 335,
+        'TS': 1.19,
+        'k_1': 6.94,
+        'ND': 463000.,
+        'TN': 4.7,
+        'failure_probability': 0.5
+    }).sort_index()
+
+    bic = 45.35
+
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    we = woehler.MaxLikeFull(fd).use_old_likelihood_estimation()
+    wc = we.analyze().sort_index()
+    pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
+    np.testing.assert_almost_equal(we.bayesian_information_criterion(), bic, decimal=2)
+
+
+def test_woehler_max_likelihood_full_without_fixed_params_custom_likelihood_estimation():
+    expected = pd.Series({
+        'SD': 335,
+        'TS': 1.19,
+        'k_1': 6.94,
+        'ND': 463000.,
+        'TN': 4.7,
+        'failure_probability': 0.5
+    }).sort_index()
+
+    bic = 45.35
+
+    fd = woehler.determine_fractures(data, 1e7).fatigue_data
+    we = woehler.MaxLikeFull(fd).use_custom_likelihood_estimation(LikelihoodLegacy)
     wc = we.analyze().sort_index()
     pd.testing.assert_series_equal(wc, expected, rtol=1e-1)
     np.testing.assert_almost_equal(we.bayesian_information_criterion(), bic, decimal=2)

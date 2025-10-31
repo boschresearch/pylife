@@ -18,11 +18,17 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 
-from .likelihood import Likelihood
+from .likelihood import (
+    LikelihoodAllFractures,
+    LikelihoodHighestMixedLevel,
+    LikelihoodPureFiniteZone,
+    LikelihoodLegacy
+)
 from .pearl_chain import PearlChainProbability
 import pylife.utils.functions as functions
 from . import FatigueData, determine_fractures
 import warnings
+
 
 class Elementary:
     """Base class to analyze SN-data.
@@ -46,10 +52,68 @@ class Elementary:
            The SN-data to be analyzed.
         """
         self._fd = self._get_fatigue_data(fatigue_data)
-        self._lh = self._get_likelihood()
+        self.use_highest_mixed_level()
 
-    def _get_likelihood(self):
-        return Likelihood(self._fd)
+    def use_old_likelihood_estimation(self):
+        """Use the old (until pyLife-2.1.x) likelihood estimation.
+
+        That uses all fractures for the finite likelihood and only the mixed levels for
+        the infinite.
+
+        Returns
+        -------
+        self
+        """
+        self._lh = LikelihoodLegacy(self._fd)
+        return self
+
+    def use_highest_mixed_level(self):
+        """Use fractures of pure fracture levels and the highest mixed level
+        to determine the likelihood in the finite zone.
+
+        This is the default
+
+        Returns
+        -------
+        self
+        """
+        self._lh = LikelihoodHighestMixedLevel(self._fd)
+        return self
+
+    def use_all_fractures(self):
+        """Use all fractures to determine the likelihood in the finite zone.
+
+        Returns
+        -------
+        self
+        """
+        self._lh = LikelihoodAllFractures(self._fd)
+        return self
+
+    def use_only_pure_fracture_levels(self):
+        """Use only fractures of pure fracture levels to determine the likelihood in the finite zone.
+
+        Returns
+        -------
+        self
+        """
+        self._lh = LikelihoodPureFiniteZone(self._fd)
+        return self
+
+    def use_custom_likelihood_estimation(self, likelihood_class):
+        """Inject a custom Likelihood calculation class to determine the likelihood.
+
+        Parameters
+        ----------
+        likelihood : Class implementing :class:`~pylife.materialdata.woehler.likelihood.Likelihood`
+           The likelihood calculation class
+
+        Returns
+        -------
+        self
+        """
+        self._lh = likelihood_class(self._fd)
+        return self
 
     def _get_fatigue_data(self, fatigue_data):
         if isinstance(fatigue_data, pd.DataFrame):
@@ -138,11 +202,14 @@ class Elementary:
     def bayesian_information_criterion(self):
         """The Bayesian Information Criterion
 
-        Bayesian Information Criterion is a criterion for model selection among
+        Bayesian Information Criterion (BIC) is a criterion for model selection among
         a finite set of models; the model with the lowest BIC is preferred.
         https://www.statisticshowto.datasciencecentral.com/bayesian-information-criterion/
 
         Basically the lower the better the fit.
+
+        Note that the BIC is not suitable to compare the results of two different
+        likelihoods.
         """
         if not hasattr(self,"_bic"):
             raise ValueError("BIC value undefined. Analysis has not been conducted.")
