@@ -56,7 +56,7 @@ if not os.path.isdir(ipython_dir):
 os.environ['PYTHONWARNINGS'] = 'ignore'
 
 os.environ["PYVISTA_JUPYTER_BACKEND"] = 'html'
-os.environ["PLOTLY_RENDERER"] = "notebook"
+os.environ["PLOTLY_RENDERER"] = "notebook_connected"
 
 import asyncio
 
