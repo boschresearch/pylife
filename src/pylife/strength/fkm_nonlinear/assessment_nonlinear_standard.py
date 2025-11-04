@@ -76,7 +76,7 @@ def perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, calcu
         * ``K_RP``: float, [-], surface roughness factor, set to 1 for polished surfaces or determine from the given diagrams included in the FKM document.
         * ``R_z``: float [um], average roughness (de: mittlere Rauheit), only required if K_RP is not specified directly
         * ``P_A``: float. Specifies the failure probability for the assessment (de: auszulegende Ausfallwahrscheinlichkeit).
-            Note that any value for P_A in (0,1) is possible, not just the fixed values that are defined in the FKM nonlinear
+            Note that any value for P_A in (0.0, 1.0) is possible, not just the fixed values that are defined in the FKM nonlinear
             guideline
             Set to 0.5 to disable statistical assessment, e.g., to simulate cyclic experiments.
         * ``beta``: float, damage index, specify this as an alternative to ``P_A``.

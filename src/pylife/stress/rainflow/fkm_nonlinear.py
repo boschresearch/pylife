@@ -171,26 +171,22 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
             processed, as opposed to only turning points of the sequence.
 
             Example:
-            a)
-                process([1, 2], flush=False)  # processes 1
-                process([3, 1], flush=True)   # processes 3, 1
-                -> processed sequence is [1,3,1], only turning points
+            a) process([1, 2], flush=False)  # processes 1
+               process([3, 1], flush=True)   # processes 3, 1
+               -> processed sequence is [1,3,1], only turning points
 
-            b)
-                process([1, 2], flush=True)   # processes 1, 2
-                process([3, 1], flush=True)   # processes 3, 1
-                -> processed sequence is [1,2,3,1], "2" is not a turning point
+            b) process([1, 2], flush=True)   # processes 1, 2
+               process([3, 1], flush=True)   # processes 3, 1
+               -> processed sequence is [1,2,3,1], "2" is not a turning point
 
-            c)
-                process([1, 2])   # processes 1
-                process([3, 1])   # processes 3
-                -> processed sequence is [1,3], end ("1") is missing
+            c) process([1, 2])   # processes 1
+               process([3, 1])   # processes 3
+               -> processed sequence is [1,3], end ("1") is missing
 
-            d)
-                process([1, 2])   # processes 1
-                process([3, 1])   # processes 3
-                flush()           # process 1
-                -> processed sequence is [1,3,1]
+            d) process([1, 2])   # processes 1
+               process([3, 1])   # processes 3
+               flush()           # process 1
+               -> processed sequence is [1,3,1]
 
         Returns
         -------
