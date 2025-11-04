@@ -20,7 +20,7 @@ This speeds up the computation as only the initialization step is compute intens
 	:members:
 	:inherited-members:
 
-.. autoclass:: pylife.materiallaws.notch_approximation_law.Binned
+.. autoclass:: pylife.materiallaws.notch_approximation_law.NotchApproxBinner
 	:undoc-members:
 	:members:
 	:inherited-members:
