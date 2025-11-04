@@ -334,3 +334,5 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     "pyscaffold": ("https://pyscaffold.org/en/stable", None),
 }
+
+suppress_warnings = ["config.cache"]
