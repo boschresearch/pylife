@@ -37,4 +37,4 @@ jobs:
         uv sync --group docs --all-extras
         uv pip install "./tools/odbclient"
     - name: Build docs
-      run: sphinx-build -b html docs _build/html
+      run: sphinx-build -W -b html docs _build/html
