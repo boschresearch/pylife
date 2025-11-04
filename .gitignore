@@ -37,6 +37,7 @@ htmlcov/*
 .tox
 junit*.xml
 coverage.xml
+coverage_report*
 .pytest_cache/
 
 # Build and docs folder/files
@@ -58,8 +59,9 @@ docs/demos/*
 .venv*
 _venv*
 .conda*
-coverage_report*
+uv.lock
 
+src/pylife/stress/rainflow/extension.c
 .hypothesis
 .mutmut-cache
 .python-version
