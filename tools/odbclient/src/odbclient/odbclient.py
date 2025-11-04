@@ -132,9 +132,8 @@ class OdbClient:
     """
 
     def __init__(self, odb_file, abaqus_bin=None, python_env_path=None):
-        _raise_if_abaqus_unavailable()
-
         abaqus_bin = abaqus_bin or _guess_abaqus_bin()
+        _raise_if_no_abaqus_license(abaqus_bin)
 
         self._proc = None
 
@@ -640,17 +639,12 @@ def _raise_if_version_mismatch(server_version):
         )
 
 
-def _raise_if_abaqus_unavailable():
-    # Coding intent: Keep as simple as possible, don't try to catch unexpected errors.
-    #                Not covered by unit tests.
-
-    abq_path = shutil.which('abaqus')
-    if abq_path is None:
-        raise OdbServerError("Abaqus not installed. Could not find 'abaqus' in PATH.")
-
+def _raise_if_no_abaqus_license(abaqus_bin):
     # String operations are necessary because Abaqus doesn't provide a boolean or
     # integer license status.
-    output = sp.run([abq_path, 'licensing', 'lmstat'], capture_output=True, text=True)
+    # Not covered by unit tests.
+
+    output = sp.run([abaqus_bin, 'licensing', 'lmstat'], capture_output=True, text=True)
     if 'error' in output.stdout.lower():
         raise OdbServerError(
             "No Abaqus license found. Analyze by running 'abaqus licensing lmstat' in a shell."
