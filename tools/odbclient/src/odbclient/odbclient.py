@@ -466,7 +466,6 @@ class OdbClient:
          """Query the description of a history Regions of a given step.
 
          Parameters
-
          ----------
          step_name : string
              The name of the step

@@ -80,7 +80,7 @@ def perform_fkm_nonlinear_assessment(assessment_parameters, load_sequence, calcu
             guideline
             Set to 0.5 to disable statistical assessment, e.g., to simulate cyclic experiments.
         * ``beta``: float, damage index, specify this as an alternative to ``P_A``.
-        * ``P_L``: float, [%],  one of {̀ `2.5``%, ``50``%}, probability of occurence of the specified load sequence
+        * ``P_L``: float, [%],  one of {̀2.5%, 50%}, probability of occurence of the specified load sequence
             (de: Auftretenswahrscheinlilchkeit der Lastfolge). Usually set to 50 to disable statistical assessment for the
             load.
         * ``s_L``: float (optional), [MPa] standard deviation of Gaussian distribution for the statistical distribution of the load
