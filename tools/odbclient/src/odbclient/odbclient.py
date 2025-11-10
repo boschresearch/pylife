@@ -615,9 +615,14 @@ def _determine_server_python_version(abaqus_bin):
 
 def _guess_python_env_path(python_env_path):
     home_dir = os.environ.get('HOME') or os.environ.get('USERPROFILE')
-    cand = python_env_path or os.path.join(home_dir, '.conda', 'envs', 'odbserver')
-    if os.path.exists(cand):
-        return cand
+    guesses = [
+        python_env_path,
+        os.path.join(home_dir, '.conda', 'envs', 'odbserver'),
+        os.path.join(home_dir, '.uv', 'envs', 'odbserver'),
+    ]
+    for guess in guesses:
+        if os.path.exists(guess):
+            return guess
     return None
 
 
