@@ -405,7 +405,15 @@ class OdbClient:
             index = pd.Index(index_data[:, 0], name=index_labels[0], dtype=np.int64)
 
         column_names = _ascii(_decode, labels)
-        return pd.DataFrame(values, index=index, columns=column_names)
+        
+        response_values = pd.DataFrame(values, index=index, columns=column_names)
+        
+        if variable_name == 'S':
+            for stress_component in ['S11', 'S22', 'S33', 'S12', 'S13', 'S23']:
+                if stress_component not in response_values.columns:
+                    response_values[stress_component] = 0.0
+                    
+        return response_values
 
     def history_regions(self, step_name):
          """Query the history Regions of a given step.
