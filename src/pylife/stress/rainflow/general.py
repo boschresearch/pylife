@@ -174,37 +174,8 @@ class AbstractDetector(metaclass=ABCMeta):
         flush : bool
             Whether to flush the cached values at the end.
 
-            If ``flush=False``, the last value of a load sequence is
-            cached for a subsequent call to ``process``, because it may or may
-            not be a turning point of the sequence, which is only decided
-            when the next data point arrives.
+            For explanations see :meth:`~pylife.stress.rainflow.FourPointDetector.process`
 
-            Setting ``flush=True`` forces processing of the last value.
-            When ``process`` is called again afterwards with new data,
-            two increasing or decreasing values in a row might have been
-            processed, as opposed to only turning points of the sequence.
-
-            Example:
-            a)
-                process([1, 2], flush=False)  # processes 1
-                process([3, 1], flush=True)   # processes 3, 1
-                -> processed sequence is [1,3,1], only turning points
-
-            b)
-                process([1, 2], flush=True)   # processes 1, 2
-                process([3, 1], flush=True)   # processes 3, 1
-                -> processed sequence is [1,2,3,1], "," is not a turning point
-
-            c)
-                process([1, 2])   # processes 1
-                process([3, 1])   # processes 3
-                -> processed sequence is [1,3], end ("1") is missing
-
-            d)
-                process([1, 2])   # processes 1
-                process([3, 1])   # processes 3
-                flush()           # process 1
-                -> processed sequence is [1,3,1]
 
         Returns
         -------
@@ -235,28 +206,7 @@ class AbstractDetector(metaclass=ABCMeta):
         the desired effect as multiple increasing or decreasing values in a
         row could occur, instead of processing only turning points.
 
-        Examples:
-        a)
-            process([1, 2])     # processes 1
-            flush([3, 1])       # processes 3, 1
-            -> processed sequence is [1,3,1]: only turning points
-
-        b)
-            flush([1, 2])       # processes 1, 2
-            flush([3, 1])       # processes 3, 1
-            -> processed sequence is [1,2,3,1]: the "2" is not a turning point
-
-        c)
-            process([1, 2])   # processes 1
-            process([3, 1])   # processes 3
-            -> processed sequence is [1,3]: the last value is missing
-
-        d)
-            process([1, 2])   # processes 1
-            process([3, 1])   # processes 3
-            flush()           # process 1
-            -> processed sequence is [1,3,1]: last value processed as a result
-            of ``flush``
+        For examples see :meth:`~pylife.stress.rainflow.FourPointDetector.process`
 
 
         Parameters
@@ -268,6 +218,7 @@ class AbstractDetector(metaclass=ABCMeta):
         -------
         self : AbstractDetector
             The ``self`` object so that processing can be chained
+
 
         Notes
         -----
