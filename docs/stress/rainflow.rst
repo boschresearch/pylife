@@ -18,7 +18,7 @@ Detectors
    rainflow/fourpointdetector
    rainflow/fkmdetector
    rainflow/fkm_nonlinear_detector
-
+   rainflow/abstractdetector
 
 Recorders
 .........
@@ -28,8 +28,8 @@ Recorders
 
    rainflow/loopvaluerecorder
    rainflow/fullrecorder
-   rainflow/abstractrecorder
    rainflow/fkm_nonlinear_recorder
+   rainflow/abstractrecorder
 
 
 Utility functions

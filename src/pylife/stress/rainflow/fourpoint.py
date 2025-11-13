@@ -109,27 +109,32 @@ class FourPointDetector(AbstractDetector):
             two increasing or decreasing values in a row might have been
             processed, as opposed to only turning points of the sequence.
 
-            Example:
-            a)
-                process([1, 2], flush=False)  # processes 1
-                process([3, 1], flush=True)   # processes 3, 1
-                -> processed sequence is [1,3,1], only turning points
 
-            b)
-                process([1, 2], flush=True)   # processes 1, 2
-                process([3, 1], flush=True)   # processes 3, 1
-                -> processed sequence is [1,2,3,1], "," is not a turning point
+        Examples
+        --------
+        >>> from pylife.stress.rainflow.recorders import FullRecorder
 
-            c)
-                process([1, 2])   # processes 1
-                process([3, 1])   # processes 3
-                -> processed sequence is [1,3], end ("1") is missing
+        >>> detector = FourPointDetector(recorder=FullRecorder())
+        >>> (
+        ...     detector
+        ...     .process([1, 2], flush=False) # flush=False → 2 not a turning point
+        ...     .process([3, 1])
+        ...     .recorder.collective
+        ... )
+        Empty DataFrame
+        Columns: [from, to, index_from, index_to]
+        Index: []
 
-            d)
-                process([1, 2])   # processes 1
-                process([3, 1])   # processes 3
-                flush()           # process 1
-                -> processed sequence is [1,3,1]
+        >>> detector = FourPointDetector(recorder=FullRecorder())
+        >>> (
+        ...     detector
+        ...     .process([1, 2], flush=True) # flush=True → 2 is considered a turning point
+        ...     .process([3, 1])
+        ...     .recorder.collective
+        ... )
+            from   to  index_from  index_to
+        0   2.0  3.0           1         2
+
 
         Returns
         -------
