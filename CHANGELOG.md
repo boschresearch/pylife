@@ -20,7 +20,7 @@ In this file noteworthy changes of new releases of pyLife are documented since
 ### Bugfixes
 
 * Fix unnecessary and harmful copy of pandas object in Wöhler classes (#146)
-
+* Don't assume `failure_probability=0.5` in Wöhler calculations (#192)
 
 ## pylife-2.1.4
 
