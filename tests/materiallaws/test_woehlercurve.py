@@ -225,11 +225,41 @@ def test_woehler_basquin_cycles_50_same_k(wc_data):
     np.testing.assert_approx_equal(calculated_k, wc.k_1)
 
 
+def test_woehler_cycles_10_90(wc_data):
+    load = [200., 300., 400., 500.]
+
+    cycles_10 = wc_data.woehler.cycles(load, failure_probability=0.1)[1:]
+    cycles_90 = wc_data.woehler.cycles(load, failure_probability=0.9)[1:]
+
+    expected = [np.inf, 1.75, 1.75]
+    np.testing.assert_allclose(cycles_90/cycles_10, expected)
+
+
 def test_woehler_basquin_cycles_10_90(wc_data):
     load = [200., 300., 400., 500.]
 
-    cycles_10 = wc_data.woehler.basquin_cycles(load, 0.1)[1:]
-    cycles_90 = wc_data.woehler.basquin_cycles(load, 0.9)[1:]
+    cycles_10 = wc_data.woehler.basquin_cycles(load, failure_probability=0.1)[1:]
+    cycles_90 = wc_data.woehler.basquin_cycles(load, failure_probability=0.9)[1:]
+
+    expected = [np.inf, 1.75, 1.75]
+    np.testing.assert_allclose(cycles_90/cycles_10, expected)
+
+
+def test_woehler_cycles_transformed_failure_probability(wc_data):
+    load = [200., 300., 400., 500.]
+
+    cycles_10 = wc_data.woehler.transform_to_failure_probability(0.1).cycles(load)[1:]
+    cycles_90 = wc_data.woehler.transform_to_failure_probability(0.9).cycles(load)[1:]
+
+    expected = [np.inf, 1.75, 1.75]
+    np.testing.assert_allclose(cycles_90/cycles_10, expected)
+
+
+def test_woehler_basquin_cycles_transformed_failure_probability(wc_data):
+    load = [200., 300., 400., 500.]
+
+    cycles_10 = wc_data.woehler.transform_to_failure_probability(0.1).basquin_cycles(load)[1:]
+    cycles_90 = wc_data.woehler.transform_to_failure_probability(0.9).basquin_cycles(load)[1:]
 
     expected = [np.inf, 1.75, 1.75]
     np.testing.assert_allclose(cycles_90/cycles_10, expected)
@@ -326,11 +356,44 @@ def test_woehler_basquin_load_50_same_k(wc_data):
     np.testing.assert_approx_equal(calculated_k, wc.k_1)
 
 
+def test_woehler_load_10_90(wc_data):
+    cycles = [1e2, 1e7]
+
+    load_10 = wc_data.woehler.load(cycles, failure_probability=0.1)
+    load_90 = wc_data.woehler.load(cycles, failure_probability=0.9)
+
+    expected = np.full_like(cycles, 1.75 ** (1./7.))
+
+    np.testing.assert_allclose(load_90/load_10, expected, rtol=1e-4)
+
+
 def test_woehler_basquin_load_10_90(wc_data):
     cycles = [1e2, 1e7]
 
-    load_10 = wc_data.woehler.basquin_load(cycles, 0.1)
-    load_90 = wc_data.woehler.basquin_load(cycles, 0.9)
+    load_10 = wc_data.woehler.basquin_load(cycles, failure_probability=0.1)
+    load_90 = wc_data.woehler.basquin_load(cycles, failure_probability=0.9)
+
+    expected = np.full_like(cycles, 1.75 ** (1./7.))
+
+    np.testing.assert_allclose(load_90/load_10, expected, rtol=1e-4)
+
+
+def test_woehler_load_transformed_failure_probability(wc_data):
+    cycles = [1e2, 1e7]
+
+    load_10 = wc_data.woehler.transform_to_failure_probability(0.1).load(cycles)
+    load_90 = wc_data.woehler.transform_to_failure_probability(0.9).load(cycles)
+
+    expected = np.full_like(cycles, 1.75 ** (1./7.))
+
+    np.testing.assert_allclose(load_90/load_10, expected, rtol=1e-4)
+
+
+def test_woehler_basquin_load_transformed_failure_probability(wc_data):
+    cycles = [1e2, 1e7]
+
+    load_10 = wc_data.woehler.transform_to_failure_probability(0.1).basquin_load(cycles)
+    load_90 = wc_data.woehler.transform_to_failure_probability(0.9).basquin_load(cycles)
 
     expected = np.full_like(cycles, 1.75 ** (1./7.))
 
@@ -343,6 +406,8 @@ def test_woehler_basquin_load_integer_cycles(wc_data):
 
 def test_woehler_basquin_cycles_integer_load(wc_data):
     wc_data.woehler.basquin_cycles(200)
+
+
 
 
 @pytest.fixture
