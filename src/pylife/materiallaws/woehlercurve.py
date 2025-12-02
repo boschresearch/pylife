@@ -107,6 +107,21 @@ class WoehlerCurve(PylifeSignal):
         return self._failure_probability
 
     def transform_to_failure_probability(self, failure_probability):
+        """Transform the Wöhler curve to another failure probability.
+
+        Parameters
+        ----------
+        failure_probability : float | None
+            The new failure probablility. If ``None`` the object itself is returned
+
+        Returns
+        -------
+        transformed : WoehlerCurve
+            The transformed ``WoehlerCurve`` object or ``self``.
+        """
+        if failure_probability is None:
+            return self
+
         failure_probability = np.asarray(failure_probability, dtype=np.float64)
 
         failure_probability, obj = self.broadcast(failure_probability)
@@ -159,7 +174,7 @@ class WoehlerCurve(PylifeSignal):
         new['k_2'] = 2. * self._obj.k_1 - 1.
         return self.__class__(new)
 
-    def cycles(self, load, failure_probability=0.5):
+    def cycles(self, load, failure_probability=None):
         """Calculate the cycles numbers from loads.
 
         Parameters
@@ -168,7 +183,8 @@ class WoehlerCurve(PylifeSignal):
             The load levels for which the corresponding cycle numbers are to be calculated.
         failure_probability : float, optional
             The failure probability with which the component should fail when
-            charged with `load` for the calculated cycle numbers. Default 0.5
+            charged with `load` for the calculated cycle numbers. If not given, the
+            current `failure_probablility` attribute is used.
 
         Returns
         -------
@@ -184,7 +200,7 @@ class WoehlerCurve(PylifeSignal):
         """
         return self.basquin_cycles(load, failure_probability)
 
-    def load(self, cycles, failure_probability=0.5):
+    def load(self, cycles, failure_probability=None):
         """Calculate the load values from loads.
 
         Parameters
@@ -193,7 +209,8 @@ class WoehlerCurve(PylifeSignal):
             The cycle numbers for which the corresponding load levels are to be calculated.
         failure_probability : float, optional
             The failure probability with which the component should fail when
-            charged with `load` for the calculated cycle numbers. Default 0.5
+            charged with `load` for the calculated cycle numbers. If not given, the
+            current `failure_probablility` attribute is used.
 
         Returns
         -------
@@ -208,7 +225,7 @@ class WoehlerCurve(PylifeSignal):
         """
         return self.basquin_load(cycles, failure_probability)
 
-    def basquin_cycles(self, load, failure_probability=0.5):
+    def basquin_cycles(self, load, failure_probability=None):
         """Calculate the cycles numbers from loads according to the Basquin equation.
 
         Parameters
@@ -217,7 +234,8 @@ class WoehlerCurve(PylifeSignal):
             The load levels for which the corresponding cycle numbers are to be calculated.
         failure_probability : float, optional
             The failure probability with which the component should fail when
-            charged with `load` for the calculated cycle numbers. Default 0.5
+            charged with `load` for the calculated cycle numbers. If not given, the
+            current `failure_probablility` attribute is used.
 
         Returns
         -------
@@ -243,7 +261,7 @@ class WoehlerCurve(PylifeSignal):
             return cycles
         return pd.Series(cycles, index=ld.index)
 
-    def basquin_load(self, cycles, failure_probability=0.5):
+    def basquin_load(self, cycles, failure_probability=None):
         """Calculate the load values from loads according to the Basquin equation.
 
         Parameters
@@ -252,7 +270,8 @@ class WoehlerCurve(PylifeSignal):
             The cycle numbers for which the corresponding load levels are to be calculated.
         failure_probability : float, optional
             The failure probability with which the component should fail when
-            charged with `load` for the calculated cycle numbers. Default 0.5
+            charged with `load` for the calculated cycle numbers. If not given, the
+            current `failure_probablility` attribute is used.
 
         Returns
         -------
