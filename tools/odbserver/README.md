@@ -31,21 +31,43 @@ i.e. is deleted, the server process is stopped automatically.
 
 * Create and activate a plain python-2.7 environment without additional
   packages.  For example by
-```
-conda create -n odbserver python=2.7 pip
-```
+  ```
+  conda create -n odbserver python=2.7 pip
+  ```
 
-Instead of `2.7` you must choose the python version of your abaqus version. You
-can find it out using
+  Instead of `2.7` you must choose the python version of your abaqus version. You
+  can find it out using
 
-```
-abaqus python --version
-```
+  ```
+  abaqus python --version
+  ```
 
 * Run
-```
-pip install pylife-odbserver
-```
+  ```
+  pip install pylife-odbserver
+  ```
+
+* Set environment variables (optional)
+
+  The ``odbclient`` will look for your Abaqus binary in
+  * ``C:/Program Files/SIMULIA/<release_year>/EstProducts/win_b64/code/bin/SMALauncher.exe``
+
+  and for the above Python environment in:
+  * ``<repo_root>/.venv-odbserver``
+  * ``C:/Users/<yourname>/.conda/envs/odbserver``
+  * ``C:/Users/<yourname>/.virtualenvs/odbserver``
+
+  If your paths are different, you must either specify them each time you run the ``odbclient``, or you can set them as environment variables as follows:
+  ```powershell
+  [Environment]::SetEnvironmentVariable("ODBSERVER_ABAQUS_BIN", "<absolute/path/to/your/abq.exe>", "User")
+  [Environment]::SetEnvironmentVariable("ODBSERVER_PYTHON_ENV_PATH", "<absolute/path/to/the/above/python/env>", "User")
+  ```
+
+  You can check the above with:
+  ```powershell
+  [Environment]::GetEnvironmentVariable("ODBSERVER_ABAQUS_BIN", "User")
+  [Environment]::GetEnvironmentVariable("ODBSERVER_PYTHON_ENV_PATH", "User")
+  ```
 
 * See the <a href="../odbclient/">instructions in `pylife-odbclient`</a> on how
   to install the client.

@@ -49,12 +49,18 @@ class OdbClient:
         The path to the odb file
 
     abaqus_bin : string, optional
-        The path to the abaqus *binary* (not a .bat or shell script).
-        Guessed if not given.
+        The path to the abaqus *binary* (no .bat or shell script).
+        If not given, ``OdbClient`` will try to get this path from the environment
+        variable "ODBSERVER_ABAQUS_BIN".
+        If this doesn't exist or is invalid, ``OdbClient`` will try to guess this path.
+        Also see https://pylife.readthedocs.io/en/stable/tools/odbserver/index.html.
 
     python_env_path : string, optional
-        The path to the python2 environmnent to be used by the odbserver.
-        Guessed if not given.
+        The path to the python environmnent to be used by the odbserver.
+        If not given, ``OdbClient`` will try to get this path from the environment
+        variable "ODBSERVER_PYTHON_ENV_PATH".
+        If this doesn't exist or is invalid, ``OdbClient`` will try to guess this path.
+        Also see https://pylife.readthedocs.io/en/stable/tools/odbserver/index.html.
 
     Examples
     --------
@@ -132,11 +138,14 @@ class OdbClient:
     """
 
     def __init__(self, odb_file, abaqus_bin=None, python_env_path=None):
-        abaqus_bin = abaqus_bin or _guess_abaqus_bin()
-
         self._proc = None
 
-        env = os.environ | {"PYTHONPATH": _guess_pythonpath(python_env_path, abaqus_bin)}
+        abaqus_bin = _determine_abaqus_bin(abaqus_bin)
+        python_env_path = _determine_python_env_path(python_env_path)
+
+        python_site_packages_path = _determine_site_packages_path(python_env_path, abaqus_bin)
+        env = os.environ | {"PYTHONPATH": python_site_packages_path}
+
         lock_file_exists = os.path.isfile(os.path.splitext(odb_file)[0] + '.lck')
 
         self._proc = sp.Popen(
@@ -156,7 +165,6 @@ class OdbClient:
             self._parse_response = self._parse_response_py2
         else:
             self._parse_response = self._parse_response_py3
-
 
     def _gulp_lock_file_warning(self):
         self._proc.stdout.readline()
@@ -254,7 +262,6 @@ class OdbClient:
             },
             index=pd.Index(index, name='element_id', dtype=np.int64),
         )
-
 
     def nset_names(self, instance_name=''):
         """Query the available node set names.
@@ -442,7 +449,6 @@ class OdbClient:
 
          return hisoutputs
 
-
     def history_output_values(self, step_name, history_region_name, historyoutput_name):
          """Query the history Regions of a given step.
 
@@ -566,6 +572,40 @@ def _decode(arg):
     return arg
 
 
+def _determine_abaqus_bin(abaqus_bin=None):
+    abaqus_bin = (
+        abaqus_bin or
+        os.environ.get('ODBSERVER_ABAQUS_BIN') or
+        _guess_abaqus_bin()  # never returns an invalid path, only None
+        )
+
+    readme_url = 'https://pylife.readthedocs.io/en/stable/tools/odbserver/index.html'
+
+    if abaqus_bin is None:
+        raise ValueError(f"Couldn't guess ``abaqus_bin``. Please specify it, see {readme_url}!")
+    if abaqus_bin is None or not os.path.exists(abaqus_bin):
+        raise FileNotFoundError(f"Couldn't find the specified ``abaqus_bin``: {abaqus_bin}. Please see {readme_url}")
+
+    return abaqus_bin
+
+
+def _determine_python_env_path(python_env_path=None):
+    python_env_path = (
+        python_env_path or
+        os.environ.get('ODBSERVER_PYTHON_ENV_PATH') or
+        _guess_python_env_path(python_env_path)  # never returns an invalid path, only None
+        )
+
+    readme_url = 'https://pylife.readthedocs.io/en/stable/tools/odbserver/index.html'
+
+    if python_env_path is None:
+        raise ValueError(f"Couldn't guess ``python_env_path``. Please specify a path, see {readme_url}!")
+    if not os.path.exists(python_env_path):
+        raise FileNotFoundError(f"Couldn't find the specified ``python_env_path``: {python_env_path}. Please see {readme_url}")
+
+    return python_env_path
+
+
 def _guess_abaqus_bin():
     if sys.platform == 'win32':
         return _guess_abaqus_bin_windows()
@@ -585,19 +625,28 @@ def _guess_abaqus_bin_windows():
     for guess in guesses:
         if os.path.exists(guess):
             return guess
-    raise OSError("Could not guess abaqus binary path! Please submit as abaqus_bin parameter!")
 
 
-def _guess_pythonpath(python_env_path, abaqus_bin):
-    python_env_path = _guess_python_env_path(python_env_path)
-    if python_env_path is None:
-        raise OSError("No odbserver environment found.\n"
-                      "Please see https://github.com/boschresearch/pylife/blob/develop/tools/odbserver/README.md")
+def _guess_python_env_path(python_env_path):
+    home_dir = os.environ.get('HOME') or os.environ.get('USERPROFILE')
+    python_env_parent_dir = os.path.dirname(sys.prefix)  # parent dir of python env where odbclient is running
+
+    guesses = [
+        os.path.join(python_env_parent_dir, '.venv-odbserver'),
+        os.path.join(home_dir, '.conda', 'envs', 'odbserver'),
+        os.path.join(home_dir, '.virtualenvs', 'odbserver'),
+        ]
+    for guess in guesses:
+        if os.path.exists(guess):
+            return guess
+
+
+def _determine_site_packages_path(python_env_path, abaqus_bin):
     if sys.platform == 'win32':
         return os.path.join(python_env_path, 'lib', 'site-packages')
-
-    python_version = _determine_server_python_version(abaqus_bin)
-    return os.path.join(python_env_path, 'lib', f'python{python_version}', 'site-packages')
+    else:
+        python_version = _determine_server_python_version(abaqus_bin)
+        return os.path.join(python_env_path, 'lib', f'python{python_version}', 'site-packages')
 
 
 def _determine_server_python_version(abaqus_bin):
@@ -610,14 +659,6 @@ def _determine_server_python_version(abaqus_bin):
     msg = proc.stdout.readline() or proc.stderr.readline()
     version_string = msg.decode().split(" ")[1]
     return version_string[:version_string.rfind(".")]
-
-
-def _guess_python_env_path(python_env_path):
-    home_dir = os.environ.get('HOME') or os.environ.get('USERPROFILE')
-    cand = python_env_path or os.path.join(home_dir, '.conda', 'envs', 'odbserver')
-    if os.path.exists(cand):
-        return cand
-    return None
 
 
 def _raise_if_version_mismatch(server_version):
