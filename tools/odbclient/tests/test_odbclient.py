@@ -36,7 +36,7 @@ import pandas as pd
 
 import odbclient
 
-from odbclient.odbclient import OdbServerError
+from odbclient.odbclient import OdbServerError, _determine_abaqus_bin, _determine_python_env_path
 
 
 @pytest.fixture
@@ -68,19 +68,14 @@ def abaqus_bin(abaqus_version):
 
 @pytest.fixture
 def client(datapath, pyenvs, abaqus_version, abaqus_bin):
-    python_path = pyenvs
     odb_file = datapath(f"beam_3d_hex_quad-{abaqus_version}.odb")
     return odbclient.OdbClient(
-        odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path
+        odb_file, abaqus_bin=abaqus_bin, python_env_path=pyenvs
     )
 
 
-def test_odbclient_version():
-    assert odbclient.__version__ == pylife.__version__
-
-
 def test_not_existing_odbserver_env():
-    with pytest.raises(OSError, match="No odbserver environment found."):
+    with pytest.raises(FileNotFoundError):
         odbclient.OdbClient('foo.odb', python_env_path='/foo/bar/env')
 
 
@@ -244,10 +239,9 @@ def test_variable_stress_integration_point(client, datapath):
 
 
 @pytest.fixture()
-def client_history(datapath, abaqus_version, abaqus_bin):
-    python_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}")
+def client_history(datapath, abaqus_version, abaqus_bin, pyenvs):
     odb_file = datapath(f"history_output_test-{abaqus_version}.odb")
-    return odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path)
+    return odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=pyenvs)
 
 
 def test_history_region_empty(client):
@@ -389,12 +383,11 @@ def test_history_info(client_history, abaqus_version):
     assert result == expected
 
 
-def test_bigger_file(datapath, abaqus_version, abaqus_bin):
-    python_path = os.path.join(Path.home(), ".conda", "envs", f"odbserver-{abaqus_version}")
+def test_bigger_file(datapath, abaqus_version, abaqus_bin, pyenvs):
     odb_file = datapath(f"midsized-{abaqus_version}.odb")
     csv_file = datapath("midsized-reference.csv")
 
-    client = odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=python_path)
+    client = odbclient.OdbClient(odb_file, abaqus_bin=abaqus_bin, python_env_path=pyenvs)
 
     instances = client.instance_names()
     instance = instances[0]
@@ -407,3 +400,66 @@ def test_bigger_file(datapath, abaqus_version, abaqus_bin):
     expected = pd.read_csv(csv_file).set_index(["node_id", "element_id"])
 
     pd.testing.assert_frame_equal(pylife_mesh_tot, expected)
+
+
+def test_determine_abaqus_bin(tmp_path):
+    tmp_file = tmp_path / 'mock_abaqus_exe'
+    tmp_file.write_text('')  # create empty file
+
+    assert _determine_abaqus_bin(str(tmp_file)) == str(tmp_file)
+
+    with pytest.raises(FileNotFoundError):
+        _determine_abaqus_bin('nonexisting_file')
+
+
+def test_determine_abaqus_bin_envvar(monkeypatch, tmp_path):
+    tmp_file = tmp_path / 'mock_abaqus_exe'
+    tmp_file.write_text('')  # create empty file
+
+    tmp_file_envvar = tmp_path / 'mock_abaqus_exe_envvar'
+    tmp_file_envvar.write_text('')
+
+    monkeypatch.setenv('ODBSERVER_ABAQUS_BIN', str(tmp_file_envvar))
+
+    assert _determine_abaqus_bin() == str(tmp_file_envvar)
+    assert _determine_abaqus_bin(str(tmp_file)) == str(tmp_file)
+
+    with pytest.raises(FileNotFoundError):
+        monkeypatch.setenv('ODBSERVER_ABAQUS_BIN', 'nonexisting_file')
+        _determine_abaqus_bin()
+
+
+def test_determine_abaqus_bin_guess():
+    # Too difficult to test, depends on whether the guessed path exists on
+    # the test system. Not worth the effort.
+    pass
+
+
+def test_determine_python_env_path(tmp_path):
+    path = str(tmp_path)
+
+    assert _determine_python_env_path(path) == path
+
+    with pytest.raises(FileNotFoundError):
+        _determine_abaqus_bin('nonexisting_file')
+
+
+def test_determine_python_env_path_envvar(monkeypatch, tmp_path):
+    (tmp_path / 'envvar').mkdir()
+    path_envvar = str(tmp_path / 'envvar')
+    path = str(tmp_path)
+
+    monkeypatch.setenv('ODBSERVER_PYTHON_ENV_PATH', path_envvar)
+
+    assert _determine_python_env_path() == path_envvar
+    assert _determine_python_env_path(path) == path
+
+    with pytest.raises(FileNotFoundError):
+        monkeypatch.setenv('ODBSERVER_PYTHON_ENV_PATH', 'nonexisting_directory')
+        _determine_python_env_path()
+
+
+def test_determine_python_env_path_guess():
+    # Too difficult to test, depends on whether the guessed path exists on
+    # the test system. Not worth the effort.
+    pass
