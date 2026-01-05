@@ -188,3 +188,20 @@ def test_calculate_roughness_parameter_K_RP_already_given(capsys):
 
     assert np.isclose(result["K_RP"], 0.95)
     assert capsys.readouterr().out == "The parameter `K_RP` is already set to 0.95, not using the FKM formula.\n"
+
+def test_calculate_roughness_material_woehler_parameters_P_RAM():
+    assessment_parameters = pd.Series({
+        "P_RAM_Z_WS": 819.00,
+        "P_RAM_D_WS": 335.02,
+        "d_2": -0.197,
+        "K_RP": 0.8468470008671309,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_material_woehler_parameters_P_RAM(assessment_parameters)
+
+    assert np.isclose(result["P_RAM_D_WS_rau"], 335.02 * 0.8468470008671309)
+
+    N_D = (335.02 / 819.00) ** (1 / -0.197)
+    d2_alt = np.log((335.02 * 0.8468470008671309) / 819.00) / np.log(N_D)
+    assert np.isclose(result["d2_RAM_rau"], d2_alt, rtol=1e-12, atol=0.0)
