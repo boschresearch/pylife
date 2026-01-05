@@ -155,3 +155,36 @@ def test_calculate_nonlocal_parameters(MatGroupFKM, A_ref, A_sigma, R_m, G, n_st
     assert np.isclose(result["n_st"], n_st, atol=1e-15)
     assert np.isclose(result["n_bm"], n_bm, atol=1e-15)
     assert np.isclose(result["n_P"], n_P, atol=1e-15)
+
+
+@pytest.mark.parametrize("MatGroupFKM, R_m, R_z, K_RP", [
+    ("Steel", 600.0, 100.0, 0.87975731016387),
+    ("Steel", 600.0, 0.8, 1.0),
+    ("SteelCast", 800.0, 10.0, 0.9337817905351309),
+    ("Al_wrought", 200.0, 16.0, 0.9299169453922225),
+])
+def test_calculate_roughness_parameter(MatGroupFKM, R_m, R_z, K_RP):
+    assessment_parameters = pd.Series({
+        "MatGroupFKM": MatGroupFKM,
+        "R_m": R_m,
+        "R_z": R_z,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_parameter(assessment_parameters)
+
+    assert np.isclose(result["K_RP"], K_RP, rtol=1e-12, atol=0.0)
+
+
+def test_calculate_roughness_parameter_K_RP_already_given(capsys):
+    assessment_parameters = pd.Series({
+        "MatGroupFKM": "Steel",
+        "R_m": 600.0,
+        "K_RP": 0.95,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_parameter(assessment_parameters)
+
+    assert np.isclose(result["K_RP"], 0.95)
+    assert capsys.readouterr().out == "The parameter `K_RP` is already set to 0.95, not using the FKM formula.\n"
