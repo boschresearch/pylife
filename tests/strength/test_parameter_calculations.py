@@ -225,3 +225,21 @@ def test_calculate_roughness_material_woehler_parameters_P_RAJ():
     N_D = (assessment_parameters["P_RAJ_D_WS"] / assessment_parameters["P_RAJ_Z_WS"]) ** (1/assessment_parameters["d_RAJ"])
     d2_alt = np.log(result["P_RAJ_D_WS_rau"] / result["P_RAJ_Z_1e3"]) / np.log(N_D/1e3)
     assert np.isclose(result["d_RAJ_2_rau"], d2_alt, rtol=1e-12, atol=0.0)
+
+
+@pytest.mark.parametrize("include_n_P, n_P", [(True, 1.3), (False, 1.3)])
+def test_calculate_roughness_component_woehler_parameters_P_RAM(include_n_P, n_P):
+    assessment_parameters = pd.Series({
+        "gamma_M_RAM": 1.2,
+        "P_RAM_Z_WS": 819.0,
+        "P_RAM_D_WS_rau": 335.02,
+        "n_P": n_P,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_component_woehler_parameters_P_RAM(assessment_parameters, include_n_P)
+
+    expected_Z = n_P / assessment_parameters["gamma_M_RAM"] * assessment_parameters["P_RAM_Z_WS"]
+    expected_D = n_P / assessment_parameters["gamma_M_RAM"] * assessment_parameters["P_RAM_D_WS_rau"]
+    assert np.isclose(result["P_RAM_Z"], expected_Z)
+    assert np.isclose(result["P_RAM_D"], expected_D)
