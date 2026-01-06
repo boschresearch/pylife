@@ -202,8 +202,8 @@ def test_calculate_roughness_material_woehler_parameters_P_RAM():
 
     assert np.isclose(result["P_RAM_D_WS_rau"], 335.02 * 0.8468470008671309)
 
-    N_D = (335.02 / 819.00) ** (1 / -0.197)
-    d2_alt = np.log((335.02 * 0.8468470008671309) / 819.00) / np.log(N_D)
+    N_D = 1e3 * (335.02 / 819.00) ** (1 / -0.197)
+    d2_alt = np.log((335.02 * 0.8468470008671309) / 819.00) / np.log(N_D / 1e3)
     assert np.isclose(result["d2_RAM_rau"], d2_alt, rtol=1e-12, atol=0.0)
 
 
