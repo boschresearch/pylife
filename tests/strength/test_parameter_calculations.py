@@ -205,3 +205,23 @@ def test_calculate_roughness_material_woehler_parameters_P_RAM():
     N_D = (335.02 / 819.00) ** (1 / -0.197)
     d2_alt = np.log((335.02 * 0.8468470008671309) / 819.00) / np.log(N_D)
     assert np.isclose(result["d2_RAM_rau"], d2_alt, rtol=1e-12, atol=0.0)
+
+
+def test_calculate_roughness_material_woehler_parameters_P_RAJ():
+    assessment_parameters = pd.Series({
+        "P_RAJ_Z_WS": 433.67,
+        "P_RAJ_D_WS": 0.0897,
+        "d_RAJ": -0.63,
+        "K_RP": 0.90,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_material_woehler_parameters_P_RAJ(assessment_parameters)
+
+    expected_P_RAJ_Z_1e3 = assessment_parameters["P_RAJ_Z_WS"] * assessment_parameters["d_RAJ"] ** 1e3
+    assert np.isclose(result["P_RAJ_Z_1e3"], expected_P_RAJ_Z_1e3)
+    assert np.isclose(result["P_RAJ_D_WS_rau"], assessment_parameters["P_RAJ_D_WS"] * assessment_parameters["K_RP"]**2)
+
+    N_D = (assessment_parameters["P_RAJ_D_WS"] / assessment_parameters["P_RAJ_Z_WS"]) ** (1/assessment_parameters["d_RAJ"])
+    d2_alt = np.log(result["P_RAJ_D_WS_rau"] / result["P_RAJ_Z_1e3"]) / np.log(N_D/1e3)
+    assert np.isclose(result["d_RAJ_2_rau"], d2_alt, rtol=1e-12, atol=0.0)
