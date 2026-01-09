@@ -263,3 +263,20 @@ def test_calculate_roughness_component_woehler_parameters_P_RAJ(include_n_P, n_P
     assert np.isclose(result["P_RAJ_Z"], expected_Z)
     assert np.isclose(result["P_RAJ_D_0"], expected_D)
     assert np.isclose(result["P_RAJ_D"], expected_D)
+
+def test_calculate_component_woehler_parameters_P_RAM_unit():
+    assessment_parameters = pd.Series({
+        "gamma_M_RAM": 1.2,
+        "n_P": 1.3,
+        "K_RP": 0.9,
+        "P_RAM_Z_WS": 819.0,
+        "P_RAM_D_WS": 335.02,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_component_woehler_parameters_P_RAM(assessment_parameters)
+
+    f_RAM = assessment_parameters["gamma_M_RAM"] / (assessment_parameters["n_P"] * assessment_parameters["K_RP"])
+    assert np.isclose(result["f_RAM"], f_RAM)
+    assert np.isclose(result["P_RAM_Z"], assessment_parameters["P_RAM_Z_WS"] / f_RAM)
+    assert np.isclose(result["P_RAM_D"], assessment_parameters["P_RAM_D_WS"] / f_RAM)
