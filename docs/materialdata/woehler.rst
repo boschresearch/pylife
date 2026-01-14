@@ -1,6 +1,19 @@
 The ``woehler`` module
 ######################
 
+Notes on Wöhler data analysis
+=============================
+
+Even though there are established Wöhler analysis algorithms they all leave
+some degrees of freedom.  Therfore we document the way we perform the analysis
+in pyLife in the following section.
+
+.. toctree::
+   :maxdepth: 1
+
+   woehler/notes_on_analysis
+
+
 Module description
 ==================
 
@@ -29,7 +42,6 @@ Analyzers
    woehler/probit
    woehler/maxlikeinf
    woehler/maxlikefull
-   woehler/bayesian
 
 
 Helpers

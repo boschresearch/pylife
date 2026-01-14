@@ -81,6 +81,10 @@ class FatigueData(PylifeSignal):
         return self._obj.cycles
 
     @property
+    def fracture(self):
+        return self._obj.fracture
+
+    @property
     def finite_infinite_transition(self):
         '''The start value of the load endurance limit.
 
@@ -208,6 +212,7 @@ class FatigueData(PylifeSignal):
     def _calc_finite_zone_manual(self, limit):
         self._finite_zone = self.fractures[self.fractures.load > limit]
         self._infinite_zone = self._obj[self._obj.load <= limit]
+
 
 def determine_fractures(df, load_cycle_limit=None):
     '''Adds a fracture column according to defined load cycle limit

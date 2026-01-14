@@ -9,6 +9,7 @@ In this file noteworthy changes of new releases of pyLife are documented since
 ### Breaking changes
 
 * Drop support for python-3.8 ast it is end of life
+* The Wöhler analysis slightly changed (#138)
 
 
 ### Minor improvements
