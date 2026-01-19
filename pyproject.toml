@@ -50,7 +50,7 @@ testing = [
   {include-group = "visuals"}
 ]
 docs = [
-  "sphinx",
+  "sphinx<9.0.0",
   "nbsphinx",
   "nbsphinx-link",
   "sphinx_rtd_theme>=1.0",
