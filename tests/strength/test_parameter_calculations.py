@@ -155,3 +155,176 @@ def test_calculate_nonlocal_parameters(MatGroupFKM, A_ref, A_sigma, R_m, G, n_st
     assert np.isclose(result["n_st"], n_st, atol=1e-15)
     assert np.isclose(result["n_bm"], n_bm, atol=1e-15)
     assert np.isclose(result["n_P"], n_P, atol=1e-15)
+
+
+@pytest.mark.parametrize("MatGroupFKM, R_m, R_z, K_RP", [
+    ("Steel", 600.0, 100.0, 0.87975731016387),
+    ("Steel", 600.0, 0.8, 1.0),
+    ("SteelCast", 800.0, 10.0, 0.9337817905351309),
+    ("Al_wrought", 200.0, 16.0, 0.9299169453922225),
+])
+def test_calculate_roughness_parameter(MatGroupFKM, R_m, R_z, K_RP):
+    assessment_parameters = pd.Series({
+        "MatGroupFKM": MatGroupFKM,
+        "R_m": R_m,
+        "R_z": R_z,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_parameter(assessment_parameters)
+
+    assert np.isclose(result["K_RP"], K_RP, rtol=1e-12, atol=0.0)
+
+
+def test_calculate_roughness_parameter_K_RP_already_given(capsys):
+    assessment_parameters = pd.Series({
+        "MatGroupFKM": "Steel",
+        "R_m": 600.0,
+        "K_RP": 0.95,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_parameter(assessment_parameters)
+
+    assert np.isclose(result["K_RP"], 0.95)
+    assert capsys.readouterr().out == "The parameter `K_RP` is already set to 0.95, not using the FKM formula.\n"
+
+@pytest.mark.parametrize("K_RP", [0.8468, 0.9, 0.999])
+def test_calculate_roughness_material_woehler_parameters_P_RAM_K_RP_lt_1(K_RP):
+    assessment_parameters = pd.Series({
+        "P_RAM_Z_WS": 819.00,
+        "P_RAM_D_WS": 335.02,
+        "d_2": -0.197,
+        "K_RP": K_RP,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_material_woehler_parameters_P_RAM(assessment_parameters)
+
+    N_D = 1e3 * (assessment_parameters["P_RAM_D_WS"] / assessment_parameters["P_RAM_Z_WS"]) ** (1 / assessment_parameters["d_2"])
+    d2_alt = np.log((assessment_parameters["P_RAM_D_WS"] * assessment_parameters["K_RP"]) / assessment_parameters["P_RAM_Z_WS"]) / np.log(N_D / 1e3)
+
+    assert np.isclose(result["P_RAM_D_WS_rau"], assessment_parameters["P_RAM_D_WS"] * assessment_parameters["K_RP"])
+    assert np.isclose(result["d2_RAM_rau"], d2_alt, rtol=1e-12, atol=0.0)
+
+
+def test_calculate_roughness_material_woehler_parameters_P_RAM_K_RP_1():
+    assessment_parameters = pd.Series({
+        "P_RAM_Z_WS": 819.00,
+        "P_RAM_D_WS": 335.02,
+        "d_2": -0.197,
+        "K_RP": 1.0,
+    })
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_material_woehler_parameters_P_RAM(assessment_parameters)
+
+    assert np.isclose(result["P_RAM_D_WS_rau"], assessment_parameters["P_RAM_D_WS"])
+    assert np.isclose(result["d2_RAM_rau"], assessment_parameters["d_2"], rtol=1e-12, atol=0.0)
+
+@pytest.mark.parametrize("K_RP", [0.8468, 0.9, 0.999])
+def test_calculate_roughness_material_woehler_parameters_P_RAJ_K_RP_lt_1(K_RP):
+    assessment_parameters = pd.Series({
+        "P_RAJ_Z_WS": 433.67,
+        "P_RAJ_D_WS": 0.0897,
+        "d_RAJ": -0.63,
+        "K_RP": K_RP,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_material_woehler_parameters_P_RAJ(assessment_parameters)
+    expected_P_RAJ_Z_1e3 = assessment_parameters["P_RAJ_Z_WS"] * np.power(1e3, assessment_parameters["d_RAJ"])
+    N_D = (assessment_parameters["P_RAJ_D_WS"] / assessment_parameters["P_RAJ_Z_WS"]) ** (1/assessment_parameters["d_RAJ"])
+    d2_alt = np.log(result["P_RAJ_D_WS_rau"] / result["P_RAJ_Z_1e3"]) / np.log(N_D/1e3)
+
+    assert np.isclose(result["P_RAJ_Z_1e3"], expected_P_RAJ_Z_1e3)
+    assert np.isclose(result["P_RAJ_D_WS_rau"], assessment_parameters["P_RAJ_D_WS"] * assessment_parameters["K_RP"] ** 2)
+    assert np.isclose(result["d_RAJ_2_rau"], d2_alt, rtol=1e-12, atol=0.0)
+
+def test_calculate_roughness_material_woehler_parameters_P_RAJ_K_RP_1():
+    assessment_parameters = pd.Series({
+        "P_RAJ_Z_WS": 433.67,
+        "P_RAJ_D_WS": 0.0897,
+        "d_RAJ": -0.63,
+        "K_RP": 1.0,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_material_woehler_parameters_P_RAJ(assessment_parameters)
+    expected_P_RAJ_Z_1e3 = assessment_parameters["P_RAJ_Z_WS"] * np.power(1e3, assessment_parameters["d_RAJ"])
+
+    assert np.isclose(result["P_RAJ_Z_1e3"], expected_P_RAJ_Z_1e3)
+    assert np.isclose(result["P_RAJ_D_WS_rau"], assessment_parameters["P_RAJ_D_WS"])
+    assert np.isclose(result["d_RAJ_2_rau"],assessment_parameters["d_RAJ"], rtol=1e-12, atol=0.0)
+
+@pytest.mark.parametrize("include_n_P, n_P", [(True, 1.3), (False, 1.0)])
+def test_calculate_roughness_component_woehler_parameters_P_RAM(include_n_P, n_P):
+    assessment_parameters = pd.Series({
+        "gamma_M_RAM": 1.2,
+        "P_RAM_Z_WS": 819.0,
+        "P_RAM_D_WS_rau": 335.02,
+        "n_P": n_P,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_component_woehler_parameters_P_RAM(assessment_parameters, include_n_P)
+
+    expected_Z = n_P / assessment_parameters["gamma_M_RAM"] * assessment_parameters["P_RAM_Z_WS"]
+    expected_D = n_P / assessment_parameters["gamma_M_RAM"] * assessment_parameters["P_RAM_D_WS_rau"]
+    assert np.isclose(result["P_RAM_Z"], expected_Z)
+    assert np.isclose(result["P_RAM_D"], expected_D)
+
+
+@pytest.mark.parametrize("include_n_P, n_P", [(True, 1.3), (False, 1.0)])
+def test_calculate_roughness_component_woehler_parameters_P_RAJ(include_n_P, n_P):
+    assessment_parameters = pd.Series({
+        "gamma_M_RAJ": 1.3,
+        "n_P": n_P,
+        "P_RAJ_Z_WS": 433.67,
+        "P_RAJ_D_WS_rau": 0.0897,
+        "P_RAJ_Z_1e3": 433.67 * np.power(1e3, -0.63)
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_roughness_component_woehler_parameters_P_RAJ(assessment_parameters, include_n_P)
+
+    expected_Z = n_P ** 2 / assessment_parameters["gamma_M_RAJ"] * assessment_parameters["P_RAJ_Z_WS"]
+    expected_D = n_P ** 2 / assessment_parameters["gamma_M_RAJ"] * assessment_parameters["P_RAJ_D_WS_rau"]
+    assert np.isclose(result["P_RAJ_Z"], expected_Z)
+    assert np.isclose(result["P_RAJ_D_0"], expected_D)
+    assert np.isclose(result["P_RAJ_D"], expected_D)
+
+def test_calculate_component_woehler_parameters_P_RAM_unit():
+    assessment_parameters = pd.Series({
+        "gamma_M_RAM": 1.2,
+        "n_P": 1.3,
+        "K_RP": 0.9,
+        "P_RAM_Z_WS": 819.0,
+        "P_RAM_D_WS": 335.02,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_component_woehler_parameters_P_RAM(assessment_parameters)
+
+    f_RAM = assessment_parameters["gamma_M_RAM"] / (assessment_parameters["n_P"] * assessment_parameters["K_RP"])
+    assert np.isclose(result["f_RAM"], f_RAM)
+    assert np.isclose(result["P_RAM_Z"], assessment_parameters["P_RAM_Z_WS"] / f_RAM)
+    assert np.isclose(result["P_RAM_D"], assessment_parameters["P_RAM_D_WS"] / f_RAM)
+
+
+def test_calculate_component_woehler_parameters_P_RAJ_unit():
+    assessment_parameters = pd.Series({
+        "gamma_M_RAJ": 1.3,
+        "n_P": 1.3,
+        "K_RP": 0.9,
+        "P_RAJ_Z_WS": 433.67,
+        "P_RAJ_D_WS": 0.0897,
+    })
+
+    result = pylife.strength.fkm_nonlinear.parameter_calculations.\
+        calculate_component_woehler_parameters_P_RAJ(assessment_parameters)
+
+    f_RAJ = assessment_parameters["gamma_M_RAJ"] / (assessment_parameters["n_P"] ** 2 * assessment_parameters["K_RP"] ** 2)
+    assert np.isclose(result["f_RAJ"], f_RAJ)
+    assert np.isclose(result["P_RAJ_Z"], assessment_parameters["P_RAJ_Z_WS"] / f_RAJ)
+    assert np.isclose(result["P_RAJ_D_0"], assessment_parameters["P_RAJ_D_WS"] / f_RAJ)
+    assert np.isclose(result["P_RAJ_D"], assessment_parameters["P_RAJ_D_WS"] / f_RAJ)
