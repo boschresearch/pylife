@@ -242,7 +242,8 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
         """
         def make_histogram(group):
-            cycles, intervals = np.histogram(group * 2., bins)
+            weights = self.cycles.loc[group.index].to_numpy().astype(np.int64) if  hasattr(self, "cycles") else None
+            cycles, intervals = np.histogram(group * 2., bins, weights=weights)
             idx = pd.IntervalIndex.from_breaks(intervals, name='range')
             return pd.Series(cycles, index=idx, name='cycles')
 
@@ -340,9 +341,8 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
         """
         def make_histogram(group):
-            cycles, range_bins, mean_bins = np.histogram2d(
-                group["range"], group["meanstress"], bins
-            )
+            weights = self.cycles.loc[group.index].to_numpy() if  hasattr(self, "cycles") else None
+            cycles, range_bins, mean_bins = np.histogram2d(group["range"], group["meanstress"], bins, weights=weights)
 
             return pd.Series(
                 cycles.ravel(),
