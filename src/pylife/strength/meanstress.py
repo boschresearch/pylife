@@ -59,11 +59,16 @@ class HaighDiagram(PylifeSignal):
 
         Example
         -------
-        >>> hd = HaighDiagram.from_dict({
+        >>> HaighDiagram.from_dict({
         ...    (1.0, np.inf): 0.0,
         ...    (-np.inf, 0.0): 0.5,
         ...    (0.0, 1.0): 0.167
-        ... })
+        ... }).to_pandas()
+        R
+        (1.0, inf]     0.000
+        (-inf, 0.0]    0.500
+        (0.0, 1.0]     0.167
+        dtype: float64
 
         sets up a FKM Goodman like Haigh diagram.
         """
@@ -81,9 +86,34 @@ class HaighDiagram(PylifeSignal):
             a series containing one or a dataframe containing multiple values for
             `M` and optionally `M2`.
 
+        Notes
+        -----
+
         The Haigh diagram according to FKM Goodman comes with the slope ``M``
         which is valid between ``R==-inf`` and ``R==0``.  Beyond ``R==0`` the slope
         is ``M2` if ``M2`` is given or ``M/3`` if not.
+
+        Examples
+        --------
+
+        A FKM Goodman diagram with default ``M2``
+
+        >>> HaighDiagram.fkm_goodman(pd.Series({"M": 0.5})).to_pandas()
+        R
+        (1.0, inf]     0.000000
+        (-inf, 0.0]    0.500000
+        (0.0, 1.0]     0.166667
+        dtype: float64
+
+        A FKM Goodman diagram with manual ``M2``
+
+        >>> HaighDiagram.fkm_goodman(pd.Series({"M": 0.5, "M2": 0.2})).to_pandas()
+        R
+        (1.0, inf]     0.0
+        (-inf, 0.0]    0.5
+        (0.0, 1.0]     0.2
+        dtype: float64
+
         """
         if "M2" not in haigh_fkm_goodman:
             haigh_fkm_goodman["M2"] = haigh_fkm_goodman["M"] / 3.0
