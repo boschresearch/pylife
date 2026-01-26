@@ -27,13 +27,6 @@ import pylife.strength.fkm_nonlinear.parameter_calculations
 import pylife.strength.fkm_nonlinear.parameter_calculations as parameter_calculations
 
 
-@pytest.fixture(autouse=True)
-def switch_off_pandas_cow_behavior():
-    pd.options.mode.copy_on_write = False
-    yield
-    pd.options.mode.copy_on_write = True
-
-
 @pytest.mark.parametrize(
     'load_sequence, n_hystereses_hcm_1, n_hystereses_hcm_2', [
     (pd.Series([0, 500]), 0, 1),
