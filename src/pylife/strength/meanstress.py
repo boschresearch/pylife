@@ -525,3 +525,4 @@ def five_segment_correction(amplitude, meanstress, M0, M1, M2, M3, M4, R12, R23,
     hd = HaighDiagram.five_segment(haigh_five_segment)
     res = hd.transform(cycles, R_goal)
     return res.load_collective.amplitude.to_numpy()
+# noop to reopen PR
