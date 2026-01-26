@@ -23,6 +23,13 @@ import numpy as np
 
 import pylife.stress.collective
 
+dataframe_with_cycles = pd.DataFrame({
+                            'from': [300.0, -150.0, -250.0],
+                            'to': [-300.0, -150.0, 250.0],
+                            'cycles': [1e0, 1e1, 1e2]})
+dataframe_without_cycles = pd.DataFrame({
+                            'from': [300.0, -150.0, -250.0],
+                            'to': [-300.0, -150.0, 250.0]})
 
 @pytest.mark.parametrize('df, expected', [
     (
@@ -502,19 +509,17 @@ def test_load_collective_strange_shift():
     pd.testing.assert_frame_equal(result, expected)
 
 # GH-199
-def test_load_collective_range_histogram_with_cycles():
-    df = pd.DataFrame({
-        'from': [300.0, -150.0, -250.0],
-        'to': [-300.0, -150.0, 250.0],
-        'cycles': [1e0, 1e1, 1e2],
-        })
-
+@pytest.mark.parametrize("df, hist_exp_cycles, exp_sum", [
+    (dataframe_with_cycles, [10.0, 0.0, 101.0], 111.0),
+    (dataframe_without_cycles, [1.0, 0.0, 2.0], 3.0)
+])
+def test_load_collective_range_histogram_with_without_cycles(df, hist_exp_cycles, exp_sum):
     expected_range_bins = pd.IntervalIndex.from_tuples([(0.0, 200.0), (200.0, 400.0), (400.0, 600.0)], closed='right', name='range')
-    expected_histogram = pd.Series([10.0, 0.0, 101.0], index=expected_range_bins, name='cycles', dtype=np.int64)
+    expected_histogram = pd.Series(hist_exp_cycles, index=expected_range_bins, name='cycles', dtype=np.int64)
 
     result = df.load_collective.range_histogram(bins=3).to_pandas()
     pd.testing.assert_series_equal(result, expected_histogram)
-    assert result.sum() == df.cycles.sum()
+    assert result.sum() == exp_sum
 
 # GH-107
 @pytest.mark.parametrize('bins, expected_index_tuples, expected_data', [
@@ -664,18 +669,16 @@ def test_load_collective_histogram_nested_grouped():
     pd.testing.assert_series_equal(result.to_pandas(), expected)
 
 # GH-199
-def test_load_collective_histogram_with_cycles():
-    df = pd.DataFrame({
-        'from': [300.0, -150.0, -250.0],
-        'to': [-300.0, -150.0, 250.0],
-        'cycles': [1e0, 1e1, 1e2],
-        })
-
+@pytest.mark.parametrize("df, hist_exp_cycles, exp_sum", [
+    (dataframe_with_cycles, [10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 101.0], 111.0),
+    (dataframe_without_cycles, [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0], 3.0)
+])
+def test_load_collective_histogram_with_without_cycles(df, hist_exp_cycles, exp_sum):
     expected_range_bins = pd.IntervalIndex.from_tuples([(0.0, 200.0),(200.0, 400.0),(400.0, 600.0)], closed='right', name='range')
     expected_mean_bins = pd.IntervalIndex.from_tuples([(-150.0, -100.0),(-100.0, -50.0),(-50.0, 0.0)], closed='right', name='mean')
     expected_index = pd.MultiIndex.from_product([expected_range_bins, expected_mean_bins], names=['range', 'mean'])
-    expected_histogram = pd.Series([10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 101.0], index=expected_index, name='cycles')
+    expected_histogram = pd.Series(hist_exp_cycles, index=expected_index, name='cycles')
 
     result = df.load_collective.histogram(bins=3).to_pandas()
     pd.testing.assert_series_equal(result, expected_histogram)
-    assert result.sum() == df.cycles.sum()
+    assert result.sum() == exp_sum
