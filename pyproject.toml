@@ -126,11 +126,6 @@ addopts = '''
 --ignore=src/pylife/materialdata/woehler/bayesian.py
 --ignore=src/pylife/strength/helpers.py
 --ignore=src/pylife/strength/sn_curve.py'''
-norecursedirs = [
-    "dist",
-    "build",
-    ".tox",
-]
 testpaths = ["tests", "src/pylife"]
 markers = [
     "slow_acceptance: long running acceptance test (not run by default)",
