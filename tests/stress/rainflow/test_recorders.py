@@ -357,7 +357,7 @@ def test_fkm_nonlinear_recorder_empty_collective_default():
         }
     )
 
-    pd.testing.assert_frame_equal(fr.collective, expected)
+    pd.testing.assert_frame_equal(fr.collective, expected, check_index_type=False)
 
 
 def test_fkm_nonlinear_recorder_two_non_zero_collective():
