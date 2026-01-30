@@ -3,25 +3,31 @@
 In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
-## Unreleased
-
+## 2.2.0
 
 ### Breaking changes
 
 * Drop support for python-3.8 ast it is end of life
 * The Wöhler analysis slightly changed (#138)
 
+### New features
+
+Support for some FKM-non-linear calculations
+
+* HCM rainflow algorithm
+* P_RAM and P_RAJ damage calculation
+* Notch approximation law (Neuber and Seeger-Beste)
 
 ### Minor improvements
 
 * Connectivity information is now transferred from odbserver to odbclient as
   ints.
 
-
 ### Bugfixes
 
 * Fix unnecessary and harmful copy of pandas object in Wöhler classes (#146)
 * Don't assume `failure_probability=0.5` in Wöhler calculations (#192)
+
 
 ## pylife-2.1.4
 
