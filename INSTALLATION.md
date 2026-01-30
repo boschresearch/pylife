@@ -15,6 +15,10 @@ You need a python installation e.g. a virtual environment with `pip` a recent
 (brand new ones might not work) python versions installed. There are several
 ways to achieve that.
 
+Although you can install and use pyLife with Python version >= 3.9 and pandas
+version >= 2.2, it is strongly recommended to use at least Python 3.11 and
+pandas 3.0.0.
+
 
 #### Using miniconda or anaconda
 
@@ -26,7 +30,7 @@ on how to do that. The newly created environment must be activated.
 
 The following command lines should do it
 ```
-conda create -n pylife-env python=3.12 --yes
+conda create -n pylife-env python=3.13 --yes
 conda activate pylife-env
 ```
 

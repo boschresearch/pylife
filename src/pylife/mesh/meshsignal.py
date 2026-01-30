@@ -214,20 +214,21 @@ class Mesh(PlainMesh):
 
         Example
         -------
-        >>> import pyvista as pv
-        >>> from pylife.vmap import VMAPImport
-        >>> df = (
-        ...     VMAPImport('demos/plate_with_hole.vmap')
-        ...     .make_mesh('1', 'STATE-2')
-        ...     .join_coordinates()
-        ...     .join_variable('STRESS_CAUCHY')
-        ...     .to_frame()
-        ... )
+        .. code-block:: python
 
-        >>> grid = pv.UnstructuredGrid(*df.mesh.vtk_data())
-        >>> plotter = pv.Plotter(window_size=[1920, 1080])
-        >>> plotter.add_mesh(grid, scalars=df.groupby('element_id')['S11'].mean().to_numpy())  # doctest: +SKIP
-        >>> plotter.show()  # doctest: +SKIP
+            import pyvista as pv
+            from pylife.vmap import VMAPImport
+            df = (
+                VMAPImport('demos/plate_with_hole.vmap')
+                .make_mesh('1', 'STATE-2')
+                .join_coordinates()
+                .join_variable('STRESS_CAUCHY')
+                .to_frame()
+            )
+            grid = pv.UnstructuredGrid(*df.mesh.vtk_data())
+            plotter = pv.Plotter(window_size=[1920, 1080])
+            plotter.add_mesh(grid, scalars=df.groupby('element_id')['S11'].mean().to_numpy())
+            plotter.show()
 
         Note the `*` that needs to be added when calling ``pv.UnstructuredGrid()``.
         """
