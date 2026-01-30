@@ -126,7 +126,7 @@ namespaces = false
 # CAUTION: --cov flags may prohibit setting breakpoints while debugging.
 # Comment those flags to avoid this py.test issue.
 addopts = '''
---cov src/pylife --cov-append -m "not slow_acceptance and not demos"
+-m "not slow_acceptance and not demos"
 --doctest-modules
 --ignore=src/pylife/materialdata/woehler/bayesian.py
 --ignore=src/pylife/strength/helpers.py
