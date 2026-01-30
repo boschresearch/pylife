@@ -33,8 +33,13 @@ dev = [
   "pytest-cov",
   "pytest-timeout",
   "hypothesis",
-  "testbook",
   "pytest-xdist>=3.8.0",
+
+  # For demo notebooks
+  "testbook",
+  "ipykernel",
+  "ipywidgets",
+  "matplotlib"
 ]
 visuals = [
   "pyvista",
