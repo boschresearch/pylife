@@ -194,10 +194,6 @@ class Mesh(PlainMesh):
 
         Returns
         -------
-        offsets : ndarray
-            An empty numpy array as ``pyVista.UnstructuredGrid()`` still
-            demands the argument for the offsets, even though VTK>9 does not
-            accept it.
         cells : ndarray
             The location of the cells describing the points in a way
             ``pyVista.UnstructuredGrid()`` needs it
