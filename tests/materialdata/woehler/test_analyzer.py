@@ -706,7 +706,7 @@ def test_max_likelihood_one_mixed_horizon():
 
 def test_irrelevant_runouts_dropped():
     fd = woehler.determine_fractures(data_pure_runout_horizon_and_mixed_horizons, 1e7).fatigue_data
-    num_data_before = 48
+    num_data_before = len(fd._obj)
     num_tests_lowest_pure_runout_load_level = 9
     fd = fd.irrelevant_runouts_dropped()
     num_data_after = len(fd._obj)
@@ -714,10 +714,8 @@ def test_irrelevant_runouts_dropped():
 
 
 def test_irrelevant_runouts_dropped_no_change():
-    data_pure_runout_horizon_and_mixed_horizons
-    data_extend = data_pure_runout_horizon_and_mixed_horizons.copy(deep=True)
     new_row = {'load': 2.75e+02, 'cycles': 1.00e+06}
-    data_extend = pd.concat([data_extend, pd.DataFrame([new_row])])
+    data_extend = pd.concat([data_pure_runout_horizon_and_mixed_horizons, pd.DataFrame([new_row])])
     fd = woehler.determine_fractures(data_extend, 1e7).fatigue_data
     num_data_before = len(fd._obj)
     fd = fd.irrelevant_runouts_dropped()
@@ -746,6 +744,13 @@ def test_drop_irreverent_pure_runout_levels_no_data_change():
     wc = woehler.Probit(fd).analyze()
     num_data_after = len(fd._obj)
     assert num_data_before == num_data_after
+
+
+def test_preserve_transition_level_after_runouts_drop():
+    fd = woehler.determine_fractures(data_pure_runout_horizon_and_mixed_horizons, 1e7).fatigue_data
+    fd.set_finite_infinite_transition(423.0)
+    new_fd = fd.irrelevant_runouts_dropped()
+    assert new_fd.finite_infinite_transition == 423.0
 
 
 # GH-108

@@ -181,7 +181,7 @@ class FatigueData(PylifeSignal):
             return self
         if self.pure_runout_loads.max() < self.fractured_loads.min():
             df = self._obj[~(self._obj.load < self.pure_runout_loads.max())]
-            return FatigueData(df)
+            return FatigueData(df).set_finite_infinite_transition(self._finite_infinite_transition)
         else:
             return self
 
