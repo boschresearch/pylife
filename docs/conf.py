@@ -27,6 +27,7 @@ if 'DISPLAY' not in os.environ and not sys.platform.startswith('win'):
     from xvfbwrapper import Xvfb
     vdisplay = Xvfb()
     vdisplay.start()
+    os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
 
 os.environ['PYDEVD_DISABLE_FILE_VALIDATION'] = "1"
 
