@@ -63,7 +63,8 @@ docs = [
   "jupyter_sphinx",
   "myst_parser",
   "pyvista[all,jupyter]",
-  "trame<3",
+  "trame",
+  "trame-vtk<2.10.3",
   {include-group = "visuals"}
 ]
 
