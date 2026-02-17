@@ -821,6 +821,7 @@ def test_element_id():
     vals = np.array([100., -200., 100., -250., 200., 0., 200., -200.]) * (250+6.6)/250 * 1.4
     signal = pd.DataFrame({11: vals, 12: 2*vals, 13: 3*vals, 'load_step': range(len(vals))}).set_index('load_step').stack()
     signal.index.names = ['load_step', 'element_id']
+    signal.name = "load"
 
     E = 206e3    # [MPa] Young's modulus
     K = 3.1148*(1251)**0.897 / (( np.min([0.338, 1033.*1251.**(-1.235)]) )**0.187)

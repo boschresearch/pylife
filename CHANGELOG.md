@@ -3,6 +3,13 @@
 In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
+## 2.2.1
+
+### Bug fixes
+
+* Fix crash when HCM algorithm was given a named multiindex load series (#210)
+
+
 ## 2.2.0
 
 ### Breaking changes

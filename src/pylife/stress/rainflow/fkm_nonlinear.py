@@ -527,7 +527,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
             # increase the load_step index value by one for all samples
             samples_without_index = samples.reset_index()
             samples_without_index.load_step += 1
-            samples = samples_without_index.set_index(samples.index.names)[0]
+            samples = samples_without_index.set_index(samples.index.names).iloc[:, 0]
 
             # prepend the new zero load sample
             samples = pd.concat([first_sample, samples], axis=0)
