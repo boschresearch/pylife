@@ -230,12 +230,12 @@ def psd_df(df_ts, nfft=512, nperseg=256):
 
     nperseg = min(nperseg, nfft)
     fs = fs_calc(df_ts)
-    df_psd = pd.DataFrame()
+    df_psd = {}
     for col in df_ts:
         freq, df_psd[col] = signal.welch(
             df_ts[col].values, fs=fs, nperseg=nperseg, nfft=nfft
         )
-    df_psd.index = pd.Index(freq, name="frequency")
+    df_psd = pd.DataFrame(df_psd, index=pd.Index(freq, name="frequency"))
     return df_psd
 
 
