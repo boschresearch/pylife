@@ -29,18 +29,6 @@ test analysis](https://cloud.viktor.ai/public/wohler-fatigue-test-analysis)
 based on pyLife code.
 
 
-## Status
-
-pyLife-2.1.x is the current release the you get by default.  We are doing small
-improvements, in the pyLife-2.1.x branch (`master`) while developing the more
-vast features in the 2.2.x branch (`develop`).
-
-The main new features of the 2.2.x branch is about FKM functionality. As that
-is quite a comprehensive addition we would need some time to get it right
-before we can release it as default release.
-
-Once 2.2.x is released we will probably stick to a one branch development.
-
 ## Contents
 
 There are/will be the following subpackages:
