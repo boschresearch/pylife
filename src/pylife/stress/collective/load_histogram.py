@@ -36,10 +36,12 @@ class LoadHistogram(PylifeSignal, AbstractLoadCollective):
         if 'range' in self._obj.index.names:
             self._fail_if_not_multiindex(['range', 'mean'])
             self._impl = _RangeMeanMatrix(self._obj)
+            self._axes = ["range", "mean"]
             return
         if 'from' in self._obj.index.names and 'to' in self._obj.index.names:
             self._fail_if_not_multiindex(['from', 'to'])
             self._impl = _FromToMatrix(self._obj)
+            self._axes = ["from", "to"]
             return
 
         raise AttributeError("Load collective matrix needs either 'range'/('mean') or 'from'/'to' in index levels.")
@@ -183,6 +185,14 @@ class LoadHistogram(PylifeSignal, AbstractLoadCollective):
             The shifted collective.
         """
         return self._shift_or_scale(lambda x, y: x + y, diffs, skip=['range']).load_collective
+
+    @property
+    def index_levels(self) -> list[str]:
+        """The index levels names defining the stress axis of the data object.
+
+        Either `["range", "mean"]` or `["from", "to"]`
+        """
+        return self._axes
 
     def _shift_or_scale(self, func, operand, skip=None):
         def do_transform_interval_index(level_name):

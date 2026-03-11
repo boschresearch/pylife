@@ -511,64 +511,42 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
             )
 
     def fkm_goodman(self, haigh, R_goal):
-        ranges = HaighDiagram.fkm_goodman(haigh).transform(self._obj, R_goal)["range"]
-        return self._rebin_results(ranges, R_goal).load_collective
+        transformer = HaighDiagram.fkm_goodman(haigh)
+        return self._perform_transformation(transformer, R_goal)
 
-    def _rebin_results(self, ranges, R_goal):
+    def _perform_transformation(self, transformer, R_goal):
+        range_left = 2.0 * self.use_class_left().amplitude.reset_index(drop=True)
+        range_right = 2.0 * self.use_class_right().amplitude.reset_index(drop=True)
+        mean_left = self.use_class_left().meanstress.reset_index(drop=True)
+        mean_right = self.use_class_right().meanstress.reset_index(drop=True)
 
-        def resulting_intervals():
-            ranges_max = ranges.max()
-            binsize = np.hypot(self._binsize_x, self._binsize_y) / np.sqrt(2.0)
-            bincount = int(np.ceil(ranges_max / binsize))
-            range_bins = np.linspace(0, ranges_max, bincount + 1)
-            means_bins = range_bins * (1.0 + R_goal) / (2.0 * (1.0 - R_goal))
-            range_itv = pd.IntervalIndex.from_breaks(range_bins, name="range")
-            means_itv = pd.IntervalIndex.from_breaks(means_bins, name="mean")
-            return range_itv, means_itv
+        orig_left = pd.DataFrame({"range": range_left, "mean": mean_left})
+        orig_right = pd.DataFrame({"range": range_right, "mean": mean_right})
 
-        def aggregate_on_projection(projection, itvs, ranges, obj):
-            level_values = tuple(projection)
-            level_names = list(projection.index)
-            ranges = ranges.xs(level_values, level=level_names)
-            obj = obj.xs(level_values, level=level_names)
-            sums = itvs.to_series().apply(lambda iv: sum_intervals(iv, ranges, obj))
-            return sums
+        transformed_left = transformer.transform(orig_left, R_goal)
+        transformed_right = transformer.transform(orig_right, R_goal)
 
-        def sum_intervals(iv, ranges, obj):
-            op_left = op.ge if iv.left == 0.0 else op.gt
-            return obj.iloc[
-                op_left(ranges.values, iv.left) & op.le(ranges.values, iv.right)
-            ].sum()
+        transformed = self._obj.to_frame()
+        additional_indeces = len(transformed.index.names) > 2
+        if additional_indeces:
+            transformed.index = transformed.index.droplevel(self.index_levels)
 
-        if ranges.shape[0] == 0:
-            new_idx = pd.IntervalIndex(pd.interval_range(0.0, 0.0, 0), name="range")
-            return pd.Series([], index=new_idx, name="cycles", dtype=np.float64)
+        range = pd.DataFrame({0: transformed_left["range"], 1: transformed_right["range"]})
+        transformed["range"] = pd.IntervalIndex.from_arrays(
+            range.min(axis=1), range.max(axis=1), name="range"
+        )
+        mean = pd.DataFrame({0: transformed_left["mean"], 1: transformed_right["mean"]})
+        transformed["mean"] = pd.IntervalIndex.from_arrays(
+            mean.min(axis=1), mean.max(axis=1), name="mean"
+        )
 
-        range_itv_idx, means_itg_idx = resulting_intervals()
+        result = transformed.set_index(["range", "mean"], append=additional_indeces, drop=True).iloc[:, 0]
+        new_names = self._obj.index.to_frame().rename(columns={"from": "range", "to": "mean"}).columns
+        result.index = result.index.reorder_levels(new_names)
+        result.name = self._obj.name
 
-        if len(self._remaining_names) > 0:
-            remaining_idx = (
-                self._obj.index.to_frame(index=False)
-                .groupby(self._remaining_names)
-                .first()
-                .index
-            )
-            result = remaining_idx.to_frame(index=False).apply(
-                lambda p: aggregate_on_projection(p, range_itv_idx, ranges, self._obj),
-                axis=1,
-            )
-            result.index = remaining_idx
-            result.columns = pd.MultiIndex.from_arrays([result.columns, means_itg_idx])
-            result = result.stack(["range", "mean"], future_stack=True).reorder_levels(
-                ["range", "mean"] + self._remaining_names
-            )
-        else:
-            result = range_itv_idx.to_series().apply(
-                lambda iv: sum_intervals(iv, ranges, self._obj)
-            )
-            result.index = pd.MultiIndex.from_arrays([result.index, means_itg_idx])
+        return CL.LoadHistogram(result)
 
-        return result
 
 
 def fkm_goodman(amplitude, meanstress, M, M2, R_goal):

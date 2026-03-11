@@ -227,8 +227,11 @@ def test_fkm_goodman_hist_range_mean(R_goal, expected):
     rg = pd.IntervalIndex.from_breaks(np.linspace(0., 2., 25), closed='left')
     mn = pd.IntervalIndex.from_breaks(np.linspace(-1./12., 23./12., 25), closed='left')
 
-    mat = pd.Series(np.zeros(24*24), name='cycles',
-                    index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']))
+    mat = pd.Series(
+        np.zeros(24 * 24),
+        name='cycles',
+        index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']),
+    )
     mat.loc[(7./6., 7./6.)] = 1.
     mat.loc[(4./3., 2./3.)] = 3.
     mat.loc[(2. - 1e-9, 0.)] = 5.
@@ -252,8 +255,11 @@ def test_fkm_goodman_hist_from_to(R_goal, expected):
     fr = pd.IntervalIndex.from_breaks(np.linspace(-25./24., 1., 49), closed='left')
     to = pd.IntervalIndex.from_breaks(np.linspace(-1./24., 2., 49), closed='left')
 
-    mat = pd.Series(np.zeros(48*48), name='cycles',
-                    index=pd.MultiIndex.from_product([fr, to], names=['from', 'to']))
+    mat = pd.Series(
+        np.zeros(48 * 48),
+        name='cycles',
+        index=pd.MultiIndex.from_product([fr, to], names=['from', 'to']),
+    )
     mat.loc[(14./24., 21./12.)] = 1
     mat.loc[(0., 4./3.)] = 3
     mat.loc[(-1., 1.)] = 5
@@ -268,101 +274,22 @@ def test_fkm_goodman_hist_from_to(R_goal, expected):
     assert res.loc[~mask].sum() == 0
 
 
-def test_meanstress_transform_additional_index():
-    fr = pd.IntervalIndex.from_breaks(np.linspace(-25./24., 1., 49), closed='left')
-    to = pd.IntervalIndex.from_breaks(np.linspace(-1./24., 2., 49), closed='left')
-    node = pd.Index([1, 2, 3], name='node_id')
-
-    mat = pd.Series(
-        0.0,
-        index=pd.MultiIndex.from_product([fr, to, node], names=['from', 'to', 'node_id']),
-        name='cycles'
-    )
-
-    mat.loc[(14./24., 21./12., 1)] = 1
-    mat.loc[(0., 4./3., 1)] = 3
-    mat.loc[(-1., 1., 1)] = 5
-
-    mat.loc[(14./24., 21./12., 2)] = 2
-    mat.loc[(0., 4./3., 2)] = 6
-    mat.loc[(-1., 1., 2)] = 10
-
-    mat.loc[(14./24., 21./12., 3)] = 4
-    mat.loc[(0., 4./3., 3)] = 12
-    mat.loc[(-1., 1., 3)] = 20
-
-    haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
-    res = mat.meanstress_transform.fkm_goodman(haigh, -1.0).to_pandas()
-
-    assert set(res.index.names) == {'range', 'mean', 'node_id'}
-
-    null_itv = pd.Interval(0.0, 0.0)
-
-    assert res.loc[(2.0, null_itv, 1)] == 9
-    assert res.loc[(2.0, null_itv, 2)] == 18
-    assert res.loc[(2.0, null_itv, 3)] == 36
-
-    assert res.sum() == 9 + 18 + 36
-    assert res.min() == 0
-
-
-def test_meanstress_transform_two_additional_indices():
-    fr = pd.IntervalIndex.from_breaks(np.linspace(-25./24., 1., 49), closed='left', name='from')
-    to = pd.IntervalIndex.from_breaks(np.linspace(-1./24., 2., 49), closed='left', name='to')
-    node = pd.Index([1, 2], name='node_id')
-    element = pd.Index([1, 2], name='element_id')
-
-    mat = pd.Series(
-        0.0,
-        index=pd.MultiIndex.from_product([fr, to, node, element]),
-        name='cycles'
-    )
-
-    mat.loc[(14./24., 21./12., 1, 1)] = 1
-    mat.loc[(0., 4./3., 1, 1)] = 3
-    mat.loc[(-1., 1., 1, 1)] = 5
-
-    mat.loc[(14./24., 21./12., 2, 1)] = 2
-    mat.loc[(0., 4./3., 2, 1)] = 6
-    mat.loc[(-1., 1., 2, 1)] = 10
-
-    mat.loc[(14./24., 21./12., 1, 2)] = 4
-    mat.loc[(0., 4./3., 1, 2)] = 12
-    mat.loc[(-1., 1., 1, 2)] = 20
-
-    mat.loc[(14./24., 21./12., 2, 2)] = 8
-    mat.loc[(0., 4./3., 2, 2)] = 24
-    mat.loc[(-1., 1., 2, 2)] = 40
-
-    haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
-    res = mat.meanstress_transform.fkm_goodman(haigh, -1.0).to_pandas()
-
-    assert set(res.index.names) == {'range', 'mean', 'node_id', 'element_id'}
-
-    null_itv = pd.Interval(0.0, 0.0)
-
-    assert res.loc[(2.0, null_itv, 1, 1)] == 9
-    assert res.loc[(2.0, null_itv, 2, 1)] == 18
-
-    assert res.loc[(2.0, null_itv, 1, 2)] == 36
-    assert res.loc[(2.0, null_itv, 2, 2)] == 72
-
-    assert res.sum() == 9 + 18 + 36 + 72
-    assert res.min() == 0
-
-
+@pytest.mark.skip("We are no longer rebinning")
 @pytest.mark.parametrize("R_goal, expected", [  # all calculated by pencil on paper
     (-1., 2.0),
     (0., 4./3.),
     (-1./3., 8./5.),
     (1./3., 14./12.)
 ])
-def test_fkm_goodman_hist_range_mean_nonzero(R_goal, expected):
+def test_fkm_goodman_hist_range_mean_nonzero_binsize(R_goal, expected):
     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
     mn = pd.IntervalIndex.from_breaks(np.linspace(-1./12., 23./12., 25), closed='left')
 
-    mat = pd.Series(np.zeros(24*24), name='cycles',
-                    index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']))
+    mat = pd.Series(
+        np.zeros(24 * 24),
+        name='cycles',
+        index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']),
+    )
     mat.loc[(7./6., 7./6.)] = 1.
     mat.loc[(4./3., 2./3.)] = 3.
     mat.loc[(2. - 1e-9, 0.)] = 5.
@@ -404,36 +331,6 @@ def test_full_histogram():
     assert res.sum() == series.sum()
 
 
-# import itertools
-
-# @pytest.mark.parametrize('bincount_from, bincount_to', itertools.product(*[range(1, 25), range(1, 25)]))
-# def test_full_histogram_varying_bins(bincount_from, bincount_to):
-#     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, bincount_from+1), closed='left')
-#     mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, bincount_to+1), closed='left')
-
-#     bincount_prod = bincount_from * bincount_to
-#     series = pd.Series(np.linspace(1, bincount_prod, bincount_prod, dtype=np.int32), name='cycles',
-#                        index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']))
-#     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
-#     res = series.meanstress_transform.fkm_goodman(haigh, -1).to_pandas()
-
-#     assert res.sum() == series.sum()
-
-
-# @pytest.mark.parametrize('bincount_from, bincount_to', itertools.product(*[range(1, 25), range(1, 25)]))
-# def test_full_histogram_range_mean_varying_bins(bincount_from, bincount_to):
-#     fr = pd.IntervalIndex.from_breaks(np.linspace(0, 2, bincount_from+1), closed='left')
-#     to = pd.IntervalIndex.from_breaks(np.linspace(0, 2, bincount_to+1), closed='left')
-
-#     bincount_prod = bincount_from * bincount_to
-#     series = pd.Series(np.linspace(1, bincount_prod, bincount_prod, dtype=np.int32), name='cycles',
-#                        index=pd.MultiIndex.from_product([fr, to], names=['from', 'to']))
-#     haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
-#     res = series.meanstress_transform.fkm_goodman(haigh, -1).to_pandas()
-
-#     assert res.sum() == series.sum()
-
-
 @pytest.mark.parametrize("N_c, M_sigma", [  # Calculated by pencil and paper
     (3e6, 0.2),
     (1e6, 0.3784),
@@ -465,3 +362,366 @@ def test_experimental_mean_stress_sensitivity_plausible():
     with testing.assert_raises(ValueError):
         # Should lead to -0.27
         MST.experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=10**4)
+
+
+
+def test_neutral_haigh_diagram_histogram_range_mean_R_neg1():
+    lc_histogram = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]),
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]),
+                ),
+                pd.IntervalIndex.from_arrays([0.0], [0.0]),
+            ],
+            names=["range", "mean"],
+        ),
+        name="cycles"
+    )
+
+    expected = lc_histogram.copy()
+
+    transformed = lc_histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), -1.0)
+
+    pd.testing.assert_series_equal(transformed.to_pandas(), expected)
+
+
+def test_neutral_haigh_diagram_histogram_range_mean_R_0():
+    lc_histogram = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_arrays(
+                    [650, 550, 450, 350, 250, 150], [750, 650, 550, 450, 350, 250]
+                ),
+                pd.IntervalIndex.from_arrays([0], [0]),
+            ],
+            names=["range", "mean"],
+        ),
+        name="cycles"
+    )
+
+    transformed = lc_histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), 0)
+
+    expected = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]),
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]),
+                ),
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                ),
+            ],
+            names=["range", "mean"],
+        ),
+        name="cycles",
+    )
+
+    pd.testing.assert_series_equal(transformed.to_pandas(), expected)
+
+
+def test_neutral_haigh_diagram_histogram_range_mean_one_additional_index():
+    lc_histogram = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]),
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]),
+                ),
+                pd.IntervalIndex.from_arrays(np.zeros(6), np.zeros(6)),
+                pd.RangeIndex(start=1, stop=7),
+            ],
+            names=["range", "mean", "node_id"],
+        ),
+        name="cycles",
+    )
+
+    expected = lc_histogram.copy()
+
+    transformed = lc_histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), -1.0)
+
+    print(expected)
+    print(transformed.to_pandas())
+
+    pd.testing.assert_series_equal(transformed.to_pandas(), expected)
+
+
+def test_neutral_haigh_diagram_histogram_range_mean_two_additional_index():
+    lc_histogram = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]),
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]),
+                ),
+                pd.IntervalIndex.from_arrays(np.zeros(6), np.zeros(6)),
+                pd.RangeIndex(start=1, stop=7),
+                pd.Index([1, 1, 2, 2, 3, 3])
+            ],
+            names=["range", "mean", "node_id", "element_id"],
+        ),
+        name="cycles",
+    )
+
+    expected = lc_histogram.copy()
+
+    transformed = lc_histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), -1.0)
+
+    print(expected)
+    print(transformed.to_pandas())
+
+    pd.testing.assert_series_equal(transformed.to_pandas(), expected)
+
+
+def test_neutral_haigh_diagram_histogram_from_to_hanging_R_neg1():
+    lc_histogram = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]),
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]),
+                ),
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                ),
+            ],
+            names=["from", "to"],
+        ),
+        name="cycles"
+    )
+
+    transformed = lc_histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), -1.0)
+
+    expected = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                ),
+                pd.IntervalIndex.from_arrays([0.0], [0.0]),
+            ],
+            names=["range", "mean"],
+        ),
+        name="cycles"
+    )
+    print(expected)
+    print(transformed.to_pandas())
+
+    pd.testing.assert_series_equal(transformed.to_pandas(), expected)
+
+
+def test_neutral_haigh_diagram_histogram_from_to_hanging_R_0():
+    lc_histogram = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]),
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]),
+                ),
+                pd.IntervalIndex.from_arrays([0.0], [0.0]),
+            ],
+            names=["from", "to"],
+        ),
+        name="cycles"
+    )
+
+    transformed = lc_histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), 0.0)
+
+    expected = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]),
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]),
+                ),
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                ),
+            ],
+            names=["range", "mean"],
+        ),
+        name="cycles"
+    )
+
+    print(transformed.to_pandas())
+    print(expected)
+
+    pd.testing.assert_series_equal(transformed.to_pandas(), expected)
+
+
+def test_neutral_haigh_diagram_histogram_from_to_standing_positive_R_neg1():
+    lc_histogram = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                ),
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]),
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]),
+                ),
+            ],
+            names=["from", "to"],
+        ),
+        name="cycles"
+    )
+
+    transformed = lc_histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), -1.0)
+
+    expected = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                ),
+                pd.IntervalIndex.from_arrays([0.0], [0.0]),
+            ],
+            names=["range", "mean"],
+        ),
+        name="cycles"
+    )
+    print(expected)
+    print(transformed.to_pandas())
+
+    pd.testing.assert_series_equal(transformed.to_pandas(), expected)
+
+
+def test_neutral_haigh_diagram_histogram_from_to_standing_negative_R_neg1():
+    lc_histogram = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / -2.0,
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / -2.0,
+                ),
+                pd.IntervalIndex.from_arrays(
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) * -1.0,
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) * -1.0,
+                ),
+            ],
+            names=["from", "to"],
+        ),
+        name="cycles"
+    )
+
+    transformed = lc_histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), -1.0)
+
+    expected = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                ),
+                pd.IntervalIndex.from_arrays([0.0], [0.0]),
+            ],
+            names=["range", "mean"],
+        ),
+        name="cycles"
+    )
+    print(expected)
+    print(transformed.to_pandas())
+
+    pd.testing.assert_series_equal(transformed.to_pandas(), expected)
+
+
+def test_neutral_haigh_diagram_histogram_from_standing_to_R_0():
+    lc_histogram = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_arrays([0.0], [0.0]),
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]),
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]),
+                ),
+            ],
+            names=["from", "to"],
+        ),
+        name="cycles"
+    )
+
+    transformed = lc_histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), 0.0)
+
+    expected = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]),
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]),
+                ),
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                ),
+            ],
+            names=["range", "mean"],
+        ),
+        name="cycles"
+    )
+
+    print(transformed.to_pandas())
+    print(expected)
+
+    pd.testing.assert_series_equal(transformed.to_pandas(), expected)
+
+def test_neutral_haigh_diagram_histogram_from_to_mixed_R_neg1():
+    lc_histogram = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 0.0, 450.0, 0.0, 250.0, 0.0]),
+                    np.array([750.0, 0.0, 550.0, 0.0, 350.0, 0.0]),
+                ),
+                pd.IntervalIndex.from_arrays(
+                    np.array([0.0, 550.0, 0.0, 350.0, 0.0, 150.0]),
+                    np.array([0.0, 650.0, 0.0, 450.0, 0.0, 250.0]),
+                )
+            ],
+            names=["from", "to"],
+        ),
+        name="cycles"
+    )
+
+    transformed = lc_histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), -1.0)
+
+    expected = pd.Series(
+        [10, 90, 900, 9000, 90000, 900000],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_arrays(
+                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]),
+                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]),
+                ),
+                pd.IntervalIndex.from_arrays([0.0], [0.0]),
+            ],
+            names=["range", "mean"],
+        ),
+        name="cycles"
+    )
+
+    pd.testing.assert_series_equal(transformed.to_pandas(), expected)
+
