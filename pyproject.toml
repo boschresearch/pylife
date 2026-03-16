@@ -140,7 +140,7 @@ markers = [
 doctest_optionflags = "NORMALIZE_WHITESPACE IGNORE_EXCEPTION_DETAIL"
 
 [tool.coverage.run]
-source = ["src"]
+source = ["src/pylife"]
 omit = [
   "src/pylife/strength/helpers.py",
   "src/pylife/strength/sn_curve.py",
