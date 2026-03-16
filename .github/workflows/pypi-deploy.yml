@@ -22,7 +22,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -40,7 +40,7 @@ jobs:
           CIBW_BUILD: cp314-*
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
             name: artifact-wheel-${{ matrix.os }}
             path: ./wheelhouse/*.whl
@@ -50,22 +50,17 @@ jobs:
     name: Build source distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
-        name: Install Python
-        with:
-          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v7
+        name: Install uv
 
-      - name: Install setuptools
-        run: |
-          pip install -U setuptools setuptools_scm wheel build
       - name: Build sdist
-        run: python -m build . --sdist
+        run: uv build --sdist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: artifact-sdist
           path: dist/*.tar.gz
@@ -79,17 +74,17 @@ jobs:
       # IMPORTANT: this permission is mandatory for Trusted Publishing
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: artifact-sdist
           path: dist
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: artifact-wheel-windows-latest
           path: dist
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: artifact-wheel-ubuntu-latest
           path: dist
