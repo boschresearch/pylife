@@ -1,0 +1,2 @@
+MatGroupFKM,Rm,Rz,A90,A_ref,V90_Mises,G0,K_p,sup_method,R_ratio,amplitude,meanstress,Temperature,Thermal_coefficient,MatGroupFKM_Temp,HV,HV_core,S_Type,Profile,Diameter,Thickness,Width,Finish,GJL_Mat,Condition,FKM_chap,Kf_method
+Steel,2392.5,10.0,200.0,500,,1.225,2.0,Stieler,-1.0,30.0,0.0,24,1.0,,725.,230.,shear,Rod,6.0,2.5,,None,,Hardened,chap5.5,Table

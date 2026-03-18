@@ -1,0 +1,297 @@
+# ============================================================================
+# Inline helper functions
+# ============================================================================
+
+cdef inline _square(double x):
+    return x * x
+
+cdef inline _ten_to_x(double x):
+    return exp(log(10) * x)
+
+# String comparison helpers
+cdef inline bint _is_cast_iron(str mat):
+    """Check if material is a cast iron type (GJS, GJM, GJL)."""
+    return mat == "GJS" or mat == "GJM" or mat == "GJL"
+
+cdef inline bint _is_surface_treatment(str proc):
+    """Check if process is shot peening or cold rolling."""
+    return proc == "Shot peening" or proc == "Cold rolling"
+
+cdef inline bint _is_case_hardening(str proc):
+    """Check if process is carbonitriding or case hardening."""
+    return proc == "Carbonitriding" or proc == "Case hardening"
+
+cdef inline bint _is_steel_group(str mat_group):
+    """Check if material belongs to steel group."""
+    return (mat_group == "CaseHard_Steel" or mat_group == "Stainless_Steel" or
+            mat_group == "Forg_Steel" or mat_group == "Steel" or
+            mat_group == "Al_wrought" or mat_group == "GS")
+
+cdef inline bint _is_gjm_or_al_cast(str mat_group):
+    """Check if material is GJM or Al cast."""
+    return mat_group == "GJM" or mat_group == "Al_cast"
+
+cdef inline bint _is_gjl_100_150(str mat):
+    """Check if material is GJL-100 or GJL-150."""
+    return mat == "GJL-100" or mat == "GJL-150"
+
+cdef inline bint _is_gjl_200_250(str mat):
+    """Check if material is GJL-200 or GJL-250."""
+    return mat == "GJL-200" or mat == "GJL-250"
+
+cdef inline bint _is_gjl_300_350(str mat):
+    """Check if material is GJL-300 or GJL-350."""
+    return mat == "GJL-300" or mat == "GJL-350"
+
+
+# ============================================================================
+# Vectorized functions
+# ============================================================================
+
+# vectorize
+def _temperature_model(
+        double T_threshold,
+        double T_max,
+        double a_TD,
+        double delta_T,
+        double temperature,
+        str mat
+):
+    cdef bint is_cast_iron_mat
+
+    if isnan(temperature) or temperature <= T_threshold:
+        return 1.0
+
+    is_cast_iron_mat = _is_cast_iron(mat)
+
+    if not is_cast_iron_mat:
+        if temperature < T_max:
+            return 1 - a_TD / 1000 * (temperature - delta_T)
+        return 1 - a_TD / 1000 * (T_max - delta_T)
+    elif temperature < T_max:
+        return 1.0 - a_TD * _square((temperature - delta_T) / 1000)
+    return 1.0 - a_TD * _square((T_max - delta_T) / 1000)
+
+# vectorize
+def _reversed_mat_strength_chap4(double Rm, double fw_t, double fw_s):
+    return Rm * fw_t * fw_s
+
+# vectorize
+def _reversed_mat_strength_chap5_5(double Rm, double fw_t, double fw_s, double HV, double a, double b, double Sw_zd_RS_max, str Proc):
+
+    if isnan(HV):
+        return Rm * fw_t * fw_s
+
+    if _is_surface_treatment(Proc):
+        return 3.3 * HV * fw_s
+    else:
+        if HV < 500:
+            return a * HV + b
+        else:
+            return Sw_zd_RS_max
+
+
+# vectorize
+def _stieler_support(double fw_t, double aG, double bG, double G, double Rm):
+
+    if not bG or G >= 100:
+        return 1.0
+    else:
+        if 0 <= G <= 0.1:
+            return 1 + G * _ten_to_x(-1 * (aG - 0.5 + Rm * fw_t / bG))
+        elif 0.1 < G <= 1:
+            return 1 + sqrt(G) * _ten_to_x(-1 * (aG + Rm * fw_t / bG))
+        else:
+            return 1 + exp(log(G) * 0.25) * _ten_to_x(-1 * (aG + Rm * fw_t / bG))
+
+# vectorize
+def _rough_factor(double Rm, double Rz, double fw_t, double aR_s, double RmNmin, str Finish):
+
+    if Finish == "polished":
+        return 1
+
+    return 1 - fw_t * aR_s * log10(Rz) * log10(2 * Rm / RmNmin)
+
+# vectorize
+def _GJL_bending_factor(str GJL_Mat):
+
+    if _is_gjl_100_150(GJL_Mat):
+        return 1.075
+
+    if _is_gjl_200_250(GJL_Mat):
+        return 1.05
+
+    if _is_gjl_300_350(GJL_Mat):
+        return 1.025
+
+    return 1.0
+
+# vectorize
+def _sm_sensitivity_chap4(double Rm, double a_M, double b_M, double fw_t):
+    return (a_M * Rm / 1000 + b_M) * fw_t
+
+# vectorize
+def _sm_sensitivity_Rm_trans(double HV_core):
+    if isnan(HV_core):
+        return np.nan
+    else:
+        return 3.3 * HV_core  # eq. 5.5.50
+
+# vectorize
+def _sm_sensitivity_M_trans(double Rm, double a_M, double b_M, double fw_t, double Rm_trans):
+    if isnan(Rm_trans):
+        return (a_M * Rm / 1000 + b_M) * fw_t
+    else:
+        return (a_M * Rm_trans / 1000 + b_M) * fw_t
+
+
+# vectorize
+def _kf_constant(str mat_group):
+
+    if _is_steel_group(mat_group):
+        return 2.0
+
+    if mat_group == "GJS":
+        return 1.5
+
+    if _is_gjm_or_al_cast(mat_group):
+        return 1.2
+
+    if mat_group == "GJL":
+        return 1.0
+
+    return np.nan
+
+# vectorize
+def _kf_local(double G0, double b, double n, str S_type):
+
+    cdef double Kt
+    cdef bint is_normal
+
+    if G0 == 0:
+        return max(1 / n, 1)
+
+    is_normal = (S_type == "normal")
+
+    if is_normal:
+        Kt = _ten_to_x((0.066 - 0.36 * log10(2 / (b * G0))))
+    else:
+        Kt = _ten_to_x((0.066 - 0.36 * log10(1 / (b * G0))))
+
+    return max(Kt / n, 1)
+
+# vectorize
+def _kf_factor(str kf_method, str mat_group, double G0, double b, double n, str S_type):
+    """Calculate stress concentration factor using specified method."""
+    if kf_method == "Equation":
+        return _kf_local(G0, b, n, S_type)
+    else:
+        return _kf_constant(mat_group)
+
+# vectorize
+def _eigenstress_RS(double Rm, double HV_RS, double HV_core, str HardProc):
+
+    cdef double Rm_init, delta
+
+    if isnan(HV_core):
+        HV_core = Rm / 3.3
+
+    Rm_init = 3.3 * HV_core
+    delta = HV_RS - HV_core
+
+    if _is_case_hardening(HardProc):
+        if delta <= 400:
+            return -0.625 * delta
+        else:
+            return 0.75 * delta - 550
+
+    if HardProc == "Nitriding":
+        if delta <= 400:
+            return -0.675 * delta
+        else:
+            return -270
+
+    if HardProc == "Inductive hardening":
+        if delta <= 400:
+            return -0.8 * delta
+        else:
+            return -5 * delta + 1680
+
+    if HardProc == "Shot peening":
+        if Rm_init <= 1600:
+            return -84 - 0.26 * Rm_init
+        else:
+            return -500
+
+    if HardProc == "Cold rolling":
+        if Rm_init <= 500:
+            return 0
+        elif Rm_init <= 1500:
+            return 350 - 0.7 * Rm_init
+        else:
+            return -700
+
+    return np.nan
+
+# vectorize
+def _surf_layer_factor(double Kv_sm_notched, double Kv_gr_notched, double Kv_sm,
+                       double Kv_gr, double G0, double Deff, str HardProc):
+
+    if HardProc == 'None':
+        return 1.0
+    if G0 > 2:
+        if Deff < 22.5:
+            return Kv_sm_notched
+        else:
+            return Kv_gr_notched
+    else:
+        if Deff < 22.5:
+            return Kv_sm
+        else:
+            return Kv_gr
+
+# vectorize
+def _support_chap5(double G0, double HV_RS):
+    return 1 + sqrt(G0 * 1600 / (HV_RS * HV_RS))
+
+# vectorize
+def _design_factor(double n, double Kf, double Kr, double Kv, double Ks, double Knle):
+    return (1 / n) * (1 + (1 / Kf) * (1 / Kr - 1)) * 1 / (Kv * Ks * Knle)
+
+# vectorize
+def _sm_factor(double R, double M, double SmSa):
+
+    if R > 1:
+        return 1 / (1 - M)
+    elif R >= -1e16 and R <= 0:
+        return 1 / (1 + M * SmSa)
+    elif R > 0 and R <= 0.5:
+        return (3 + M) / ((1 + M) * (3 + M * SmSa))
+    else:
+        return (3 + M) / (3 * _square(1 + M))
+
+# vectorize
+def _sm_factor_chap5(double Rm_trans, double M, double SE, double Swk, double SmSa, double Rm_norm):
+
+    cdef double R_pzy, B_G1, B_G2, B_G3
+
+    # cyclic yield strength
+    if isnan(Rm_trans):
+        R_pzy = 0.6 * Rm_norm
+    else:
+        R_pzy = 0.6 * Rm_trans
+
+    # definition of range limits (Bereichsgrenzen)
+    B_G1 = -1 + (2 * Swk - R_pzy * (1 - M) - SE * (1 + M)) / (Swk + M * R_pzy)
+    B_G2 = 1 - SE / Swk * (1 + M)
+    B_G3 = 3 - SE / Swk * 3 * _square(1 + M) / (3 + M)
+
+    # range 1 to 4 (Bereich I bis IV)
+    if SmSa < B_G1:
+        return (1 + M * R_pzy / Swk) / (1 + M)
+    elif B_G1 <= SmSa < B_G2:
+        return (1 - M * SE / Swk) / (1 + M * SmSa)
+    elif B_G2 <= SmSa < B_G3:
+        return ((1 + M / 3) / (1 + M) - (M / 3 * SE / Swk)) / (1 + M * SmSa / 3)
+    else:
+        return (3 + M) / (3 * ((1 + M) * (1 + M)))

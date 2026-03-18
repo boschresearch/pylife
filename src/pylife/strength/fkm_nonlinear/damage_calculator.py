@@ -58,7 +58,7 @@ class DamageCalculatorPRAM:
             It it, thus, possible to perform the assessment against this woehler curve for multiple points at once.
 
         component_woehler_curve_P_RAM : object of class `pylife.strength.woehler_fkm_nonlinear.WoehlerCurvePRAM`
-            The compoennt woehler curve used for the assessment.
+            The component woehler curve used for the assessment.
 
         Returns
         -------
