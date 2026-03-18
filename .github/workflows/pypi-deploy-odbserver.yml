@@ -18,72 +18,39 @@ defaults:
     working-directory: tools/odbserver
 
 jobs:
-  build_wheels:
+  build:
     name: Build wheels
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
-        name: Install Python
-        with:
-          python-version: '3.12'
-
-      - name: Install setuptools
-        run: |
-          pip install -U setuptools setuptools_scm wheel
-      - name: Build wheels
-        run: |
-          python setup.py bdist_wheel
-      - uses: actions/upload-artifact@v4
-        with:
-          name: artifact-wheel
-          path: tools/odbserver/dist/*.whl
-
-
-  build_sdist:
-    name: Build source distribution
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-python@v5
-        name: Install Python
-        with:
-          python-version: '3.12'
-
-      - name: Install setuptools
-        run: |
-          pip install -U setuptools setuptools_scm wheel
+      - uses: astral-sh/setup-uv@v7
+        name: Install uv
 
       - name: Build sdist
-        run: python setup.py sdist
+        run: uv build --sdist
 
-      - uses: actions/upload-artifact@v4
+      - name: Build wheel
+        run: uv build --wheel
+
+      - uses: actions/upload-artifact@v7
         with:
-          name: artifact-sdist
-          path: tools/odbserver/dist/*.tar.gz
+          name: artifact-sdist-wheel
+          path: dist/
 
   upload_pypi:
-    needs: [build_wheels, build_sdist]
+    needs: [build]
     runs-on: ubuntu-latest
     environment: release
     permissions:
       # IMPORTANT: this permission is mandatory for Trusted Publishing
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
-          name: artifact-sdist
-          path: dist
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: artifact-wheel
+          name: artifact-sdist-wheel
           path: dist
 
       - name: Publish package distributions to PyPI

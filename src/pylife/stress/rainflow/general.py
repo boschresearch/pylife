@@ -58,8 +58,8 @@ def find_turns(samples):
 
     """
 
-    def clean_nans(samples):
-        nans = pd.isna(samples)
+    def clean_nans(samples: np.ndarray):
+        nans = np.asarray(pd.isna(samples))
         if nans.any():
             warnings.warn(UserWarning("At least one NaN like value has been dropped from the input signal."))
             return samples[~nans], nans

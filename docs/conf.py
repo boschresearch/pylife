@@ -331,9 +331,8 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "sklearn": ("https://scikit-learn.org/stable", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
-    "pyscaffold": ("https://pyscaffold.org/en/stable", None),
 }
 
 suppress_warnings = ["config.cache"]

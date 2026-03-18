@@ -37,6 +37,7 @@ htmlcov/*
 .tox
 junit*.xml
 coverage.xml
+coverage.json
 coverage_report*
 .pytest_cache/
 
