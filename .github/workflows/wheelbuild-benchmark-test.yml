@@ -49,7 +49,18 @@ jobs:
         run: uv pip install $(ls -1 dist/*.whl)
       - name: Install pytest
         run: uv pip install pytest pytest-cov
+
+
+      - name: Cache test signal
+        id: cache-test-signal
+        uses: actions/cache@v5
+        with:
+          path: load_signal.csv
+          key: ${{ runner.os }}-load_signal
+
       - name: Generate test signal
+        if: steps.cache-test-signal.outputs.cache-hit != 'true'
+
         run: python benchmarks/generate_time_signal.py
       - name: Run benchmarks
         run: pytest --no-cov -rP benchmarks
