@@ -15,11 +15,22 @@
 # limitations under the License.
 
 """
-Meanstress routines
-===================
+Meanstress transformation
+=========================
 
-Mean stress transformation methods
-----------------------------------
+Meanstress transformation is used to take the influence of the meanstress of a
+load hysteresis into account.  The fatigue of a cyclically loaded component is
+not only influenced by the amplitude but also by the mean stress.  The usual
+way to take this into account is to compute a substitute amplitude that has the
+same fatigue result for the known mean stress.  The mean stress sensitivity
+is usually defined by a haigh diagram, depending on the R-value regime.
+
+In pyLife we have the class :class:`~pylife.strength.meanstress.HaighDiagram`
+that lets you define an arbitrary haigh diagram, i.e. a mean stress sensitivity
+for each interval of `R`.  There are also convenience functions
+:class:`~pylife.strength.meanstress.HaighDiagram.fkm_goodman` and
+:class:`~pylife.strength.meanstress.HaighDiagram.five_segment` that lets you
+define the more common haigh diagrams more easily.
 
 * FKM Goodman
 * Five Segment Correction
@@ -114,6 +125,19 @@ class HaighDiagram(PylifeSignal):
         (0.0, 1.0]     0.2
         dtype: float64
 
+        >>> collective = pd.DataFrame(
+        ...     {
+        ...         "range": [600.0, 300.0, 500.0],
+        ...         "mean": [100.0, 50.0, 80.0],
+        ...         "cycles": [1.0, 10.0, 100.0],
+        ...     }
+        ... )
+        >>> HaighDiagram.fkm_goodman(pd.Series({"M": 0.5})).transform(collective, -1.0)
+           range  mean  cycles
+        0  700.0   0.0     1.0
+        1  350.0   0.0    10.0
+        2  580.0   0.0   100.0
+
         """
         if "M2" not in haigh_fkm_goodman:
             haigh_fkm_goodman["M2"] = haigh_fkm_goodman["M"] / 3.0
@@ -163,6 +187,35 @@ class HaighDiagram(PylifeSignal):
             * ``M4``: the mean stress sensitivity beyond ``R==1``
             * ``R12``: R-value between ``M1`` and ``M2``
             * ``R23``: R-value between ``M2`` and ``M3``
+
+        Examples
+        --------
+        >>> haigh = HaighDiagram.five_segment(
+        ...    pd.Series(
+        ...        {"M0": 0.5, "M1": 0.25, "M2": 0.125, "M3": 1.0, "M4": -2.0, "R12": 0.2, "R23": 0.8}
+        ...    )
+        ... )
+        >>> haigh.to_pandas()
+        R
+        (1.0, inf]    -2.000
+        (-inf, 0.0]    0.500
+        (0.0, 0.2]     0.250
+        (0.2, 0.8]     0.125
+        (0.8, 1.0]     1.000
+        dtype: float64
+
+        >>> collective = pd.DataFrame(
+        ...     {
+        ...         "range": [600.0, 300.0, 500.0],
+        ...         "mean": [400.0, -150.0, 0.0],
+        ...         "cycles": [1.0, 10.0, 100.0],
+        ...     }
+        ... )
+        >>> haigh.transform(collective, 0.0)
+                range        mean  cycles
+        0  640.000000  320.000000     1.0
+        1  100.000000   50.000000    10.0
+        2  333.333333  166.666667   100.0
         """
         was_series = isinstance(five_segment_haigh_diagram, pd.Series)
 
@@ -233,6 +286,34 @@ class HaighDiagram(PylifeSignal):
             - 'range': transformed amplitude range
             - 'mean': transformed mean value
             - 'cycles': copied unchanged from the input if present
+
+        Examples
+        --------
+        >>> collective = pd.DataFrame(
+        ...     {
+        ...         "from": [300.0, -150.0, -250.0],
+        ...         "to": [-300.0, 150.0, 250.0],
+        ...         "cycles": [1.0, 10.0, 100.0],
+        ...     }
+        ... )
+        >>> HaighDiagram.from_dict({(-np.inf, np.inf): 0.5}).transform(collective, 0.0)
+                range        mean  cycles
+        0  400.000000  200.000000     1.0
+        1  200.000000  100.000000    10.0
+        2  333.333333  166.666667   100.0
+
+        >>> collective = pd.DataFrame(
+        ...     {
+        ...         "range": [600.0, 300.0, 500.0],
+        ...         "mean": [100.0, 50.0, 80.0],
+        ...         "cycles": [1.0, 10.0, 100.0],
+        ...     }
+        ... )
+        >>> HaighDiagram.from_dict({(-np.inf, np.inf): 0.5}).transform(collective, -1.0)
+           range  mean  cycles
+        0  700.0   0.0     1.0
+        1  350.0   0.0    10.0
+        2  580.0   0.0   100.0
         """
 
         broadcasted_coll, haigh = self.broadcast(collective, droplevel=["R"])
@@ -472,13 +553,70 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
 
 @pd.api.extensions.register_dataframe_accessor("meanstress_transform")
 class MeanstressTransformCollective(CL.LoadCollective):
+    """Meanstress transformer class for a load collective."""
 
-    def fkm_goodman(self, ms_sens, R_goal):
-        hd = HaighDiagram.fkm_goodman(ms_sens)
-        res = hd.transform(self._obj, R_goal)
+    def fkm_goodman(self, goodman, R_goal):
+        """ Perform a FKM Goodman transformation on a load collective
+
+        Parameters
+        ----------
+        goodman: pd.Series or pd.DataFrame
+           The meanstress sensitivity data needs `M` and optionally `M2`
+
+        R_goal: float
+           The R-value to transform to
+
+        Returns
+        -------
+        transformed_collective: LoadCollective
+            The transformed load collective
+
+        Examples
+        --------
+        >>> collective = pd.DataFrame(
+        ...     {
+        ...         "from": [300.0, -150.0, -250.0],
+        ...         "to": [-300.0, 150.0, 250.0],
+        ...         "cycles": [1.0, 10.0, 100.0],
+        ...     }
+        ... )
+        >>> collective.meanstress_transform.fkm_goodman(pd.Series({"M": 0.5}), 0.0).amplitude
+        0    200.000000
+        1    100.000000
+        2    166.666667
+        Name: amplitude, dtype: float64
+        """
+        res = HaighDiagram.fkm_goodman(goodman).transform(self._obj, R_goal)
         return res.load_collective
 
     def five_segment(self, haigh, R_goal):
+        """
+        Examples
+        --------
+        >>> collective = pd.DataFrame(
+        ...     {
+        ...         "range": [600.0, 300.0, 500.0],
+        ...         "mean": [400.0, -150.0, 0.0],
+        ...         "cycles": [1.0, 10.0, 100.0],
+        ...     }
+        ... )
+        >>> haigh = pd.Series(
+        ...    {"M0": 0.5, "M1": 0.25, "M2": 0.125, "M3": 1.0, "M4": -2.0, "R12": 0.2, "R23": 0.8}
+        ... )
+        >>> transformed = collective.meanstress_transform.five_segment(haigh, 0.0)
+        >>> transformed.amplitude
+        0    320.000000
+        1     50.000000
+        2    166.666667
+        Name: amplitude, dtype: float64
+
+        >>> transformed.meanstress
+        0    320.000000
+        1     50.000000
+        2    166.666667
+        Name: meanstress, dtype: float64
+
+        """
         hd = HaighDiagram.five_segment(haigh)
         res = hd.transform(self._obj, R_goal)
         return res.load_collective
@@ -486,6 +624,7 @@ class MeanstressTransformCollective(CL.LoadCollective):
 
 @pd.api.extensions.register_series_accessor("meanstress_transform")
 class MeanstressTransformMatrix(CL.LoadHistogram):
+    """Meanstress transformer class for a load histogram."""
 
     def _validate(self):
         super()._validate()
@@ -510,6 +649,47 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
             )
 
     def fkm_goodman(self, haigh, R_goal):
+        """ Perform a FKM Goodman transformation on a load histogram
+
+        Parameters
+        ----------
+        goodman: pd.Series or pd.DataFrame
+           The meanstress sensitivity data needs `M` and optionally `M2`
+
+        R_goal: float
+           The R-value to transform to
+
+        Returns
+        -------
+        transformed_collective: LoadHistogram
+            The transformed load histogram
+
+        Examples
+        --------
+        >>> histogram = pd.Series(
+        ...     [10, 90, 900, 9000, 90000, 900000],
+        ...     index=pd.MultiIndex.from_arrays(
+        ...         [
+        ...             pd.IntervalIndex.from_arrays(
+        ...                 [650, 550, 450, 350, 250, 150], [750, 650, 550, 450, 350, 250]
+        ...             ),
+        ...             pd.IntervalIndex.from_arrays([0, 0, 0, 0 ,0, 0], [0, 0, 0, 0, 0, 0]),
+        ...         ],
+        ...         names=["range", "mean"],
+        ...     ),
+        ...     name="cycles"
+        ... )
+        >>> transformed = histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), 0)
+        >>> transformed.amplitude
+        range           mean
+        (650.0, 750.0]  (325.0, 375.0]    350.0
+        (550.0, 650.0]  (275.0, 325.0]    300.0
+        (450.0, 550.0]  (225.0, 275.0]    250.0
+        (350.0, 450.0]  (175.0, 225.0]    200.0
+        (250.0, 350.0]  (125.0, 175.0]    150.0
+        (150.0, 250.0]  (75.0, 125.0]     100.0
+        Name: amplitude, dtype: float64
+        """
         transformer = HaighDiagram.fkm_goodman(haigh)
         return self._perform_transformation(transformer, R_goal)
 
