@@ -725,3 +725,62 @@ def test_neutral_haigh_diagram_histogram_from_to_mixed_R_neg1():
 
     pd.testing.assert_series_equal(transformed.to_pandas(), expected)
 
+
+def test_neutral_plain_from_to():
+    collective = pd.DataFrame(
+           {
+               "from": [300.0, -150.0, -250.0],
+               "to": [-300.0, 150.0, 250.0],
+               "cycles": [1.0, 10.0, 100.0],
+           }
+    )
+    res = MST.HaighDiagram.from_dict({(-np.inf, np.inf): 0.0}).transform(collective, -1.0)
+    expected = pd.DataFrame(
+           {
+               "range": [600.0, 300.0, 500.0],
+               "mean": [0.0, 0.0, 0.0],
+               "cycles": [1.0, 10.0, 100.0],
+           }
+    )
+
+    pd.testing.assert_frame_equal(res, expected)
+
+
+def test_neutral_plain_range_mean():
+    collective = pd.DataFrame(
+           {
+               "range": [600.0, 300.0, 500.0],
+               "mean": [0.0, 0.0, 0.0],
+               "cycles": [1.0, 10.0, 100.0],
+           }
+    )
+    res = MST.HaighDiagram.from_dict({(-np.inf, np.inf): 0.0}).transform(collective, -1.0)
+    expected = pd.DataFrame(
+           {
+               "range": [600.0, 300.0, 500.0],
+               "mean": [0.0, 0.0, 0.0],
+               "cycles": [1.0, 10.0, 100.0],
+           }
+    )
+
+    pd.testing.assert_frame_equal(res, expected)
+
+
+def test_fkm_goodman_range_mean():
+    collective = pd.DataFrame(
+           {
+               "range": [600.0, 300.0, 500.0],
+               "mean": [100.0, 50.0, 80.0],
+               "cycles": [1.0, 10.0, 100.0],
+           }
+    )
+    res = MST.HaighDiagram.fkm_goodman(pd.Series({"M": 0.5})).transform(collective, -1.0)
+    expected = pd.DataFrame(
+           {
+               "range": [700.0, 350.0, 580.0],
+               "mean": [0.0, 0.0, 0.0],
+               "cycles": [1.0, 10.0, 100.0],
+           }
+    )
+
+    pd.testing.assert_frame_equal(res, expected)

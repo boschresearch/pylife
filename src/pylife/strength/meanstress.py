@@ -213,15 +213,16 @@ class HaighDiagram(PylifeSignal):
 
         return cls(haigh)
 
-    def transform(self, cycles, R_goal):
+    def transform(self, collective, R_goal):
         """Transform a load collective to defined R-value.
 
         Parameters
         ----------
-        cycles : pd.Series or pd.DataFrame
-            The load cycles or collective to transform.
-            If a DataFrame, it may contain a 'cycles' column which will be
-            copied unchanged to the result.
+        collective : pd.DataFrame
+            The load collective data to transform containing either `range` and
+            `mean` or `from` and `to` columns to describe the load cycles. All other
+            columns e.g. `cycles` are copied to the result.
+
         R_goal : float
             The target R-value for the transformation.
 
@@ -234,11 +235,11 @@ class HaighDiagram(PylifeSignal):
             - 'cycles': copied unchanged from the input if present
         """
 
-        original_cycles = cycles
+        broadcasted_coll, haigh = self.broadcast(collective, droplevel=["R"])
 
-        cycles, obj = self.broadcast(cycles, droplevel=["R"])
+        coll = CL.LoadCollective(broadcasted_coll)
 
-        transformer = _SegmentTransformer(cycles, obj, self._R_index, R_goal)
+        transformer = _SegmentTransformer(coll, haigh, self._R_index, R_goal)
 
         for interval in transformer.segments_left_from_R_goal():
             interval_boundary = (
@@ -261,14 +262,12 @@ class HaighDiagram(PylifeSignal):
                     -1.0
                 ),
             },
-            index=cycles.index,
+            index=broadcasted_coll.index,
         )
 
-        if (
-            isinstance(original_cycles, pd.DataFrame)
-            and "cycles" in original_cycles.columns
-        ):
-            res["cycles"] = original_cycles["cycles"]
+        for col in collective:
+            if col not in coll.columns:
+                res[col] = collective[col]
 
         return res
 
@@ -325,10 +324,10 @@ class HaighDiagram(PylifeSignal):
 
 class _SegmentTransformer:
 
-    def __init__(self, cycles, haigh, R_segments, R_goal):
-        rf = cycles.load_collective
+    def __init__(self, collective, haigh, R_segments, R_goal):
         self.transformed_cycles = pd.DataFrame(
-            {"amplitude": rf.amplitude, "R": rf.R}, index=cycles.index
+            {"amplitude": collective.amplitude, "R": collective.R},
+            index=collective.to_pandas().index,
         )
         self._haigh = haigh
         self._R_index = R_segments
