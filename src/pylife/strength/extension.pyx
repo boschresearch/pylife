@@ -46,7 +46,7 @@ cdef double _compute_kak_factor(double M, double M2, double R):
 
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
-cpdef transformed_amplitude_goodman(double[::1] amplitude, double[::1] mean, double M1, double M2, double Kak_factor):
+cpdef transformed_amplitude_goodman(double[::1] amplitude, double[::1] mean, double M1, double M2):
     """
     Compute mean stress conversion according to FKM Goodman for R_goal > -inf
 
@@ -60,8 +60,6 @@ cpdef transformed_amplitude_goodman(double[::1] amplitude, double[::1] mean, dou
         meanstress sensitivity in the range -inf <= R <= 0
     M2 : double
         meanstress sensitivity in the range R>0
-    Kak_factor : double
-        mean stress influence factor
 
     Returns
     -------
