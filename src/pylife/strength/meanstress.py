@@ -706,8 +706,9 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
         transformed_right = transformer.transform(orig_right, R_goal)
 
         transformed = self._obj.to_frame()
-        additional_indeces = len(transformed.index.names) > 2
-        if additional_indeces:
+
+        have_additional_indeces = len(transformed.index.names) > 2
+        if have_additional_indeces:
             transformed.index = transformed.index.droplevel(self.index_levels)
 
         range = pd.DataFrame({0: transformed_left["range"], 1: transformed_right["range"]})
@@ -719,13 +720,12 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
             mean.min(axis=1), mean.max(axis=1), name="mean"
         )
 
-        result = transformed.set_index(["range", "mean"], append=additional_indeces, drop=True).iloc[:, 0]
+        result = transformed.set_index(["range", "mean"], append=have_additional_indeces, drop=True).iloc[:, 0]
         new_names = self._obj.index.to_frame().rename(columns={"from": "range", "to": "mean"}).columns
         result.index = result.index.reorder_levels(new_names)
         result.name = self._obj.name
 
         return CL.LoadHistogram(result)
-
 
 
 def fkm_goodman(amplitude, meanstress, M, M2, R_goal):
