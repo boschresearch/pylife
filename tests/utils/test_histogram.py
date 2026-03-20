@@ -485,3 +485,60 @@ def test_rebin_histogram_3d():
 
     assert result.sum() == histogram.sum()
     pd.testing.assert_series_equal(result, expected)
+
+
+def test_rebin_fully_occupied_histogram_same():
+    intervals = pd.interval_range(0, 128, 8)
+    hist = pd.Series(1.0, index=pd.MultiIndex.from_product([intervals, intervals], names=["x", "y"]))
+
+    rebinned = hi.rebin_histogram(hist, 8)
+
+    assert rebinned.shape == hist.shape
+    pd.testing.assert_series_equal(rebinned, hist)
+
+
+def test_rebin_partially_occupied_histogram_same():
+    intervals = pd.interval_range(0, 128, 8)
+    hist = pd.Series(1.0, index=pd.MultiIndex.from_arrays([intervals, intervals], names=["x", "y"]))
+
+    rebinned = hi.rebin_histogram(hist, 8)
+
+    assert rebinned.shape == hist.shape
+    pd.testing.assert_series_equal(rebinned, hist)
+
+
+def test_rebin_fully_occupied_histogram_up():
+    intervals = pd.interval_range(0, 128, 8)
+    hist = pd.Series(1.0, index=pd.MultiIndex.from_product([intervals, intervals], names=["x", "y"]))
+
+    rebinned = hi.rebin_histogram(hist, 16)
+
+    assert rebinned.shape == (256,)
+
+
+def test_rebin_partially_occupied_histogram_up():
+    intervals = pd.interval_range(0, 128, 8)
+    hist = pd.Series(1.0, index=pd.MultiIndex.from_arrays([intervals, intervals], names=["x", "y"]))
+
+    rebinned = hi.rebin_histogram(hist, 16)
+
+    assert rebinned.shape == (32,)
+
+
+def test_rebin_fully_occupied_histogram_down():
+    intervals = pd.interval_range(0, 128, 16)
+    hist = pd.Series(1.0, index=pd.MultiIndex.from_product([intervals, intervals], names=["x", "y"]))
+
+    rebinned = hi.rebin_histogram(hist, 8)
+
+    assert rebinned.shape == (64,)
+
+
+def test_rebin_partially_occupied_histogram_down():
+    intervals = pd.interval_range(0, 128, 16)
+    hist = pd.Series(1.0, index=pd.MultiIndex.from_arrays([intervals, intervals], names=["x", "y"]))
+
+    rebinned = hi.rebin_histogram(hist, 8)
+
+    print(hist.shape, rebinned.shape)
+    assert rebinned.shape == (8,)
