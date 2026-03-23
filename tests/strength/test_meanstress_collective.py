@@ -20,6 +20,9 @@ import numpy as np
 import pandas as pd
 
 import pylife.strength.meanstress as MST
+import pylife.stress.rainflow as RF
+import pylife.meanstress_extension
+from pylife.strength import meanstress
 
 
 @pytest.fixture
@@ -151,3 +154,72 @@ def test_meanstress_transform_does_not_normalize_cycles():
     result = collective.meanstress_transform.fkm_goodman(haigh, 0.1)
 
     assert not (result.cycles == 1.0).all()
+
+
+@pytest.mark.parametrize(
+    "mean, amplitude,M,R,result",
+    [
+        (
+            np.array([0, 0], dtype=np.double), # R=1
+            np.array([1, 1], dtype=np.double),
+            0,
+            0, # R_goal = 1
+            np.array([1, 1]),
+        ),
+        (
+            np.array([0.1, 0.3], dtype=np.double), # R = - 0.9 / 1.1
+            np.array([1, 1], dtype=np.double),
+            0.5,
+            -1, # R_goal = -1
+            np.array([1.05, 1.15]),
+        ),
+        (
+            np.array([1.1, 0.3], dtype=np.double), # R = 0.1 / 2.1
+            np.array([1, 1], dtype=np.double),
+            0.5,
+            -1, # R_goal = -1
+            np.array([1.521429, 1.15]),
+        ),
+        (
+            np.array([-1, 0.3], dtype=np.double), # R = -inf
+            np.array([1, 1], dtype=np.double),
+            0.5,
+            -1, # R_goal = -1
+            np.array([1.071429, 1.15]),
+        ),
+        (
+            np.array([-1, 0.3,1.1], dtype=np.double),
+            np.array([1, 1,1.0], dtype=np.double),
+            0.5,
+            -np.inf, # R_goal = -inf
+            np.array([1.0, 2.3]),
+        ),
+        (
+            np.array([0.1, 0.3], dtype=np.double),
+            np.array([1, 1], dtype=np.double),
+            0.2,
+            -1,
+            np.array([1.05, 1.15]),
+        ),
+        # (
+        #     np.array([-0.9, 0.3], dtype=np.double),
+        #     np.array([1, 1], dtype=np.double),
+        #     0.5,
+        #     1,
+        #     np.array([0.0, 0.0]),
+        # ),
+    ],
+)
+def test_mean_stress_conversion(mean, amplitude, M, R, result):
+
+    amplitude_corr = pylife.meanstress_extension.fkm_goodman_transform(
+        amplitude, mean, M1=M, M2=M / 3, R_goal=R
+    )
+
+    amplitude_corr2 = meanstress.fkm_goodman(
+        np.array(amplitude), np.array(mean), M=M, M2=M / 3, R_goal=R
+    )
+
+    #assert type(amplitude_corr2) == str
+
+    np.testing.assert_allclose(amplitude_corr2, amplitude_corr, rtol=1e-6)
