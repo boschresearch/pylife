@@ -235,16 +235,42 @@ def rebin_histogram(histogram, binning, nan_default=False):
 
         remaining_names = list(filter(lambda m: m != name, original_names))
         remaining_index = histogram.index.droplevel(name)
+
         histogram = (
-            histogram.groupby(remaining_names)
+            _with_range_index(histogram, remaining_names)
+            .groupby(remaining_names)
             .apply(
                 lambda h: _do_rebin_histogram(
                     h.droplevel(remaining_names), this_binning, default_value
                 )
             )
         )
+        histogram.index = _restore_old_index(histogram, remaining_index)
 
     return histogram.reorder_levels(original_names)
+
+
+def _with_range_index(hist, names_to_drop):
+    new_hist = hist.copy().reset_index(drop=False)
+    for level in names_to_drop:
+        new_hist[level] = (
+            hist.index.get_level_values(level)
+            .unique()
+            .get_indexer_for(hist.index.get_level_values(level))
+        )
+
+    res = new_hist.set_index(hist.index.names, drop=True).iloc[:, 0]
+    res.name = hist.name
+    return res
+
+
+def _restore_old_index(hist, old_index):
+    new_hist = hist.copy().reset_index(drop=False)
+
+    for level in old_index.names:
+        new_hist[level] = old_index.get_level_values(level).unique()[new_hist[level]]
+
+    return new_hist.set_index(hist.index.names, drop=True).index
 
 
 def _do_rebin_histogram(histogram, binning, default_value):

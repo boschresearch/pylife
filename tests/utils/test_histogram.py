@@ -544,7 +544,7 @@ def test_rebin_partially_occupied_histogram_down():
     assert rebinned.shape == (8,)
 
 
-def test_rebin_irregular_1d_histogram():
+def test_rebin_irregular_1d_histogam():
     hist = pd.Series(
         data=[1.0, 2.0],
         index=pd.IntervalIndex.from_tuples([(4.0, 5.0), (7.0, 8.0)]),
@@ -563,7 +563,7 @@ def test_rebin_irregular_1d_histogram():
     pd.testing.assert_series_equal(rebinned, expected)
 
 
-def test_rebin_irregular_2d_histogram():
+def test_rebin_irregular_2d_histogam():
     hist = pd.Series(
         data=[1.0, 2.0, 3.0],
         index=pd.MultiIndex.from_arrays(
