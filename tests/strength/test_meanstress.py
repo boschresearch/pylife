@@ -507,8 +507,8 @@ def test_neutral_haigh_diagram_histogram_from_to_hanging_R_neg1():
         index=pd.MultiIndex.from_product(
             [
                 pd.IntervalIndex.from_arrays(
-                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
-                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                    np.array([275.0, 225.0, 175.0, 125.0,  75.0,  25.0]),
+                    np.array([425.0, 375.0, 325.0, 275.0, 225.0, 175.0]),
                 ),
                 pd.IntervalIndex.from_arrays([0.0], [0.0]),
             ],
@@ -590,8 +590,8 @@ def test_neutral_haigh_diagram_histogram_from_to_standing_positive_R_neg1():
         index=pd.MultiIndex.from_product(
             [
                 pd.IntervalIndex.from_arrays(
-                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
-                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                    np.array([275.0, 225.0, 175.0, 125.0,  75.0,  25.0]),
+                    np.array([425.0, 375.0, 325.0, 275.0, 225.0, 175.0]),
                 ),
                 pd.IntervalIndex.from_arrays([0.0], [0.0]),
             ],
@@ -631,8 +631,8 @@ def test_neutral_haigh_diagram_histogram_from_to_standing_negative_R_neg1():
         index=pd.MultiIndex.from_product(
             [
                 pd.IntervalIndex.from_arrays(
-                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
-                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                    np.array([275.0, 225.0, 175.0, 125.0,  75.0,  25.0]),
+                    np.array([425.0, 375.0, 325.0, 275.0, 225.0, 175.0]),
                 ),
                 pd.IntervalIndex.from_arrays([0.0], [0.0]),
             ],
@@ -659,7 +659,7 @@ def test_neutral_haigh_diagram_histogram_from_standing_to_R_0():
             ],
             names=["from", "to"],
         ),
-        name="cycles"
+        name="cycles",
     )
 
     transformed = lc_histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), 0.0)
@@ -722,6 +722,38 @@ def test_neutral_haigh_diagram_histogram_from_to_mixed_R_neg1():
         ),
         name="cycles"
     )
+
+    pd.testing.assert_series_equal(transformed.to_pandas(), expected)
+
+
+def test_neutral_hist_square_from_to():
+    hist = pd.Series(
+        [1.0, 3.0, 5.0, 7.0],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_breaks([-20, 0, 20], name="from"),
+                pd.IntervalIndex.from_breaks([-20, 0, 20], name="to"),
+            ]
+        ),
+    )
+
+    transformed = hist.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), 0.0)
+    expected = pd.Series(
+        [1.0, 3.0, 5.0, 7.0],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_tuples(
+                    [(0.0, 20.0), (0.0, 40.0), (0.0, 40.0), (0.0, 20.0)], name="range"
+                ),
+                pd.IntervalIndex.from_tuples(
+                    [(0.0, 10.0), (0.0, 20.0), (0.0, 20.0), (0.0, 10.0)], name="mean",
+                ),
+            ]
+        ),
+    )
+
+    print(transformed.to_pandas())
+    print(expected)
 
     pd.testing.assert_series_equal(transformed.to_pandas(), expected)
 

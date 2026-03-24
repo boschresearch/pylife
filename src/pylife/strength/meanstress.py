@@ -699,11 +699,19 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
         mean_left = self.use_class_left().meanstress.reset_index(drop=True)
         mean_right = self.use_class_right().meanstress.reset_index(drop=True)
 
-        orig_left = pd.DataFrame({"range": range_left, "mean": mean_left})
-        orig_right = pd.DataFrame({"range": range_right, "mean": mean_right})
+        range_index = self.amplitude_histogram.index
+        range_left = 2.0 * range_index.left.to_series().reset_index(drop=True)
+        range_right = 2.0 * range_index.right.to_series().reset_index(drop=True)
 
-        transformed_left = transformer.transform(orig_left, R_goal)
-        transformed_right = transformer.transform(orig_right, R_goal)
+        orig_lele = pd.DataFrame({"range": range_left, "mean": mean_left})
+        orig_lere = pd.DataFrame({"range": range_left, "mean": mean_right})
+        orig_rele = pd.DataFrame({"range": range_right, "mean": mean_left})
+        orig_rere = pd.DataFrame({"range": range_right, "mean": mean_right})
+
+        transformed_lele = transformer.transform(orig_lele, R_goal)
+        transformed_lere = transformer.transform(orig_lere, R_goal)
+        transformed_rele = transformer.transform(orig_rele, R_goal)
+        transformed_rere = transformer.transform(orig_rere, R_goal)
 
         transformed = self._obj.to_frame()
 
@@ -711,11 +719,25 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
         if have_additional_indeces:
             transformed.index = transformed.index.droplevel(self.index_levels)
 
-        range = pd.DataFrame({0: transformed_left["range"], 1: transformed_right["range"]})
+        range = pd.DataFrame(
+            {
+                0: transformed_lele["range"],
+                1: transformed_lere["range"],
+                2: transformed_rele["range"],
+                3: transformed_rere["range"],
+            }
+        )
         transformed["range"] = pd.IntervalIndex.from_arrays(
             range.min(axis=1), range.max(axis=1), name="range"
         )
-        mean = pd.DataFrame({0: transformed_left["mean"], 1: transformed_right["mean"]})
+        mean = pd.DataFrame(
+            {
+                0: transformed_lele["mean"],
+                1: transformed_lere["mean"],
+                2: transformed_rele["mean"],
+                3: transformed_rere["mean"],
+            }
+        )
         transformed["mean"] = pd.IntervalIndex.from_arrays(
             mean.min(axis=1), mean.max(axis=1), name="mean"
         )
