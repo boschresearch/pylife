@@ -501,7 +501,7 @@ def test_rebin_partially_occupied_histogram_same():
     intervals = pd.interval_range(0, 128, 8)
     hist = pd.Series(1.0, index=pd.MultiIndex.from_arrays([intervals, intervals], names=["x", "y"]))
 
-    rebinned = hi.rebin_histogram(hist, 8)
+    rebinned = hi.rebin_histogram(hist, 8, nan_default=True).dropna()
 
     assert rebinned.shape == hist.shape
     pd.testing.assert_series_equal(rebinned, hist)
@@ -520,7 +520,7 @@ def test_rebin_partially_occupied_histogram_up():
     intervals = pd.interval_range(0, 128, 8)
     hist = pd.Series(1.0, index=pd.MultiIndex.from_arrays([intervals, intervals], names=["x", "y"]))
 
-    rebinned = hi.rebin_histogram(hist, 16)
+    rebinned = hi.rebin_histogram(hist, 16, nan_default=True).dropna()
 
     assert rebinned.shape == (32,)
 
@@ -538,7 +538,94 @@ def test_rebin_partially_occupied_histogram_down():
     intervals = pd.interval_range(0, 128, 16)
     hist = pd.Series(1.0, index=pd.MultiIndex.from_arrays([intervals, intervals], names=["x", "y"]))
 
-    rebinned = hi.rebin_histogram(hist, 8)
+    rebinned = hi.rebin_histogram(hist, 8, nan_default=True).dropna()
 
     print(hist.shape, rebinned.shape)
     assert rebinned.shape == (8,)
+
+
+def test_rebin_irregular_1d_histogram():
+    hist = pd.Series(
+        data=[1.0, 2.0],
+        index=pd.IntervalIndex.from_tuples([(4.0, 5.0), (7.0, 8.0)]),
+    )
+
+    rebinned = hi.rebin_histogram(hist, 4)
+
+    expected = pd.Series(
+        data=[1.0, 0.0, 0.0, 2.0],
+        index=pd.IntervalIndex.from_breaks(np.linspace(4.0, 8.0, 5)),
+    )
+
+    print(rebinned)
+    print(expected)
+
+    pd.testing.assert_series_equal(rebinned, expected)
+
+
+def test_rebin_irregular_2d_histogram():
+    hist = pd.Series(
+        data=[1.0, 2.0, 3.0],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_tuples([(4.0, 5.0), (7.0, 8.0), (4.0, 5.0)]),
+                pd.IntervalIndex.from_tuples([(4.0, 5.0), (7.0, 8.0), (7.0, 8.0)]),
+            ],
+            names=["x", "y"]
+        ),
+    )
+
+    rebinned = hi.rebin_histogram(hist, 4)
+    expected = pd.Series(
+        data=[
+            1.0, 0.0, 0.0, 3.0,
+            0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 2.0
+        ],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_breaks(np.linspace(4.0, 8.0, 5)),
+                pd.IntervalIndex.from_breaks(np.linspace(4.0, 8.0, 5)),
+            ],
+            names=["x", "y"]
+        ),
+    )
+
+    print(rebinned)
+    print(expected)
+
+    pd.testing.assert_series_equal(rebinned, expected)
+
+
+def test_overlapping_2d_bins():
+    hist = pd.Series(
+        [1.0, 3.0, 5.0, 7.0],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_tuples(
+                    [(0.0, 20.0), (0.0, 40.0), (0.0, 40.0), (0.0, 20.0)], name="range"
+                ),
+                pd.IntervalIndex.from_tuples(
+                    [(0.0, 10.0), (0.0, 20.0), (0.0, 20.0), (0.0, 10.0)], name="mean",
+                ),
+            ]
+        ),
+    )
+
+    print(pd.__version__)
+    rebinned = hi.rebin_histogram(hist, 2)
+    expected = pd.Series(
+        data=[1.0 + 3.0/4 + 5.0/4 + 7.0, 3.0/4 + 5.0/4, 3.0/4 + 5.0/4, 3.0/4 + 5.0/4],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_breaks([0.0, 20.0, 40.0], name="range"),
+                pd.IntervalIndex.from_breaks([0.0, 10.0, 20.0], name="mean"),
+            ]
+        ),
+    )
+
+    print(rebinned)
+    print(expected)
+
+    pd.testing.assert_series_equal(rebinned, expected)

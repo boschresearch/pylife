@@ -223,8 +223,6 @@ def rebin_histogram(histogram, binning, nan_default=False):
         if not isinstance(histogram.index.get_level_values(name), pd.IntervalIndex):
             continue
 
-        bin_calculation_needed = False
-
         if isinstance(binning, pd.MultiIndex):
             this_binning = binning.levels[binning.names.index(name)]
         elif isinstance(binning, int):
@@ -232,23 +230,17 @@ def rebin_histogram(histogram, binning, nan_default=False):
             lower = index_to_rebin.left.min()
             upper = index_to_rebin.right.max()
             this_binning = pd.IntervalIndex(pd.interval_range(lower, upper, binning))
-            bin_calculation_needed = True
         else:
             this_binning = binning
 
-        def setup_binning(subhist):
-            if not bin_calculation_needed:
-                return this_binning
-            assert isinstance(this_binning, pd.IntervalIndex), f"BUG: this_binninb must be IntervalIndex, not {this_binning}."
-            index_to_rebin = subhist.index.get_level_values(name)
-            lower = index_to_rebin.left.min()
-            upper = index_to_rebin.right.max()
-            return this_binning[this_binning.overlaps(pd.Interval(lower, upper))]
-
         remaining_names = list(filter(lambda m: m != name, original_names))
-        histogram = histogram.groupby(remaining_names).apply(
-            lambda h: _do_rebin_histogram(
-                h.droplevel(remaining_names), setup_binning(h), default_value
+        remaining_index = histogram.index.droplevel(name)
+        histogram = (
+            histogram.groupby(remaining_names)
+            .apply(
+                lambda h: _do_rebin_histogram(
+                    h.droplevel(remaining_names), this_binning, default_value
+                )
             )
         )
 
