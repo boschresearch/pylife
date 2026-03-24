@@ -1,6 +1,4 @@
 # cython: language_level=3
-# cython: boundscheck=False
-# cython: wraparound=False
 # cython: cdivision=True
 
 """
@@ -11,9 +9,37 @@ Cythonized FKM Goodman meanstress transformation
 
 import numpy as np
 cimport numpy as cnp
+cimport cython
 from libc.math cimport fabs, INFINITY
 
+cdef inline double select_M(double R, double M, double M2) nogil:
+    """
+    Select the appropriate mean stress sensitivity M based on current R value.
 
+    Parameters
+    ----------
+    R : double
+        Current R-value
+    M : double
+        Mean stress sensitivity for R <= 0
+    M2 : double
+        Mean stress sensitivity for 0 < R <= 1
+
+    Returns
+    -------
+    double
+        The appropriate M value
+    """
+    if R <= 0.0:
+        return M
+    elif R > 1.0:
+        return 0.0
+    else:  # 0 < R <= 1
+        return M2
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef cnp.ndarray[double, ndim=1] fkm_goodman_amplitude_transformation(
     double[::1] amplitude,
     double[::1] R_current,
@@ -49,16 +75,12 @@ cpdef cnp.ndarray[double, ndim=1] fkm_goodman_amplitude_transformation(
     cdef:
         Py_ssize_t n = amplitude.shape[0]
         Py_ssize_t i
-        double amp, R, mean, M_current
-        double Sa_transformed
-        double denominator
+        double amp, R, mean, M_current, Sa_transformed,denominator
         double tolerance = 1e-10
-        cnp.ndarray[double, ndim=1] out_amplitude
-        double[::1] out_amplitude_view
 
     # Initialize output array
     out_amplitude = np.zeros(n, dtype=np.float64)
-    out_amplitude_view = out_amplitude
+    cdef double[::1] out_amplitude_view = out_amplitude
 
     # Branch based on R_goal to avoid repeated checks in loop
     if R_goal == -INFINITY:
@@ -67,8 +89,7 @@ cpdef cnp.ndarray[double, ndim=1] fkm_goodman_amplitude_transformation(
             amp = amplitude[i]
             R = R_current[i]
 
-            # Calculate mean stress from amplitude and R
-            # mean = amp * (1 + R) / (1 - R)
+            # Calculate mean stress from amplitude and R by mean = amp * (1 + R) / (1 - R)
             denominator = 1.0 - R
             if R == -INFINITY or fabs(denominator) < tolerance:
                 mean = -amp
@@ -76,15 +97,9 @@ cpdef cnp.ndarray[double, ndim=1] fkm_goodman_amplitude_transformation(
                 mean = amp * (1.0 + R) / denominator
 
             # Select M based on current R
-            if R > 1.0:
-                M_current = 0.0
-            elif R <= 0.0:
-                M_current = M
-            else:  # 0 < R <= 1
-                M_current = M2
+            M_current = select_M(R,M, M2)
 
-            # Apply transformation formula for R_goal = -inf
-            # trans_amp = (amp + M * mean) / (1 - M)
+            # Apply transformation formula for R_goal = -inf using trans_amp = (amp + M * mean) / (1 - M)
             denominator = 1.0 - M_current
             if fabs(denominator) < tolerance:
                 Sa_transformed = amp
@@ -108,16 +123,11 @@ cpdef cnp.ndarray[double, ndim=1] fkm_goodman_amplitude_transformation(
                 mean = amp * (1.0 + R) / denominator
 
             # Select M based on current R
-            if R > 1.0:
-                M_current = 0.0
-            elif R <= 0.0:
-                M_current = M
-            else:  # 0 < R <= 1
-                M_current = M2
+            M_current = select_M(R,M, M2)
 
             # Apply general transformation formula
             denominator = 1.0 - R_goal + M_current * (1.0 + R_goal)
-            if fabs(denominator) < tolerance:
+            if fabs(denominator) < tolerance: # here
                 Sa_transformed = amp
             else:
                 Sa_transformed = ((1.0 - R_goal) * (amp + M_current * mean) /

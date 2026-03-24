@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 
 import pylife.strength.meanstress as MST
+import pylife.stress.timesignal as TS
 import pylife.stress.rainflow as RF
 import pylife.meanstress_extension
 from pylife.strength import meanstress
@@ -220,4 +221,3 @@ def test_mean_stress_conversion(mean, amplitude, M, R, result):
     )
 
     np.testing.assert_allclose(amplitude_corr2, amplitude_corr, rtol=1e-6)
-

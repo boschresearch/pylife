@@ -420,13 +420,8 @@ class _SegmentTransformer:
             amp_array = rf.amplitude.values.astype(np.float64)
             R_array = rf.R.values.astype(np.float64)
 
-            print(R_array)
-
-            # Use R_goal of 1.0 as -inf in cython
-            R_goal_cython = -np.inf if R_goal == 1.0 else R_goal
-
             trans_amp_array = fkm_goodman_amplitude_transformation(
-                amp_array, R_array, M1, M2, R_goal_cython
+                amp_array, R_array, M1, M2, R_goal
             )
 
             return pd.Series(trans_amp_array, index=rf.index)
@@ -538,7 +533,7 @@ class MeanstressTransformCollective(CL.LoadCollective):
 
     def five_segment(self, haigh, R_goal):
         hd = HaighDiagram.five_segment(haigh)
-        res = hd.transform(self._obj, R_goal, use_cython=False)
+        res = hd.transform(self._obj, R_goal)
         return res.load_collective
 
 
@@ -567,8 +562,8 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
                 filter(lambda n: n not in ["range", "mean"], self._obj.index.names)
             )
 
-    def fkm_goodman(self, haigh, R_goal, use_cython=False):
-        ranges = HaighDiagram.fkm_goodman(haigh).transform(self._obj, R_goal, use_cython=use_cython)["range"]
+    def fkm_goodman(self, haigh, R_goal):
+        ranges = HaighDiagram.fkm_goodman(haigh).transform(self._obj, R_goal)["range"]
         return self._rebin_results(ranges, R_goal).load_collective
 
     def _rebin_results(self, ranges, R_goal):
@@ -665,5 +660,5 @@ def five_segment_correction(
     )
 
     hd = HaighDiagram.five_segment(haigh_five_segment)
-    res = hd.transform(cycles, R_goal, use_cython=False)
+    res = hd.transform(cycles, R_goal)
     return res.load_collective.amplitude.to_numpy()
