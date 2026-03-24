@@ -324,7 +324,7 @@ class HaighDiagram(PylifeSignal):
 
         coll = CL.LoadCollective(broadcasted_coll)
 
-        transformer = _SegmentTransformer(cycles, obj, self._R_index, R_goal, use_cython=use_cython)
+        transformer = _SegmentTransformer(coll, haigh, self._R_index, R_goal, use_cython=use_cython)
 
         for interval in transformer.segments_left_from_R_goal():
             interval_boundary = (
@@ -638,7 +638,7 @@ class MeanstressTransformCollective(CL.LoadCollective):
         2    166.666667
         Name: amplitude, dtype: float64
         """
-        res = HaighDiagram.fkm_goodman(goodman).transform(self._obj, R_goal,use_cython=use_cython)
+        res = HaighDiagram.fkm_goodman(goodman).transform(self._obj, R_goal)
         return res.load_collective
 
     def five_segment(self, haigh, R_goal):
