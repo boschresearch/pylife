@@ -334,12 +334,12 @@ class HaighDiagram(PylifeSignal):
         for interval in transformer.segments_containing_R_goal():
             transformer.transform_cycles_in_interval(interval, R_goal)
 
-        transfomed_cycles = transformer.transformed_cycles
+        transformed_cycles = transformer.transformed_cycles
         res = pd.DataFrame(
             {
-                "range": 2.0 * transfomed_cycles.amplitude,
-                "mean": transfomed_cycles.amplitude
-                * ((1.0 + transfomed_cycles.R) / (1.0 - transfomed_cycles.R)).fillna(
+                "range": 2.0 * transformed_cycles.amplitude,
+                "mean": transformed_cycles.amplitude
+                * ((1.0 + transformed_cycles.R) / (1.0 - transformed_cycles.R)).fillna(
                     -1.0
                 ),
             },
@@ -648,7 +648,7 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
                 filter(lambda n: n not in ["range", "mean"], self._obj.index.names)
             )
 
-    def fkm_goodman(self, haigh, R_goal):
+    def fkm_goodman(self, goodman, R_goal):
         """ Perform a FKM Goodman transformation on a load histogram
 
         Parameters
@@ -690,7 +690,7 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
         (150.0, 250.0]  (75.0, 125.0]     100.0
         Name: amplitude, dtype: float64
         """
-        transformer = HaighDiagram.fkm_goodman(haigh)
+        transformer = HaighDiagram.fkm_goodman(goodman)
         return self._perform_transformation(transformer, R_goal)
 
     def _perform_transformation(self, transformer, R_goal):
