@@ -38,6 +38,8 @@ import pandas as pd
 from pylife import PylifeSignal, Broadcaster
 import pylife.stress.collective as CL
 
+from pylife.meanstress_extension import fkm_goodman_amplitude_transformation
+
 
 @pd.api.extensions.register_series_accessor("haigh_diagram")
 class HaighDiagram(PylifeSignal):
@@ -213,7 +215,7 @@ class HaighDiagram(PylifeSignal):
 
         return cls(haigh)
 
-    def transform(self, cycles, R_goal):
+    def transform(self, cycles, R_goal, use_cython=False):
         """Transform a load collective to defined R-value.
 
         Parameters
@@ -224,6 +226,8 @@ class HaighDiagram(PylifeSignal):
             copied unchanged to the result.
         R_goal : float
             The target R-value for the transformation.
+        use_cython : bool, optional
+            Use Cython acceleration if available (default: True)
 
         Returns
         -------
@@ -238,7 +242,7 @@ class HaighDiagram(PylifeSignal):
 
         cycles, obj = self.broadcast(cycles, droplevel=["R"])
 
-        transformer = _SegmentTransformer(cycles, obj, self._R_index, R_goal)
+        transformer = _SegmentTransformer(cycles, obj, self._R_index, R_goal, use_cython=use_cython)
 
         for interval in transformer.segments_left_from_R_goal():
             interval_boundary = (
@@ -325,7 +329,7 @@ class HaighDiagram(PylifeSignal):
 
 class _SegmentTransformer:
 
-    def __init__(self, cycles, haigh, R_segments, R_goal):
+    def __init__(self, cycles, haigh, R_segments, R_goal, use_cython=False):
         rf = cycles.load_collective
         self.transformed_cycles = pd.DataFrame(
             {"amplitude": rf.amplitude, "R": rf.R}, index=cycles.index
@@ -333,8 +337,36 @@ class _SegmentTransformer:
         self._haigh = haigh
         self._R_index = R_segments
         self._R_goal = R_goal
+        self._use_cython = use_cython
+
+        # Check if this is FKM Goodman (has exactly 3 segments with M and M2)
+        self._is_fkm_goodman = self._check_if_fkm_goodman()
 
         self._distances = self._distance_from_R_goal()
+
+    def _check_if_fkm_goodman(self):
+        """Check if the haigh diagram is FKM Goodman type."""
+        if len(self._R_index) != 3:
+            return False
+
+        # Check if intervals match FKM Goodman structure
+        expected_intervals = [
+            pd.Interval(1.0, np.inf),
+            pd.Interval(-np.inf, 0.0),
+            pd.Interval(0.0, 1.0)
+        ]
+
+        for interval in expected_intervals:
+            if interval not in self._R_index:
+                return False
+
+        return True
+
+    def _get_fkm_params(self):
+        """Extract M1 and M2 from the haigh diagram."""
+        M1 = self._haigh.xs(pd.Interval(-np.inf, 0.0), level="R").iloc[0]
+        M2 = self._haigh.xs(pd.Interval(0.0, 1.0), level="R").iloc[0]
+        return M1, M2
 
     def segments_left_from_R_goal(self):
         return self._distances[self._distances < 0.0].sort_values(ascending=True).index
@@ -382,7 +414,25 @@ class _SegmentTransformer:
         def meanstress_sensitivity_segments_of_current_interval():
             return self._haigh.xs(interval, level="R")
 
-        def transformed_amplitude():
+        def transformed_amplitude_cython(M1, M2):
+            """Cython-accelerated transformation."""
+            rf = self.transformed_cycles.loc[to_shift]
+            amp_array = rf.amplitude.values.astype(np.float64)
+            R_array = rf.R.values.astype(np.float64)
+
+            print(R_array)
+
+            # Use R_goal of 1.0 as -inf in cython
+            R_goal_cython = -np.inf if R_goal == 1.0 else R_goal
+
+            trans_amp_array = fkm_goodman_amplitude_transformation(
+                amp_array, R_array, M1, M2, R_goal_cython
+            )
+
+            return pd.Series(trans_amp_array, index=rf.index)
+
+        def transformed_amplitude_python():
+            """Original Python transformation."""
             rf = self.transformed_cycles.loc[to_shift]
             amp = rf.amplitude
             mean = amp * (1.0 + rf.R) / (1.0 - rf.R)
@@ -413,7 +463,14 @@ class _SegmentTransformer:
         if R_goal == 1.0:
             R_goal = -np.inf
 
-        self.transformed_cycles.loc[to_shift, "amplitude"] = transformed_amplitude()
+        # Choose Cython or Python implementation
+        if self._use_cython and self._is_fkm_goodman:
+            M1, M2 = self._get_fkm_params()
+            trans_amp = transformed_amplitude_cython(M1, M2)
+        else:
+            trans_amp = transformed_amplitude_python()
+
+        self.transformed_cycles.loc[to_shift, "amplitude"] = trans_amp
         self.transformed_cycles.loc[to_shift, "R"] = R_goal
 
 
@@ -474,14 +531,14 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
 @pd.api.extensions.register_dataframe_accessor("meanstress_transform")
 class MeanstressTransformCollective(CL.LoadCollective):
 
-    def fkm_goodman(self, ms_sens, R_goal):
+    def fkm_goodman(self, ms_sens, R_goal, use_cython=False):
         hd = HaighDiagram.fkm_goodman(ms_sens)
-        res = hd.transform(self._obj, R_goal)
+        res = hd.transform(self._obj, R_goal, use_cython=use_cython)
         return res.load_collective
 
     def five_segment(self, haigh, R_goal):
         hd = HaighDiagram.five_segment(haigh)
-        res = hd.transform(self._obj, R_goal)
+        res = hd.transform(self._obj, R_goal, use_cython=False)
         return res.load_collective
 
 
@@ -510,8 +567,8 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
                 filter(lambda n: n not in ["range", "mean"], self._obj.index.names)
             )
 
-    def fkm_goodman(self, haigh, R_goal):
-        ranges = HaighDiagram.fkm_goodman(haigh).transform(self._obj, R_goal)["range"]
+    def fkm_goodman(self, haigh, R_goal, use_cython=False):
+        ranges = HaighDiagram.fkm_goodman(haigh).transform(self._obj, R_goal, use_cython=use_cython)["range"]
         return self._rebin_results(ranges, R_goal).load_collective
 
     def _rebin_results(self, ranges, R_goal):
@@ -571,13 +628,13 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
         return result
 
 
-def fkm_goodman(amplitude, meanstress, M, M2, R_goal):
+def fkm_goodman(amplitude, meanstress, M, M2, R_goal, use_cython=False):
     cycles = pd.DataFrame({"range": 2.0 * amplitude, "mean": meanstress})
 
     haigh_fkm_goodman = pd.Series({"M": M, "M2": M2})
     hd = HaighDiagram.fkm_goodman(haigh_fkm_goodman)
 
-    res = hd.transform(cycles, R_goal)
+    res = hd.transform(cycles, R_goal, use_cython=use_cython)
     return res.load_collective.amplitude.to_numpy()
 
 
@@ -608,5 +665,5 @@ def five_segment_correction(
     )
 
     hd = HaighDiagram.five_segment(haigh_five_segment)
-    res = hd.transform(cycles, R_goal)
+    res = hd.transform(cycles, R_goal, use_cython=False)
     return res.load_collective.amplitude.to_numpy()

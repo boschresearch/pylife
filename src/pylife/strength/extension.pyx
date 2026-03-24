@@ -1,123 +1,128 @@
-# meanstress_extension.pyx
 # cython: language_level=3
 # cython: boundscheck=False
 # cython: wraparound=False
 # cython: cdivision=True
 
 """
-@author: Steve Wolff-Vorbeck wos2rng
+Cythonized FKM Goodman meanstress transformation
 
-Cythonize meanstress conversion
+@author: Steve Wolff-Vorbeck wos2rng
 """
 
-import numpy
-cimport cython
+import numpy as np
+cimport numpy as cnp
 from libc.math cimport fabs, INFINITY
 
 
-cdef double _compute_kak_factor(double M, double M2, double R_goal):
-    """Calculate mean stress sensitivity factor for target R.
+cpdef cnp.ndarray[double, ndim=1] fkm_goodman_amplitude_transformation(
+    double[::1] amplitude,
+    double[::1] R_current,
+    double M,
+    double M2,
+    double R_goal
+):
+    """
+    Transform amplitudes according to FKM Goodman for cycles already at specific R values.
+
+    This is the Cython equivalent of the transformed_amplitude() function in _SegmentTransformer.
+    It performs a single transformation step in the progressive transformation process.
 
     Parameters
     ----------
+    amplitude : memoryview of double
+        Array of current amplitude values
+    R_current : memoryview of double
+        Array of current R values for each cycle
     M : double
-        Mean stress sensitivity between R=-inf and R=0
-    M2 : double
-        Mean stress sensitivity beyond R=0
-    R_goal : double
-        Target stress ratio
-
-    Returns
-    -------
-    Kak : double
-        Mean stress influence factor
-    """
-    cdef double SmSa
-
-    if R_goal == 1.0:
-        return 0.0
-
-    SmSa = (1.0 + R_goal) / (1.0 - R_goal)
-
-    if R_goal > 1.0:
-        return 1.0 / (1.0 - M)
-    elif R_goal >= -1.7976931348623157e+308 and R_goal <= 0.0:  # -sys.float_info.max
-        return 1.0 / (1.0 + M * SmSa)
-    else:
-        return (1.0 + M2) / ((1.0 + M) * (1.0 + M2 * SmSa))
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-cpdef fkm_goodman_transform(double[::1] amplitude, double[::1] mean, double M1, double M2, double R_goal):
-    """
-    Compute mean stress conversion according to FKM Goodman
-
-    Parameters
-    ----------
-    amplitude : 1D numpy array (dtype = double)
-        Array of amplitude values
-    mean : 1D numpy array (dtype = double)
-        Array of mean values
-    M1 : double
         Meanstress sensitivity in the range -inf <= R <= 0
     M2 : double
         Meanstress sensitivity in the range R > 0
     R_goal : double
-        Target R-value for transformation (can be -inf)
+        Target R-value for this transformation step
 
     Returns
     -------
-    amplitude_corr : 1D numpy array (dtype = double)
-        Array of the corrected amplitude values
+    transformed_amplitude : numpy array of double
+        Array of transformed amplitude values
     """
-    cdef Py_ssize_t i, amp_len
-    cdef double R, rel_tol, abs_tol, sum_val, Kak_factor
 
-    rel_tol = 1e-9
-    abs_tol = 1e-12
+    cdef:
+        Py_ssize_t n = amplitude.shape[0]
+        Py_ssize_t i
+        double amp, R, mean, M_current
+        double Sa_transformed
+        double denominator
+        double tolerance = 1e-10
+        cnp.ndarray[double, ndim=1] out_amplitude
+        double[::1] out_amplitude_view
 
-    amp_len = len(amplitude)
-    result = numpy.zeros(amp_len, dtype=numpy.float64)
-    cdef double[::1] trans_amp = result
+    # Initialize output array
+    out_amplitude = np.zeros(n, dtype=np.float64)
+    out_amplitude_view = out_amplitude
 
-    # Branch based on R_goal to avoid repeated checks
+    # Branch based on R_goal to avoid repeated checks in loop
     if R_goal == -INFINITY:
         # Transform to fully reversed loading (R = -∞)
-        for i in range(amp_len):
-            sum_val = mean[i] + amplitude[i]
+        for i in range(n):
+            amp = amplitude[i]
+            R = R_current[i]
 
-            # Handle case where R_current = -inf (sum ≈ 0)
-            if fabs(sum_val) <= fabs(rel_tol * amplitude[i]) or fabs(sum_val) <= abs_tol:
-                trans_amp[i] = amplitude[i]
+            # Calculate mean stress from amplitude and R
+            # mean = amp * (1 + R) / (1 - R)
+            denominator = 1.0 - R
+            if R == -INFINITY or fabs(denominator) < tolerance:
+                mean = -amp
             else:
-                R = (mean[i] - amplitude[i]) / sum_val
-                if R > 1.0:
-                    trans_amp[i] = (amplitude[i] - M1 * amplitude[i]) / (1.0 - M1)
-                elif R <= 0.0:
-                    trans_amp[i] = (amplitude[i] + M1 * mean[i]) / (1.0 - M1)
-                else:
-                   trans_amp[i] = (1.0 + M1) / (1.0 + M2) * (amplitude[i] + M2 * mean[i]) / (1 - M1)
+                mean = amp * (1.0 + R) / denominator
+
+            # Select M based on current R
+            if R > 1.0:
+                M_current = 0.0
+            elif R <= 0.0:
+                M_current = M
+            else:  # 0 < R <= 1
+                M_current = M2
+
+            # Apply transformation formula for R_goal = -inf
+            # trans_amp = (amp + M * mean) / (1 - M)
+            denominator = 1.0 - M_current
+            if fabs(denominator) < tolerance:
+                Sa_transformed = amp
+            else:
+                Sa_transformed = (amp + M_current * mean) / denominator
+
+            out_amplitude_view[i] = Sa_transformed
 
     else:
-        # General transformation for R_goal ≠ -∞
-        # Compute KAK factor once
-        Kak_factor = _compute_kak_factor(M1, M2, R_goal)
+        # General transformation for R_goal != -inf
+        # trans_amp = (1 - R_goal) * (amp + M * mean) / (1 - R_goal + M * (1 + R_goal))
+        for i in range(n):
+            amp = amplitude[i]
+            R = R_current[i]
 
-        for i in range(amp_len):
-            sum_val = mean[i] + amplitude[i]
-
-            # Handle case where R_current = -inf (sum ≈ 0)
-            if fabs(sum_val) <= fabs(rel_tol * amplitude[i]) or fabs(sum_val) <= abs_tol:
-                trans_amp[i] = Kak_factor * (amplitude[i] - M1 * amplitude[i])
+            # Calculate mean stress from amplitude and R
+            denominator = 1.0 - R
+            if R == -INFINITY or fabs(denominator) < tolerance:
+                mean = -amp
             else:
-                R = (mean[i] - amplitude[i]) / sum_val
+                mean = amp * (1.0 + R) / denominator
 
-                if R > 1.0:
-                    trans_amp[i] = Kak_factor * (amplitude[i] - M1 * amplitude[i])
-                elif R <= 0.0:
-                    trans_amp[i] = Kak_factor * (amplitude[i] + M1 * mean[i])
-                else:  # 0 < R <= 1
-                    trans_amp[i] = Kak_factor * (1.0 + M1) / (1.0 + M2) * (amplitude[i] + M2 * mean[i])
+            # Select M based on current R
+            if R > 1.0:
+                M_current = 0.0
+            elif R <= 0.0:
+                M_current = M
+            else:  # 0 < R <= 1
+                M_current = M2
 
-    return result
+            # Apply general transformation formula
+            denominator = 1.0 - R_goal + M_current * (1.0 + R_goal)
+            if fabs(denominator) < tolerance:
+                Sa_transformed = amp
+            else:
+                Sa_transformed = ((1.0 - R_goal) * (amp + M_current * mean) /
+                                denominator)
+
+            out_amplitude_view[i] = Sa_transformed
+
+    return out_amplitude
