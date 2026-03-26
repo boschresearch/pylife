@@ -613,7 +613,6 @@ def test_overlapping_2d_bins():
         ),
     )
 
-    print(pd.__version__)
     rebinned = hi.rebin_histogram(hist, 2)
     expected = pd.Series(
         data=[1.0 + 3.0/4 + 5.0/4 + 7.0, 3.0/4 + 5.0/4, 3.0/4 + 5.0/4, 3.0/4 + 5.0/4],
@@ -627,5 +626,75 @@ def test_overlapping_2d_bins():
 
     print(rebinned)
     print(expected)
+
+    pd.testing.assert_series_equal(rebinned, expected)
+
+
+def test_non_overlapping_pseudo_2d_histogram():
+    hist = pd.Series(
+        [1.0, 3.0, 5.0, 7.0],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_tuples(
+                    [(0.0, 10.0), (10.0, 20.0), (20.0, 30.0), (30.0, 40.0)], name="range"
+                ),
+                pd.IntervalIndex.from_tuples(
+                    [(0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0)], name="mean",
+                ),
+            ]
+        ),
+    )
+
+    rebinned = hi.rebin_histogram(hist, 2)
+    expected = pd.Series(
+        data=[4.0, 12.0],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_breaks([0.0, 20.0, 40.0], name="range"),
+                pd.IntervalIndex.from_tuples([(0.0, 0.0)], name="mean"),
+            ]
+        ),
+    )
+
+    print("###############")
+
+    print(hist)
+    print(expected)
+    print(rebinned)
+
+    pd.testing.assert_series_equal(rebinned, expected)
+
+
+def test_non_identical_bins_one_axis():
+    hist = pd.Series(
+        [1.0, 3.0, 5.0, 7.0],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_tuples(
+                    [(0.0, 10.0), (10.0, 20.0), (20.0, 30.0), (30.0, 40.0)], name="range"
+                ),
+                pd.IntervalIndex.from_tuples(
+                    [(0.0, 1.0), (0.0, 1.0), (0.0, 1.0), (0.0, 1.0)], name="mean",
+                ),
+            ]
+        ),
+    )
+
+    rebinned = hi.rebin_histogram(hist, 2)
+    expected = pd.Series(
+        data=[2.0, 2.0, 6.0, 6.0],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_breaks([0.0, 20.0, 40.0], name="range"),
+                pd.IntervalIndex.from_breaks([0.0, 0.5, 1.0], name="mean"),
+            ]
+        ),
+    )
+
+    print("###############")
+
+    print(hist)
+    print(expected)
+    print(rebinned)
 
     pd.testing.assert_series_equal(rebinned, expected)
