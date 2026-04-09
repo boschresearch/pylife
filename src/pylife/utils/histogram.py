@@ -223,23 +223,69 @@ def rebin_histogram(histogram, binning, nan_default=False):
         if not isinstance(histogram.index.get_level_values(name), pd.IntervalIndex):
             continue
 
-        this_binning = binning.levels[binning.names.index(name)] if isinstance(binning, pd.MultiIndex) else binning
+        if isinstance(binning, pd.MultiIndex):
+            this_binning = binning.levels[binning.names.index(name)]
+        elif isinstance(binning, int):
+            index_to_rebin = histogram.index.get_level_values(name)
+            lower = index_to_rebin.left.min()
+            upper = index_to_rebin.right.max()
+            binnum = binning if upper > lower else 1
+            this_binning = pd.IntervalIndex(pd.interval_range(lower, upper, binnum))
+        else:
+            this_binning = binning
 
         remaining_names = list(filter(lambda m: m != name, original_names))
-        histogram = (histogram
-                     .groupby(remaining_names)
-                     .apply(lambda h: _do_rebin_histogram(h.droplevel(remaining_names), this_binning, default_value)))
+        remaining_index = histogram.index.droplevel(name)
+
+        histogram = (
+            _with_range_index(histogram, remaining_names)
+            .groupby(remaining_names)
+            .apply(
+                lambda h: _do_rebin_histogram(
+                    h.droplevel(remaining_names), this_binning, default_value
+                )
+            )
+        )
+        histogram.index = _restore_old_index(histogram, remaining_index)
 
     return histogram.reorder_levels(original_names)
 
 
+def _with_range_index(hist, levels_to_remap):
+    new_hist = hist.copy().reset_index(drop=False)
+    for level in levels_to_remap:
+        new_hist[level] = (
+            hist.index.get_level_values(level)
+            .unique()
+            .get_indexer_for(hist.index.get_level_values(level))
+        )
+
+    res = new_hist.set_index(hist.index.names, drop=True).iloc[:, 0]
+    res.name = hist.name
+    return res
+
+
+def _restore_old_index(hist, old_index):
+    new_hist = hist.copy().reset_index(drop=False)
+
+    for level in old_index.names:
+        new_hist[level] = old_index.get_level_values(level).unique()[new_hist[level]]
+
+    return new_hist.set_index(hist.index.names, drop=True).index
+
+
 def _do_rebin_histogram(histogram, binning, default_value):
     def interval_overlap(reference_interval, test_interval):
+        if test_interval == reference_interval:
+            return 1.0
         overlap = min(reference_interval.right, test_interval.right) - max(reference_interval.left, test_interval.left)
         return overlap / test_interval.length
 
     def aggregate_hist(interval):
-        occupied = hist.loc[hist.index.overlaps(interval)].dropna()
+        equal_bins = hist.index == interval
+        overlapping_bins = hist.index.overlaps(interval)
+
+        occupied = hist.loc[overlapping_bins | equal_bins]
         if len(occupied) == 0:
             return default_value
 
@@ -274,18 +320,19 @@ def _do_rebin_histogram(histogram, binning, default_value):
     if len(histogram) == 0:
         rebinned = pd.Series(0.0, index=binning)
     else:
-        hist = histogram.to_frame()
+        hist = histogram.to_frame().dropna()
         rebinned = binning.to_series().apply(aggregate_hist)
 
     rebinned.name = histogram.name
     rebinned.index.name = histogram.index.name
+
     return rebinned
 
 
 def _fail_if_binning_invalid(binning):
     def binning_is_overlapping_or_non_monotonic_increasing():
         return (
-            len(binning) > 0
+            len(binning) > 1
             and (
                 not binning.is_non_overlapping_monotonic or binning.is_monotonic_decreasing
             )

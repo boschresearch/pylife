@@ -9,6 +9,12 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 * Implement parts of FKM linear guideline
 
+
+### Bug fixes
+
+* Fix rebinning of partially occupied histograms (#234)
+
+
 ## 2.2.1
 
 ### Bug fixes
