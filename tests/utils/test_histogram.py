@@ -254,6 +254,12 @@ def test_rebin_histogram_binning_with_overlaps(empty_histogram):
         hi.rebin_histogram(empty_histogram, binning)
 
 
+def test_rebin_histogram_binning_with_multiple_zero_length_bins(empty_histogram):
+    binning = pd.IntervalIndex.from_tuples([(0.0, 0.0), (0.0, 0.0)])
+    with pytest.raises(ValueError, match=r"binning index must be monotonic increasing without overlaps."):
+        hi.rebin_histogram(empty_histogram, binning)
+
+
 def test_rebin_histogram_gapped_binning(empty_histogram):
     binning = pd.IntervalIndex.from_tuples([(0.0, 1.0), (1.0, 2.0), (2.0, 3.0), (4.0, 5.0)])
     with pytest.raises(ValueError, match=r"binning index must not have gaps."):
@@ -544,7 +550,7 @@ def test_rebin_partially_occupied_histogram_down():
     assert rebinned.shape == (8,)
 
 
-def test_rebin_irregular_1d_histogam():
+def test_rebin_irregular_1d_histogram():
     hist = pd.Series(
         data=[1.0, 2.0],
         index=pd.IntervalIndex.from_tuples([(4.0, 5.0), (7.0, 8.0)]),
@@ -563,7 +569,7 @@ def test_rebin_irregular_1d_histogam():
     pd.testing.assert_series_equal(rebinned, expected)
 
 
-def test_rebin_irregular_2d_histogam():
+def test_rebin_irregular_2d_histogram():
     hist = pd.Series(
         data=[1.0, 2.0, 3.0],
         index=pd.MultiIndex.from_arrays(

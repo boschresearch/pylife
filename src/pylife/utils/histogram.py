@@ -251,9 +251,9 @@ def rebin_histogram(histogram, binning, nan_default=False):
     return histogram.reorder_levels(original_names)
 
 
-def _with_range_index(hist, names_to_drop):
+def _with_range_index(hist, levels_to_remap):
     new_hist = hist.copy().reset_index(drop=False)
-    for level in names_to_drop:
+    for level in levels_to_remap:
         new_hist[level] = (
             hist.index.get_level_values(level)
             .unique()
@@ -331,8 +331,6 @@ def _do_rebin_histogram(histogram, binning, default_value):
 
 def _fail_if_binning_invalid(binning):
     def binning_is_overlapping_or_non_monotonic_increasing():
-        if binning.left.min() == binning.right.max():
-            return
         return (
             len(binning) > 1
             and (
