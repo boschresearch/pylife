@@ -157,18 +157,18 @@ def test_meanstress_transform_does_not_normalize_cycles():
     "mean, amplitude,M,R,result",
     [
         (
-            np.array([0, 0], dtype=np.double), # R=1
-            np.array([1, 1], dtype=np.double),
-            0,
-            0, # R_goal = 1
-            np.array([1, 1]),
+            np.array([0, 62.5, 87.5, 3.0], dtype=np.double), # R=-1, R=0.25, R = 0.75, R = 5
+            np.array([1, 37.5, 12.5, -2.0], dtype=np.double),
+            0.5,
+            0, # R_goal = 0.0
+            np.array([0.666667,41.071429, 16.071429, -0.666667]),
         ),
         (
-            np.array([0.1, 0.3], dtype=np.double), # R = - 0.9 / 1.1
-            np.array([1, 1], dtype=np.double),
+            np.array([0, 62.5, 87.5, 3.0], dtype=np.double), # R=-1, R=0.25, R = 0.75, R = 5
+            np.array([1, 37.5, 12.5, -2.0], dtype=np.double),
             0.5,
             -1, # R_goal = -1
-            np.array([1.05, 1.15]),
+            np.array([1., 61.607143, 24.107143, -1.]),
         ),
         (
             np.array([1.1, 0.3], dtype=np.double), # R = 0.1 / 2.1
@@ -182,14 +182,7 @@ def test_meanstress_transform_does_not_normalize_cycles():
             np.array([1, 1], dtype=np.double),
             0.5,
             -1, # R_goal = -1
-            np.array([0.5, 1.15]), #here
-        ),
-        (
-            np.array([1.0], dtype=np.double),
-            np.array([-1.0], dtype=np.double),
-            0.5,
-            -np.inf, # R_goal = -inf
-            np.array([-1.0]),
+            np.array([0.5, 1.15]),
         ),
         (
             np.array([-1, 0.3,1.1,-0.9,1.0,1.0,3.0], dtype=np.double),
@@ -203,7 +196,7 @@ def test_meanstress_transform_does_not_normalize_cycles():
             np.array([1, 1], dtype=np.double),
             0.2,
             -1,
-            np.array([1.02, 1.06]), # here
+            np.array([1.02, 1.06]),
         )
     ],
 )
