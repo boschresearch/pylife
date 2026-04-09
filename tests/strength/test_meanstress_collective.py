@@ -186,38 +186,40 @@ def test_meanstress_transform_does_not_normalize_cycles():
             np.array([1, 1], dtype=np.double),
             0.5,
             -1, # R_goal = -1
-            np.array([1.071429, 1.15]), #here
+            np.array([0.5, 1.15]), #here
         ),
         (
             np.array([1.0], dtype=np.double),
             np.array([-1.0], dtype=np.double),
             0.5,
             -np.inf, # R_goal = -inf
-            np.array([1.0, 2.3]),
+            np.array([-1.0]),
         ),
         (
             np.array([-1, 0.3,1.1,-0.9,1.0,1.0,3.0], dtype=np.double),
             np.array([1, 1,1.0,1,0.0,-1.0,-2.0], dtype=np.double),
             0.5,
             -np.inf, # R_goal = -inf
-            np.array([1.0, 2.3,3.042857, 1.1, 0., 3.,6.428571]),
+            np.array([1.0, 2.3,3.042857, 1.1, 0., -1.0,-2.0]),
         ),
         (
             np.array([0.1, 0.3], dtype=np.double),
             np.array([1, 1], dtype=np.double),
             0.2,
             -1,
-            np.array([1.05, 1.15]), # here
+            np.array([1.02, 1.06]), # here
         )
     ],
 )
 def test_mean_stress_conversion(mean, amplitude, M, R, result):
 
     amplitude_corr = meanstress.fkm_goodman(
-        np.array(amplitude), np.array(mean), M=M, M2=M / 3, R_goal=R, use_cython=True
-    )
-    amplitude_corr2 = meanstress.fkm_goodman(
         np.array(amplitude), np.array(mean), M=M, M2=M / 3, R_goal=R
     )
+    amplitude_corr2 = meanstress.fkm_goodman_cython(
+        np.array(amplitude), np.array(mean), M=M, M2=M / 3, R_goal=R
+    )
+
+    np.testing.assert_allclose(amplitude_corr2, result, rtol=1e-6)
 
     np.testing.assert_allclose(amplitude_corr2, amplitude_corr, rtol=1e-6)

@@ -7,132 +7,97 @@ Cythonized FKM Goodman meanstress transformation
 @author: Steve Wolff-Vorbeck wos2rng
 """
 
-import numpy as np
-cimport numpy as cnp
+import numpy
 cimport cython
 from libc.math cimport fabs, INFINITY
 
-cdef inline double select_M(double R, double M, double M2) nogil:
-    """
-    Select the appropriate mean stress sensitivity M based on current R value.
+cdef inline double _compute_kak_factor(double M, double M2, double R) nogil:
+    """Calculate mean stress sensitivity factor.
 
     Parameters
     ----------
-    R : double
-        Current R-value
-    M : double
-        Mean stress sensitivity for R <= 0
-    M2 : double
-        Mean stress sensitivity for 0 < R <= 1
+    M: double
+        the mean stress sensitivity between R=-inf and R=0.
+    M2: double
+        the mean stress sensitivity beyond R=0.
+    R: double
+        stress ratio
 
     Returns
     -------
-    double
-        The appropriate M value
+    Kak: double
+            mean stress influence factor
     """
-    if R <= 0.0:
-        return M
-    elif R > 1.0:
+    cdef double SmSa
+
+    if R == 1.0:
         return 0.0
-    else:  # 0 < R <= 1
-        return M2
 
+    # Handle R = -inf case
+    if R == -INFINITY:
+        return 1.0 / (1.0 - M)
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-cpdef cnp.ndarray[double, ndim=1] fkm_goodman_amplitude_transformation(
-    double[::1] amplitude,
-    double[::1] R_current,
-    double M,
-    double M2,
-    double R_goal
-):
+    SmSa = (1.0 + R) / (1.0 - R)
+
+    if R > 1.0:
+        return 1.0 / (1.0 - M)
+    elif R <= 0.0:
+        return 1.0 / (1.0 + M * SmSa)
+    elif R > 0.0 and R < 0.5:
+        return (1.0 + M2) / ((1.0 + M) * (1.0 + M2 * SmSa))
+    else:
+        return (1.0 + M2) / ((1.0 + M) * (1.0 + 3.0 * M2))
+
+cpdef transformed_amplitude_goodman(double[::1] amplitude, double[::1] mean, double M, double M2, double R_goal):
     """
-    Transform amplitudes according to FKM Goodman for cycles already at specific R values.
-
-    This is the Cython equivalent of the transformed_amplitude() function in _SegmentTransformer.
-    It performs a single transformation step in the progressive transformation process.
+    Compute mean stress conversion according to FKM Goodman
 
     Parameters
     ----------
-    amplitude : memoryview of double
-        Array of current amplitude values
-    R_current : memoryview of double
-        Array of current R values for each cycle
-    M : double
-        Meanstress sensitivity in the range -inf <= R <= 0
+    amplitude : 1D numpy array (dtype = double)
+       array of amplitude values
+    mean : 1D numpy array (dtype = double)
+       array of mean values
+    M1 : double
+        meanstress sensitivity in the range -inf <= R <= 0
     M2 : double
-        Meanstress sensitivity in the range R > 0
-    R_goal : double
-        Target R-value for this transformation step
+        meanstress sensitivity in the range R>0
+    Kak_factor : double
+        mean stress influence factor
 
     Returns
     -------
-    transformed_amplitude : numpy array of double
-        Array of transformed amplitude values
+    amplitude_corr : 1D numpy array (dtype = double)
+        array of the values of the corrected amplitude
     """
+    cdef Py_ssize_t i, amp_len
+    cdef double R, rel_tol, abs_tol, sum, kak_factor
+    rel_tol = 1e-9
+    abs_tol = 1e-12
 
-    cdef:
-        Py_ssize_t n = amplitude.shape[0]
-        Py_ssize_t i
-        double amp, R, mean, M_current, Sa_transformed,denominator
-        double tolerance = 1e-10
+    amp_len = len(amplitude)
+    result = numpy.zeros(amp_len, dtype = numpy.float64)
+    cdef double[::1] trans_amp = result
 
-    # Initialize output array
-    out_amplitude = np.zeros(n, dtype=np.float64)
-    cdef double[::1] out_amplitude_view = out_amplitude
+    # Comoute KAK-Factor for R_goal
+    kak_factor = _compute_kak_factor(M, M2, R_goal)
 
-    # Branch based on R_goal to avoid repeated checks in loop
-    if R_goal == -INFINITY:
-        # Transform to fully reversed loading (R = -∞)
-        for i in range(n):
-            amp = amplitude[i]
-            R = R_current[i]
+    for i in range(amp_len):
 
-            # Calculate mean stress from amplitude and R by mean = amp * (1 + R) / (1 - R)
-            denominator = 1.0 - R
-            if R == -INFINITY or fabs(denominator) < tolerance:
-                mean = -amp
+        # handle case where R = -inf -> sum == 0.0
+        sum = mean[i] + amplitude[i]
+        if fabs(sum) <= fabs(rel_tol * amplitude[i]) or fabs(sum) <= abs_tol:
+            trans_amp[i] = kak_factor * (amplitude[i] + M*mean[i])
+        else:
+            R = (mean[i] - amplitude[i]) / (sum)
+            if R > 1:
+                trans_amp[i] = kak_factor * (amplitude[i] - M * amplitude[i])
+            elif R <= 0:
+                trans_amp[i] = kak_factor * (amplitude[i] + M*mean[i])
+            elif R > 0 and R < 0.5:
+                trans_amp[i] = kak_factor * (1 + M) / ( 1 + M2) * (amplitude[i] + M2 * mean[i])
             else:
-                mean = amp * (1.0 + R) / denominator
+                trans_amp[i] = kak_factor * ((1+M) * (1 + 3.0 * M2)) / (1+M2) * amplitude[i]
 
-            # Select M based on current R
-            M_current = select_M(R,M, M2)
+    return result
 
-            # Apply transformation formula for R_goal = -inf using trans_amp = (amp + M * mean) / (1 - M)
-            denominator = 1.0 - M_current
-            if fabs(denominator) < tolerance:
-                Sa_transformed = amp
-            else:
-                Sa_transformed = (amp + M_current * mean) / denominator
-
-            out_amplitude_view[i] = Sa_transformed
-
-    else:
-        # General transformation for R_goal != -inf
-        # trans_amp = (1 - R_goal) * (amp + M * mean) / (1 - R_goal + M * (1 + R_goal))
-        for i in range(n):
-            amp = amplitude[i]
-            R = R_current[i]
-
-            # Calculate mean stress from amplitude and R
-            denominator = 1.0 - R
-            if R == -INFINITY or fabs(denominator) < tolerance:
-                mean = -amp
-            else:
-                mean = amp * (1.0 + R) / denominator
-
-            # Select M based on current R
-            M_current = select_M(R,M, M2)
-
-            # Apply general transformation formula
-            denominator = 1.0 - R_goal + M_current * (1.0 + R_goal)
-            if fabs(denominator) < tolerance: # here
-                Sa_transformed = amp
-            else:
-                Sa_transformed = ((1.0 - R_goal) * (amp + M_current * mean) /
-                                denominator)
-
-            out_amplitude_view[i] = Sa_transformed
-
-    return out_amplitude
