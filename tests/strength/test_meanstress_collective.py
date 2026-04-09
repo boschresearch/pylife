@@ -19,10 +19,6 @@ import pytest
 import numpy as np
 import pandas as pd
 
-import pylife.strength.meanstress as MST
-import pylife.stress.timesignal as TS
-import pylife.stress.rainflow as RF
-import pylife.meanstress_extension
 from pylife.strength import meanstress
 
 
