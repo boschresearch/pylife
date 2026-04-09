@@ -126,8 +126,8 @@ def test_rainflow_from_to_amplitude_right(lc_matrix_from_to):
 @pytest.mark.parametrize('cycles_value', [1, 2])
 def test_rainflow_from_to_amplitude_histogram(lc_matrix_from_to, cycles_value):
     expected_index = pd.IntervalIndex.from_arrays(
-        [0., 0., 2., 0., 0., 0., 4., 2., 0.],
-        [4., 6., 8., 6., 4., 4., 10., 8., 6.],
+        [0., 0., 1., 0., 0., 0., 2., 1., 0.],
+        [2., 3., 4., 3., 2., 2., 5., 4., 3.],
         name='amplitude'
     )
     expected = pd.Series(cycles_value, index=expected_index, name='cycles')

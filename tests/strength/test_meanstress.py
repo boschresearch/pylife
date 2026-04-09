@@ -274,39 +274,6 @@ def test_fkm_goodman_hist_from_to(R_goal, expected):
     assert res.loc[~mask].sum() == 0
 
 
-@pytest.mark.skip("We are no longer rebinning")
-@pytest.mark.parametrize("R_goal, expected", [  # all calculated by pencil on paper
-    (-1., 2.0),
-    (0., 4./3.),
-    (-1./3., 8./5.),
-    (1./3., 14./12.)
-])
-def test_fkm_goodman_hist_range_mean_nonzero_binsize(R_goal, expected):
-    rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
-    mn = pd.IntervalIndex.from_breaks(np.linspace(-1./12., 23./12., 25), closed='left')
-
-    mat = pd.Series(
-        np.zeros(24 * 24),
-        name='cycles',
-        index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']),
-    )
-    mat.loc[(7./6., 7./6.)] = 1.
-    mat.loc[(4./3., 2./3.)] = 3.
-    mat.loc[(2. - 1e-9, 0.)] = 5.
-
-    haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
-    res = mat[mat.values > 0].meanstress_transform.fkm_goodman(haigh, R_goal).to_pandas()
-
-    test_interval = pd.Interval(expected-1./96., expected+1./96.)
-
-    mask = res.index.get_level_values('range').overlaps(test_interval)
-    assert res.loc[mask].sum() == 9
-    assert res.loc[~mask].sum() == 0
-
-    binsize = res.index.get_level_values('range').length.min()
-    np.testing.assert_approx_equal(binsize, 2./24., significant=1)
-
-
 def test_null_histogram():
     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
     mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
@@ -507,8 +474,8 @@ def test_neutral_haigh_diagram_histogram_from_to_hanging_R_neg1():
         index=pd.MultiIndex.from_product(
             [
                 pd.IntervalIndex.from_arrays(
-                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
-                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                    np.array([275.0, 225.0, 175.0, 125.0,  75.0,  25.0]),
+                    np.array([425.0, 375.0, 325.0, 275.0, 225.0, 175.0]),
                 ),
                 pd.IntervalIndex.from_arrays([0.0], [0.0]),
             ],
@@ -590,8 +557,8 @@ def test_neutral_haigh_diagram_histogram_from_to_standing_positive_R_neg1():
         index=pd.MultiIndex.from_product(
             [
                 pd.IntervalIndex.from_arrays(
-                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
-                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                    np.array([275.0, 225.0, 175.0, 125.0,  75.0,  25.0]),
+                    np.array([425.0, 375.0, 325.0, 275.0, 225.0, 175.0]),
                 ),
                 pd.IntervalIndex.from_arrays([0.0], [0.0]),
             ],
@@ -631,8 +598,8 @@ def test_neutral_haigh_diagram_histogram_from_to_standing_negative_R_neg1():
         index=pd.MultiIndex.from_product(
             [
                 pd.IntervalIndex.from_arrays(
-                    np.array([650.0, 550.0, 450.0, 350.0, 250.0, 150.0]) / 2.0,
-                    np.array([750.0, 650.0, 550.0, 450.0, 350.0, 250.0]) / 2.0,
+                    np.array([275.0, 225.0, 175.0, 125.0,  75.0,  25.0]),
+                    np.array([425.0, 375.0, 325.0, 275.0, 225.0, 175.0]),
                 ),
                 pd.IntervalIndex.from_arrays([0.0], [0.0]),
             ],
@@ -659,7 +626,7 @@ def test_neutral_haigh_diagram_histogram_from_standing_to_R_0():
             ],
             names=["from", "to"],
         ),
-        name="cycles"
+        name="cycles",
     )
 
     transformed = lc_histogram.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), 0.0)
@@ -722,6 +689,38 @@ def test_neutral_haigh_diagram_histogram_from_to_mixed_R_neg1():
         ),
         name="cycles"
     )
+
+    pd.testing.assert_series_equal(transformed.to_pandas(), expected)
+
+
+def test_neutral_hist_square_from_to():
+    hist = pd.Series(
+        [1.0, 3.0, 5.0, 7.0],
+        index=pd.MultiIndex.from_product(
+            [
+                pd.IntervalIndex.from_breaks([-20, 0, 20], name="from"),
+                pd.IntervalIndex.from_breaks([-20, 0, 20], name="to"),
+            ]
+        ),
+    )
+
+    transformed = hist.meanstress_transform.fkm_goodman(pd.Series({"M": 0.0}), 0.0)
+    expected = pd.Series(
+        [1.0, 3.0, 5.0, 7.0],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.IntervalIndex.from_tuples(
+                    [(0.0, 20.0), (0.0, 40.0), (0.0, 40.0), (0.0, 20.0)], name="range"
+                ),
+                pd.IntervalIndex.from_tuples(
+                    [(0.0, 10.0), (0.0, 20.0), (0.0, 20.0), (0.0, 10.0)], name="mean",
+                ),
+            ]
+        ),
+    )
+
+    print(transformed.to_pandas())
+    print(expected)
 
     pd.testing.assert_series_equal(transformed.to_pandas(), expected)
 

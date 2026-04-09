@@ -263,7 +263,7 @@ class _FromToMatrix(_LoadHistogramImpl):
 
         left[left < 0.0] = 0.0
 
-        return pd.IntervalIndex.from_arrays(left, right)
+        return pd.IntervalIndex.from_arrays(left/2.0, right/2.0)
 
     def meanstress(self):
         fr, to = self._from_tos()
