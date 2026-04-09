@@ -41,8 +41,10 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
     def _validate(self):
         if 'from' in self.keys() and 'to' in self.keys():
+            self._axes = ["from", "to"]
             return
         if 'range' in self.keys() and 'mean' in self.keys():
+            self._axes = ["range", "mean"]
             fr = self._obj['mean'] - self._obj['range'] / 2.
             to = self._obj['mean'] + self._obj['range'] / 2.
 
@@ -58,6 +60,10 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
             return
         raise AttributeError("Load collective needs either 'range'/'mean' or 'from'/'to' in column names.")
+
+    @property
+    def columns(self) -> list[str]:
+        return self._axes
 
     @property
     def amplitude(self):
