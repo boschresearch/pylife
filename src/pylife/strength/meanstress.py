@@ -662,7 +662,16 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
         Returns
         -------
         transformed_collective: LoadHistogram
-            The transformed load histogram
+            The transformed load histogram. After the meanstress transformation,
+            the resulting ``(range, mean)`` interval bins may no longer be
+            continuous.
+
+        Notes
+        -----
+        If continuous bins are required afterwards, e.g. for visualization, the
+        transformed histogram can optionally be rebinned. Be aware that such a
+        rebinning is a post-processing step for presentation purposes and may
+        reduce the accuracy of the transformed histogram.
 
         Examples
         --------
@@ -694,8 +703,6 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
         return self._perform_transformation(transformer, R_goal)
 
     def _perform_transformation(self, transformer, R_goal):
-        range_left = 2.0 * self.use_class_left().amplitude.reset_index(drop=True)
-        range_right = 2.0 * self.use_class_right().amplitude.reset_index(drop=True)
         mean_left = self.use_class_left().meanstress.reset_index(drop=True)
         mean_right = self.use_class_right().meanstress.reset_index(drop=True)
 

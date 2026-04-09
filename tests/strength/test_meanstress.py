@@ -274,39 +274,6 @@ def test_fkm_goodman_hist_from_to(R_goal, expected):
     assert res.loc[~mask].sum() == 0
 
 
-@pytest.mark.skip("We are no longer rebinning")
-@pytest.mark.parametrize("R_goal, expected", [  # all calculated by pencil on paper
-    (-1., 2.0),
-    (0., 4./3.),
-    (-1./3., 8./5.),
-    (1./3., 14./12.)
-])
-def test_fkm_goodman_hist_range_mean_nonzero_binsize(R_goal, expected):
-    rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
-    mn = pd.IntervalIndex.from_breaks(np.linspace(-1./12., 23./12., 25), closed='left')
-
-    mat = pd.Series(
-        np.zeros(24 * 24),
-        name='cycles',
-        index=pd.MultiIndex.from_product([rg, mn], names=['range', 'mean']),
-    )
-    mat.loc[(7./6., 7./6.)] = 1.
-    mat.loc[(4./3., 2./3.)] = 3.
-    mat.loc[(2. - 1e-9, 0.)] = 5.
-
-    haigh = pd.Series({'M': 0.5, 'M2': 0.5/3.})
-    res = mat[mat.values > 0].meanstress_transform.fkm_goodman(haigh, R_goal).to_pandas()
-
-    test_interval = pd.Interval(expected-1./96., expected+1./96.)
-
-    mask = res.index.get_level_values('range').overlaps(test_interval)
-    assert res.loc[mask].sum() == 9
-    assert res.loc[~mask].sum() == 0
-
-    binsize = res.index.get_level_values('range').length.min()
-    np.testing.assert_approx_equal(binsize, 2./24., significant=1)
-
-
 def test_null_histogram():
     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
     mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
