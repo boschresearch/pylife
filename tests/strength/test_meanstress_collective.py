@@ -161,21 +161,21 @@ def test_meanstress_transform_does_not_normalize_cycles():
             np.array([1, 1, 37.5, 12.5, -2.0], dtype=np.double),
             0.5,
             0, # R_goal = 0.0
-            np.array([0.333333, 0.666667,41.071429, 16.071429, -0.666667]),
+            np.array([0.333333, 0.666667,41.071429, 16.071429, -0.666667]), # Comparison with fkm_goodman  fails for R= 0.75 and R=5
         ),
         (
             np.array([-1,0, 62.5, 87.5, 3.0], dtype=np.double), # R=-inf R=-1, R=0.25, R = 0.75, R = 5
             np.array([1, 1, 37.5, 12.5, -2.0], dtype=np.double),
             0.5,
             -1, # R_goal = -1
-            np.array([0.5, 1., 61.607143, 24.107143, -1.]),
+            np.array([0.5, 1., 61.607143, 24.107143, -1.]), # Comparison with fkm_goodman fails for R= 0.75 and R=5
         ),
         (
             np.array([-1,0, 62.5, 87.5, 3.0], dtype=np.double), # R=-inf R=-1, R=0.25, R = 0.75, R = 5
             np.array([1, 1, 37.5, 12.5, -2.0], dtype=np.double),
             0.5,
             0.25, # R_goal = 0.25
-            np.array([0.304348,0.608696, 37.5, 14.673913, -0.608696]),
+            np.array([0.304348,0.608696, 37.5, 14.673913, -0.608696]), # Comparison with fkm_goodman fails for R= 0.75 and R=5
         ),
         (
             np.array([-1,0, 62.5, 87.5, 3.0], dtype=np.double), # R=-inf R=-1, R=0.25, R = 0.75, R = 5
@@ -189,14 +189,14 @@ def test_meanstress_transform_does_not_normalize_cycles():
             np.array([1, 1, 37.5, 12.5, -2.0], dtype=np.double),
             0.5,
             1.1, # R_goal = 1.1
-            np.array([1., 2., 123.214286, 48.214286, -2.]),
+            np.array([1., 2., 123.214286, 48.214286, -2.]), # Comparison with fkm_goodman fails for R= 0.75 and R=5
         ),
         (
             np.array([-1,0, 62.5, 87.5, 3.0], dtype=np.double), # R=-inf R=-1, R=0.25, R = 0.75, R = 5
             np.array([1, 1, 37.5, 12.5, -2.0], dtype=np.double),
             0.5,
             -np.inf, # R_goal = -inf
-            np.array([1., 2., 123.214286, 48.214286, -2.]),
+            np.array([1., 2., 123.214286, 48.214286, -2.]), # Comparison with fkm_goodman fails for R= 0.75 and R=5
         ),
 
     ],
