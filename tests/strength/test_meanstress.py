@@ -276,6 +276,7 @@ def test_fkm_goodman_hist_from_to(R_goal, expected):
 
 def test_five_segment_histogram_M_sm():
     cyclic_signal = five_segment_signal_sm()
+    length = len(cyclic_signal)
 
     mean_signal = cyclic_signal["mean"]
     range_signal = cyclic_signal["range"]
@@ -294,6 +295,9 @@ def test_five_segment_histogram_M_sm():
 
     iloc_index = histogram.index.get_indexer_for(index)
 
+    cycles = np.arange(1, length + 1)
+    histogram.iloc[iloc_index] = cycles
+
     five_segments = pd.Series(
         {
             "M0": 0.5,
@@ -308,13 +312,13 @@ def test_five_segment_histogram_M_sm():
 
     R_goal = -1.
 
-    res = histogram.meanstress_transform.five_segment(
+    transformed = histogram.meanstress_transform.five_segment(
         pd.Series(five_segments), R_goal
-    ).amplitude
+    )
 
-    res = res.iloc[iloc_index]
-
-    np.testing.assert_array_almost_equal(res, np.ones_like(res), decimal=1)
+    transformed_amplitude = transformed.amplitude.iloc[iloc_index]
+    np.testing.assert_array_almost_equal(transformed_amplitude, np.ones(length), decimal=1)
+    np.testing.assert_array_equal(transformed.to_pandas().iloc[iloc_index].to_numpy(), cycles)
 
 
 def test_null_histogram():
