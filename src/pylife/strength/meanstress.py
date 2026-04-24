@@ -589,8 +589,24 @@ class MeanstressTransformCollective(CL.LoadCollective):
         res = HaighDiagram.fkm_goodman(goodman).transform(self._obj, R_goal)
         return res.load_collective
 
-    def five_segment(self, haigh, R_goal):
-        """
+    def five_segment(self, five_segment, R_goal):
+        """ Perform a Five segment transformation on a load collective
+
+        Parameters
+        ----------
+        five_segment: pd.Series or pd.DataFrame
+           The meanstress sensitivities and R transition values (see :meth:`HaighDiagram.five_segment`)
+
+        R_goal: float
+           The R-value to transform to
+
+        Returns
+        -------
+        transformed_collective: LoadCollective
+            The transformed load collective. After the meanstress transformation,
+            the resulting ``(range, mean)`` interval bins may no longer be
+            continuous.
+
         Examples
         --------
         >>> collective = pd.DataFrame(
@@ -617,7 +633,7 @@ class MeanstressTransformCollective(CL.LoadCollective):
         Name: meanstress, dtype: float64
 
         """
-        hd = HaighDiagram.five_segment(haigh)
+        hd = HaighDiagram.five_segment(five_segment)
         res = hd.transform(self._obj, R_goal)
         return res.load_collective
 
@@ -661,7 +677,7 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
 
         Returns
         -------
-        transformed_collective: LoadHistogram
+        transformed_histogram: LoadHistogram
             The transformed load histogram. After the meanstress transformation,
             the resulting ``(range, mean)`` interval bins may no longer be
             continuous.
@@ -708,14 +724,14 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
         Parameters
         ----------
         five_segment: pd.Series or pd.DataFrame
-           The meanstress sensitivites and R transition values (see :meth:`HaighDiagram.five_segment`)
+           The meanstress sensitivities and R transition values (see :meth:`HaighDiagram.five_segment`)
 
         R_goal: float
            The R-value to transform to
 
         Returns
         -------
-        transformed_collective: LoadHistogram
+        transformed_histogram: LoadHistogram
             The transformed load histogram. After the meanstress transformation,
             the resulting ``(range, mean)`` interval bins may no longer be
             continuous.
