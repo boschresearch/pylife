@@ -3,12 +3,16 @@
 In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
-## 2.3.0 (unreleased)
+## 2.3.0
 
 ### New features
 
 * Implement parts of FKM linear guideline
 
+### Improvements
+
+* Add missing function for five segment meanstress transformation for load
+  histograms (#216)
 
 ### Bug fixes
 
