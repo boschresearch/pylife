@@ -274,6 +274,49 @@ def test_fkm_goodman_hist_from_to(R_goal, expected):
     assert res.loc[~mask].sum() == 0
 
 
+def test_five_segment_histogram_M_sm():
+    cyclic_signal = five_segment_signal_sm()
+
+    mean_signal = cyclic_signal["mean"]
+    range_signal = cyclic_signal["range"]
+
+    histogram = pd.Series(
+        0.0,
+        index=pd.MultiIndex.from_product(
+            [
+                pd.interval_range(range_signal.min(), range_signal.max() + 0.1, 100, closed="left"),
+                pd.interval_range(mean_signal.min(), mean_signal.max() + 0.1, 100, closed="left"),
+            ],
+            names=["range", "mean"],
+        ),
+    )
+    index = histogram.loc[list(zip(range_signal, mean_signal))].index
+
+    iloc_index = histogram.index.get_indexer_for(index)
+
+    five_segments = pd.Series(
+        {
+            "M0": 0.5,
+            "M1": 0.167,
+            "M2": 0.083,
+            "M3": 1.0,
+            "M4": -2.0,
+            "R12": 0.2,
+            "R23": 0.8,
+        }
+    )
+
+    R_goal = -1.
+
+    res = histogram.meanstress_transform.five_segment(
+        pd.Series(five_segments), R_goal
+    ).amplitude
+
+    res = res.iloc[iloc_index]
+
+    np.testing.assert_array_almost_equal(res, np.ones_like(res), decimal=1)
+
+
 def test_null_histogram():
     rg = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
     mn = pd.IntervalIndex.from_breaks(np.linspace(0, 2, 25), closed='left')
