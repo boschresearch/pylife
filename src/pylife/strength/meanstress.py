@@ -589,8 +589,24 @@ class MeanstressTransformCollective(CL.LoadCollective):
         res = HaighDiagram.fkm_goodman(goodman).transform(self._obj, R_goal)
         return res.load_collective
 
-    def five_segment(self, haigh, R_goal):
-        """
+    def five_segment(self, five_segment, R_goal):
+        """ Perform a Five segment transformation on a load collective
+
+        Parameters
+        ----------
+        five_segment: pd.Series or pd.DataFrame
+           The meanstress sensitivities and R transition values (see :meth:`HaighDiagram.five_segment`)
+
+        R_goal: float
+           The R-value to transform to
+
+        Returns
+        -------
+        transformed_collective: LoadCollective
+            The transformed load collective. After the meanstress transformation,
+            the resulting ``(range, mean)`` interval bins may no longer be
+            continuous.
+
         Examples
         --------
         >>> collective = pd.DataFrame(
@@ -617,7 +633,7 @@ class MeanstressTransformCollective(CL.LoadCollective):
         Name: meanstress, dtype: float64
 
         """
-        hd = HaighDiagram.five_segment(haigh)
+        hd = HaighDiagram.five_segment(five_segment)
         res = hd.transform(self._obj, R_goal)
         return res.load_collective
 
@@ -654,14 +670,14 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
         Parameters
         ----------
         goodman: pd.Series or pd.DataFrame
-           The meanstress sensitivity data needs `M` and optionally `M2`
+           The meanstress sensitivity data needs `M` and optionally `M2`.
 
         R_goal: float
            The R-value to transform to
 
         Returns
         -------
-        transformed_collective: LoadHistogram
+        transformed_histogram: LoadHistogram
             The transformed load histogram. After the meanstress transformation,
             the resulting ``(range, mean)`` interval bins may no longer be
             continuous.
@@ -700,6 +716,71 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
         Name: amplitude, dtype: float64
         """
         transformer = HaighDiagram.fkm_goodman(goodman)
+        return self._perform_transformation(transformer, R_goal)
+
+    def five_segment(self, five_segment, R_goal):
+        """ Perform a Five segment transformation on a load histogram
+
+        Parameters
+        ----------
+        five_segment: pd.Series or pd.DataFrame
+           The meanstress sensitivities and R transition values (see :meth:`HaighDiagram.five_segment`)
+
+        R_goal: float
+           The R-value to transform to
+
+        Returns
+        -------
+        transformed_histogram: LoadHistogram
+            The transformed load histogram. After the meanstress transformation,
+            the resulting ``(range, mean)`` interval bins may no longer be
+            continuous.
+
+        Notes
+        -----
+        If continuous bins are required afterwards, e.g. for visualization, the
+        transformed histogram can optionally be rebinned. Be aware that such a
+        rebinning is a post-processing step for presentation purposes and may
+        reduce the accuracy of the transformed histogram.
+
+        Examples
+        --------
+        >>> histogram = pd.Series(
+        ...     [10, 90, 900, 9000, 90000, 900000],
+        ...     index=pd.MultiIndex.from_arrays(
+        ...         [
+        ...             pd.IntervalIndex.from_arrays(
+        ...                 [650, 550, 450, 350, 250, 150], [750, 650, 550, 450, 350, 250]
+        ...             ),
+        ...             pd.IntervalIndex.from_arrays([0, 0, 0, 0 ,0, 0], [0, 0, 0, 0, 0, 0]),
+        ...         ],
+        ...         names=["range", "mean"],
+        ...     ),
+        ...     name="cycles"
+        ... )
+        >>> five_segments = pd.Series(
+        ...     {
+        ...         "M0": 0.5,
+        ...         "M1": 0.2,
+        ...         "M2": 0.1,
+        ...         "M3": 1.0,
+        ...         "M4": 2.0,
+        ...         "R12": 0.2,
+        ...         "R23": 0.8,
+        ...     }
+        ... )
+        >>> transformed = histogram.meanstress_transform.five_segment(five_segments, 0)
+        >>> transformed.amplitude
+        range                                     mean
+        (433.3333333333333, 500.0]                (216.66666666666666, 250.0]                 233.333333
+        (366.6666666666667, 433.3333333333333]    (183.33333333333334, 216.66666666666666]    200.000000
+        (300.0, 366.6666666666667]                (150.0, 183.33333333333334]                 166.666667
+        (233.33333333333334, 300.0]               (116.66666666666667, 150.0]                 133.333333
+        (166.66666666666669, 233.33333333333334]  (83.33333333333334, 116.66666666666667]     100.000000
+        (100.0, 166.66666666666669]               (50.0, 83.33333333333334]                    66.666667
+        Name: amplitude, dtype: float64
+        """
+        transformer = HaighDiagram.five_segment(five_segment)
         return self._perform_transformation(transformer, R_goal)
 
     def _perform_transformation(self, transformer, R_goal):
