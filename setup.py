@@ -39,6 +39,13 @@ rainflow_ext = Extension(
     extra_compile_args=extra_compile_args,
 )
 
+# First extension: rainflow
+meanstress_extension = Extension(
+    name="pylife.meanstress_extension",
+    sources=["src/pylife/strength/extension.pyx"],
+    include_dirs=[numpy.get_include()],
+    extra_compile_args=extra_compile_args,
+)
 # Second extension: FKM linear functions
 fkm_extension = Extension(
     name="pylife._fkm_linear_functions",
@@ -141,7 +148,7 @@ if __name__ == "__main__":
     ]
 
     # Collect all extensions
-    ext_modules = [rainflow_ext, fkm_extension]
+    ext_modules = [rainflow_ext, fkm_extension, meanstress_extension]
 
     # Cythonize if available
     if HAS_CYTHON:

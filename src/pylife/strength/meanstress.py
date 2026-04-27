@@ -48,6 +48,7 @@ import pandas as pd
 
 from pylife import PylifeSignal, Broadcaster
 import pylife.stress.collective as CL
+import pylife.meanstress_extension
 
 
 @pd.api.extensions.register_series_accessor("haigh_diagram")
@@ -846,6 +847,54 @@ def fkm_goodman(amplitude, meanstress, M, M2, R_goal):
 
     res = hd.transform(cycles, R_goal)
     return res.load_collective.amplitude.to_numpy()
+
+def fkm_goodman_cython(amplitude, meanstress, M, M2, R_goal):
+ """Performs FKM Goodman mean stress transformation using Cython implementation.
+
+ This function uses a faster Cython implementation for the FKM Goodman transformation.
+ Falls back to the standard Python implementation if Cython is not available.
+
+ Parameters
+ ----------
+ amplitude : array-like
+     Stress amplitude values
+ meanstress : array-like
+     Mean stress values
+ M : float
+     Mean stress sensitivity between R=-inf and R=0
+ M2 : float
+     Mean stress sensitivity beyond R=0
+ R_goal : float
+     Target R-value for transformation
+
+ Returns
+ -------
+ numpy.ndarray
+     Transformed amplitude values
+
+ Notes
+ -----
+ For R_goal values, the Kak factor is computed automatically for each data point.
+
+ Raises
+ ------
+ ImportError
+     If Cython implementation is not available and fallback is used (warning only)
+ """
+ # Convert inputs to numpy arrays with proper dtype
+ amplitude_arr = np.asarray(amplitude, dtype=np.float64)
+ meanstress_arr = np.asarray(meanstress, dtype=np.float64)
+
+ # Call the Cython function with Kak_factor = 0.0 to trigger automatic computation
+ transformed_amp = pylife.meanstress_extension.transformed_amplitude_goodman(
+    amplitude_arr,
+    meanstress_arr,
+    M,
+    M2,
+    R_goal
+ )
+
+ return transformed_amp
 
 
 def five_segment_correction(

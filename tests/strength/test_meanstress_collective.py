@@ -19,7 +19,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-import pylife.strength.meanstress as MST
+from pylife.strength import meanstress
 
 
 @pytest.fixture
@@ -151,3 +151,65 @@ def test_meanstress_transform_does_not_normalize_cycles():
     result = collective.meanstress_transform.fkm_goodman(haigh, 0.1)
 
     assert not (result.cycles == 1.0).all()
+
+
+@pytest.mark.parametrize(
+    "mean, amplitude,M,R,result",
+    [
+        (
+            np.array([-1, 0, 62.5, 87.5, 3.0], dtype=np.double), # R=-inf R=-1, R=0.25, R = 0.75, R = 5
+            np.array([1, 1, 37.5, 12.5, -2.0], dtype=np.double),
+            0.5,
+            0, # R_goal = 0.0
+            np.array([0.333333, 0.666667,41.071429, 16.071429, -0.666667]), # Comparison with fkm_goodman  fails for R= 0.75 and R=5
+        ),
+        (
+            np.array([-1,0, 62.5, 87.5, 3.0], dtype=np.double), # R=-inf R=-1, R=0.25, R = 0.75, R = 5
+            np.array([1, 1, 37.5, 12.5, -2.0], dtype=np.double),
+            0.5,
+            -1, # R_goal = -1
+            np.array([0.5, 1., 61.607143, 24.107143, -1.]), # Comparison with fkm_goodman fails for R= 0.75 and R=5
+        ),
+        (
+            np.array([-1,0, 62.5, 87.5, 3.0], dtype=np.double), # R=-inf R=-1, R=0.25, R = 0.75, R = 5
+            np.array([1, 1, 37.5, 12.5, -2.0], dtype=np.double),
+            0.5,
+            0.25, # R_goal = 0.25
+            np.array([0.304348,0.608696, 37.5, 14.673913, -0.608696]), # Comparison with fkm_goodman fails for R= 0.75 and R=5
+        ),
+        (
+            np.array([-1,0, 62.5, 87.5, 3.0], dtype=np.double), # R=-inf R=-1, R=0.25, R = 0.75, R = 5
+            np.array([1, 1, 37.5, 12.5, -2.0], dtype=np.double),
+            0.5,
+            0.65, # R_goal = 0.65
+            np.array([0.259259,0.518519,31.944444, 12.5, -0.518519]), # Everything fails in comparison wit fkm_goodman (pylife)
+        ),
+        (
+            np.array([-1,0, 62.5, 87.5, 3.0], dtype=np.double), # R=-inf R=-1, R=0.25, R = 0.75, R = 5
+            np.array([1, 1, 37.5, 12.5, -2.0], dtype=np.double),
+            0.5,
+            1.1, # R_goal = 1.1
+            np.array([1., 2., 123.214286, 48.214286, -2.]), # Comparison with fkm_goodman fails for R= 0.75 and R=5
+        ),
+        (
+            np.array([-1,0, 62.5, 87.5, 3.0], dtype=np.double), # R=-inf R=-1, R=0.25, R = 0.75, R = 5
+            np.array([1, 1, 37.5, 12.5, -2.0], dtype=np.double),
+            0.5,
+            -np.inf, # R_goal = -inf
+            np.array([1., 2., 123.214286, 48.214286, -2.]), # Comparison with fkm_goodman fails for R= 0.75 and R=5
+        ),
+
+    ],
+)
+def test_mean_stress_conversion(mean, amplitude, M, R, result):
+
+    amplitude_corr = meanstress.fkm_goodman(
+        np.array(amplitude), np.array(mean), M=M, M2=M / 3, R_goal=R
+    )
+    amplitude_corr2 = meanstress.fkm_goodman_cython(
+        np.array(amplitude), np.array(mean), M=M, M2=M / 3, R_goal=R
+    )
+
+    np.testing.assert_allclose(amplitude_corr2, result, rtol=1e-5)
+
+    np.testing.assert_allclose(amplitude_corr2, amplitude_corr, rtol=1e-6)
