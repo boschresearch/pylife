@@ -132,7 +132,7 @@ class FkmLinearFunctions:
             ]
         ]
 
-    def reversed_mat_strength_chap4_cython(self, Rm, df_consts, df_fw_t, S_type):
+    def reversed_mat_strength_chap4(self, Rm, df_consts, df_fw_t, S_type):
         """Calculate material strength for R=-1 axial/shear stress.
 
         According to FKM 2012 local approach (Chapter 4.2.1.1) using Cython.
@@ -156,7 +156,7 @@ class FkmLinearFunctions:
         fw_t = df_fw_t.iloc[0].loc[S_type].values
         return F.reversed_mat_strength_chap4(Rm, fw_t, df_consts.fw_s)
 
-    def reversed_mat_strength_chap5_5_cython(
+    def reversed_mat_strength_chap5_5(
         self, Rm, df_consts, df_fw_t, S_type, HV, df_proc, Proc
     ):
         """Calculate material strength for R=-1 axial/shear stress.
@@ -198,7 +198,7 @@ class FkmLinearFunctions:
             Proc,
         )
 
-    def stieler_support_cython(self, df_consts, df_fw_t, S_type, G, Rm):
+    def stieler_support(self, df_consts, df_fw_t, S_type, G, Rm):
         """Calculate support factors according to Stieler's equation.
 
         According to FKM 2012 local approach (Chapter 4.3.1.3.1) using Cython.
@@ -503,7 +503,7 @@ class FkmLinearFunctions:
         n = n_st * n_vm * n_bm
         return n_st, n_vm, n_bm, n
 
-    def support_chap5_cython(self, G0, HV_RS):
+    def support_chap5(self, G0, HV_RS):
         """Calculate support factor of surface layer for case-hardened parts.
 
         According to local FKM 2012 chapter 5.5 method using Cython.
@@ -522,7 +522,7 @@ class FkmLinearFunctions:
         """
         return F.support_chap5(G0, HV_RS)
 
-    def kf_local_cython(self, G0, b, n, S_type):
+    def kf_local(self, G0, b, n, S_type):
         """Calculate the Kf factor for local FKM 2012 approach.
 
         According to Chapter 4.3.1.2 using Cython.
@@ -545,7 +545,7 @@ class FkmLinearFunctions:
         """
         return F.kf_local(G0, b, n, S_type)
 
-    def kf_constant_cython(self, mat_group):
+    def kf_constant(self, mat_group):
         """Select Kf factor based on FKM material group from FKM 2012.
 
         Uses Cython implementation.
@@ -573,7 +573,7 @@ class FkmLinearFunctions:
         """
         return F.kf_constant(mat_group)
 
-    def kf_factor_cython(self, kf_method, mat_group, G0, b, n, S_type):
+    def kf_factor(self, kf_method, mat_group, G0, b, n, S_type):
         """Select Kf factor based on method and FKM material group from FKM 2012.
 
         Uses Cython implementation.
@@ -612,7 +612,7 @@ class FkmLinearFunctions:
         """
         return F.kf_factor(kf_method, mat_group, G0, b, n, S_type)
 
-    def surf_layer_factor_cython(self, df_proc, G0, Deff, Proc):
+    def surf_layer_factor(self, df_proc, G0, Deff, Proc):
         """Select surface treatment factor Kv based on surface process.
 
         According to FKM 2012 (Chapter 4.3.3) using Cython.
@@ -653,7 +653,7 @@ class FkmLinearFunctions:
             Proc,
         )
 
-    def GJL_bending_factor_cython(self, GJL_Mat):
+    def GJL_bending_factor(self, GJL_Mat):
         """Select factor KNL,E for non-linear elastic behavior of GJL in bending.
 
         According to FKM 2012 (Chapter 4.3.5) using Cython.
@@ -670,7 +670,7 @@ class FkmLinearFunctions:
         """
         return F.GJL_bending_factor(GJL_Mat)
 
-    def rough_factor_cython(self, Rm, Rz, df_consts, df_fw_t, S_type, Finish):
+    def rough_factor(self, Rm, Rz, df_consts, df_fw_t, S_type, Finish):
         """Calculate roughness influence factor Kr_sig.
 
         According to FKM 2012 (Chapter 4.3.1.4) using Cython.
@@ -698,7 +698,7 @@ class FkmLinearFunctions:
         fw_t = df_fw_t.iloc[0].loc[S_type].values
         return F.rough_factor(Rm, Rz, fw_t, df_consts.aR_s, df_consts.RmNmin, Finish)
 
-    def design_factor_cython(self, n, Kf, Kr, Kv, Ks, Knle):
+    def design_factor(self, n, Kf, Kr, Kv, Ks, Knle):
         """Calculate design influence factor Kwk.
 
         According to FKM 2012 (Chapter 4.3.1.1) using Cython.
@@ -725,7 +725,7 @@ class FkmLinearFunctions:
         """
         return F.design_factor(n, Kf, Kr, Kv, Ks, Knle)
 
-    def sm_sensitivity_cython_chap4(self, Rm, df_consts, df_fw_t, S_type):
+    def sm_sensitivity_chap4(self, Rm, df_consts, df_fw_t, S_type):
         """Calculate mean stress sensitivity factor.
 
         According to FKM 2012 (Chapter 4.4.2.1.2) using Cython.
@@ -749,7 +749,7 @@ class FkmLinearFunctions:
         fw_t = df_fw_t.iloc[0].loc[S_type].values
         return F.sm_sensitivity_chap4(Rm, df_consts.a_M, df_consts.b_M, fw_t)
 
-    def sm_sensitivity_cython_Rm_trans(self, HV_core):
+    def sm_sensitivity_Rm_trans(self, HV_core):
         """Calculate tensile strength Rm at the core.
 
         According to chapter 5.5 using Cython.
@@ -766,7 +766,7 @@ class FkmLinearFunctions:
         """
         return F.sm_sensitivity_Rm_trans(HV_core)
 
-    def sm_sensitivity_cython_M_trans(self, Rm, df_consts, df_fw_t, S_type, Rm_trans):
+    def sm_sensitivity_M_trans(self, Rm, df_consts, df_fw_t, S_type, Rm_trans):
         """Calculate mean stress sensitivity factor for chapter 5.5.
 
         According to FKM 2012 using Cython.
@@ -794,7 +794,7 @@ class FkmLinearFunctions:
             Rm, df_consts.a_M, df_consts.b_M, fw_t, Rm_trans
         )
 
-    def eigenstress_RS_cython(self, Rm, HV, HV_core, HardProc):
+    def eigenstress_RS(self, Rm, HV, HV_core, HardProc):
         """Calculate eigenstress of surface layer for surface treated components.
 
         According to FKM 2012 (Chapter 5.5.2.1) using Cython.
@@ -821,7 +821,7 @@ class FkmLinearFunctions:
         """
         return F.eigenstress_RS(Rm, HV, HV_core, HardProc)
 
-    def sm_factor_cython(self, R, M, SmSa):
+    def sm_factor(self, R, M, SmSa):
         """Calculate mean stress sensitivity factor KAK for overload case 2.
 
         R=const. according to Chapter 4 using Cython.
@@ -842,7 +842,7 @@ class FkmLinearFunctions:
         """
         return F.sm_factor(R, M, SmSa)
 
-    def sm_factor_chap5_cython(self, Rm_trans, M, SE, Swk, sL, Rm_norm):
+    def sm_factor_chap5(self, Rm_trans, M, SE, Swk, sL, Rm_norm):
         """Calculate mean stress sensitivity factor KAK for overload case 2.
 
         R=const. according to FKM 2021 (Chapter 5.5.1.2) using Cython.
@@ -869,7 +869,7 @@ class FkmLinearFunctions:
         """
         return F.sm_factor_chap5(Rm_trans, M, SE, Swk, sL, Rm_norm)
 
-    def temperature_model_cython(self, df, temperature, mat):
+    def temperature_model(self, df, temperature, mat):
         """Compute temperature factor.
 
         Uses Cython implementation.

@@ -254,7 +254,7 @@ def test_fatigue_limit_local_chap5(path_to_data, method, expected):
 def test_support_factor_chap5(G, HV_RS, expected):
     fkm = fkm_class()
     ap = pd.DataFrame(data={"G0": G, "HV": HV_RS}, index=[0])
-    assert fkm.support_chap5_cython(ap["G0"], ap["HV"]) == pytest.approx(expected)
+    assert fkm.support_chap5(ap["G0"], ap["HV"]) == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(
@@ -291,7 +291,7 @@ def test_mean_stress_sens(HardProc, expected):
 def test_Kf_factor_constant(MatGroupFKM, expected):
     fkm = fkm_class()
     df = pd.DataFrame(data={"MatGroupFKM": MatGroupFKM}, index=[0])
-    assert fkm.kf_constant_cython(df["MatGroupFKM"]) == expected
+    assert fkm.kf_constant(df["MatGroupFKM"]) == expected
 
 @pytest.mark.parametrize(
     "Rm, mat, S_type, method, HV, Proc, expected",
@@ -339,7 +339,7 @@ def test_reversed_mat_strength(Rm, mat, S_type, method, HV, Proc, expected):
 
     df_consts, df_fw_t = fkm.get_material_constants(ap["MatGroupFKM"], ap["S_Type"])
     df_proc = fkm.get_material_constants_chap5_5(ap["HardProc"])
-    res = fkm.reversed_mat_strength_chap5_5_cython(
+    res = fkm.reversed_mat_strength_chap5_5(
         ap["Rm"], df_consts, df_fw_t, ap["S_Type"], ap["HV"], df_proc, ap["HardProc"]
     )
 
@@ -388,7 +388,7 @@ def test_eigenstress_RS(HV_RS, HV_core, HardProc, Rm, expected):
     ap["Rm"] = ap["Rm"].astype(float)
     ap["HV_core"] = ap["HV_core"].astype(float)
 
-    res = fkm.eigenstress_RS_cython(ap["Rm"], ap["HV"], ap["HV_core"], ap["HardProc"])
+    res = fkm.eigenstress_RS(ap["Rm"], ap["HV"], ap["HV_core"], ap["HardProc"])
     if np.all(np.isnan(res)):
         print("Arrays are equal with NaN values")
     else:
@@ -449,7 +449,7 @@ def test_meanstress_shift_chap5_5(Rm_trans, M, SE, Swk, sL, Rm_norm, expected):
     )
     ap["Rm_trans"] = ap["Rm_trans"].astype(float)
 
-    assert fkm.sm_factor_chap5_cython(
+    assert fkm.sm_factor_chap5(
         ap["Rm_trans"],
         ap["M_trans"],
         ap["SE_trans"],
@@ -457,4 +457,3 @@ def test_meanstress_shift_chap5_5(Rm_trans, M, SE, Swk, sL, Rm_norm, expected):
         ap["SmSa"],
         ap["Rm"],
     ) == pytest.approx(expected)
-

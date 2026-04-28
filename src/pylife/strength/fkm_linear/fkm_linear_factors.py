@@ -129,19 +129,19 @@ def calc_input_parameters_material(experiment_settings, assessment_parameters_):
     df_temperature = fkm.get_temperature_constants(ap["MatGroupFKM_Temp"])
 
     # Calculate temperature factor K_D_T
-    ap["K_D_T"] = fkm.temperature_model_cython(
+    ap["K_D_T"] = fkm.temperature_model(
         df_temperature, ap["Temperature"], ap["MatGroupFKM"]
     )
 
     if experiment_settings["fkm_chapter"] == "chap4":
 
         # Compute reversed material strength
-        ap["Sw"] = fkm.reversed_mat_strength_chap4_cython(
+        ap["Sw"] = fkm.reversed_mat_strength_chap4(
             ap["Rm"], df_consts, df_fw_t, ap["S_Type"]
         )
 
         # Roughness factor
-        ap["Kr"] = fkm.rough_factor_cython(
+        ap["Kr"] = fkm.rough_factor(
             ap["Rm"], ap["Rz"], df_consts, df_fw_t, ap["S_Type"], ap["Finish"]
         )
 
@@ -152,14 +152,14 @@ def calc_input_parameters_material(experiment_settings, assessment_parameters_):
         fictive_width = _fictive_width_b(experiment_settings)
         ap["b"] = fictive_width
 
-        ap["Knle"] = fkm.GJL_bending_factor_cython(ap["GJL_Mat"])
+        ap["Knle"] = fkm.GJL_bending_factor(ap["GJL_Mat"])
 
         # Compute characteristic size
         characteristic_size = _characteristic_size(experiment_settings)
         ap["Deff"] = characteristic_size
 
         # Mean stress sensitivity M
-        ap["M"] = fkm.sm_sensitivity_cython_chap4(
+        ap["M"] = fkm.sm_sensitivity_chap4(
             ap["Rm"], df_consts, df_fw_t, ap["S_Type"]
         )
 
@@ -167,7 +167,7 @@ def calc_input_parameters_material(experiment_settings, assessment_parameters_):
 
         df_proc = fkm.get_material_constants_chap5_5(ap["HardProc"])
         ap["Rm"] = 3.3 * ap["HV"]
-        ap["SW_RS"] = fkm.reversed_mat_strength_chap5_5_cython(
+        ap["SW_RS"] = fkm.reversed_mat_strength_chap5_5(
             ap["Rm"],
             df_consts,
             df_fw_t,
@@ -180,12 +180,12 @@ def calc_input_parameters_material(experiment_settings, assessment_parameters_):
         ap["Rm_RS"] = 3.3 * ap["HV"]
 
         # Roughness factor
-        ap["Kr"] = fkm.rough_factor_cython(
+        ap["Kr"] = fkm.rough_factor(
             ap["Rm"], ap["Rz"], df_consts, df_fw_t, ap["S_Type"], ap["Finish"]
         )
 
         # Notch strength reduction factor (Kerbwirkungszahl) (FKM Chapter 4.3.1.2)
-        ap["Kf"] = fkm.kf_constant_cython(ap["MatGroupFKM"])
+        ap["Kf"] = fkm.kf_constant(ap["MatGroupFKM"])
 
         # Surface factor for case-hardened materials are initialized with default values,
         # adapt if needed before using calc_input_parameters_stress
@@ -198,7 +198,7 @@ def calc_input_parameters_material(experiment_settings, assessment_parameters_):
         ap["M_RS"] = df_proc["M_RS"].values
 
         # Eigenstress for surface layer SE
-        ap["SE_RS"] = fkm.eigenstress_RS_cython(
+        ap["SE_RS"] = fkm.eigenstress_RS(
             ap["Rm"],
             ap["HV"],
             ap["HV_core"],
@@ -207,7 +207,7 @@ def calc_input_parameters_material(experiment_settings, assessment_parameters_):
 
         # SDFKM at transition point from hardened surface layer to core
         # Reversed material strength
-        ap["SW_trans"] = fkm.reversed_mat_strength_chap5_5_cython(
+        ap["SW_trans"] = fkm.reversed_mat_strength_chap5_5(
             ap["Rm"],
             df_consts,
             df_fw_t,
@@ -218,8 +218,8 @@ def calc_input_parameters_material(experiment_settings, assessment_parameters_):
         )
 
         # Calculate mean stress sensitivity M_trans for transition point
-        ap["Rm_trans"] = fkm.sm_sensitivity_cython_Rm_trans(ap["HV_core"])
-        ap["M_trans"] = fkm.sm_sensitivity_cython_M_trans(
+        ap["Rm_trans"] = fkm.sm_sensitivity_Rm_trans(ap["HV_core"])
+        ap["M_trans"] = fkm.sm_sensitivity_M_trans(
             ap["Rm"], df_consts, df_fw_t, ap["S_Type"], ap["Rm_trans"]
         )
 
@@ -308,7 +308,7 @@ def calc_input_parameters_stress(experiment_settings, assessment_parameters_):
 
         # Compute support factor
         if experiment_settings["sup_method"] == "Stieler":
-            ap["n"] = fkm.stieler_support_cython(
+            ap["n"] = fkm.stieler_support(
                 df_consts, df_fw_t, ap["S_Type"], ap["G0"], ap["Rm"]
             )
 
@@ -349,19 +349,19 @@ def calc_input_parameters_stress(experiment_settings, assessment_parameters_):
             ap["n_bm"] = df_temp["n_bm"].to_numpy()
 
         # Notch strength reduction factor (Kerbwirkungszahl) (FKM Chapter 4.3.1.2)
-        ap["Kf"] = fkm.kf_factor_cython(
+        ap["Kf"] = fkm.kf_factor(
             ap["Kf_method"], ap["MatGroupFKM"], ap["G0"], ap["b"], ap["n"], ap["S_Type"]
         )
 
         # Surface factor for case-hardened materials
-        ap["Kv"] = fkm.surf_layer_factor_cython(
+        ap["Kv"] = fkm.surf_layer_factor(
             df_proc, ap["G0"], ap["Deff"], ap["HardProc"]
         )
 
     elif experiment_settings["fkm_chapter"] == "chap5.5":
 
         # Support factor for surface layer (chap 5.5 specific)
-        ap["n_RS"] = fkm.support_chap5_cython(ap["G0"], ap["HV"])
+        ap["n_RS"] = fkm.support_chap5(ap["G0"], ap["HV"])
 
     return ap
 
@@ -417,7 +417,7 @@ def fatigue_limit_local_chap4(assessment_parameters_):
     ap["SW"] = ap["K_D_T"] * ap["Sw"]
 
     # Compute design factor
-    ap["Kwk"] = fkm.design_factor_cython(
+    ap["Kwk"] = fkm.design_factor(
         ap["n"],
         ap["Kf"],
         ap["Kr"],
@@ -432,7 +432,7 @@ def fatigue_limit_local_chap4(assessment_parameters_):
     SmSa = (1 + ap["R_ratio"]) / (1 - ap["R_ratio"])
 
     # Mean stress factor
-    ap["Kak"] = fkm.sm_factor_cython(ap["R_ratio"], ap["M"], SmSa)
+    ap["Kak"] = fkm.sm_factor(ap["R_ratio"], ap["M"], SmSa)
 
     # Fatigue limit
     ap["SDFKM"] = ap["Swk"] * ap["Kak"]
@@ -491,7 +491,7 @@ def fatigue_limit_local_chap5(assessment_parameters_):
     if (ap["HardProc"].isin(fkm.hard_procs)).all():
 
         # Design factor
-        ap["Kwk_RS"] = fkm.design_factor_cython(
+        ap["Kwk_RS"] = fkm.design_factor(
             ap["n_RS"],
             ap["Kf"],
             ap["Kr"],
@@ -506,7 +506,7 @@ def fatigue_limit_local_chap5(assessment_parameters_):
         # Mean stress factor for overload case F2 and design factor at inner point
         SmSa = (1 + ap["R_ratio"]) / (1 - ap["R_ratio"])
 
-        ap["Kak_RS"] = fkm.sm_factor_chap5_cython(
+        ap["Kak_RS"] = fkm.sm_factor_chap5(
             ap["Rm_RS"], ap["M_RS"], ap["SE_RS"], ap["Swk_RS"], SmSa, ap["Rm"]
         )
 
@@ -518,7 +518,7 @@ def fatigue_limit_local_chap5(assessment_parameters_):
         ap["Swk_trans"] = ap["SW_trans"] * ap["Kwk_trans"]
 
         # Mean stress factor for overload case F2 in the core
-        ap["Kak_trans"] = fkm.sm_factor_chap5_cython(
+        ap["Kak_trans"] = fkm.sm_factor_chap5(
             ap["Rm_trans"],
             ap["M_trans"],
             ap["SE_trans"],
