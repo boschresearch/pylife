@@ -30,6 +30,7 @@ Strength
    strength/meanstress
    strength/failure_probability
    strength/miner
+   strength/fkm_linear
    strength/fkm_nonlinear
    strength/fkm_nonlinear_parameter_calculations
    strength/fkm_nonlinear_damage_calculator
