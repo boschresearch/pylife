@@ -339,7 +339,7 @@ def test_KTD_factor(mat, temperature, expected):
     ap["Temperature"] = ap["Temperature"].astype(float)
 
     df_temperature = fkm.get_temperature_constants(ap["MatGroupFKM"])
-    assert fkm.temperature_model_cython(
+    assert fkm.temperature_model(
         df_temperature, ap["Temperature"],ap["MatGroupFKM"]
     ) == pytest.approx(expected)
 
@@ -361,7 +361,7 @@ def test_support_factor_stieler(G, S_type, Rm, expected):
         {"MatGroupFKM": "Steel", "G0": G, "Rm": Rm, "S_Type": S_type}, index=[0]
     )
     df_consts, df_fw_t = fkm.get_material_constants(ap["MatGroupFKM"], ap["S_Type"])
-    assert fkm.stieler_support_cython(
+    assert fkm.stieler_support(
         df_consts, df_fw_t, ap["S_Type"], ap["G0"], ap["Rm"]
     ) == pytest.approx(expected)
 
@@ -426,7 +426,7 @@ def test_roughness_factor(mat, Rm, Rz, S_type, Finish_type, expected):
     )
     df_consts, df_fw_t = fkm.get_material_constants(ap["MatGroupFKM"], ap["S_Type"])
 
-    assert fkm.rough_factor_cython(
+    assert fkm.rough_factor(
         ap["Rm"], ap["Rz"], df_consts, df_fw_t, ap["S_Type"], ap["Finish"]
     ) == pytest.approx(expected)
 
@@ -448,7 +448,7 @@ def test_layer_factor(Proc, G0, Deff, expected):
 
     ap = pd.DataFrame({"HardProc": Proc, "G0": G0, "Deff": Deff}, index=[0])
     df_proc = fkm.get_material_constants_chap5_5(ap["HardProc"])
-    assert fkm.surf_layer_factor_cython(
+    assert fkm.surf_layer_factor(
         df_proc, ap["G0"], ap["Deff"], ap["HardProc"]
     ) == pytest.approx(expected)
 
@@ -468,7 +468,7 @@ def test_layer_factor(Proc, G0, Deff, expected):
 def test_GJL_bending_factor(GJL_Mat, expected):
     fkm = fkm_class()
     ap = pd.DataFrame({"GJL_Mat": GJL_Mat}, index=[0])
-    assert fkm.GJL_bending_factor_cython(ap["GJL_Mat"]) == pytest.approx(expected)
+    assert fkm.GJL_bending_factor(ap["GJL_Mat"]) == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(
@@ -483,7 +483,7 @@ def test_GJL_bending_factor(GJL_Mat, expected):
 def test_Kf_factor(G0, b, stress, n, expected):
     fkm = fkm_class()
     ap = pd.DataFrame({"G0": G0, "b": b, "S_Type": stress, "n": n}, index=[0])
-    assert fkm.kf_local_cython(
+    assert fkm.kf_local(
         ap["G0"], ap["b"], ap["n"], ap["S_Type"]
     ) == pytest.approx(expected)
 
@@ -506,7 +506,7 @@ def test_design_factor(Kf, Kr, Kv, Ks, Knle, n, expected):
     ap = pd.DataFrame(
         {"n": n, "Kf": Kf, "Kr": Kr, "Kv": Kv, "Ks": Ks, "Knle": Knle}, index=[0]
     )
-    assert fkm.design_factor_cython(
+    assert fkm.design_factor(
         ap["n"], ap["Kf"], ap["Kr"], ap["Kv"], ap["Ks"], ap["Knle"]
     ) == pytest.approx(expected)
 
@@ -541,7 +541,7 @@ def test_reversed_mat_strength(Rm, mat, S_type, expected):
 
     ap = pd.DataFrame({"Rm": Rm, "MatGroupFKM": mat, "S_Type": S_type}, index=[0])
     df_consts, df_fw_t = fkm.get_material_constants(ap["MatGroupFKM"], ap["S_Type"])
-    assert fkm.reversed_mat_strength_chap4_cython(
+    assert fkm.reversed_mat_strength_chap4(
         ap["Rm"], df_consts, df_fw_t, ap["S_Type"]
     ) == pytest.approx(expected)
 
