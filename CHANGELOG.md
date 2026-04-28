@@ -3,6 +3,12 @@
 In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
+## 2.3.1
+
+### Improvement / fix
+
+Remove `_cython` affix from function names
+
 ## 2.3.0
 
 ### New features
