@@ -45,7 +45,9 @@ i.e. is deleted, the server process is stopped automatically.
 * Run
   ```
   pip install pylife-odbserver
+  pip install "setuptools<82"
   ```
+  The second line ensures that ``setuptools`` contains ``pkg_resources``.
 
 * Set environment variables (optional)
 
