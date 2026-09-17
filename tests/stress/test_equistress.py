@@ -41,7 +41,7 @@ def test_eigenval(s11, s22, s33, s12, s13, s23, eigenvalues_check):
     ([1, 2, 3, 4], [1, 2], [3, 4]),
 ])
 def test_sign_trace_error(s11, s22, s33):
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError, match="Components' shape is not consistent"):
         EQS._sign_trace(s11, s22, s33)
 
 
@@ -167,8 +167,24 @@ def test_min_principal(s11, s22, s33, s12, s13, s23, min_principal_check):
     ([1, 2, 3, 4], [1, 2], [3, 4], [5, 6], [7, 8], [9, 10]),
 ])
 def test_mises_error(s11, s22, s33, s12, s13, s23):
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError, match="Components' shape is not consistent"):
         EQS.mises(s11, s22, s33, s12, s13, s23)
+
+
+@pytest.mark.parametrize("component", range(6))
+def test_mises_rejects_broadcastable_shapes(component):
+    components = [np.ones(2) for _ in range(6)]
+    components[component] = np.ones(1)
+    with pytest.raises(ValueError, match="Components' shape is not consistent"):
+        EQS.mises(*components)
+
+
+@pytest.mark.parametrize("component", range(3))
+def test_sign_trace_rejects_broadcastable_shapes(component):
+    components = [np.ones(2) for _ in range(3)]
+    components[component] = np.ones(1)
+    with pytest.raises(ValueError, match="Components' shape is not consistent"):
+        EQS._sign_trace(*components)
 
 
 @pytest.mark.parametrize("s11, s22, s33, s12, s13, s23, mises_check", [
