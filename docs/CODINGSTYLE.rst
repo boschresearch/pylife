@@ -326,3 +326,51 @@ Now the *good* example:
        gamma = triangle.gamma
 
        return np.sqrt(a*a + b*b - 2*a*b*np.cos(gamma))
+
+
+Docstring style
+---------------
+
+pyLife docstrings follow the `numpydoc conventions
+<https://numpydoc.readthedocs.io/en/latest/format.html>`_ that are also used by
+`numpy <https://numpy.org/doc/stable/>`_ and `scipy
+<https://docs.scipy.org/doc/scipy/>`_.  They are rendered by
+``sphinx.ext.napoleon``.
+
+The essentials:
+
+* Start with a one line summary in imperative mood ("Calculate ...", not
+  "Calculates ..."), directly after the opening ``"""``.
+* Use the numpydoc sections in this order, and only those you actually need:
+  ``Parameters``, ``Returns``, ``Yields``, ``Raises``, ``Warns``, ``See Also``,
+  ``Notes``, ``Examples``, ``References``.  pyLife additionally allows a
+  ``Limitations`` section for physical or numerical validity ranges.
+* Underline every section header with exactly as many dashes as the header has
+  characters.
+* Document every parameter as ``name : type``, and state the **physical unit**
+  and meaning whenever the quantity is a physical one, e.g. "stress amplitude
+  in MPa".
+* Name the governing standard (DIN 50100, FKM guideline, ...) in ``Notes`` so
+  that users can look the method up.
+* Prefer a short, runnable ``Examples`` doctest over prose whenever the usage
+  is not obvious.
+* For :class:`~pylife.PylifeSignal` accessors, document the signal contract —
+  the mandatory and optional keys and what they mean — in the class docstring.
+
+Before you open a pull request, check your docstrings::
+
+   python docs/validate_docstrings.py --baseline docs/docstring_baseline.txt
+
+The script validates the public pyLife API with ``numpydoc`` and fails only on
+violations that are *not* in ``docs/docstring_baseline.txt``.  The baseline
+records the violations that pyLife still carries, so that the situation can
+only improve.  Never add entries to it — if you fixed docstrings, regenerate
+it with ``--write-baseline`` so that the removed violations cannot come back.
+
+.. note::
+
+   ``numpydoc`` is deliberately *not* enabled as a Sphinx extension.  It and
+   ``sphinx.ext.napoleon`` both rewrite docstrings and must not be active in
+   the same build, and the documentation CI builds with ``-W`` where a style
+   warning would abort the build.
+

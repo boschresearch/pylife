@@ -122,6 +122,8 @@ extensions = [
     "sphinx.ext.ifconfig",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
+    "sphinx_design",
+    "sphinx_copybutton",
     "myst_parser",
     'nbsphinx',
     'nbsphinx_link',
@@ -129,6 +131,11 @@ extensions = [
 ]
 
 napoleon_custom_sections = ["Limitations"]
+
+# -- sphinx-copybutton -------------------------------------------------------
+# Strip prompts so users can copy doctest examples and shell commands verbatim.
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
 
 todo_include_todos = True
 
@@ -174,7 +181,7 @@ release = ""  # Is set by calling `setup.py docs`
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["build", "Thumbs.db", ".DS_Store", ".venv", "_build", "**.ipynb_checkpoints", "**/kt1.rst"]
+exclude_patterns = ["build", "Thumbs.db", ".DS_Store", ".venv", "_build", "**.ipynb_checkpoints", "**/kt1.rst", "docstring_baseline.txt"]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 # default_role = None
@@ -203,8 +210,32 @@ pygments_style = "sphinx"
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-html_theme = "sphinx_rtd_theme"
+# a list of builtin themes.  We use the same theme as numpy and scipy so that
+# users moving between the scientific Python projects find a familiar layout.
+html_theme = "pydata_sphinx_theme"
+
+html_theme_options = {
+    "github_url": "https://github.com/boschresearch/pylife",
+    "collapse_navigation": True,
+    "show_prev_next": False,
+    "navigation_with_keys": False,
+    "header_links_before_dropdown": 6,
+    "icon_links": [
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/pylife/",
+            "icon": "fa-solid fa-box",
+        },
+    ],
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
+    "secondary_sidebar_items": ["page-toc", "sourcelink"],
+}
+
+# The landing page is a full width overview page without a sidebar, as on the
+# numpy and scipy front pages.
+html_sidebars = {
+    "index": [],
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
@@ -237,7 +268,6 @@ html_static_path = ["_static"]
 
 html_css_files = [
     'css/custom.css',
-    'css/fix-rtd-property.css'  # workaround readthedocs/sphinx_rtd_theme#1301
 ]
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,

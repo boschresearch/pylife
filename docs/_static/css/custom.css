@@ -1,14 +1,17 @@
+/* Notebook (pandas) output tables.
+   Colours are taken from the pydata-sphinx-theme variables so that the tables
+   stay readable in both the light and the dark colour scheme. */
 
 table.dataframe {
   border: none;
   border-collapse: collapse;
   border-spacing: 0;
-  color: black;
+  color: var(--pst-color-text-base);
   font-size: 12px;
   table-layout: fixed;
 }
 table.dataframe thead {
-  border-bottom: 1px solid black;
+  border-bottom: 1px solid var(--pst-color-border);
   vertical-align: bottom;
 }
 table.dataframe tr,
@@ -26,12 +29,22 @@ table.dataframe th {
   font-weight: bold;
 }
 table.dataframe tbody tr:nth-child(odd) {
-  background: #f5f5f5;
+  background: var(--pst-color-surface);
 }
 table.dataframe tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
+  background: var(--pst-color-on-background);
 }
 
-.jupyter_container .cell_input, .jupyter_container .code_cell {
-    background-color: #eeffcc !important;
+.jupyter_container .cell_input,
+.jupyter_container .code_cell {
+  background-color: var(--pst-color-surface) !important;
+}
+
+/* Landing page feature cards. */
+.pylife-card-grid .sd-card {
+  border: 1px solid var(--pst-color-border);
+  border-radius: 0.5rem;
+}
+.pylife-card-grid .sd-card-title {
+  color: var(--pst-color-primary);
 }
