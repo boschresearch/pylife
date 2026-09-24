@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Provide recorder implementations for rainflow detectors."""
+
 __author__ = ["Johannes Mueller", "Benjamin Maier"]
 __maintainer__ = __author__
 
@@ -25,53 +27,83 @@ from .general import AbstractRecorder
 
 
 class LoopValueRecorder(AbstractRecorder):
-    """Rainflow recorder that collects the loop values."""
+    """Record rainflow loop turning loads.
+
+    The recorder stores the load value where each closed hysteresis loop starts
+    and the value where it turns back.  These values can be exposed as an
+    explicit load collective or binned into a two-dimensional histogram.
+    """
 
     def __init__(self):
-        """Instantiate a LoopRecorder."""
+        """Instantiate a loop-value recorder."""
         super().__init__()
         self._values_from = np.zeros((0,))
         self._values_to = np.zeros((0,))
 
     @property
     def values_from(self):
-        """1-D float array containing the values from which the loops start."""
+        """Return the loads where recorded loops start.
+
+        Returns
+        -------
+        numpy.ndarray
+            Start load values, typically in MPa.
+        """
         return self._values_from
 
     @property
     def values_to(self):
-        """1-D float array containing the values the loops go to before turning back."""
+        """Return the loads where recorded loops turn back.
+
+        Returns
+        -------
+        numpy.ndarray
+            Turn-back load values, typically in MPa.
+        """
         return self._values_to
 
     @property
     def collective(self):
-        """The overall collective recorded as :class:`pandas.DataFrame`.
+        """Return the recorded loops as an explicit load collective.
 
-        The columns are named ``from``, ``to``.
+        Returns
+        -------
+        pandas.DataFrame
+            DataFrame with columns ``from`` and ``to`` containing loop turning
+            loads, typically in MPa.
         """
         return pd.DataFrame({'from': self._values_from, 'to': self._values_to})
 
     def record_values(self, values_from, values_to):
-        """Record the loop values."""
+        """Record loop turning loads.
+
+        Parameters
+        ----------
+        values_from : array_like
+            Load values where loops start, typically in MPa.
+        values_to : array_like
+            Load values where loops turn back, typically in MPa.
+        """
         self._values_from = np.append(self._values_from, values_from)
         self._values_to = np.append(self._values_to, values_to)
 
     def histogram_numpy(self, bins=10):
-        """Calculate a histogram of the recorded values into a plain numpy.histogram2d.
+        """Calculate a NumPy histogram of recorded loop loads.
 
         Parameters
         ----------
-        bins : int or array_like or [int, int] or [array, array], optional
-            The bin specification (see numpy.histogram2d)
+        bins : int, array_like or list, optional
+            Bin specification passed to :func:`numpy.histogram2d`.  Default is
+            ``10``.
 
         Returns
         -------
-        H : ndarray, shape(nx, ny)
-            The bi-dimensional histogram of samples (see numpy.histogram2d)
-        xedges : ndarray, shape(nx+1,)
-            The bin edges along the first dimension.
-        yedges : ndarray, shape(ny+1,)
-            The bin edges along the second dimension.
+        H : numpy.ndarray
+            Two-dimensional histogram of ``from`` and ``to`` load values.
+        xedges : numpy.ndarray
+            Bin edges along the ``from`` load axis.
+        yedges : numpy.ndarray
+            Bin edges along the ``to`` load axis.
         """
         def is_non_continous(intervals):
             lefts = intervals.left
@@ -89,20 +121,20 @@ class LoopValueRecorder(AbstractRecorder):
         return np.histogram2d(self._values_from, self._values_to, bins)
 
     def histogram(self, bins=10):
-        """Calculate a histogram of the recorded values into a :class:`pandas.Series`.
+        """Calculate a pandas histogram of recorded loop loads.
 
-        An interval index is used to index the bins.
+        An interval index is used to label the bins.
 
         Parameters
         ----------
-        bins : int or array_like or [int, int] or [array, array], optional
-            The bin specification (see numpy.histogram2d)
+        bins : int, array_like or list, optional
+            Bin specification passed to :func:`numpy.histogram2d`.  Default is
+            ``10``.
 
         Returns
         -------
         pandas.Series
-            A pandas.Series using a multi interval index in order to
-            index data point for a given from/to value pair.
+            Histogram counts with interval index levels ``from`` and ``to``.
         """
         hist, fr, to = self.histogram_numpy(bins)
         index_fr = pd.IntervalIndex.from_breaks(fr)
@@ -113,10 +145,12 @@ class LoopValueRecorder(AbstractRecorder):
 
 
 class FullRecorder(LoopValueRecorder):
-    """Rainflow recorder that collects the loop values and the loop index.
+    """Record rainflow loop loads and sample indices.
 
-    Same functionality like :class:`.LoopValueRecorder` but additionally
-    collects the loop index.
+    This recorder extends :class:`LoopValueRecorder` with the indices of the
+    samples where each loop starts and turns back.  Use it when additional
+    quantities from the original time series, such as temperature or dwell
+    time, must be associated with each loop.
     """
 
     def __init__(self):
@@ -127,19 +161,35 @@ class FullRecorder(LoopValueRecorder):
 
     @property
     def index_from(self):
-        """1-D int array containing the index to the samples from which the loops start."""
+        """Return the sample indices where recorded loops start.
+
+        Returns
+        -------
+        numpy.ndarray
+            Global sample indices of the loop start points.
+        """
         return self._index_from
 
     @property
     def index_to(self):
-        """1-D int array containing the index to the samples the loops go to before turning back."""
+        """Return the sample indices where recorded loops turn back.
+
+        Returns
+        -------
+        numpy.ndarray
+            Global sample indices of the loop turn-back points.
+        """
         return self._index_to
 
     @property
     def collective(self):
-        """The overall collective recorded as :class:`pandas.DataFrame`.
+        """Return recorded loops and indices as a DataFrame.
 
-        The columns are named ``from``, ``to``, ``index_from``, ``index_to``.
+        Returns
+        -------
+        pandas.DataFrame
+            DataFrame with columns ``from``, ``to``, ``index_from``, and
+            ``index_to``.
         """
         return pd.DataFrame({
             'from': self._values_from,
@@ -149,7 +199,15 @@ class FullRecorder(LoopValueRecorder):
         })
 
     def record_index(self, index_from, index_to):
-        """Record the index."""
+        """Record loop sample indices.
+
+        Parameters
+        ----------
+        index_from : array_like
+            Sample indices where loops start.
+        index_to : array_like
+            Sample indices where loops turn back.
+        """
         self._index_from = np.concatenate(
             (self._index_from, np.asarray(index_from, dtype=np.uintp))
         )
@@ -159,7 +217,12 @@ class FullRecorder(LoopValueRecorder):
 
 
 class FKMNonlinearRecorder(AbstractRecorder):
-    """Recorder that goes together with the FKMNonlinearDetector."""
+    """Record loops for the FKM nonlinear assessment workflow.
+
+    The recorder stores minimum and maximum load, stress, and strain values
+    reported by ``FKMNonlinearDetector`` together with flags that distinguish
+    closed hystereses from Memory 3 entries of the FKM nonlinear procedure.
+    """
 
     def __init__(self):
         """Instantiate a FKMNonlinearRecorder."""
@@ -178,75 +241,165 @@ class FKMNonlinearRecorder(AbstractRecorder):
 
     @property
     def loads_min(self):
-        """1-D float array containing the start load values of the recorded hystereses."""
+        """Return the minimum load values of recorded hystereses.
+
+        Returns
+        -------
+        pandas.Series
+            Minimum load values, typically in MPa or the unit of the input
+            load history.
+        """
         return self._results_min["loads_min"]
 
     @property
     def loads_max(self):
-        """1-D float array containing the end load values of the recorded hystereses,
-        i.e., the values the loops go to before turning back."""
+        """Return the maximum load values of recorded hystereses.
+
+        Returns
+        -------
+        pandas.Series
+            Maximum load values, typically in MPa or the unit of the input
+            load history.
+        """
         return self._results_max["loads_max"]
 
     @property
     def S_min(self):
-        """1-D float array containing the minimum stress values of the recorded hystereses."""
+        """Return the minimum stresses of recorded hystereses.
+
+        Returns
+        -------
+        pandas.Series
+            Minimum stress values in MPa.
+        """
         return self._results_min["S_min"]
 
     @property
     def S_max(self):
-        """1-D float array containing the maximum stress values of the recorded hystereses."""
+        """Return the maximum stresses of recorded hystereses.
+
+        Returns
+        -------
+        pandas.Series
+            Maximum stress values in MPa.
+        """
         return self._results_max["S_max"]
 
     @property
     def epsilon_min(self):
-        """1-D float array containing the minimum strain values of the recorded hystereses."""
+        """Return the minimum strains of recorded hystereses.
+
+        Returns
+        -------
+        pandas.Series
+            Minimum strain values, dimensionless.
+        """
         return self._results_min["epsilon_min"]
 
     @property
     def epsilon_max(self):
-        """1-D float array containing the maximum strain values of the recorded hystereses."""
+        """Return the maximum strains of recorded hystereses.
+
+        Returns
+        -------
+        pandas.Series
+            Maximum strain values, dimensionless.
+        """
         return self._results_max["epsilon_max"]
 
     @property
     def epsilon_min_LF(self):
+        """Return the minimum lifetime-history strain values.
+
+        Returns
+        -------
+        pandas.Series
+            Minimum strain values seen in the load history up to each
+            hysteresis, dimensionless.
+        """
         return self._results_min["epsilon_min_LF"]
 
     @property
     def epsilon_max_LF(self):
+        """Return the maximum lifetime-history strain values.
+
+        Returns
+        -------
+        pandas.Series
+            Maximum strain values seen in the load history up to each
+            hysteresis, dimensionless.
+        """
         return self._results_max["epsilon_max_LF"]
 
     @property
     def S_a(self):
-        """1-D numpy array containing the stress amplitudes of the recorded hystereses."""
+        """Return stress amplitudes of recorded hystereses.
+
+        Returns
+        -------
+        numpy.ndarray
+            Stress amplitude in MPa.
+        """
         return 0.5 * (np.array(self.S_max) - np.array(self.S_min))
 
     @property
     def S_m(self):
-        """1-D numpy array containing the mean stresses of the recorded hystereses,
-        which are usually computed as ``(S_min + S_max) / 2``.
-        Only for hystereses resulting from Memory 3, the FKM nonlinear document defines ``S_m``
-        to be zero (eq. 2.9-52). This is indicated by ``_is_zero_mean_stress_and_strain=True`̀ .
-        For these hystereses, this function returns 0 instead of ``(S_min + S_max) / 2``. """
+        """Return mean stresses of recorded hystereses.
+
+        Returns
+        -------
+        numpy.ndarray
+            Mean stress in MPa.
+
+        Notes
+        -----
+        Mean stress is usually ``(S_min + S_max) / 2``.  For Memory 3
+        hystereses the FKM nonlinear guideline defines ``S_m = 0``; those rows
+        are indicated by ``is_zero_mean_stress_and_strain``.
+        """
         median = 0.5 * (np.array(self.S_min) + np.array(self.S_max))
         return np.where(self.is_zero_mean_stress_and_strain, 0, median)
 
     @property
     def epsilon_a(self):
-        """1-D float array containing the strain amplitudes of the recorded hystereses."""
+        """Return strain amplitudes of recorded hystereses.
+
+        Returns
+        -------
+        numpy.ndarray
+            Strain amplitude, dimensionless.
+        """
         return 0.5 * (np.array(self.epsilon_max) - np.array(self.epsilon_min))
 
     @property
     def epsilon_m(self):
-        """1-D numpy array containing the mean strain of the recorded hystereses,
-        which are usually computed as ``(epsilon_min + epsilon_max) / 2``.
-        Only for hystereses resulting from Memory 3, the FKM nonlinear document defines ``epsilon_m``
-        to be zero (eq. 2.9-53). This is indicated by ``_is_zero_mean_stress_and_strain=True`̀ .
-        For these hystereses, this function returns 0 instead of ``(epsilon_min + epsilon_max) / 2``. """
+        """Return mean strains of recorded hystereses.
+
+        Returns
+        -------
+        numpy.ndarray
+            Mean strain, dimensionless.
+
+        Notes
+        -----
+        Mean strain is usually ``(epsilon_min + epsilon_max) / 2``.  For
+        Memory 3 hystereses the FKM nonlinear guideline defines
+        ``epsilon_m = 0``; those rows are indicated by
+        ``is_zero_mean_stress_and_strain``.
+        """
         return np.where(self.is_zero_mean_stress_and_strain, \
                         0, 0.5 * (np.array(self.epsilon_min) + np.array(self.epsilon_max)))
 
     @property
     def is_zero_mean_stress_and_strain(self):
+        """Return flags for FKM Memory 3 zero mean values.
+
+        Returns
+        -------
+        list of bool or numpy.ndarray
+            ``True`` for hystereses where the FKM nonlinear procedure defines
+            mean stress and mean strain as zero.
+        """
 
         # if the assessment is performed for multiple points at once
         if len(self.S_min) > 0 and len(self.S_min.index.names) > 1:
@@ -256,19 +409,33 @@ class FKMNonlinearRecorder(AbstractRecorder):
 
     @property
     def R(self):
-        """1-D numpy array containing the stress relation of the recorded hystereses,
-        which are usually computed as ``S_min / S_max``.
-        Only for hystereses resulting from Memory 3, the FKM nonlinear document defines ``R = -1``
-        (eq. 2.9-54). This is indicated by ``_is_zero_mean_stress_and_strain=True`̀ .
-        For these hystereses, this function returns -1 instead of ``S_min / S_max``, which may be different. """
+        """Return stress ratios ``R`` of recorded hystereses.
+
+        Returns
+        -------
+        numpy.ndarray
+            Stress ratio ``R = S_min / S_max``, dimensionless.
+
+        Notes
+        -----
+        For Memory 3 hystereses the FKM nonlinear guideline defines
+        ``R = -1``.  Those rows are indicated by
+        ``is_zero_mean_stress_and_strain``.
+        """
         with np.errstate(all="ignore"):
             R = np.array(self.S_min) / np.array(self.S_max)
         return np.where(self.is_zero_mean_stress_and_strain, -1, R)
 
     @property
     def is_closed_hysteresis(self):
-        """1-D bool array indicating whether the row corresponds to a closed hysteresis or
-        was recorded as a memory 3 hysteresis, which counts only half the damage in the FKM nonlinear procedure."""
+        """Return whether each row is a closed hysteresis.
+
+        Returns
+        -------
+        list of bool or numpy.ndarray
+            ``True`` for closed hystereses and ``False`` for Memory 3 entries,
+            which count only half damage in the FKM nonlinear procedure.
+        """
 
         # if the assessment is performed for multiple points at once
         if len(self.S_min) > 0 and len(self.S_min.index.names) > 1:
@@ -278,7 +445,7 @@ class FKMNonlinearRecorder(AbstractRecorder):
 
     @property
     def collective(self):
-        """The overall collective recorded as :class:`pandas.DataFrame`.
+        """Return the FKM nonlinear collective as a DataFrame.
 
         The load values are given in the columns ``loads_min``, and ``loads_max``
         for consistency with other recoders.
@@ -298,6 +465,12 @@ class FKMNonlinearRecorder(AbstractRecorder):
         and "assessment_point_index", both counting from 0 upwards. The nodes of a mesh
         are, thus, mapped to the index sequence 0,1,..., even if the
         node_id starts, e.g., with 1.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Recorded FKM nonlinear collective with load, stress, strain, and
+            status columns.
         """
 
         if len(self.S_min) > 0 and len(self.S_min.index.names) > 1:
@@ -342,7 +515,24 @@ class FKMNonlinearRecorder(AbstractRecorder):
         is_zero_mean_stress_and_strain,
         run_index,
     ):
-        """Record the loop values."""
+        """Record FKM nonlinear loop results.
+
+        Parameters
+        ----------
+        results_min : pandas.DataFrame
+            Minimum-side results with columns ``loads_min``, ``S_min``,
+            ``epsilon_min``, and ``epsilon_min_LF``.
+        results_max : pandas.DataFrame
+            Maximum-side results with columns ``loads_max``, ``S_max``,
+            ``epsilon_max``, and ``epsilon_max_LF``.
+        is_closed_hysteresis : list of bool
+            Flags indicating closed hystereses.
+        is_zero_mean_stress_and_strain : list of bool
+            Flags indicating Memory 3 hystereses with zero mean stress and
+            strain according to the FKM nonlinear procedure.
+        run_index : int
+            Index of the detector run that produced the results.
+        """
 
         self._results_min = results_min if len(self._results_min) == 0 else pd.concat([self._results_min, results_min])
         self._results_max = results_max if len(self._results_max) == 0 else pd.concat([self._results_max, results_max])

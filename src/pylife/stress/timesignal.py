@@ -14,13 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A module for time signal handling
+"""Handle sampled time signals for pyLife stress workflows.
 
-Warning
--------
+Provide helpers for generating, resampling, filtering, spectral analysis, and
+cleaning load-time histories before rainflow counting or other fatigue
+post-processing.
 
-This module is not considered finalized even though it is part of pylife-2.0.
-Breaking changes might occur in upcoming minor releases.
+Warnings
+--------
+This module is not considered finalized even though it is part of
+``pylife-2.0``. Breaking changes might occur in upcoming minor releases.
 """
 
 __author__ = "Johannes Mueller"
@@ -40,33 +43,45 @@ except ModuleNotFoundError:
 
 
 class TimeSignalGenerator:
-    r"""Generates mixed time signals
+    r"""Generate mixed sinusoidal load-time signals.
 
-    The generated time signal is a mixture of random sets of sinus signals
+    Create synthetic load signals, e.g. stress in MPa, for examples and tests
+    in the time series handling workflow. The generated signal is a sum of
+    sinusoidal components with normally distributed amplitudes, frequencies,
+    offsets, and uniformly distributed phases.
 
-    For each set the user supplys a dict describing the set::
+    Parameters
+    ----------
+    sample_rate : float
+        Sampling rate in Hz used when ``query`` advances the generated
+        signal.
+    sine_set : dict
+        Definition of the sinusoidal components. Mandatory keys are
+        ``"number"``, ``"amplitude_median"``, ``"amplitude_std_dev"``,
+        ``"frequency_median"``, ``"frequency_std_dev"``,
+        ``"offset_median"``, and ``"offset_std_dev"``.
+    gauss_set : dict
+        Reserved for Gaussian random components. The current implementation
+        accepts the argument for compatibility but does not use it.
+    log_gauss_set : dict
+        Reserved for lognormal random components. The current implementation
+        accepts the argument for compatibility but does not use it.
 
-      sinus_set = {
-          'number': number of signals
-          'amplitude_median':
-          'amplitude_std_dev':
-          'frequency_median':
-          'frequency_std_dev':
-          'offset_median':
-          'offset_std_dev':
-      }
+    Notes
+    -----
+    Each component is evaluated as
 
-    The amplitudes (:math:`A`), fequencies (:math:`\omega`) and
-    offsets (:math:`c`) are then norm distributed. Each sinus signal
-    looks like
+    .. math::
 
-            :math:`s = A \sin(\omega t + \phi) + c`
+        s_i(t) = A_i \sin(\omega_i t + \phi_i) + c_i,
 
-    where :math:`phi` is a random value between 0 and :math:`2\pi`.
+    where :math:`A_i`, :math:`\omega_i`, and :math:`c_i` are drawn from the
+    normal distributions described by ``sine_set`` and :math:`\phi_i` is
+    drawn uniformly from ``[0, 2\pi)``. The returned signal is
 
-    So the whole sinus :math:`S` set is given by the following expression:
+    .. math::
 
-            :math:`S = \sum^n_i A_i \sin(\omega_i t + \phi_i) + c_i`.
+        S(t) = \sum_i s_i(t).
     """
 
     def __init__(self, sample_rate, sine_set, gauss_set, log_gauss_set):
@@ -95,21 +110,21 @@ class TimeSignalGenerator:
         self.time_position = 0.0
 
     def query(self, sample_num):
-        """Gets a sample chunk of the time signal
+        """Return the next contiguous chunk of the generated time signal.
+
+        Use repeated calls to build a longer synthetic load-time history. The
+        first returned sample follows the internal time cursor, and subsequent
+        calls continue without a time gap.
 
         Parameters
         ----------
         sample_num : int
-            number of the samples requested
+            Number of samples requested.
 
         Returns
         -------
-        samples : 1D numpy.ndarray
-            the requested samples
-
-
-        You can query multiple times, the newly delivered samples
-        will smoothly attach to the previously queried ones.
+        numpy.ndarray
+            Requested samples of the generated load signal.
         """
         samples = np.zeros(sample_num)
         end_time_position = self.time_position + (sample_num - 1) / self.sample_rate
@@ -126,27 +141,37 @@ class TimeSignalGenerator:
         return samples
 
     def reset(self):
-        """Resets the generator
+        """Reset the generator to the start of the time signal.
 
-        A resetted generator behaves like a new generator.
+        After resetting, the next ``query`` call returns the same time
+        positions as a newly created generator with the same random component
+        parameters.
         """
         self.time_position = 0.0
 
 
 def fs_calc(df):
-    """
-    Calculates the sample frequency of a DataFrame time series
+    """Calculate the sampling rate of a time-indexed signal.
+
+    Use this helper before filtering or spectral estimation when the sampling
+    rate is encoded by an equidistant numeric time index.
 
     Parameters
     ----------
-    df : DataFrame
-        time series.
+    df : pandas.DataFrame
+        Time series with a numeric time index in s.
 
     Returns
     -------
-    fs : int, float
-        sample freqency
+    float
+        Sampling rate in Hz, rounded to the nearest integer value.
 
+    Examples
+    --------
+    >>> df = pd.DataFrame({"stress": [0.0, 1.0, 0.0]},
+    ...                   index=[0.0, 0.5, 1.0])
+    >>> float(fs_calc(df))
+    2.0
     """
     try:
         fs = np.rint(1 / np.mean(np.diff(df.index)))
@@ -157,20 +182,24 @@ def fs_calc(df):
 
 
 def resample_acc(df, fs=1):
-    """Resamples a pandas time series DataFrame
+    """Resample a pandas time series to an equidistant time index.
+
+    Interpolate each column of a load-time history onto a new time index. This
+    prepares measured signals for filters, PSD estimation, or rainflow
+    counting algorithms that expect a constant sampling rate.
 
     Parameters
     ----------
-    df: DataFrame
-
-    time_col: str
-        column name of the time column
-    fs: float
-        sample rate of the resampled time series
+    df : pandas.DataFrame
+        Time series with a numeric time index in s and load columns, e.g.
+        stress in MPa.
+    fs : float, optional
+        Sampling rate in Hz of the resampled time series. Default is ``1``.
 
     Returns
     -------
-    DataFrame
+    pandas.DataFrame
+        Resampled time series with an equidistant time index in s.
     """
     index_new = np.arange(df.index.min(), df.index.max() + 1 / fs, 1 / fs)
 
@@ -183,24 +212,34 @@ def resample_acc(df, fs=1):
 
 
 def butter_bandpass(df, lowcut, highcut, order=5):
-    """Use the functonality of scipy
+    """Apply a zero-phase Butterworth band-pass filter to a time signal.
 
+    Filter each column of a load-time history before fatigue evaluation. This
+    is a thin wrapper around :func:`scipy.signal.butter` and
+    :func:`scipy.signal.filtfilt`.
 
     Parameters
     ----------
-
-    df: DataFrame
+    df : pandas.DataFrame
+        Time series with a numeric time index in s and load columns, e.g.
+        stress in MPa.
     lowcut : float
-        low frequency
+        Lower cut-off frequency in Hz.
     highcut : float
-        high freqency.
+        Upper cut-off frequency in Hz.
     order : int, optional
-        Butterworth filter order. The default is 5.
+        Butterworth filter order. Default is ``5``.
 
     Returns
     -------
-    TSout : DataFrame
+    pandas.DataFrame
+        Filtered time series with the same time index and columns as ``df``.
 
+    Notes
+    -----
+    The filter is an ``order``-th order digital Butterworth band-pass filter
+    applied forward and backward with :func:`scipy.signal.filtfilt`, resulting
+    in zero phase shift.
     """
     fs = fs_calc(df)
     nyq = 0.5 * fs
@@ -211,21 +250,34 @@ def butter_bandpass(df, lowcut, highcut, order=5):
 
 
 def psd_df(df_ts, nfft=512, nperseg=256):
-    """
-    calculates the psd using Welch algorithm from matplotlib functionality
+    """Estimate power spectral density columns with Welch's method.
+
+    Convert a time-domain load signal into a frequency-indexed PSD for
+    spectral comparison or frequency-domain fatigue workflows. This is a thin
+    wrapper around :func:`scipy.signal.welch`.
 
     Parameters
     ----------
-    df_ts : DataFram
-        Time series dataframe
+    df_ts : pandas.DataFrame
+        Time series with a numeric time index in s and load columns, e.g.
+        stress in MPa.
     nfft : int, optional
-        Length of the FFT. The default is 512.
+        Length of the FFT used by Welch's method. Default is ``512``.
+    nperseg : int, optional
+        Segment length used by Welch's method. Values larger than ``nfft`` are
+        clipped to ``nfft``. Default is ``256``.
 
     Returns
     -------
-    df_psd : DataFrame
-        PSD.
+    pandas.DataFrame
+        Power spectral density with frequency index in Hz and one PSD column
+        per input column.
 
+    Notes
+    -----
+    The PSD scaling is the :func:`scipy.signal.welch` default
+    ``scaling="density"``. For a load signal in MPa, the resulting PSD has
+    units MPa²/Hz and integrates to the mean square value of the signal.
     """
 
     nperseg = min(nperseg, nfft)
@@ -240,22 +292,17 @@ def psd_df(df_ts, nfft=512, nperseg=256):
 
 
 def _prepare_rolling(df):
-    """
-    Adds ID, time to the dataset for TsFresh, We would need different ID's if we had
-    independant timeseries -like timeseries for different robots.
+    """Add ``id`` and relative ``time`` columns for tsfresh rolling.
 
     Parameters
     ----------
-    df: pandas DataFrame
-        input data
-    self : TimeSignalPrep class
-
+    df : pandas.DataFrame
+        Input time series with a numeric time index in s.
 
     Returns
     -------
-    df : pandas DataFrame
-        output DataFrame with added id, time
-
+    pandas.DataFrame
+        Output data with added ``id`` and relative ``time`` columns.
     """
     prep_roll = df.copy()
     prep_roll["id"] = 0
@@ -267,22 +314,21 @@ def _prepare_rolling(df):
 
 
 def _roll_dataset(prep_roll_df, window_size=1000, overlap=200):
-    """
-    Rolls dataset in windows so we can later extract features from every window
+    """Roll a prepared time series into overlapping windows.
+
     Parameters
     ----------
-    prep_roll: output from prepare_rolling
-
-    window_size : int , optional
-         window size of the rolled segments  -the default is 1000.
+    prep_roll_df : pandas.DataFrame
+        Output from ``_prepare_rolling``.
+    window_size : int, optional
+        Window size of the rolled segments in samples. Default is ``1000``.
     overlap : int, optional
-         overlap between 2 adjecent windows -The default is 200.
+        Overlap between adjacent windows in samples. Default is ``200``.
 
     Returns
     -------
-    df_rolled : pandas DataFrame
-        rolled DataFrame
-
+    pandas.DataFrame
+        Rolled data frame for feature extraction with tsfresh.
     """
 
     # Create Rolled Dataset with Parameter rolling_direction & window_size
@@ -311,22 +357,20 @@ def _roll_dataset(prep_roll_df, window_size=1000, overlap=200):
 
 
 def _extract_feature_df(df_rolled, feature="maximum"):
-    """Extracts features like "abs_energy" or "maximum" from the rolled dataset with TsFresh
+    """Extract one tsfresh feature from each rolled window.
 
     Parameters
     ----------
-    df_rolled : pandas DataFrame
-        rolled DataFrame from roll_dataset
-    feature : string, optional
-        Extracted feature - only supports one at a time -
-        and only features form tsfresh that dont need extra parameters.
-        The default is "maximum".
+    df_rolled : pandas.DataFrame
+        Rolled data frame from ``_roll_dataset``.
+    feature : str, optional
+        Feature calculator name from tsfresh. Only calculators without extra
+        parameters are supported. Default is ``"maximum"``.
 
     Returns
     -------
-    extracted_features : pandas DataFrame
-        Dataframe of extracted features
-
+    pandas.DataFrame
+        Extracted feature values, one row per rolled window.
     """
     # extract features
 
@@ -355,30 +399,34 @@ def _select_relevant_windows(
     n_gridpoints=3,
     method="keep",
 ):
-    """Writes n_gridpoints NaN's into the window_sizes with extracted features
-    lower than fraction_max
+    """Select windows by comparing one extracted feature with a threshold.
 
     Parameters
     ----------
     prep_roll : pandas DataFrame
-        input data - normally output from perpare_rolling(df)
-    extracted_features : pandas Dataframe
-        DataFrame of features
-    comparison_column_ex: string - name of the extraced feature column
-        it is build: comparison_column + '__' + feauture
+        Prepared input data, normally output from ``_prepare_rolling``.
+    extracted_features : pandas.DataFrame
+        Feature values returned by ``_extract_feature_df``.
+    comparison_column_ex : str
+        Name of the extracted feature column. It is built as
+        ``comparison_column + "__" + feature``.
     fraction_max : float
-        percentage of the maximum of the extraced feature.
+        Fraction of the maximum extracted feature used as threshold.
     window_size : int
-        window size of the rolled segments  -the default is 1000.
+        Window size of the rolled segments in samples. Default is ``1000``.
     overlap : int, optional
-         overlap between 2 adjecent windows -The default is 200.
-
+        Overlap between adjacent windows in samples. Default is ``200``.
+    n_gridpoints : int, optional
+        Number of grid points left to support polynomial interpolation.
+        Default is ``3``.
+    method : {'keep', 'remove'}, optional
+        Return convention. ``"keep"`` drops low-feature windows, while
+        ``"remove"`` returns the low-feature windows. Default is ``"keep"``.
 
     Returns
     -------
-    df : pandas DataFrame relevant_windows
-        dataframe with NaN's in the windows with too low extracted features
-
+    pandas.DataFrame
+        Relevant windows according to ``method``.
     """
     # get added up abs energy of interval x, if too low set None
     rolling_direction = window_size - overlap
@@ -437,25 +485,26 @@ def _select_relevant_windows(
 
 
 def _polyfit_gridpoints(grid_points, prep_roll, order=3, verbose=False, n_gridpoints=3):
-    """Fills gridpoints with polynomial regression
+    """Fill grid points by polynomial interpolation.
 
     Parameters
     ----------
-    gridpoints : pandas DataFrame
-        DataFrame with NaN's as gridpoints
-    prep_roll : pandas DataFrame used to create time axis.
-        DataFrame used to create time axis.
+    grid_points : pandas.DataFrame
+        Data frame with gaps marked as ``NaN`` values.
+    prep_roll : pandas.DataFrame
+        Prepared time series used to create the time axis.
     order : int, optional
-        Order of polynom The default is 3.
-    verbose : boolean, optional
-        If true plots polyfits. The default is False.
-    n_gridpoints : TYPE, optional
-        Number of gridpoints. The default is 3.
+        Polynomial interpolation order. Default is ``3``.
+    verbose : bool, optional
+        Accepted for compatibility. The current implementation does not use
+        this argument. Default is ``False``.
+    n_gridpoints : int, optional
+        Number of grid points. Default is ``3``.
 
     Returns
     -------
-    df : pandas DataFrame
-        DataFrame with polynomial values at the gridpoints.
+    pandas.DataFrame
+        Data frame with polynomial values at the grid points.
     """
 
     # add a null row at the start and reset time index
@@ -487,37 +536,60 @@ def clean_timeseries(
     percentage_max=0.05,
     order=3,
 ):
-    """Removes segments of the data in which the extracted feature value is lower as
-    percentage_max and fills the gaps with polynomial regression
+    r"""Clean a time series by removing low-feature windows.
+
+    Use this helper to reduce a load-time history before rainflow counting.
+    The function rolls the signal into windows, extracts one tsfresh feature,
+    removes or keeps windows based on a threshold, and fills short gaps by
+    polynomial interpolation.
 
     Parameters
     ----------
-    df : input pandas DataFrame that shall be cleaned
-    comparison_column: str, column that is used for the feature
-        comparison with percentage max
+    df : pandas.DataFrame
+        Input time series with a numeric time index in s and load columns,
+        e.g. stress in MPa.
+    comparison_column : str
+        Column used for feature comparison with ``percentage_max``.
     window_size : int, optional
-        window size of the rolled segments - The default is 1000.
+        Window size of the rolled segments in samples. Default is ``1000``.
     overlap : int, optional
-         overlap between 2 adjecent windows -The default is 200.
-    feature : string, optional
-        extracted feature - only supports one at a time -
-        and only features form tsfresh that dont need extra parameters.
-        The default is "maximum".
-    method: string, optional
-        * 'keep': keeps the windows which are extracted,
-        * 'remove': removes the windows which are extracted
-    n_gridpoints : TYPE, optional
-        number of gridpoints. The default is 3.
+        Overlap between adjacent windows in samples. Default is ``800``.
+    feature : str, optional
+        Feature calculator name from tsfresh. Only calculators without extra
+        parameters are supported. Default is ``"abs_energy"``.
+    method : {'keep', 'remove'}, optional
+        Return convention. ``"keep"`` keeps windows above the feature
+        threshold, while ``"remove"`` keeps windows at or below it. Default is
+        ``"keep"``.
+    n_gridpoints : int, optional
+        Number of grid points used to bridge removed windows. Default is
+        ``3``.
     percentage_max : float, optional
-        min percentage of the maximum to keep the window. The default is 0.05.
+        Minimum fraction of the maximum feature value for a window to remain
+        in ``"keep"`` mode. Default is ``0.05``.
     order : int, optional
-        order of polynom The default is 3.
+        Polynomial interpolation order. Default is ``3``.
 
     Returns
     -------
-    df_poly : pandas DataFrame
-        cleaned DataFrame
+    pandas.DataFrame
+        Cleaned time series with the helper ``id`` column removed.
 
+    Raises
+    ------
+    ImportError
+        Raised if tsfresh is not installed.
+
+    Notes
+    -----
+    A window is classified as low-feature if
+
+    .. math::
+
+        x_i \leq p \max_j x_j,
+
+    where :math:`x_i` is the selected feature value and :math:`p` is
+    ``percentage_max``.
     """
 
     if not _HAVE_TSFRESH:

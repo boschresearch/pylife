@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Detect rainflow cycles with the four-point hysteresis criterion.
+
+Use this module for general rainflow counting where closed loops are
+identified from four consecutive turning points and sample indices may be
+recorded together with loop loads.
+"""
+
 __author__ = "Vishnu Pradeep"
 __maintainer__ = "Johannes Mueller"
 
@@ -25,121 +32,109 @@ from .general import AbstractDetector
 
 
 class FourPointDetector(AbstractDetector):
-    r"""Implements four point rainflow counting algorithm.
+    r"""Count rainflow cycles with the four-point criterion.
 
-    .. jupyter-execute::
+    Use this detector for general load collectives when the four-point
+    hysteresis criterion is appropriate. The detector reports loop start and
+    end loads to :class:`pylife.stress.rainflow.LoopValueRecorder` or, when
+    sample indices are needed, to
+    :class:`pylife.stress.rainflow.FullRecorder`. The recorder collective can
+    then be transformed to load amplitude, load range, mean load, and number
+    of cycles for fatigue assessment in :mod:`pylife.strength.fatigue`.
 
-        from pylife.stress.timesignal import TimeSignalGenerator
-        import pylife.stress.rainflow as RF
+    Parameters
+    ----------
+    recorder : pylife.stress.rainflow.AbstractRecorder
+        Recorder receiving detected loop loads in MPa. Use
+        :class:`pylife.stress.rainflow.FullRecorder` to store the sample
+        indices of the two turning points in addition to the load values.
 
-        ts = TimeSignalGenerator(10, {
-            'number': 50,
-            'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
-            'frequency_median': 4, 'frequency_std_dev': 3,
-            'offset_median': 0, 'offset_std_dev': 0.4}, None, None).query(10000)
+    See Also
+    --------
+    pylife.stress.rainflow.ThreePointDetector : Count cycles with the classic three-point criterion.
+    pylife.stress.rainflow.FKMDetector : Count cycles by the classic FKM procedure.
+    pylife.stress.rainflow.FullRecorder : Store loop loads and sample indices.
 
-        rfc = RF.FourPointDetector(recorder=RF.LoopValueRecorder())
-        rfc.process(ts)
+    Notes
+    -----
+    The four-point detector evaluates four consecutive turning points
+    :math:`A`, :math:`B`, :math:`C`, and :math:`D`. A closed loop from
+    :math:`B` to :math:`C` is counted when the inner range is enclosed by
+    both neighboring ranges:
 
-        rfc.recorder.collective
+    .. math::
 
-    Alternatively you can ask the recorder for a histogram matrix:
+        |D - C| \ge |C - B| \quad \text{and} \quad
+        |B - A| \ge |C - B|.
 
-    .. jupyter-execute::
+    The closed loop is removed from the residual turning-point sequence and
+    the algorithm continues with the joined path from :math:`A` to
+    :math:`D`. The recorded loop values are reversal loads in MPa; their
+    peak-to-peak load range is :math:`L_R = |L_C - L_B|` and their load
+    amplitude is :math:`L_a = L_R / 2`.
 
-        rfc.recorder.histogram(bins=16)
+    The detector supports chunked processing. Repeated calls to
+    :meth:`process` continue the count across chunk boundaries; set
+    ``flush=True`` only for the final chunk if the last sample shall be
+    considered a turning point.
 
-    We take four turning points into account to detect closed hysteresis loops.
-
-    Consider four consecutive peak/valley points say, A, B, C, and D  If B and C are
-    contained within A and B, then a cycle is counted from B to C; otherwise no cycle is
-    counted.
-
-    i.e, If ``X ≥ Y AND Z ≥ Y`` then a cycle exist ``FROM = B`` and ``TO = C``
-    where, ranges ``X = |D–C|``, ``Y = |C–B|``, and ``Z = |B–A|``
-
-    ::
-
-        Load -----------------------------
-        |        x B               F x
-        --------/-\-----------------/-----
-        |      /   \   x D         /
-        ------/-----\-/-\---------/-------
-        |    /     C x   \       /
-        --\-/-------------\-----/---------
-        |  x A             \   /
-        --------------------\-/-----------
-        |                    x E
-        ----------------------------------
-        |              Time
-
-    So, if a cycle exsist from B to C then delete these peaks from the turns array
-    and perform next iteration by joining A&D else if no cylce exsists, then B would
-    be the next strarting point.
+    Examples
+    --------
+    >>> from pylife.stress.rainflow import FourPointDetector, LoopValueRecorder
+    >>> detector = FourPointDetector(recorder=LoopValueRecorder())
+    >>> detector.process([0.0, 3.0, -1.0, 2.0, -2.0, 0.0], flush=True) is detector
+    True
+    >>> detector.recorder.collective
+       from   to
+    0  -1.0  2.0
     """
 
     def __init__(self, recorder):
-        """Instantiate a FourPointDetector.
+        """Instantiate a four-point detector.
 
         Parameters
         ----------
-        recorder : subclass of :class:`.AbstractRecorder`
-            The recorder that the detector will report to.
+        recorder : pylife.stress.rainflow.AbstractRecorder
+            Recorder receiving detected loop loads in MPa. The recorder must
+            implement ``record_values()``; recorders that also implement
+            ``record_index()`` receive sample indices.
         """
         super().__init__(recorder)
 
     def process(self, samples, flush=False):
-        """Process a sample chunk.
+        """Process a chunk of load samples.
 
         Parameters
         ----------
-        samples : array_like, shape (N, )
-            The samples to be processed
-
-        flush : bool
-            Whether to flush the cached values at the end.
-
-            If ``flush=False``, the last value of a load sequence is
-            cached for a subsequent call to ``process``, because it may or may
-            not be a turning point of the sequence, which is only decided
-            when the next data point arrives.
-
-            Setting ``flush=True`` forces processing of the last value.
-            When ``process`` is called again afterwards with new data,
-            two increasing or decreasing values in a row might have been
-            processed, as opposed to only turning points of the sequence.
-
-
-        Examples
-        --------
-        >>> from pylife.stress.rainflow.recorders import FullRecorder
-
-        >>> detector = FourPointDetector(recorder=FullRecorder())
-        >>> (
-        ...     detector
-        ...     .process([1, 2], flush=False) # flush=False → 2 not a turning point
-        ...     .process([3, 1])
-        ...     .recorder.collective
-        ... )
-        Empty DataFrame
-        Columns: [from, to, index_from, index_to]
-        Index: []
-
-        >>> detector = FourPointDetector(recorder=FullRecorder())
-        >>> (
-        ...     detector
-        ...     .process([1, 2], flush=True) # flush=True → 2 is considered a turning point
-        ...     .process([3, 1])
-        ...     .recorder.collective
-        ... )
-            from   to  index_from  index_to
-        0   2.0  3.0           1         2
-
+        samples : array_like
+            Load samples in MPa. The detector extracts turning points and
+            combines them with residual turning points from previous chunks.
+        flush : bool, optional
+            Force processing of the last value as a turning point. Default is
+            ``False``. If ``False``, the last value is cached for a subsequent
+            call because only the next data point can decide whether it is a
+            turning point. If ``True``, the last value is processed now; a
+            following chunk may therefore introduce two monotonic values in a
+            row.
 
         Returns
         -------
-        self : FourPointDetector
-            The ``self`` object so that processing can be chained
+        FourPointDetector
+            The detector itself, so that repeated ``process()`` calls can be
+            chained.
+
+        Examples
+        --------
+        >>> from pylife.stress.rainflow import FourPointDetector, FullRecorder
+        >>> detector = FourPointDetector(recorder=FullRecorder())
+        >>> detector.process([1.0, 2.0], flush=False).process([3.0, 1.0]).recorder.collective
+        Empty DataFrame
+        Columns: [from, to, index_from, index_to]
+        Index: []
+        >>> detector = FourPointDetector(recorder=FullRecorder())
+        >>> detector.process([1.0, 2.0], flush=True).process([3.0, 1.0]).recorder.collective
+           from   to  index_from  index_to
+        0   2.0  3.0           1         2
         """
 
         samples = np.asarray(samples)

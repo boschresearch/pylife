@@ -14,6 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Detect cycles for the FKM nonlinear HCM assessment.
+
+The module combines rainflow counting with local elastic-plastic stress and
+strain evaluation. Use :class:`pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector`
+for the FKM nonlinear guideline and use
+:class:`pylife.stress.rainflow.FKMDetector` for the classic FKM rainflow
+procedure without local stress-strain history output.
+"""
+
 __author__ = "Benjamin Maier"
 __maintainer__ = __author__
 
@@ -84,8 +93,88 @@ class _ResidualsRecord:
 
 
 class FKMNonlinearDetector(RFG.AbstractDetector):
-    """HCM-Algorithm detector as described in FKM nonlinear.
+    r"""Count nonlinear FKM HCM cycles with local stress-strain states.
 
+    Use this detector for assessments according to the FKM nonlinear guideline.
+    It applies the HCM algorithm to a load signal, evaluates local stress and
+    strain at each turning point with a notch approximation law, and reports the
+    closed hysteresis data required by
+    :class:`pylife.stress.rainflow.recorders.FKMNonlinearRecorder`. The recorder collective
+    contains load extrema in MPa, stress extrema in MPa, strain extrema, load
+    follower strain limits, and flags for closed or memory-three hysteresis loops.
+    For classic nominal-load FKM counting without local stress-strain states, use
+    :class:`pylife.stress.rainflow.FKMDetector`.
+
+    Parameters
+    ----------
+    recorder : pylife.stress.rainflow.recorders.FKMNonlinearRecorder
+        Recorder receiving the minima and maxima of each nonlinear hysteresis.
+        The recorder must implement ``record_values_fkm_nonlinear()``.
+    notch_approximation_law : pylife.materiallaws.notch_approximation_law.NotchApproximationLawBase
+        Notch approximation law that maps nominal load in MPa to local stress in
+        MPa and strain. Typical choices are
+        :class:`pylife.materiallaws.notch_approximation_law.ExtendedNeuber` and
+        :class:`pylife.materiallaws.notch_approximation_law_seegerbeste.SeegerBeste`.
+    binner : type or None, optional
+        Binner class used to quantize notch approximation results. Default is
+        :class:`pylife.materiallaws.notch_approximation_law.NotchApproxBinner`.
+        Pass ``None`` to use the notch approximation law directly without
+        binning.
+
+    See Also
+    --------
+    pylife.stress.rainflow.FKMDetector : Count cycles by the classic FKM procedure.
+    pylife.stress.rainflow.FourPointDetector : Count cycles with the general four-point criterion.
+    pylife.stress.rainflow.recorders.FKMNonlinearRecorder : Store nonlinear hysteresis results.
+    pylife.materiallaws.notch_approximation_law.ExtendedNeuber : Evaluate local stress and strain with the extended Neuber rule.
+
+    Notes
+    -----
+    The detector implements the HCM procedure used by the FKM nonlinear guideline
+    [FKM-Nonlinear-HCM]_ and based on the Clormann-Seeger rainflow concept
+    [Clormann-Seeger-Nonlinear]_. The algorithm first reduces the load sequence
+    to turning points. It then tracks open hysteresis memories and distinguishes
+    primary branches from secondary branches. A hysteresis closes when the current
+    load excursion covers the previous residual excursion,
+
+    .. math::
+
+        |L_i - L_{i-1}| \ge |L_{i-1} - L_{i-2}|,
+
+    subject to the FKM memory rules. Memory-one and memory-two loops keep their
+    local stress-strain extrema. Memory-three loops are mirrored about zero mean
+    stress and strain as required by the nonlinear guideline.
+
+    The recommended nonlinear workflow processes the load sequence twice with
+    :meth:`process_hcm_first` and :meth:`process_hcm_second`. The first run starts
+    at zero load and establishes the residual memory; the second run closes the
+    hysteresis loops used for assessment. All processing methods return ``self``
+    so calls can be chained. Plain :meth:`process` is also available for tests and
+    advanced workflows; it continues the detector state across chunks.
+
+    References
+    ----------
+    .. [FKM-Nonlinear-HCM] Forschungskuratorium Maschinenbau, "Rechnerischer
+       Festigkeitsnachweis unter expliziter Erfassung nichtlinearen
+       Werkstoff-Verformungsverhaltens", FKM-Richtlinie Nichtlinear, 2019.
+    .. [Clormann-Seeger-Nonlinear] U. Clormann and T. Seeger, "Rainflow-HCM.
+       Ein Zaehlverfahren fuer Betriebsfestigkeitsnachweise auf
+       werkstoffmechanischer Grundlage", Stahlbau, 1985.
+
+    Examples
+    --------
+    >>> import pylife.materiallaws.notch_approximation_law as NAL
+    >>> from pylife.stress.rainflow.recorders import FKMNonlinearRecorder
+    >>> from pylife.stress.rainflow.fkm_nonlinear import FKMNonlinearDetector
+    >>> law = NAL.ExtendedNeuber(E=206e3, K=2650.0, n=0.187, K_p=3.5)
+    >>> detector = FKMNonlinearDetector(FKMNonlinearRecorder(), law, binner=None)
+    >>> signal = [100.0, 0.0, 80.0, 20.0, 60.0, 40.0]
+    >>> detector.process_hcm_first(signal).process_hcm_second(signal) is detector
+    True
+    >>> len(detector.recorder.collective)
+    3
+    >>> round(float(detector.recorder.collective.S_a.iloc[-1]), 6)
+    49.999938
     """
 
     def __init__(self, recorder, notch_approximation_law, binner=NAL.NotchApproxBinner):
@@ -117,15 +206,23 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         self._num_turning_points = 0
 
     def process_hcm_first(self, samples):
-        """Perform the HCM algorithm for the first time.
-        This processes the given samples accordingly, only considering
-        "turning points", neglecting consecutive duplicate values,
-        making sure that the beginning starts with 0.
+        """Process the first HCM run for a load sequence.
+
+        The first run prepends a zero load, removes consecutive duplicate values, and
+        uses only turning points. It initializes the residual memory required by the
+        FKM nonlinear procedure.
 
         Parameters
         ----------
-        samples : list of floats or list of pd.DataFrame`s
-            The samples to be processed by the HCM algorithm.
+        samples : array_like or pandas.Series
+            Load samples in MPa. A ``pandas.Series`` with a ``load_step`` index level
+            may contain several assessment points per load step.
+
+        Returns
+        -------
+        FKMNonlinearDetector
+            The detector itself, so that the second run can be chained with
+            ``process_hcm_second()``.
         """
         assert len(samples) >= 2
         samples, flush = self._adjust_samples_and_flush_for_hcm_first_run(samples)
@@ -133,43 +230,43 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         return self.process(samples, flush=flush)
 
     def process_hcm_second(self, samples):
-        """Perform the HCM algorithm for the second time,
-        after it has been executed with ``process_hcm_first``.
-        This processes the given samples accordingly, only considering
-        "turning points", neglecting consecutive duplicate values,
-        making sure that the beginning of the sequence is properly fitted to
-        the samples of the first run, such that no samples are lost
-        and no non-turning points are introducted between the two runs.
+        """Process the second HCM run for a load sequence.
+
+        Run this method after :meth:`process_hcm_first` with the same load history.
+        It keeps the chunk boundary consistent with the first run and flushes the
+        last value so that the assessment cycles are recorded.
 
         Parameters
         ----------
-        samples : list of floats or list of pd.DataFrame`s
-            The samples to be processed by the HCM algorithm.
+        samples : array_like or pandas.Series
+            Load samples in MPa. A ``pandas.Series`` with a ``load_step`` index level
+            may contain several assessment points per load step.
+
+        Returns
+        -------
+        FKMNonlinearDetector
+            The detector itself, so that calls can be chained.
         """
         assert len(samples) >= 2
         return self.process(samples, flush=True)
 
     def process(self, samples, flush=False):
-        """Process a sample chunk. This method implements the actual HCM algorithm.
+        """Process a chunk of load samples with the HCM algorithm.
 
         Parameters
         ----------
-        samples : array_like, shape (N, )
-            The samples to be processed
-
-        flush : bool
-            Whether to flush the cached values at the end.
-
-            For explanations see :meth:`~pylife.stress.rainflow.FourPointDetector.process`
-
+        samples : array_like
+            Load samples in MPa. Pass representative scalar loads for one assessment
+            point, or pass a flat array derived from a multi-point load series.
+        flush : bool, optional
+            Force processing of the last value as a turning point. Default is
+            ``False``. Use ``True`` for the final chunk when the last sample shall be
+            considered a turning point.
 
         Returns
         -------
-        self : FKMNonlinearDetector
-            The ``self`` object so that processing can be chained
-
-
-
+        FKMNonlinearDetector
+            The detector itself, so that repeated ``process()`` calls can be chained.
         """
 
         # collected values, which will be passed to the recorder at the end of `process()`
@@ -300,31 +397,25 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         self._residuals_record.reindex()
 
     def _process_deformation(self, load_turning_points, num_turning_points, deform_type_record):
-        """Calculate the local stress and strain of all turning points
-
-        In ._perform_hcm_algorithm we recorded which turning point is in
-        PRIMARY deformation regime and which in SECONDARY
-
-        Now we use this information to calculate the local stress and strain
-        according to the notch approximation law for each turining point for
-        each point in the mesh.
+        """Calculate local stress and strain at all turning points.
 
         Parameters
         ----------
-        load_turning_points : pd.Series (N * self._group_size) float
-            The load distribution of all the turning points. It carries all th
-            index levels of the initial load signal.
-
+        load_turning_points : pandas.Series
+            Load values in MPa at every turning point and assessment point. The index
+            is inherited from the input load signal.
         num_turning_points : int
-            The number of tunring_points
+            Number of representative turning points in the current chunk.
+        deform_type_record : numpy.ndarray
+            Array with one row per turning point. The first column stores the
+            reference turning-point index and the second column stores whether the
+            branch is primary or secondary.
 
-        deform_type_record : np.ndarray(N, 2) int
-            The inndex and deformation type of each turning point
-            (see _perform_hcm_algorithm)
-
-        Returns pd.DataFrame
-            columns: ["load", "stress", "strain", "epsilon_min_LF", "epsilon_max_LF"]
-            index: the same like load_turning_points
+        Returns
+        -------
+        pandas.DataFrame
+            Local load in MPa, stress in MPa, strain, and load-follower strain limits
+            for every turning point and assessment point.
         """
         def primary(_prev, load):
             return self._notch_approximation_law.primary(load)
@@ -385,13 +476,14 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         return record_vals.set_index("turning_point", drop=True, append=True)
 
     def _calculate_epsilon_LF(self, deformation_record):
-        """Calculate epsilon_LF values for the current deformation record
+        """Update load-follower strain limits for one deformation record.
 
         Parameters
         ----------
-        deformation_record : np.ndarray (5)
-            [:3] load, stress, strain
-            [3:] reserved for epsilon_min_LF and epsilon_max_LF
+        deformation_record : numpy.ndarray
+            Current local deformation record. Rows ``0`` to ``2`` contain load in
+            MPa, stress in MPa, and strain; rows ``3`` and ``4`` receive the minimum
+            and maximum load-follower strain values.
         """
 
         old_load = self._last_deformation_record[LOAD, 0]
@@ -414,24 +506,24 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
 
     def _process_hysteresis(self, record_vals, hysts):
-        """Calcuclate all the recorded hysteresis values
-
-        For each hysteresis we calculate the two records consisting of
-        load, stress, strain, epsilon_min_LF, epsilon_max_LF
+        """Calculate recorded minimum and maximum hysteresis values.
 
         Parameters
         ----------
-        record_vals: pd.DataFrame
-            colimns: load, stress, strain, epsilon_min_LF, epsilon_max_LF
-            index of load_turning_points
-
-        hysts: np.ndarray(N, 2)
-            the recorded hysteresis information
-            (see ._perform_hcm_algorithm)
+        record_vals : pandas.DataFrame
+            Local load in MPa, stress in MPa, strain, and load-follower strain limits
+            indexed like the load turning points.
+        hysts : numpy.ndarray
+            Hysteresis memory records returned by ``_perform_hcm_algorithm()``.
 
         Returns
         -------
-        result_min, result_max: pd.DataFrame
+        results_min : pandas.DataFrame
+            Minimum load, stress, strain, and load-follower strain for every recorded
+            hysteresis.
+        results_max : pandas.DataFrame
+            Maximum load, stress, strain, and load-follower strain for every recorded
+            hysteresis.
         """
         def turn_memory_1_2(values, index):
             if values[0][0, 0] < values[1][0, 0]:
@@ -547,25 +639,23 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         return samples, flush
 
     def _perform_hcm_algorithm(self, load_turning_points):
-        """Perform the entire HCM algorithm for all load samples
+        """Perform the HCM memory algorithm for representative loads.
 
         Parameters
         ----------
-            load_turning_points : np.ndarray
-                The representative tunring points of the load signal
+        load_turning_points : numpy.ndarray
+            Representative load turning points in MPa for the current run.
 
         Returns
         -------
-        deform_type_record : np.ndarray (N,2) integer
-            first column: index in the turning point array
-            second column: indicate whether the deformation is in PRIMARY or SECONDARY regime
-
-        hysts : np.ndarray (N,4) integer
-            first column: Type of hysteresis memort (MEMORY_1_2 or MEMORY_3)
-            second column: index in turning point array of the hysteresis origin
-            third column: index in turning point array of the hysteresis front
-            fourth column: index in turning point array of the hysteresis
-               closing point (-1 if hysteresis not closed)
+        deform_type_record : numpy.ndarray
+            Branch records. The first column stores the reference turning-point index;
+            the second column stores whether the deformation follows the primary or a
+            secondary branch.
+        hysts : numpy.ndarray
+            Hysteresis records. Columns contain the memory type, origin index, front
+            index, and closing index. The closing index is ``-1`` for open
+            memory-three hystereses.
         """
 
         hysts = np.zeros((len(load_turning_points), 4), dtype=np.int64)
@@ -599,24 +689,25 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
         hyst_ptr,
         deform_type_record,
     ):
-        """Process one sample in the HCM algorithm, i.e., one load value
+        """Process one turning point in the HCM memory algorithm.
 
         Parameters
         ----------
-        current_load: float
-            The current representative load
+        current_load : float
+            Current representative load in MPa.
+        current_idx : int
+            Index of the current turning point in the current run.
+        hysts : numpy.ndarray
+            Hysteresis record buffer filled in place.
+        hyst_ptr : int
+            Index of the next free row in ``hysts``.
+        deform_type_record : numpy.ndarray
+            Deformation-type record for the current turning point, filled in place.
 
-        current_index: int
-            The index of the current load in the turning point list
-
-        hysts: np.ndarray (N,4) integer
-            The hysteresis record (see ._perform_hcm_algorithm)
-
-        hyst_ptr: int
-            The pointer to the next hysteresis record
-
-        deform_type_record : np.ndarray (N,2) integer
-            The deformation type record (see ._perform_hcm_algorithm)
+        Returns
+        -------
+        int
+            Updated index of the next free row in ``hysts``.
         """
 
         record_idx = current_idx
@@ -688,77 +779,60 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
     @property
     def strain_values(self):
-        """
-        Get the strain values of the turning points in the stress-strain diagram.
-        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
+        """Return strain values of all recorded turning points.
 
         Returns
         -------
-        list of float
-           The strain values of the turning points that are visited during the HCM algorithm.
+        numpy.ndarray
+            Strain values visited during all HCM runs, excluding injected history
+            points with negative ``load_step``.
         """
         return self.history().query("load_step >= 0").strain.to_numpy()
 
     @property
     def strain_values_first_run(self):
-        """
-        Get the strain values of the turning points in the stress-strain diagram, for the first run of the HCM algorithm.
-        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
+        """Return strain values of the first HCM run.
 
         Returns
         -------
-        list of float
-           The strain values of the turning points that are visited during the first run of the HCM algorithm.
+        numpy.ndarray
+            Strain values visited during the first HCM run, excluding injected
+            history points with negative ``load_step``.
         """
 
         return self.history().query("load_step >= 0 and run_index == 1").strain.to_numpy()
 
     @property
     def strain_values_second_run(self):
-        """
-        Get the strain values of the turning points in the stress-strain diagram, for the second and any further run of the HCM algorithm.
-        They are needed in the FKM nonlinear roughness & surface layer algorithm, which adds residual stresses in another pass of the HCM algorithm.
+        """Return strain values of the second HCM run.
 
         Returns
         -------
-        list of float
-           The strain values of the turning points that are visited during the second run of the HCM algorithm.
+        numpy.ndarray
+            Strain values visited during the second HCM run, excluding injected
+            history points with negative ``load_step``.
         """
 
         return self.history().query("load_step >= 0 and run_index == 2").strain.to_numpy()
 
     def history(self):
-        """Compile the history of noteworthy points.
+        """Compile the stress-strain history of noteworthy points.
 
         Returns
         -------
-
-        history : pd.DataFrame
-            The history containing of
-            ``load``, ``stress``, ``strain`` and ``secondary_branch``.
-            The ``secondary_branch`` column is ``bool`` and indicates if the point
-            is on secondary load branch.
-
-            The index consists of the following levels:
-                * ``load_segment``: the number of the point
-                * ``load_step``: the index of the point in the actual samples
-                * ``run_index``: the index of the run (usually 1 or 2)
-                * ``turning_point``: the number of the turning point (-1 if it is not a turning point)
-                * ``hyst_from``: the number of the hysteresis starting at the point (-1 if there isn't one)
-                * ``hyst_to``: the number of the hysteresis opened at the point (-1 if there isn't one)
-                * ``hyst_close``: the number hof the hysteresis closed at the point (-1 if there isn't one)
+        pandas.DataFrame
+            History with the columns ``load`` in MPa, ``stress`` in MPa, ``strain``,
+            and ``secondary_branch``. The boolean ``secondary_branch`` column marks
+            points on secondary load branches. The index levels are ``load_segment``,
+            ``load_step``, ``run_index``, ``turning_point``, ``hyst_from``,
+            ``hyst_to``, and ``hyst_close``.
 
         Notes
         -----
-
-        The history contains all the turning points with two other kinds of points injected:
-          * The primary hysteresis opening (Memory 3 of the guidline)
-          * The closing points of a hysteresis
-
-        Note that the ``load_step`` index of the injected points is always `-1`, so you
-        can't use it to determine the index of a hysteresis closing in the original
-        signal.
-
+        The history contains all turning points and two injected point types: primary
+        hysteresis openings from FKM memory three and hysteresis closing points. The
+        ``load_step`` index of injected points is always ``-1``; do not use it to map
+        those injected points back to samples of the original load signal.
         """
         history = pd.concat([rr for rr, _ in self._history_record]).reset_index(
             drop=True
@@ -839,31 +913,26 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
             hysteresis_index=None,
             n_points_per_branch=100
     ):
-        """Caclulate interpolated stress and strain data.
+        """Calculate interpolated stress-strain data.
 
         Parameters
         ----------
-        load_segment : int, Optional
-            The number of the load segment for which the stress strain data is to be
-            interpolated.
-        hysteresis_index : int, Optional
-            The number of the hysteresis for which the stress strain data is to be
-            interpolated.
-        n_points_per_branch : int, Optional
-            The number of points to be interpolated to of each load segment
+        load_segment : int, optional
+            Load segment for which stress-strain data are interpolated. Default is
+            ``None``, which interpolates all load segments unless ``hysteresis_index``
+            is given.
+        hysteresis_index : int, optional
+            Hysteresis for which stress-strain data are interpolated. Default is
+            ``None``.
+        n_points_per_branch : int, optional
+            Number of interpolation points per load segment or hysteresis branch.
+            Default is ``100``.
 
         Returns
         -------
-        stress_strain_data : pd.DataFrame
-            The resulting ``DataFrame`` will contain the following columns:
-
-              * ``stress``, ``strain`` – the stress strain data
-              * ``secondary_branch``– a ``bool`` column indicating if the point is
-                on a secondary load branch
-              * ``hyst_index`` – the number of the hysteresis the load segment is part of (-1 if  there isn't one)
-              * ``load_segment`` the number of the load segment
-              * ``run_index`` the number of the run
-
+        pandas.DataFrame
+            Interpolated stress in MPa, strain, secondary-branch flag, hysteresis
+            index, load segment, and run index.
         """
         history = self.history()
 

@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Provide the ``.load_collective`` accessor for explicit rainflow loops."""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
@@ -30,13 +32,40 @@ from .load_histogram import LoadHistogram
 
 @pd.api.extensions.register_dataframe_accessor('load_collective')
 class LoadCollective(PylifeSignal, AbstractLoadCollective):
-    """A Load collective.
+    r"""Represent explicit rainflow loops as a load collective.
 
-    The usual use of this signal is to process hysteresis loop data from a
-    rainflow recording.  Usually the keys ``from`` and ``to`` are used to
-    describe the hysteresis loops.  Alternatively also the keys ``range`` and
-    ``mean`` can be given.  In that case the frame is internally converted to
-    ``from`` and ``to`` where the ``from`` values are the lower ones.
+    The accessor is registered as ``DataFrame.load_collective`` and represents
+    one hysteresis loop per row.  The input frame must contain either:
+
+    * ``from`` and ``to``: Load values at the two turning points of the loop,
+      usually in MPa.
+    * ``range`` and ``mean``: Load range (peak-to-peak) and mean load,
+      usually in MPa.  The accessor converts these columns internally to
+      lower ``from`` and upper ``to`` values.
+
+    An optional ``cycles`` column gives the number of cycles represented by
+    each row.  If it is absent, every row represents one cycle.  Derived
+    properties expose ``amplitude = abs(from - to) / 2``, ``meanstress =
+    (from + to) / 2``, ``upper = max(from, to)``, ``lower = min(from, to)``,
+    ``R = lower / upper`` with missing values filled by ``0.0``, and
+    ``cycles``.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.DataFrame
+        DataFrame containing explicit load loops as described above.
+
+    Notes
+    -----
+    The amplitude, range, and mean load are related by
+
+    .. math::
+
+        S_\mathrm{a} = \frac{|S_\mathrm{from} - S_\mathrm{to}|}{2}
+
+        S_\mathrm{range} = 2 S_\mathrm{a}
+
+        S_\mathrm{mean} = \frac{S_\mathrm{from} + S_\mathrm{to}}{2}
     """
 
     def _validate(self):
@@ -63,16 +92,25 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
     @property
     def columns(self) -> list[str]:
+        """Return the column names that define the load axes.
+
+        Returns
+        -------
+        list of str
+            Either ``["from", "to"]`` or ``["range", "mean"]`` as supplied
+            by the input signal.
+        """
         return self._axes
 
     @property
     def amplitude(self):
-        """Calculate the amplitudes of the load collective.
+        """Calculate the load amplitude for each loop.
 
         Returns
         -------
-        amplitude : pd.Series
-            The amplitudes of the load collective
+        pandas.Series
+            Load amplitude in the same unit as ``from`` and ``to``, typically
+            MPa.
         """
         fr = self._obj['from']
         to = self._obj['to']
@@ -82,12 +120,12 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
     @property
     def meanstress(self):
-        """Calculate the mean load values of the load collective.
+        """Calculate the mean load for each loop.
 
         Returns
         -------
-        mean : pd.Series
-            The mean load values of the load collective
+        pandas.Series
+            Mean load in the same unit as ``from`` and ``to``, typically MPa.
         """
         fr = self._obj['from']
         to = self._obj['to']
@@ -95,12 +133,13 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
     @property
     def R(self):
-        """Calculate the R values of the load collective.
+        """Calculate the stress ratio ``R`` for each loop.
 
         Returns
         -------
-        R : pd.Series
-            The R values of the load collective
+        pandas.Series
+            Stress ratio ``R = lower / upper``, dimensionless.  Undefined
+            ratios are returned as ``0.0``.
         """
         res = (self.lower / self.upper).fillna(0.0)
         res.name = 'R'
@@ -108,12 +147,12 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
     @property
     def upper(self):
-        """Calculate the upper load values of the load collective.
+        """Calculate the upper turning load for each loop.
 
         Returns
         -------
-        upper : pd.Series
-            The upper load values of the load collective
+        pandas.Series
+            Upper load in the same unit as ``from`` and ``to``, typically MPa.
         """
         res = self._obj.loc[:, ['from', 'to']].max(axis=1)
         res.name = 'upper'
@@ -121,12 +160,12 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
     @property
     def lower(self):
-        """Calculate the lower load values of the load collective.
+        """Calculate the lower turning load for each loop.
 
         Returns
         -------
-        lower : pd.Series
-            The lower load values of the load collective
+        pandas.Series
+            Lower load in the same unit as ``from`` and ``to``, typically MPa.
         """
         res = self._obj.loc[:, ['from', 'to']].min(axis=1)
         res.name = 'lower'
@@ -134,9 +173,13 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
 
     @property
     def cycles(self):
-        """The cycles of each member of the collective is 1.0. when no cycles are given
+        """Return the number of cycles represented by each loop.
 
-        This is for compatibility with :class:`~pylife.stress.pylife.stress.LoadHistogram`
+        Returns
+        -------
+        pandas.Series
+            Number of cycles.  If the source data has no ``cycles`` column,
+            every loop is returned as one cycle.
         """
         if 'cycles' in self._obj.keys():
             return self._obj.cycles
@@ -144,65 +187,69 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         return pd.Series(1.0, name='cycles', index=self._obj.index)
 
     def scale(self, factors):
-        """Scale the collective.
+        """Scale all load values of the collective.
 
         Parameters
         ----------
-        factors : scalar or :class:`pandas.Series`
-            The factor(s) to scale the collective 'from' and 'to' with.
+        factors : float or pandas.Series
+            Factor or row-wise factors used to multiply the ``from`` and
+            ``to`` load values.
 
         Returns
         -------
-        scaled : ``LoadHistogram``
-            The scaled histogram.
+        LoadCollective
+            Scaled collective accessor.
         """
         factors, obj = self.broadcast(factors)
         obj[['from', 'to']] = obj[['from', 'to']].multiply(factors, axis=0)
         return obj.load_collective
 
     def shift(self, diffs):
-        """Shift the collective.
+        """Shift all load values of the collective.
 
         Parameters
         ----------
-        diffs : scalar or :class:`pandas.Series`
-            The diff(s) to shift the collective by.
+        diffs : float or pandas.Series
+            Difference or row-wise differences added to the ``from`` and
+            ``to`` load values.
 
         Returns
         -------
-        shifted : ``LoadHistogram``
-            The shifted histogram.
+        LoadCollective
+            Shifted collective accessor.
         """
         diffs, obj = self.broadcast(diffs)
         obj[['from', 'to']] = obj[['from', 'to']].add(diffs, axis=0)
         return obj.load_collective
 
     def range_histogram(self, bins, axis=None):
-        """Calculate the histogram of cycles for range intervals along a given axis.
+        """Calculate a load-range histogram of the collective.
 
         Parameters
         ----------
-        bins : int, sequence of scalars or pd.IntervalIndex
-            The bins of the histogram to be calculated
-
+        bins : int, array_like or pandas.IntervalIndex
+            Bin specification for the load range (peak-to-peak), in the same
+            unit as the source load values.
         axis : str, optional
-            The index axis along which the histogram is calculated. If missing
-            the histogram is calculated over the whole collective.
-
+            Index level that identifies individual loops within each group.
+            If omitted, calculate one histogram over the whole collective.
+            Default is ``None``.
 
         Returns
         -------
-        range histogram : :class:`~pylife.pylife.stress.LoadHistogram`
+        LoadHistogram
+            Histogram accessor with a ``range`` interval index and cycle
+            counts as values.
 
-
-        Note
-        ----
-        This resulting histogram does not contain any information on the mean
-        stress. Neither does it perform any kind of mean stress transformation
-
-        See also
+        See Also
         --------
-        histogram
+        histogram : Calculate a two-dimensional range-mean histogram.
+
+        Notes
+        -----
+        The resulting histogram does not contain mean-load information and
+        does not apply a mean-stress transformation.  The ``range`` axis uses
+        load range (peak-to-peak), not load amplitude.
 
         Examples
         --------
@@ -245,7 +292,6 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
                     (1, 2]    2
                     (2, 3]    1
         Name: cycles, dtype: int64
-
         """
         def make_histogram(group):
             weights = self.cycles.loc[group.index].to_numpy().astype(np.int64)
@@ -269,24 +315,32 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
         return LoadHistogram(result)
 
     def histogram(self, bins, axis=None):
-        """Calculate the histogram of cycles along a given axis.
+        """Calculate a range-mean histogram of the collective.
 
         Parameters
         ----------
-        bins : int, sequence of scalars or pd.IntervalIndex
-            The bins of the histogram to be calculated
-
+        bins : int, array_like or pandas.IntervalIndex
+            Bin specification for both load range (peak-to-peak) and mean
+            load, in the same unit as the source load values.
         axis : str, optional
-            The index axis along which the histogram is calculated. If missing
-            the histogram is calculated over the whole collective.
+            Index level that identifies individual loops within each group.
+            If omitted, calculate one histogram over the whole collective.
+            Default is ``None``.
 
         Returns
         -------
-        range histogram : :class:`~pylife.pylife.stress.LoadHistogram`
+        LoadHistogram
+            Histogram accessor with ``range`` and ``mean`` interval index
+            levels and cycle counts as values.
 
-        See also
+        See Also
         --------
-        range_histogram
+        range_histogram : Calculate a one-dimensional load-range histogram.
+
+        Notes
+        -----
+        The ``range`` axis stores load range (peak-to-peak), not load
+        amplitude.  The ``mean`` axis stores mean load.
 
         Examples
         --------
@@ -344,7 +398,6 @@ class LoadCollective(PylifeSignal, AbstractLoadCollective):
                             (1, 2]    1.0
                             (2, 3]    0.0
         Name: cycles, dtype: float64
-
         """
         def make_histogram(group):
             weights = self.cycles.loc[group.index].to_numpy()

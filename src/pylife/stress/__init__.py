@@ -14,6 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Provide stress signals and fatigue-load stress utilities.
+
+The package contains pandas signal accessors for tensor-valued stresses,
+equivalent-stress calculations, time-domain and frequency-domain stress
+signals, load collectives, and rainflow counting.  Use it to transform
+mechanical stress results, usually given in MPa, into representations used by
+fatigue assessment workflows.
+"""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 

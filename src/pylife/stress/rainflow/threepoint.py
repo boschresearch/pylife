@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Detect rainflow cycles with the classic three-point criterion.
+
+Use this module for rainflow counting where loops are closed by a third
+turning point that passes the previous reversal and satisfies the residual
+conditions of the three-point method.
+"""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
@@ -24,102 +31,93 @@ from .general import AbstractDetector
 
 
 class ThreePointDetector(AbstractDetector):
-    r"""Classic three point rainflow counting algorithm.
+    r"""Count rainflow cycles with the classic three-point criterion.
 
-    .. jupyter-execute::
+    Use this detector for general load collectives when the three-point
+    method is the desired rainflow convention. The detector reports loop
+    start and end loads to :class:`pylife.stress.rainflow.LoopValueRecorder`
+    or, when sample indices are needed, to
+    :class:`pylife.stress.rainflow.FullRecorder`. The recorder collective can
+    then be transformed to load amplitude, load range, mean load, and number
+    of cycles for fatigue assessment in :mod:`pylife.strength.fatigue`.
 
-        from pylife.stress.timesignal import TimeSignalGenerator
-        import pylife.stress.rainflow as RF
+    Parameters
+    ----------
+    recorder : pylife.stress.rainflow.AbstractRecorder
+        Recorder receiving detected loop loads in MPa. Use
+        :class:`pylife.stress.rainflow.FullRecorder` to store the sample
+        indices of the two turning points in addition to the load values.
 
-        ts = TimeSignalGenerator(10, {
-            'number': 50,
-            'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
-            'frequency_median': 4, 'frequency_std_dev': 3,
-            'offset_median': 0, 'offset_std_dev': 0.4}, None, None).query(10000)
+    See Also
+    --------
+    pylife.stress.rainflow.FourPointDetector : Count cycles with the four-point criterion.
+    pylife.stress.rainflow.FKMDetector : Count cycles by the classic FKM procedure.
+    pylife.stress.rainflow.FullRecorder : Store loop loads and sample indices.
 
-        rfc = RF.ThreePointDetector(recorder=RF.LoopValueRecorder())
-        rfc.process(ts)
+    Notes
+    -----
+    The three-point detector evaluates a start point :math:`S`, the following
+    front point :math:`F`, and the following back point :math:`B`. A closed
+    loop is counted when the back point reaches beyond the start-front
+    excursion,
 
-        rfc.recorder.collective
+    .. math::
 
-    Alternatively you can ask the recorder for a histogram matrix:
+        |B - F| \ge |F - S|,
 
-    .. jupyter-execute::
+    and the front is not part of an already closed loop or an uncovered front
+    residual. When a loop closes, the same back point may also close older
+    open loops. The recorded loop values are reversal loads in MPa; their
+    peak-to-peak load range is :math:`L_R = |L_F - L_S|` and their load
+    amplitude is :math:`L_a = L_R / 2`.
 
-        rfc.recorder.histogram(bins=16)
+    The detector supports chunked processing. Repeated calls to
+    :meth:`process` continue the count across chunk boundaries; set
+    ``flush=True`` only for the final chunk if the last sample shall be
+    considered a turning point.
 
-    We take three turning points into account to detect closed hysteresis loops.
-
-    * start: the point where the loop is starting from
-    * front: the turning point after the start
-    * back: the turning point after the front
-
-    A loop is considered closed if following conditions are met:
-
-    * the load difference between front and back is bigger than or
-      equal the one between start and front. In other words: if the
-      back goes beyond the starting point. For example (A-B-C) and
-      (B-C-D) not closed, whereas (C-D-E) is.
-
-    * the loop init has not been a loop front in a prior closed
-      loop. For example F would close the loops (D-E-F) but D is
-      already front of the closed loop (C-D-E).
-
-    * the load level of the front has already been covered by a prior
-      turning point. Otherwise it is considered part of the front
-      residuum.
-
-    When a loop is closed it is possible that the loop back also
-    closes unclosed loops of the past by acting as loop back for an
-    unclosed start/front pair. For example E closes the loop (C-D-E)
-    and then also (A-B-E).
-
-    ::
-
-        Load -----------------------------
-        |        x B               F x
-        --------/-\-----------------/-----
-        |      /   \   x D         /
-        ------/-----\-/-\---------/-------
-        |    /     C x   \       /
-        --\-/-------------\-----/---------
-        |  x A             \   /
-        --------------------\-/-----------
-        |                    x E
-        ----------------------------------
-        |              Time
-
-    .. _subsection_TP: ../demos/rainflow.ipynb#Classic-Three-Point-Counting
+    Examples
+    --------
+    >>> from pylife.stress.rainflow import ThreePointDetector, LoopValueRecorder
+    >>> detector = ThreePointDetector(recorder=LoopValueRecorder())
+    >>> detector.process([0.0, 3.0, -1.0, 2.0, -2.0, 0.0], flush=True) is detector
+    True
+    >>> detector.recorder.collective
+       from   to
+    0  -1.0  2.0
     """
 
     def __init__(self, recorder):
-        """Instantiate a ThreePointDetector.
+        """Instantiate a three-point detector.
 
         Parameters
         ----------
-        recorder : subclass of :class:`.AbstractRecorder`
-            The recorder that the detector will report to.
+        recorder : pylife.stress.rainflow.AbstractRecorder
+            Recorder receiving detected loop loads in MPa. The recorder must
+            implement ``record_values()``; recorders that also implement
+            ``record_index()`` receive sample indices.
         """
         super().__init__(recorder)
 
     def process(self, samples, flush=False):
-        """Process a sample chunk.
+        """Process a chunk of load samples.
 
         Parameters
         ----------
-        samples : array_like, shape (N, )
-            The samples to be processed
-
-        flush : bool
-            Whether to flush the cached values at the end.
-
-            For explanations see :meth:`~pylife.stress.rainflow.FourPointDetector.process`
-
+        samples : array_like
+            Load samples in MPa. The detector extracts turning points and
+            combines them with residual turning points from previous chunks.
+        flush : bool, optional
+            Force processing of the last value as a turning point. Default is
+            ``False``. See
+            :meth:`pylife.stress.rainflow.FourPointDetector.process` for the
+            streaming consequences of flushing.
 
         Returns
         -------
-        self : ThreePointDetector
-            The ``self`` object so that processing can be chained
+        ThreePointDetector
+            The detector itself, so that repeated ``process()`` calls can be
+            chained.
         """
         samples = np.asarray(samples)
 

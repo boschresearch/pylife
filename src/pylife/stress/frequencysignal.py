@@ -14,13 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A module for frequency signal handling
+"""Handle frequency-domain stress signals for pyLife workflows.
 
-Warning
--------
+Provide helpers for smoothing frequency-indexed power spectral densities
+before spectral comparison or frequency-domain fatigue assessment.
 
-This module is not considered finalized even though it is part of pylife-2.0.
-Breaking changes might occur in upcoming minor releases.
+Warnings
+--------
+This module is not considered finalized even though it is part of
+``pylife-2.0``. Breaking changes might occur in upcoming minor releases.
 """
 
 import numpy as np
@@ -28,17 +30,32 @@ import pandas as pd
 from scipy import optimize as op
 
 class psdSignal:
-    '''Handles different routines for self signals
+    r"""Handle routines for frequency-indexed PSD signals.
 
-    Remark: We are using the pandas data frame schema. The index contains the
-    discrete frequency step. Every single column one self.
+    The class stores a pandas data frame schema where the index is a frequency
+    index in Hz and each column contains one power spectral density, e.g. in
+    MPa²/Hz for a stress signal. The current methods are also used as legacy
+    unbound helpers with a :class:`pandas.DataFrame` as ``self``.
 
-    Some functions of these class:
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Frequency-domain signal with frequency index in Hz and PSD columns.
 
-    * psd_optimizer
-    * ...
+    Notes
+    -----
+    The RMS value follows the one-sided PSD convention
 
-    '''
+    .. math::
+
+        x_\mathrm{rms} = \sqrt{\int_0^\infty S_{xx}(f)\,df}.
+
+    Examples
+    --------
+    >>> psd = pd.DataFrame({"stress": [1.0, 1.0]}, index=[1.0, 2.0])
+    >>> round(float(psdSignal.rms_psd(psd).iloc[0]), 6)
+    1.0
+    """
     def __init__(self,df):
 
         self.df = df
@@ -64,28 +81,43 @@ class psdSignal:
 
 
     def psd_smoother(self,fsel,factor_rms_nodes = 0.5):
-        ''' Smoothen a PSD using nodes and a penalty factor weighting the errors
-        for the RMS and for the node PSD values
+        r"""Smooth a PSD by optimizing values at selected frequency nodes.
 
+        Replace a dense frequency-indexed PSD by a compact node-based
+        representation. The optimization balances preservation of the RMS
+        value against preservation of the PSD values at the selected nodes.
 
         Parameters
         ----------
-
-        self: DataFrame
-            unsmoothed PSD
-        fsel: list or np.array
-           nodes
-        factor_rms_nodes: float (0 <= factor_rms_nods <= 1)
-            penalty error weighting the errors:
-
-            * 0: only error of node PSD values is considered
-            * 1: only error of the RMS is considered
-
+        fsel : array_like
+            Frequency nodes in Hz used for the smoothed PSD.
+        factor_rms_nodes : float, optional
+            Weighting factor between node-value error and RMS error. ``0``
+            considers only the error of node PSD values, while ``1`` considers
+            only the RMS error. Default is ``0.5``.
 
         Returns
         -------
-        DataFrame
-        '''
+        pandas.DataFrame
+            Smoothed PSD with frequency index in Hz. The index contains the
+            original minimum frequency, unique selected nodes, and the
+            original maximum frequency.
+
+        Notes
+        -----
+        For every input column, the optimized node PSD values minimize
+
+        .. math::
+
+            \alpha \frac{(r_\mathrm{in} - r_\mathrm{smooth})^2}
+            {r_\mathrm{in}^2}
+            + (1 - \alpha)
+            \frac{\lVert \log_{10}(S_\mathrm{node}/H) \rVert^2}
+            {\lVert \log_{10}(S_\mathrm{node}) \rVert^2},
+
+        where :math:`\alpha` is ``factor_rms_nodes`` and :math:`H` are the
+        optimized node values.
+        """
 
         f  = np.logspace(np.log10(self.index.values.min()),np.log10(
                               self.index.values.max()),1024)
