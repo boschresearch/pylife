@@ -13,6 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Estimate Wöhler curve parameters by maximum likelihood.
+
+The module contains analyzers for refining endurance-limit parameters or the
+complete Wöhler parameter set from fracture and runout outcomes.
+"""
+
 from .elementary import Elementary
 
 import pandas as pd
@@ -22,16 +29,27 @@ import warnings
 
 
 class MaxLikeInf(Elementary):
-    """Maximum likelihood procedure estimating the ``SD_50`` and ``TS`` and ``ND_50``.
+    """Estimate endurance-limit parameters by maximum likelihood.
 
-    Only the values describing the infinite lifetime (load endurance limit
-    ``SD_50`` and load endurance scatter ``TS``) are calculated by maximum
-    likelihood.  The slope ``k_1`` and ``TN`` are taken from the
-    :class:`Elementary` calculation.
+    ``MaxLikeInf`` first performs the elementary finite-life evaluation.  It
+    then fits ``SD``, the endurance limit load at the knee point, and ``TS``,
+    the scatter in load direction, from the infinite-life zone.  ``k_1`` and
+    ``TN`` remain the elementary estimates, and ``ND`` is recalculated from the
+    intersection of ``SD`` with the finite-life branch.
 
-    The load cycle endurance ``ND_50`` is computed by intersecting load
-    endurance limit line with the line of slope ``k_1``.
+    Choose this analyzer when the finite-life slope is well represented by the
+    fracture data but the endurance-limit level should be fitted from mixed
+    fracture/runout load levels.
 
+    Parameters
+    ----------
+    fatigue_data : pandas.DataFrame or FatigueData
+        Wöhler test data passed to :class:`~pylife.materialdata.woehler.Elementary`.
+
+    Notes
+    -----
+    The maximum-likelihood evaluation follows the usual DIN 50100 Wöhler test
+    interpretation of fractures and runouts in the endurance-limit region.
     """
     def _specific_analysis(self, wc):
         SD, TS = self.__max_likelihood_inf_limit()
@@ -76,22 +94,27 @@ class MaxLikeInf(Elementary):
 
 
 class MaxLikeFull(Elementary):
-    """Maximum likelihood procedure estimating all parameters.
+    """Estimate the full Wöhler parameter set by maximum likelihood.
 
-    Maximum likelihood is a method of estimating the parameters of a
-    distribution model by maximizing a likelihood function, so that under the
-    assumed statistical model the observed data is most probable.  This
-    procedure consists of estimating the curve parameters, where some of these
-    parameters may be fixed by the user. The remaining parameters are then
-    fitted to produce the best possible outcome.
+    ``MaxLikeFull`` starts with the elementary estimate and then maximizes the
+    total likelihood for ``SD``, ``TS``, ``k_1``, ``ND``, and ``TN``.  Pass a
+    ``fixed_parameters`` dictionary to :meth:`analyze` to keep selected
+    parameters at prescribed values while optimizing the remaining ones.
 
-    https://en.wikipedia.org/wiki/Maximum_likelihood_estimation
+    Choose this analyzer when both finite-life fractures and endurance-limit
+    fracture/runout outcomes should contribute to all Wöhler parameters.
 
     Parameters
     ----------
-    fixed_parameters : dict
-        Dictionary of fixed parameters
+    fatigue_data : pandas.DataFrame or FatigueData
+        Wöhler test data passed to :class:`~pylife.materialdata.woehler.Elementary`.
 
+    Notes
+    -----
+    If no runouts are present, the analyzer fixes ``SD`` to ``0.0`` and ``TS``
+    to ``1.0`` after warning because no standard endurance-limit evaluation is
+    possible.  If fewer than two mixed load levels are available, it fixes
+    ``TS`` to the scatter derived from the elementary pearl chain estimate.
     """
 
     def _specific_analysis(self, wc, fixed_parameters={}):

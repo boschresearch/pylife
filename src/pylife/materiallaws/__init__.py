@@ -14,6 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Provide engineering material-law models for fatigue and plasticity.
+
+The package collects Hooke's law helpers, Ramberg-Osgood stress-strain
+relations, conversions between technical and true stress-strain quantities,
+Wöhler-curve accessors, and notch approximation laws used in pyLife fatigue
+and strength assessments.
+"""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 

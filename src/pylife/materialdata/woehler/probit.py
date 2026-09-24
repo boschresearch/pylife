@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Estimate Wöhler endurance parameters with the Probit method.
+
+The module evaluates fracture probabilities at load levels in the infinite-life
+region and derives the endurance limit and load scatter from a probability fit.
+"""
+
 import warnings
 
 from .elementary import Elementary
@@ -25,11 +31,27 @@ from pylife.utils.probability_data import ProbabilityFit
 
 
 class Probit(Elementary):
-    """Wöhler analysis according to the Probit method.
+    """Estimate endurance-limit parameters with the Probit method.
 
-    For each load level in the infinite regime a failure probability is
-    estimated.  To these failure probability a log norm distribution is fitted,
-    whose parameters are then used to calculate the Wöhler curve parameters.
+    ``Probit`` first performs the elementary finite-life evaluation.  It then
+    estimates failure probabilities for each load level in the infinite-life
+    region, fits a log-normal probability model, and updates ``SD``, ``TS``,
+    and ``ND``.  ``k_1`` and ``TN`` remain the elementary estimates.
+
+    Choose this analyzer when endurance-limit test levels contain fractures
+    and runouts and a DIN 50100-style Probit evaluation is desired.  If fewer
+    than two load levels are available in the infinite-life region, the result
+    falls back to ``Elementary``.
+
+    Parameters
+    ----------
+    fatigue_data : pandas.DataFrame or FatigueData
+        Wöhler test data passed to :class:`~pylife.materialdata.woehler.Elementary`.
+
+    Notes
+    -----
+    Load levels with no fractures, all fractures, or mixed outcomes are
+    assigned Rossow-style failure probabilities before the probability fit.
     """
 
     def _specific_analysis(self, wc):

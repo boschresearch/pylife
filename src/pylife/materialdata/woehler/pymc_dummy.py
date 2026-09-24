@@ -14,12 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Report missing optional PyMC dependencies for Bayesian analysis."""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 
 class Bayesian:
-    """Dummy class to raise a meaningful exception when pymc is not available."""
+    """Raise an installation hint when Bayesian analysis is unavailable.
+
+    Parameters
+    ----------
+    _ : object
+        Ignored argument accepted for compatibility with the Bayesian analyzer
+        constructor.
+
+    Raises
+    ------
+    ImportError
+        Always raised with the optional dependency installation hint.
+    """
 
     def __init__(self, _):
         raise ImportError("pymc and dependencies are not installed. "

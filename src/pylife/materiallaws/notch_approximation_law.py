@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+r"""Provide base classes and extended Neuber notch approximation laws.
+
+The module supports FKM nonlinear assessments by converting linear-elastic
+local loads from finite-element calculations to elastic-plastic local
+stress-strain paths following Ramberg-Osgood material behavior.
+"""
+
 __author__ = ["Benjamin Maier"]
 __maintainer__ = __author__
 
@@ -26,9 +33,25 @@ import pandas as pd
 import pylife.materiallaws.rambgood
 
 class NotchApproximationLawBase(ABC):
-    """This is a base class for any notch approximation law, e.g., the extended Neuber and the Seeger-Beste laws.
+    """Define the interface for notch approximation laws.
 
-    It initializes the internal variables used by the derived classes and provides getters and setters.
+    A notch approximation law maps a linear-elastic local load from an FE result
+    to the elastic-plastic stress and strain used by the FKM nonlinear assessment.
+    The primary path starts at the origin; secondary branches describe hysteresis
+    increments. Use :class:`ExtendedNeuber` for P_RAM and
+    :class:`~pylife.materiallaws.notch_approximation_law_seegerbeste.SeegerBeste`
+    for P_RAJ.
+
+    Parameters
+    ----------
+    E : float
+        Young's modulus in MPa.
+    K : float
+        Ramberg-Osgood strength coefficient in MPa, also denoted ``K_prime``.
+    n : float
+        Ramberg-Osgood strain hardening exponent, dimensionless.
+    K_p : float, optional
+        Plastic shape factor, dimensionless.
     """
 
     def __init__(self, E, K, n, K_p=None):
@@ -41,209 +64,224 @@ class NotchApproximationLawBase(ABC):
 
     @property
     def E(self):
-        """Young's Modulus"""
+        """Return Young's modulus.
+
+        Returns
+        -------
+        float
+            Young's modulus in MPa.
+        """
         return self._E
 
     @property
     def K(self):
-        """the strength coefficient"""
+        """Return the Ramberg-Osgood strength coefficient.
+
+        Returns
+        -------
+        float
+            Strength coefficient in MPa, also denoted ``K_prime``.
+        """
         return self._K
 
     @property
     def n(self):
-        """the strain hardening coefficient"""
+        """Return the Ramberg-Osgood strain hardening exponent.
+
+        Returns
+        -------
+        float
+            Strain hardening exponent, dimensionless.
+        """
         return self._n
 
     @property
     def K_p(self):
-        """the shape factor (de: Traglastformzahl)"""
+        """Return the plastic shape factor.
+
+        Returns
+        -------
+        float
+            Plastic shape factor, dimensionless.
+        """
         return self._K_p
 
     @property
     def ramberg_osgood_relation(self):
-        """the Ramberg-Osgood relation object, i.e., an object of type RambergOsgood
+        """Return the Ramberg-Osgood material relation.
+
+        Returns
+        -------
+        pylife.materiallaws.rambgood.RambergOsgood
+            Material relation used to convert elastic-plastic stress and strain.
         """
         return self._ramberg_osgood_relation
 
     @K_p.setter
     def K_p(self, value):
-        """Set the shape factor value K_p  (de: Traglastformzahl)"""
+        """Set the plastic shape factor.
+
+        Parameters
+        ----------
+        value : float
+            Plastic shape factor, dimensionless.
+        """
         self._K_p = value
 
     @K.setter
     def K_prime(self, value):
-        """Set the strain hardening coefficient"""
+        """Set the Ramberg-Osgood strength coefficient.
+
+        Parameters
+        ----------
+        value : float
+            Strength coefficient in MPa, also denoted ``K_prime``.
+        """
         self._K = value
         self._ramberg_osgood_relation = pylife.materiallaws.rambgood.RambergOsgood(self._E, self._K, self._n)
 
     @K.setter
     def K(self, value):
-        """Set the strain hardening coefficient"""
+        """Set the Ramberg-Osgood strength coefficient.
+
+        Parameters
+        ----------
+        value : float
+            Strength coefficient in MPa, also denoted ``K_prime``.
+        """
         self.K_prime = value
 
     @abstractmethod
     def load(self, stress, *, rtol=1e-4, tol=1e-4):
-        """Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
-
-        This is to be reimplemented by derived classes
+        """Calculate linear-elastic load from elastic-plastic stress.
 
         Parameters
         ----------
-        stress : array-like float
-            The elastic-plastic stress as computed by the notch approximation
+        stress : array_like
+            Elastic-plastic stress in MPa on the primary path.
         rtol : float, optional
-            The relative tolerance to which the implicit formulation of the load gets solved,
-            by default 1e-4
+            Relative tolerance for solving the implicit equation. Default is ``1e-4``.
         tol : float, optional
-            The absolute tolerance to which the implicit formulation of the load gets solved,
-            by default 1e-4
+            Absolute tolerance for solving the implicit equation. Default is ``1e-4``.
 
         Returns
         -------
-        load : array-like float
-            The resulting load or lienar-elastic stress.
-
+        float or numpy.ndarray
+            Linear-elastic load in MPa that produces ``stress``.
         """
         ...
 
     @abstractmethod
     def stress(self, load, *, rtol=1e-4, tol=1e-4):
-        r"""Calculate the stress of the primary path in the stress-strain diagram at a given
-
-        This is to be reimplemented by derived classes
+        """Calculate primary-path elastic-plastic stress from load.
 
         Parameters
         ----------
-        load : array-like float
-            The elastic von Mises stress from a linear elastic FEA.
-            In the FKM nonlinear document, this is also called load "L", because it is derived
-            from a load-time series. Note that this value is scaled to match the actual loading
-            in the assessment, it equals the FEM solution times the transfer factor.
+        load : array_like
+            Linear-elastic von Mises stress from a scaled FE result in MPa, denoted
+            as load ``L`` in the FKM nonlinear guideline.
         rtol : float, optional
-            The relative tolerance to which the implicit formulation of the stress gets solved,
-            by default 1e-4
+            Relative tolerance for solving the implicit equation. Default is ``1e-4``.
         tol : float, optional
-            The absolute tolerance to which the implicit formulation of the stress gets solved,
-            by default 1e-4
+            Absolute tolerance for solving the implicit equation. Default is ``1e-4``.
 
         Returns
         -------
-        stress : array-like float
-            The resulting elastic-plastic stress according to the notch-approximation law.
-        """        "Compute the local notch stress from the local nominal load."
+        float or numpy.ndarray
+            Elastic-plastic stress in MPa on the primary path.
+        """
         ...
 
     @abstractmethod
     def strain(self, load):
-        """Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
-
-        This is to be reimplemented by derived classes
+        """Calculate primary-path elastic-plastic strain from stress.
 
         Parameters
         ----------
-        stress : array-like float
-            The stress
-        load : array-like float
-            The load
+        load : array_like
+            Elastic-plastic stress in MPa on the primary path. The abstract
+            base class uses the historical parameter name ``load``.
 
         Returns
         -------
-        strain : array-like float
-            The resulting strain
+        float or numpy.ndarray
+            Elastic-plastic strain on the primary path, dimensionless.
         """
         ...
 
     @abstractmethod
     def load_secondary_branch(self, load, *, rtol=1e-4, tol=1e-4):
-        """Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear) from the elastic-plastic stress as from the notch approximation.
-
-        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
-
-        This is to be reimplemented by derived classes
+        """Calculate load increment from secondary-branch stress increment.
 
         Parameters
         ----------
-        delta_stress : array-like float
-            The increment of the elastic-plastic stress as computed by the notch approximation
+        load : array_like
+            Elastic-plastic stress increment in MPa on a secondary hysteresis
+            branch. The abstract base class uses the historical parameter name
+            ``load``.
         rtol : float, optional
-            The relative tolerance to which the implicit formulation of the stress gets solved,
-            by default 1e-4
+            Relative tolerance for solving the implicit equation. Default is ``1e-4``.
         tol : float, optional
-            The absolute tolerance to which the implicit formulation of the stress gets solved,
-            by default 1e-4
+            Absolute tolerance for solving the implicit equation. Default is ``1e-4``.
 
         Returns
         -------
-        delta_load : array-like float
-            The resulting load or lienar-elastic stress.
-
+        float or numpy.ndarray
+            Linear-elastic load increment in MPa that produces ``load``.
         """
         ...
 
     @abstractmethod
     def stress_secondary_branch(self, load, *, rtol=1e-4, tol=1e-4):
-        """Calculate the stress on secondary branches in the stress-strain diagram at a given
-        elastic-plastic stress (load), from a FE computation.
-
-        This is to be reimplemented by derived classes
+        """Calculate stress increment from secondary-branch load increment.
 
         Parameters
         ----------
-        delta_load : array-like float
-            The load increment of the hysteresis
+        load : array_like
+            Linear-elastic load increment in MPa for a hysteresis branch.
         rtol : float, optional
-            The relative tolerance to which the implicit formulation of the stress gets solved,
-            by default 1e-4
+            Relative tolerance for solving the implicit equation. Default is ``1e-4``.
         tol : float, optional
-            The absolute tolerance to which the implicit formulation of the stress gets solved,
-            by default 1e-4
+            Absolute tolerance for solving the implicit equation. Default is ``1e-4``.
 
         Returns
         -------
-        delta_stress : array-like float
-            The resulting stress increment within the hysteresis
+        float or numpy.ndarray
+            Elastic-plastic stress increment in MPa on the secondary branch.
         """
         ...
 
     @abstractmethod
     def strain_secondary_branch(self, load):
-        """Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
-
-        This is to be reimplemented by derived classes
+        """Calculate secondary-branch strain increment from stress increment.
 
         Parameters
         ----------
-        delta_sigma : array-like float
-            The stress increment
-        delta_load : array-like float
-            The load increment
+        load : array_like
+            Elastic-plastic stress increment in MPa on a secondary hysteresis
+            branch. The abstract base class uses the historical parameter name
+            ``load``.
 
         Returns
         -------
-        strain : array-like float
-            The resulting strain
+        float or numpy.ndarray
+            Elastic-plastic strain increment on the secondary branch, dimensionless.
         """
         ...
 
     def primary(self, load):
-        """Calculate stress and strain for primary branch.
+        """Calculate stress and strain for the primary path.
 
         Parameters
         ----------
-        load : array-like
-            The load for which the stress and strain are to be calculated
+        load : array_like
+            Linear-elastic load in MPa.
 
         Returns
         -------
-        stress strain : ndarray
-            The resulting stress strain data.
-
-            If the argument is scalar, the resulting array is of the strucuture
-            ``[<σ>, <ε>]``
-
-            If the argument is an 1D-array with length `n`the resulting array is of the
-            structure ``[[<σ1>, <σ2>, <σ3>, ... <σn>], [<ε1>, <ε2>, <ε3>, ... <εn>]]``
-
+        numpy.ndarray
+            Stress-strain array. Scalars return ``[stress, strain]``; arrays return
+            stress values and strain values stacked along the last axis.
         """
         load = np.asarray(load)
         stress = self.stress(load)
@@ -251,24 +289,18 @@ class NotchApproximationLawBase(ABC):
         return np.stack([stress, strain], axis=len(load.shape))
 
     def secondary(self, delta_load):
-        """Calculate stress and strain for secondary branch.
+        """Calculate stress and strain increments for a secondary branch.
 
         Parameters
         ----------
-        load : array-like
-            The load for which the stress and strain are to be calculated
+        delta_load : array_like
+            Linear-elastic load increment in MPa for the hysteresis branch.
 
         Returns
         -------
-        stress strain : ndarray
-            The resulting stress strain data.
-
-            If the argument is scalar, the resulting array is of the strucuture
-            ``[<σ>, <ε>]``
-
-            If the argument is an 1D-array with length `n`the resulting array is of the
-            structure ``[[<σ1>, <σ2>, <σ3>, ... <σn>], [<ε1>, <ε2>, <ε3>, ... <εn>]]``
-
+        numpy.ndarray
+            Stress-strain increment array. Scalars return ``[delta_stress,
+            delta_strain]``; arrays return increments stacked along the last axis.
         """
         delta_load = np.asarray(delta_load)
         delta_stress = self.stress_secondary_branch(delta_load)
@@ -277,54 +309,57 @@ class NotchApproximationLawBase(ABC):
 
 
 class ExtendedNeuber(NotchApproximationLawBase):
-    r"""Implementation of the extended Neuber notch approximation material relation.
+    r"""Apply the extended Neuber notch approximation law.
 
-    This notch approximation law is used for the P_RAM damage parameter in the FKM
-    nonlinear guideline (2019). Given an elastic-plastic stress (and strain) from a linear FE
-    calculation, it derives a corresponding elastic-plastic stress (and strain).
-
-    Note, the input stress and strain follow a linear relationship :math:`\sigma = E \cdot \epsilon`.
-    The output stress and strain follow the Ramberg-Osgood relation.
+    Use this law for the P_RAM damage parameter in the FKM nonlinear assessment.
+    It converts a linear-elastic FE load to an elastic-plastic local stress and
+    strain following the Ramberg-Osgood material law.
 
     Parameters
     ----------
-
     E : float
-        Young's Modulus
+        Young's modulus in MPa.
     K : float
-        The strain hardening coefficient, often also designated :math:`K'`, or ``K_prime``.
+        Ramberg-Osgood strength coefficient in MPa, also denoted ``K_prime``.
     n : float
-        The strain hardening exponent, often also designated :math:`n'`, or ``n_prime``.
+        Ramberg-Osgood strain hardening exponent, dimensionless.
     K_p : float, optional
-        The shape factor (de: Traglastformzahl)
+        Plastic shape factor, dimensionless.
 
     Notes
     -----
-    The equation implemented is described in the FKM nonlinear reference, chapter 2.5.7.
+    The primary path follows extended Neuber's rule from section 2.5.7 of the
+    FKM guideline nonlinear [FKM-Neuber]_:
 
+    .. math::
+
+        \varepsilon(\sigma) = \frac{L}{\sigma} K_p\,
+        \varepsilon^*(L), \qquad
+        \varepsilon^*(L) = \varepsilon\!\left(\frac{L}{K_p}\right).
+
+    References
+    ----------
+    .. [FKM-Neuber] Forschungskuratorium Maschinenbau,
+       ``FKM-Richtlinie nichtlinear``, 2019.
     """
 
     def stress(self, load, *, rtol=1e-4, tol=1e-4):
-        r"""Calculate the stress of the primary path in the stress-strain diagram at a given
+        """Calculate primary-path elastic-plastic stress from load.
 
         Parameters
         ----------
-        load : array-like float
-            The elastic von Mises stress from a linear elastic FEA.
-            In the FKM nonlinear document, this is also called load "L", because it is derived
-            from a load-time series. Note that this value is scaled to match the actual loading
-            in the assessment, it equals the FEM solution times the transfer factor.
+        load : array_like
+            Linear-elastic von Mises stress from a scaled FE result in MPa, denoted
+            as load ``L`` in the FKM nonlinear guideline.
         rtol : float, optional
-            The relative tolerance to which the implicit formulation of the stress gets solved,
-            by default 1e-4
+            Relative tolerance for solving the implicit equation. Default is ``1e-4``.
         tol : float, optional
-            The absolute tolerance to which the implicit formulation of the stress gets solved,
-            by default 1e-4
+            Absolute tolerance for solving the implicit equation. Default is ``1e-4``.
 
         Returns
         -------
-        stress : array-like float
-            The resulting elastic-plastic stress according to the notch-approximation law.
+        float or numpy.ndarray
+            Elastic-plastic stress in MPa on the primary path.
         """
         stress = optimize.newton(
             func=self._stress_implicit,
@@ -336,48 +371,37 @@ class ExtendedNeuber(NotchApproximationLawBase):
         return stress
 
     def strain(self, stress):
-        """Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
-        The formula is given by eq. 2.5-42 of FKM nonlinear.
-        load / stress * self._K_p * e_star
+        """Calculate primary-path elastic-plastic strain from stress.
 
         Parameters
         ----------
-        stress : array-like float
-            The stress
-        load : array-like float
-            The load
+        stress : array_like
+            Elastic-plastic stress in MPa on the primary path.
 
         Returns
         -------
-        strain : array-like float
-            The resulting strain
+        float or numpy.ndarray
+            Elastic-plastic strain on the primary path, dimensionless.
         """
 
         return self._ramberg_osgood_relation.strain(stress)
 
     def load(self, stress, *, rtol=1e-4, tol=1e-4):
-        """Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
-        from the elastic-plastic stress as from the notch approximation.
-        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
-
-        This method is the inverse operation of "stress", i.e., ``L = load(stress(L))`` and ``S = stress(load(stress))``.
+        """Calculate linear-elastic load from elastic-plastic stress.
 
         Parameters
         ----------
-        stress : array-like float
-            The elastic-plastic stress as computed by the notch approximation
+        stress : array_like
+            Elastic-plastic stress in MPa on the primary path.
         rtol : float, optional
-            The relative tolerance to which the implicit formulation of the load gets solved,
-            by default 1e-4
+            Relative tolerance for solving the implicit equation. Default is ``1e-4``.
         tol : float, optional
-            The absolute tolerance to which the implicit formulation of the load gets solved,
-            by default 1e-4
+            Absolute tolerance for solving the implicit equation. Default is ``1e-4``.
 
         Returns
         -------
-        load : array-like float
-            The resulting load or lienar-elastic stress.
-
+        float or numpy.ndarray
+            Linear-elastic load in MPa that produces ``stress``.
         """
 
         # self._stress_implicit(stress) = 0
@@ -395,25 +419,21 @@ class ExtendedNeuber(NotchApproximationLawBase):
         return load
 
     def stress_secondary_branch(self, delta_load, *, rtol=1e-4, tol=1e-4):
-        """Calculate the stress on secondary branches in the stress-strain diagram at a given
-        elastic-plastic stress (load), from a FE computation.
-        This is done by solving for the root of f(sigma) in eq. 2.5-46 of FKM nonlinear.
+        """Calculate stress increment from secondary-branch load increment.
 
         Parameters
         ----------
-        delta_load : array-like float
-            The load increment of the hysteresis
+        delta_load : array_like
+            Linear-elastic load increment in MPa for a hysteresis branch.
         rtol : float, optional
-            The relative tolerance to which the implicit formulation of the stress gets solved,
-            by default 1e-4
+            Relative tolerance for solving the implicit equation. Default is ``1e-4``.
         tol : float, optional
-            The absolute tolerance to which the implicit formulation of the stress gets solved,
-            by default 1e-4
+            Absolute tolerance for solving the implicit equation. Default is ``1e-4``.
 
         Returns
         -------
-        delta_stress : array-like float
-            The resulting stress increment within the hysteresis
+        float or numpy.ndarray
+            Elastic-plastic stress increment in MPa on the secondary branch.
         """
         delta_stress = optimize.newton(
             func=self._stress_secondary_implicit,
@@ -425,47 +445,37 @@ class ExtendedNeuber(NotchApproximationLawBase):
         return delta_stress
 
     def strain_secondary_branch(self, delta_stress):
-        """Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
-        The formula is given by eq. 2.5-46 of FKM nonlinear.
+        """Calculate secondary-branch strain increment from stress increment.
 
         Parameters
         ----------
-        delta_sigma : array-like float
-            The stress increment
-        delta_load : array-like float
-            The load increment
+        delta_stress : array_like
+            Elastic-plastic stress increment in MPa on a secondary hysteresis branch.
 
         Returns
         -------
-        strain : array-like float
-            The resulting strain
+        float or numpy.ndarray
+            Elastic-plastic strain increment on the secondary branch, dimensionless.
         """
 
         return self._ramberg_osgood_relation.delta_strain(delta_stress)
 
     def load_secondary_branch(self, delta_stress, *, rtol=1e-4, tol=1e-4):
-        """Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
-        from the elastic-plastic stress as from the notch approximation.
-        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
-
-        This method is the inverse operation of "stress", i.e., ``L = load(stress(L))`` and ``S = stress(load(stress))``.
+        """Calculate load increment from secondary-branch stress increment.
 
         Parameters
         ----------
-        delta_stress : array-like float
-            The increment of the elastic-plastic stress as computed by the notch approximation
+        delta_stress : array_like
+            Elastic-plastic stress increment in MPa on a secondary hysteresis branch.
         rtol : float, optional
-            The relative tolerance to which the implicit formulation of the stress gets solved,
-            by default 1e-4
+            Relative tolerance for solving the implicit equation. Default is ``1e-4``.
         tol : float, optional
-            The absolute tolerance to which the implicit formulation of the stress gets solved,
-            by default 1e-4
+            Absolute tolerance for solving the implicit equation. Default is ``1e-4``.
 
         Returns
         -------
-        delta_load : array-like float
-            The resulting load or lienar-elastic stress.
-
+        float or numpy.ndarray
+            Linear-elastic load increment in MPa that produces ``delta_stress``.
         """
 
         # self._stress_implicit(stress) = 0
@@ -483,33 +493,20 @@ class ExtendedNeuber(NotchApproximationLawBase):
         return delta_load
 
     def _e_star(self, load):
-        """Compute the plastic corrected strain term e^{\ast} from the Neuber approximation
-        (eq. 2.5-43 in FKM nonlinear)
-
-        ``e_star = L/K_p / E + (L/K_p / K')^(1/n')``
+        """Calculate the Neuber-corrected primary strain term.
         """
 
         corrected_load = load / self._K_p
         return self._ramberg_osgood_relation.strain(corrected_load)
 
     def _d_e_star(self, load):
-        """Compute the first derivative of self._e_star(load)
-
-        .. code::
-
-          e_star = L/K_p / E + (L/K_p / K')^(1/n')
-
-          de_star(L)/dL = d/dL[ L/K_p / E + (L/K_p / K')^(1/n') ]
-             = 1/(K_p * E) + tangential_compliance(L/K_p) / K_p
+        """Calculate the derivative of the primary corrected strain term.
         """
         return 1/(self.K_p * self.E) \
             + self._ramberg_osgood_relation.tangential_compliance(load/self.K_p) / self.K_p
 
     def _neuber_strain(self, stress, load):
-        """Compute the additional strain term from the Neuber approximation
-        (2nd summand in eq. 2.5-45 in FKM nonlinear)
-
-        ``(L/sigma * K_p * e_star)``
+        """Calculate the primary Neuber strain term.
         """
 
         e_star = self._e_star(load)
@@ -524,18 +521,13 @@ class ExtendedNeuber(NotchApproximationLawBase):
         return factor * self._K_p * e_star
 
     def _stress_implicit(self, stress, load):
-        """Compute the implicit function of the stress, f(sigma),
-        defined in eq.2.5-45 of FKM nonlinear
-
-        ``f(sigma) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star)``
+        """Calculate the primary implicit stress residual.
         """
 
         return self._ramberg_osgood_relation.strain(stress) - self._neuber_strain(stress, load)
 
     def _d_stress_implicit(self, stress, load):
-        """Compute the first derivative of self._stress_implicit
-
-        ``df/dsigma``
+        """Calculate the derivative of the primary stress residual.
         """
 
         e_star = self._e_star(load)
@@ -544,30 +536,21 @@ class ExtendedNeuber(NotchApproximationLawBase):
             * -np.power(stress, -2, out=np.ones_like(stress), where=stress!=0)
 
     def _delta_e_star(self, delta_load):
-        """Compute the plastic corrected strain term e^{\ast} from the Neuber approximation
-        (eq. 2.5-43 in FKM nonlinear), for secondary branches in the stress-strain diagram
+        """Calculate the Neuber-corrected secondary strain term.
         """
 
         corrected_load = delta_load / self._K_p
         return self._ramberg_osgood_relation.delta_strain(corrected_load)
 
     def _d_delta_e_star(self, delta_load):
-        """Compute the first derivative of self._delta_e_star(load)
-
-        .. code::
-
-          delta_e_star = ΔL/K_p / E + 2*(ΔL/K_p / (2*K'))^(1/n')
-                       = ΔL/K_p / E + 2*(ΔL/(2*K_p) / K')^(1/n')
-
-          d_delta_e_star(ΔL)/dΔL = d/dΔL[ ΔL/K_p / E + 2*(ΔL/(2*K_p) / K')^(1/n') ]
-             = 1/(K_p * E) + 2*tangential_compliance(ΔL/(2*K_p)) / (2*K_p)
-             = 1/(K_p * E) + tangential_compliance(ΔL/(2*K_p)) / K_p
+        """Calculate the derivative of the secondary corrected strain term.
         """
         return 1/(self.K_p * self.E) \
             + self._ramberg_osgood_relation.tangential_compliance(delta_load/(2*self.K_p)) / self.K_p
 
     def _neuber_strain_secondary(self, delta_stress, delta_load):
-        """Compute the additional strain term from the Neuber approximation (2nd summand in eq. 2.5-45 in FKM nonlinear)"""
+        """Calculate the secondary Neuber strain term.
+        """
 
         delta_e_star = self._delta_e_star(delta_load)
 
@@ -581,19 +564,13 @@ class ExtendedNeuber(NotchApproximationLawBase):
         return factor * self._K_p * delta_e_star
 
     def _stress_secondary_implicit(self, delta_stress, delta_load):
-        """Compute the implicit function of the stress, f(sigma), defined in eq.2.5-46 of FKM nonlinear"""
+        """Calculate the secondary implicit stress residual.
+        """
 
         return self._ramberg_osgood_relation.delta_strain(delta_stress) - self._neuber_strain_secondary(delta_stress, delta_load)
 
     def _d_stress_secondary_implicit(self, delta_stress, delta_load):
-        """Compute the first derivative of self._stress_secondary_implicit
-        Note, the derivative of `self._ramberg_osgood_relation.delta_strain` is:
-
-        .. code::
-
-          d/dΔsigma delta_strain(Δsigma) =  d/dΔsigma 2*strain(Δsigma/2)
-            = 2*d/dΔsigma strain(Δsigma/2) = 2 * 1/2 * tangential_compliance(Δsigma/2)
-            = self._ramberg_osgood_relation.tangential_compliance(delta_stress/2)
+        """Calculate the derivative of the secondary stress residual.
         """
 
         delta_e_star = self._delta_e_star(delta_load)
@@ -603,55 +580,26 @@ class ExtendedNeuber(NotchApproximationLawBase):
             * -np.power(delta_stress, -2, out=np.ones_like(delta_stress), where=delta_stress!=0)
 
     def _load_implicit(self, load, stress):
-         """Compute the implicit function of the stress, f(sigma),
-         as a function of the load,
-         defined in eq.2.5-45 of FKM nonlinear.
-         This is needed to apply the notch approximation law "backwards", i.e.,
-         to get from stress back to load. This is required for the FKM nonlinear roughness & surface layer.
-
-         ``f(L) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star(L))``
+         """Calculate the primary implicit load residual.
          """
 
          return self._stress_implicit(stress, load)
 
     def _d_load_implicit(self, load, stress):
-        """Compute the first derivative of self._load_implicit
-
-        .. code::
-
-          f(L) = sigma/E + (sigma/K')^(1/n') - (L/sigma * K_p * e_star(L))
-
-          df/dL = d/dL [ -(L/sigma * K_p * e_star(L))]
-           = -1/sigma * K_p * e_star(L) - L/sigma * K_p * de_star/dL
-
+        """Calculate the derivative of the primary load residual.
         """
 
         return -1/stress * self.K_p * self._e_star(load) \
             - load/stress * self.K_p * self._d_e_star(load)
 
     def _load_secondary_implicit(self, delta_load, delta_stress):
-        """Compute the implicit function of the stress, f(Δsigma),
-        as a function of the load,
-        defined in eq.2.5-46 of FKM nonlinear.
-        This is needed to apply the notch approximation law "backwards", i.e.,
-        to get from stress back to load. This is required for the FKM nonlinear roughness & surface layer.
-
-        ``f(ΔL) = Δsigma/E + 2*(Δsigma/(2*K'))^(1/n') - (ΔL/Δsigma * K_p * Δe_star(ΔL))``
-
+        """Calculate the secondary implicit load residual.
         """
 
         return self._stress_secondary_implicit(delta_stress, delta_load)
 
     def _d_load_secondary_implicit(self, delta_load, delta_stress):
-        """Compute the first derivative of self._load_secondary_implicit
-
-        .. code::
-
-          f(ΔL) = Δsigma/E + 2*(Δsigma/(2*K'))^(1/n') - (ΔL/Δsigma * K_p * Δe_star(ΔL))
-
-          df/dΔL = d/dΔL [ -(ΔL/Δsigma * K_p * Δe_star(ΔL))]
-           = -1/Δsigma * K_p * Δe_star(ΔL) - ΔL/Δsigma * K_p * dΔe_star/dΔL
-
+        """Calculate the derivative of the secondary load residual.
         """
 
         return -1/delta_stress * self.K_p * self._delta_e_star(delta_load) \
@@ -660,30 +608,18 @@ class ExtendedNeuber(NotchApproximationLawBase):
 
 
 class NotchApproxBinner:
-    """Binning for notch approximation laws, as described in FKM nonlinear 2.5.8.2, p.55.
-    The implicitly defined stress function of the notch approximation law is precomputed
-    for various loads at a fixed number of equispaced `bins`. The values are stored in two
-    look-up tables for the primary and secondary branches of the stress-strain hysteresis
-    curves. When stress and strain values are needed for a given load, the nearest value
-    of the corresponding bin is retrived. This is faster than invoking the nonlinear
-    root finding algorithm for every new load.
+    """Cache a notch approximation law on lookup tables.
 
-    There are two variants of the data structure.
-
-    * First, for a single assessment point, the lookup-table contains one load,
-      strain and stress value in every bin.
-    * Second, for vectorized assessment of multiple nodes at once, the lookup-table
-      contains at every load bin an array with stress and strain values for every node.
-      The representative load, stored in the lookup table and used for the lookup
-      is the first element of the given load array.
+    Use this helper when repeated evaluations of the same notch approximation law
+    would make nonlinear root finding too expensive. The binner precomputes the
+    primary path and secondary hysteresis branches up to an expected maximum load.
 
     Parameters
     ----------
     notch_approximation_law : NotchApproximationLawBase
-       The law for the notch approximation to be used.
-
+        Notch approximation law to tabulate.
     number_of_bins : int, optional
-       The number of bins in the lookup table, default 100
+        Number of bins in the primary lookup table. Default is ``100``.
     """
 
     def __init__(self, notch_approximation_law, number_of_bins=100):
@@ -694,17 +630,17 @@ class NotchApproxBinner:
         self._max_load_index = None
 
     def initialize(self, max_load):
-        """Initialize with a maximum expected load.
+        """Initialize lookup tables up to the maximum expected load.
 
         Parameters
         ----------
         max_load : array_like
-            The state of the maximum nominal load that is expected.  The first
-            element is chosen as representative to calculate the lookup table.
+            Maximum linear-elastic load in MPa expected during the assessment.
 
         Returns
         -------
-        self
+        NotchApproxBinner
+            Initialized binner instance.
         """
         max_load = np.asarray(max_load)
         self._max_load_rep, _ = self._representative_value_and_sign(max_load)
@@ -719,32 +655,34 @@ class NotchApproxBinner:
 
     @property
     def ramberg_osgood_relation(self):
-        """the Ramberg-Osgood relation object, i.e., an object of type RambergOsgood
-        provided by the notch approximation law.
+        """Return the Ramberg-Osgood material relation.
+
+        Returns
+        -------
+        pylife.materiallaws.rambgood.RambergOsgood
+            Material relation of the tabulated notch approximation law.
         """
         return self._ramberg_osgood_relation
 
     def primary(self, load):
-        """Lookup the stress strain of the primary branch.
+        """Look up stress and strain on the primary path.
 
         Parameters
         ----------
-        load : array-like
-            The load as argument for the stress strain laws.
-            If non-scalar, the first element will be used to look it up in the
-            lookup table.
+        load : array_like
+            Linear-elastic load in MPa.
 
         Returns
         -------
-        stress strain : ndarray
-            The resulting stress strain data.
+        numpy.ndarray
+            Tabulated stress-strain array on the primary path.
 
-            If the argument is scalar, the resulting array is of the strucuture
-            ``[<σ>, <ε>]``
-
-            If the argument is an 1D-array with length `n`the resulting array is of the
-            structure ``[[<σ1>, <σ2>, <σ3>, ... <σn>], [<ε1>, <ε2>, <ε3>, ... <εn>]]``
-
+        Raises
+        ------
+        RuntimeError
+            Raised if :meth:`initialize` has not been called.
+        ValueError
+            Raised if ``load`` exceeds the initialized maximum load.
         """
         self._raise_if_uninitialized()
         load_rep, sign = self._representative_value_and_sign(load)
@@ -757,26 +695,24 @@ class NotchApproxBinner:
         return sign * self._lut_primary[idx, :]
 
     def secondary(self, delta_load):
-        """Lookup the stress strain of the secondary branch.
+        """Look up stress and strain increments on a secondary branch.
 
         Parameters
         ----------
-        load : array-like
-            The load as argument for the stress strain laws.
-            If non-scalar, the first element will be used to look it up in the
-            lookup table.
+        delta_load : array_like
+            Linear-elastic load increment in MPa.
 
         Returns
         -------
-        stress strain : ndarray
-            The resulting stress strain data.
+        numpy.ndarray
+            Tabulated stress-strain increment array on the secondary branch.
 
-            If the argument is scalar, the resulting array is of the strucuture
-            ``[<σ>, <ε>]``
-
-            If the argument is an 1D-array with length `n`the resulting array is of the
-            structure ``[[<σ1>, <σ2>, <σ3>, ..., <σn>], [<ε1>, <ε2>, <ε3>, ..., <εn>]]``
-
+        Raises
+        ------
+        RuntimeError
+            Raised if :meth:`initialize` has not been called.
+        ValueError
+            Raised if ``delta_load`` exceeds the initialized maximum load increment.
         """
         self._raise_if_uninitialized()
         delta_load_rep, sign = self._representative_value_and_sign(delta_load)

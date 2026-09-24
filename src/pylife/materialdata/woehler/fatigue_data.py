@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Represent measured Wöhler fatigue test data as a pandas accessor.
+
+The module registers :attr:`pandas.DataFrame.fatigue_data` and provides a
+helper for deriving fracture and runout outcomes from a cycle limit.
+"""
+
 import pandas as pd
 import numpy as np
 import scipy.stats as stats
@@ -26,12 +32,34 @@ from pylife import DataValidator
 
 @pd.api.extensions.register_dataframe_accessor('fatigue_data')
 class FatigueData(PylifeSignal):
-    """Class for fatigue data
+    """Validate and partition measured Wöhler fatigue test data.
 
-    Mandatory keys are
-        * ``load`` : float, the load level
-        * ``cycles`` : float, the cycles of failure or runout
-        * ``fracture``: bool, ``True`` iff the test is a fracture
+    ``FatigueData`` is a :class:`~pylife.PylifeSignal` accessor registered as
+    :attr:`pandas.DataFrame.fatigue_data`.  It stores individual fatigue tests
+    and separates finite-life tests from endurance-limit tests for the Wöhler
+    analyzers.
+
+    The signal has the following mandatory keys:
+
+    * ``load`` : Load level applied during the test, usually a stress or force
+      amplitude in the user's units.
+    * ``cycles`` : Number of cycles reached by the specimen.  For fractures it
+      is the cycles to failure; for runouts it is the stopped test duration.
+    * ``fracture`` : Boolean outcome flag.  ``True`` marks a fractured
+      specimen, ``False`` marks a runout that survived the specified cycles.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.DataFrame
+        Fatigue test data with the mandatory ``load``, ``cycles``, and
+        ``fracture`` columns.
+
+    Notes
+    -----
+    The finite zone contains fractured tests above the finite-infinite
+    transition load.  The infinite zone contains all tests at or below that
+    transition and is used to evaluate the endurance limit ``SD`` according to
+    DIN 50100-style Wöhler testing.
     """
 
     def _validate(self):
@@ -47,104 +75,112 @@ class FatigueData(PylifeSignal):
 
     @property
     def num_tests(self):
-        '''The number of tests'''
+        """Return the number of tests."""
         return self._obj.shape[0]
 
     @property
     def num_fractures(self):
-        '''The number of fractures'''
+        """Return the number of fracture tests."""
         return self.fractures.shape[0]
 
     @property
     def num_runouts(self):
-        '''The number of runouts'''
+        """Return the number of runout tests."""
         return self.runouts.shape[0]
 
     @property
     def fractures(self):
-        '''Only the fracture tests'''
+        """Return only fracture tests."""
         return self._obj[self._obj.fracture]
 
     @property
     def runouts(self):
-        '''Only the runout tests'''
+        """Return only runout tests."""
         return self._obj[~self._obj.fracture]
 
     @property
     def load(self):
-        '''The load levels'''
+        """Return the test load levels."""
         return self._obj.load
 
     @property
     def cycles(self):
-        '''the cycle numbers'''
+        """Return the reached cycle numbers."""
         return self._obj.cycles
 
     @property
     def fracture(self):
+        """Return the fracture outcome flags."""
         return self._obj.fracture
 
     @property
     def finite_infinite_transition(self):
-        '''The start value of the load endurance limit.
+        """Return the estimated load that separates finite and infinite life.
 
-        It is determined by searching for the lowest load level before the
-        appearance of a runout data point, and the first load level where a
-        runout appears.  Then the median of the two load levels is the start
-        value.
-        '''
+        The transition is determined from the highest runout load and the next
+        higher fracture load.  It is used as the initial endurance limit load
+        ``SD`` for subsequent Wöhler analyses.
+        """
         if self._finite_infinite_transition is None:
             self._calc_finite_infinite_transition()
         return self._finite_infinite_transition
 
     @property
     def finite_zone(self):
-        '''All the tests with load levels above ``finite_infinite_transition``, i.e. the finite zone'''
+        """Return fracture tests above ``finite_infinite_transition``."""
         if self._finite_infinite_transition is None:
             self._calc_finite_infinite_transition()
         return self._finite_zone
 
     @property
     def infinite_zone(self):
-        '''All the tests with load levels below ``finite_infinite_transition``, i.e. the infinite zone'''
+        """Return tests at or below ``finite_infinite_transition``."""
         if self._finite_infinite_transition is None:
             self._calc_finite_infinite_transition()
         return self._infinite_zone
 
     @property
     def fractured_loads(self):
+        """Return unique load levels with at least one fracture."""
         return np.unique(self.fractures.load.values)
 
     @property
     def runout_loads(self):
+        """Return unique load levels with at least one runout."""
         return np.unique(self.runouts.load.values)
 
     @property
     def non_fractured_loads(self):
+        """Return load levels with runouts and no fractures."""
         return np.setdiff1d(self.runout_loads, self.fractured_loads)
 
     @property
     def mixed_loads(self):
+        """Return load levels with both fractures and runouts."""
         return np.intersect1d(self.runout_loads, self.fractured_loads)
 
     @property
     def pure_runout_loads(self):
+        """Return load levels that contain runouts but no fractures."""
         return np.setxor1d(self.runout_loads, self.mixed_loads)
 
     def conservative_finite_infinite_transition(self):
-        """
-        Sets a lower fatigue limit that what is expected from the algorithm given by Mustafa Kassem.
-        For calculating the fatigue limit, all amplitudes where runouts and fractures are present are collected.
-        To this group, the maximum amplitude with only runouts present is added.
-        Then, the fatigue limit is the mean of all these amplitudes.
+        """Set a conservative finite-infinite transition load.
+
+        The method averages all mixed load levels and the highest pure-runout
+        load level [1]_.  This lowers the estimated endurance limit compared
+        with the default transition search when pure runouts exist below
+        mixed levels.
 
         Returns
         -------
-        self
+        FatigueData
+            The same accessor with the updated transition load.
 
-        See also
-        --------
-        Kassem, Mustafa - "Open Source Software Development for Reliability and Lifetime Calculation" pp. 34
+        References
+        ----------
+        .. [1] Mustafa Kassem, "Open Source Software Development for
+           Reliability and Lifetime Calculation", p. 34.
         """
         amps_to_consider = self.mixed_loads
 
@@ -158,17 +194,18 @@ class FatigueData(PylifeSignal):
         return self
 
     def set_finite_infinite_transition(self, finite_infinite_transition):
-        """
-        Allows the user to set an arbitrary fatigue limit.
+        """Set the transition load between finite and infinite life manually.
 
         Parameters
         ----------
         finite_infinite_transition : float
-            The fatigue limit for separating the finite and infinite zone is set.
+            Load level used as the endurance-limit start value and as the
+            boundary between finite and infinite zones.
 
         Returns
         -------
-        self
+        FatigueData
+            The same accessor with recalculated finite and infinite zones.
         """
         self._finite_infinite_transition = finite_infinite_transition
         self._calc_finite_zone_manual(finite_infinite_transition)
@@ -176,7 +213,15 @@ class FatigueData(PylifeSignal):
         return self
 
     def irrelevant_runouts_dropped(self):
-        '''Make a copy of the instance with irrelevant pure runout levels dropped. '''
+        """Return data with pure runout levels below the relevant range dropped.
+
+        Returns
+        -------
+        FatigueData
+            The current accessor when no runouts are irrelevant, otherwise a
+            new accessor without pure runout levels below the highest pure
+            runout level.
+        """
         if len(self.pure_runout_loads) <= 1:
             return self
         if self.pure_runout_loads.max() < self.fractured_loads.min():
@@ -187,6 +232,7 @@ class FatigueData(PylifeSignal):
 
     @property
     def max_runout_load(self):
+        """Return the highest load level with a runout."""
         return self.runouts.load.max()
 
     def _calc_finite_infinite_transition(self):
@@ -215,23 +261,29 @@ class FatigueData(PylifeSignal):
 
 
 def determine_fractures(df, load_cycle_limit=None):
-    '''Adds a fracture column according to defined load cycle limit
+    """Add a ``fracture`` column from a runout cycle limit.
 
     Parameters
     ----------
-    df : DataFrame
-        A ``DataFrame`` containing ``fatigue_data`` without ``fractures`` column
+    df : pandas.DataFrame
+        Fatigue test data with ``load`` and ``cycles`` columns but without a
+        required ``fracture`` column.
     load_cycle_limit : float, optional
-        If given, all the tests of ``df`` with ``cycles`` equal od above
-        ``load_cycle_limit`` are considered as runouts. Others as fractures.
-        If not given the maximum cycle number in ``df`` is used as load cycle
-        limit.
+        Cycle count at which tests are classified as runouts.  Tests with
+        ``cycles`` greater than or equal to this value become runouts, all
+        others become fractures.  Default is the maximum cycle count in ``df``.
 
     Returns
     -------
-    df : DataFrame
-        A ``DataFrame`` with the column ``fracture`` added
-    '''
+    pandas.DataFrame
+        Copy of ``df`` with the Boolean column ``fracture`` added.
+
+    Examples
+    --------
+    >>> df = pd.DataFrame({"load": [300.0, 280.0], "cycles": [1000, 10000]})
+    >>> determine_fractures(df, load_cycle_limit=10000)["fracture"].tolist()
+    [True, False]
+    """
     DataValidator().fail_if_key_missing(df, ['load', 'cycles'])
     if load_cycle_limit is None:
         load_cycle_limit = df.cycles.max()

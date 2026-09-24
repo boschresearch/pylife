@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Estimate Wöhler curve start parameters from finite-life test data.
+
+The elementary analyzer provides the common first estimate for all Wöhler
+analyzers in this package.  It fits the finite-life slope and estimates the
+scatter from the pearl chain method.
+"""
+
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
@@ -31,86 +38,115 @@ import warnings
 
 
 class Elementary:
-    """Base class to analyze SN-data.
+    """Estimate finite-life Wöhler parameters from fracture data.
 
-    The common base class for all SN-data analyzers calculates the first
-    estimation of a Wöhler curve in the finite zone of the SN-data. It
-    calculates the slope `k`, the fatigue limit `SD`, the transition cycle
-    number `ND` and the scatter in load direction `1/TN`.
+    ``Elementary`` is the base analyzer for Wöhler test data.  It estimates
+    ``k_1``, the finite-life slope, ``SD``, the endurance limit load at the
+    knee point, ``ND``, the cycle number at the knee point, and ``TN``, the
+    scatter in cycle direction.  ``TS`` is derived from ``TN`` and ``k_1``.
 
-    The result is just meant to be a first guess. Derived classes are supposed
-    to use those first guesses as starting points for their specific
-    analysis. For that they should implement the method `_specific_analysis()`.
+    Choose this analyzer when only a robust first estimate is needed or when
+    the data in the endurance-limit region is insufficient for Probit or
+    maximum-likelihood evaluation.  Derived analyzers use its result as their
+    start value.
+
+    Parameters
+    ----------
+    fatigue_data : pandas.DataFrame or FatigueData
+        Wöhler test data.  A data frame must contain ``load`` and ``cycles``;
+        when ``fracture`` is missing, the maximum cycle count is interpreted as
+        the runout limit.
+
+    See Also
+    --------
+    pylife.materialdata.woehler.Probit : Estimate endurance-limit parameters with the Probit method.
+    pylife.materialdata.woehler.MaxLikeInf : Refine ``SD`` and ``TS`` by maximum likelihood.
+    pylife.materialdata.woehler.MaxLikeFull : Fit all Wöhler parameters by maximum likelihood.
+
+    Notes
+    -----
+    The finite-life slope is fitted in double-logarithmic load-cycle space.
+    The scatter ``TN`` is evaluated with the DIN 50100 pearl chain method,
+    which shifts fracture points to a common load level before fitting their
+    failure probabilities.
     """
 
     def __init__(self, fatigue_data):
-        """The constructor.
+        """Create an analyzer for Wöhler fatigue data.
 
         Parameters
         ----------
-        fatigue_data : pd.DataFrame or FatigueData
-           The SN-data to be analyzed.
+        fatigue_data : pandas.DataFrame or FatigueData
+            Wöhler test data to be analyzed.
         """
         self._fd = self._get_fatigue_data(fatigue_data)
         self.use_highest_mixed_level()
 
     def use_old_likelihood_estimation(self):
-        """Use the old (until pyLife-2.1.x) likelihood estimation.
+        """Select the likelihood formulation used up to pyLife 2.1.x.
 
-        That uses all fractures for the finite likelihood and only the mixed levels for
-        the infinite.
+        The legacy formulation uses all fractures for the finite-life
+        likelihood and only the infinite zone for the endurance-limit
+        likelihood.
 
         Returns
         -------
-        self
+        Elementary
+            The same analyzer configured with the legacy likelihood.
         """
         self._lh = LikelihoodLegacy(self._fd)
         return self
 
     def use_highest_mixed_level(self):
-        """Use fractures of pure fracture levels and the highest mixed level
-        to determine the likelihood in the finite zone.
+        """Select pure finite levels and the highest mixed load level.
 
-        This is the default
+        This default formulation uses fractures from pure fracture levels and
+        from the highest mixed load level for the finite-life likelihood.
 
         Returns
         -------
-        self
+        Elementary
+            The same analyzer configured with the default likelihood.
         """
         self._lh = LikelihoodHighestMixedLevel(self._fd)
         return self
 
     def use_all_fractures(self):
-        """Use all fractures to determine the likelihood in the finite zone.
+        """Select all fractures for the finite-life likelihood.
 
         Returns
         -------
-        self
+        Elementary
+            The same analyzer configured to use every fracture test.
         """
         self._lh = LikelihoodAllFractures(self._fd)
         return self
 
     def use_only_pure_fracture_levels(self):
-        """Use only fractures of pure fracture levels to determine the likelihood in the finite zone.
+        """Select only pure fracture levels for the finite-life likelihood.
 
         Returns
         -------
-        self
+        Elementary
+            The same analyzer configured to ignore mixed levels in the
+            finite-life likelihood.
         """
         self._lh = LikelihoodPureFiniteZone(self._fd)
         return self
 
     def use_custom_likelihood_estimation(self, likelihood_class):
-        """Inject a custom Likelihood calculation class to determine the likelihood.
+        """Select a custom likelihood calculation class.
 
         Parameters
         ----------
-        likelihood : Class implementing :class:`~pylife.materialdata.woehler.likelihood.Likelihood`
-           The likelihood calculation class
+        likelihood_class : type
+            Class implementing the likelihood interface of
+            :class:`~pylife.materialdata.woehler.likelihood.AbstractLikelihood`.
 
         Returns
         -------
-        self
+        Elementary
+            The same analyzer configured with ``likelihood_class``.
         """
         self._lh = likelihood_class(self._fd)
         return self
@@ -131,12 +167,19 @@ class Elementary:
         return params
 
     def analyze(self, **kwargs):
-        """Analyze the SN-data.
+        """Analyze the Wöhler test data.
 
         Parameters
         ----------
-        **kwargs : kwargs arguments
-            Arguments to be passed to the derived class
+        **kwargs : dict
+            Keyword arguments forwarded to the specific analyzer
+            implementation.
+
+        Returns
+        -------
+        pandas.Series
+            Wöhler curve parameters ``k_1``, ``ND``, ``SD``, ``TN``, ``TS``,
+            and ``failure_probability`` for 50 % failure probability.
         """
         if len(self._fd.load.unique()) < 2:
             raise ValueError(
@@ -200,26 +243,41 @@ class Elementary:
         return wc
 
     def bayesian_information_criterion(self):
-        """The Bayesian Information Criterion
+        """Return the Bayesian information criterion of the last analysis.
 
-        Bayesian Information Criterion (BIC) is a criterion for model selection among
-        a finite set of models; the model with the lowest BIC is preferred.
-        https://www.statisticshowto.datasciencecentral.com/bayesian-information-criterion/
+        Returns
+        -------
+        float
+            Bayesian information criterion value.  Lower values indicate a
+            better fit for the same likelihood formulation.
 
-        Basically the lower the better the fit.
+        Raises
+        ------
+        ValueError
+            Raised when :meth:`analyze` has not been called yet.
 
-        Note that the BIC is not suitable to compare the results of two different
-        likelihoods.
+        Notes
+        -----
+        The BIC is not suitable for comparing results from different
+        likelihood formulations because the underlying model definition
+        changes.
         """
         if not hasattr(self,"_bic"):
             raise ValueError("BIC value undefined. Analysis has not been conducted.")
         return self._bic
 
     def pearl_chain_estimator(self):
+        """Return the pearl chain probability estimator of the last analysis.
+
+        Returns
+        -------
+        PearlChainProbability
+            Probability fit created during the pearl chain scatter estimate.
+        """
         return self._pearl_chain_estimator
 
     def __calc_bic(self, wc):
-        '''         '''
+        
         param_num = 5  # SD, TS, k_1, ND, TN
         log_likelihood = self._lh.likelihood_total(wc['SD'], wc['TS'], wc['k_1'], wc['ND'], wc['TN'])
         self._bic = (-2 * log_likelihood) + (param_num * np.log(self._fd.num_tests))

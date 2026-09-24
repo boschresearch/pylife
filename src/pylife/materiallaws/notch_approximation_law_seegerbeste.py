@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+r"""Provide the Seeger-Beste notch approximation law.
+
+The module supports FKM nonlinear assessments by converting linear-elastic
+local loads from finite-element calculations to elastic-plastic local
+stress-strain paths using the Seeger-Beste approximation.
+"""
+
 __author__ = ["Sebastian Bucher", "Benjamin Maier"]
 __maintainer__ = __author__
 
@@ -25,57 +32,53 @@ import pylife.materiallaws.rambgood
 import pylife.materiallaws.notch_approximation_law
 
 class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximationLawBase):
-    r'''Implementation of the Seeger-Beste notch approximation material relation.
+    """Apply the Seeger-Beste notch approximation law.
 
-    This notch approximation law is used for the P_RAJ damage parameter in the FKM
-    nonlinear guideline (2019). Given an elastic-plastic stress (and strain) from a linear FE
-    calculation, it derives a corresponding elastic-plastic stress (and strain).
-
-    Note, the input stress and strain follow a linear relationship :math:`\sigma = E \cdot \epsilon`.
-    The output stress and strain follow the Ramberg-Osgood relation.
+    Use this law for the P_RAJ damage parameter in the FKM nonlinear assessment.
+    It converts a linear-elastic FE load to an elastic-plastic local stress and
+    strain following the Ramberg-Osgood material law.
 
     Parameters
     ----------
-
     E : float
-        Young's Modulus
+        Young's modulus in MPa.
     K : float
-        The strength coefficient, often also designated :math:`K'`, or ``K_prime``.
+        Ramberg-Osgood strength coefficient in MPa, also denoted ``K_prime``.
     n : float
-        The strain hardening coefficient, often also designated :math:`n'`, or ``n_prime``.
+        Ramberg-Osgood strain hardening exponent, dimensionless.
     K_p : float
-        The shape factor (de: Traglastformzahl)
+        Plastic shape factor, dimensionless.
 
     Notes
     -----
-    The equation implemented is described in the FKM nonlinear reference, chapter 2.8.7.
-    '''
+    The implementation follows section 2.8.7 of the FKM guideline nonlinear
+    [FKM-SeegerBeste]_ and solves the Seeger-Beste implicit equations for
+    primary and secondary paths.
+
+    References
+    ----------
+    .. [FKM-SeegerBeste] Forschungskuratorium Maschinenbau,
+       ``FKM-Richtlinie nichtlinear``, 2019.
+    """
 
     def stress(self, load, *, rtol=1e-4, tol=1e-4):
-        '''Calculate the stress of the primary path in the stress-strain diagram at a given
-        elastic-plastic stress (load), from a FE computation.
-        This is done by solving for the root of f(sigma) in eq. 2.8-42 of FKM nonlinear.
-
-        The secant method is used which does not rely on a derivative and has good numerical stability properties,
-        but is slower than Newton's method. The algorithm is implemented in scipy for multiple values at once.
-        The documentation states that this is faster for more than ~100 entries than a simple loop over the
-        individual values.
-
-        We employ the scipy function on all items in the given array at once.
-        Usually, some of them fail and we recompute the value of the failed items afterwards.
-        Calling the Newton method on a scalar function somehow always converges, while calling
-        the Newton method with same initial conditions on the same values, but with multiple at once, fails sometimes.
+        """Calculate primary-path elastic-plastic stress from load.
 
         Parameters
         ----------
-        load : array-like float
-            The load
+        load : array_like
+            Linear-elastic von Mises stress from a scaled FE result in MPa, denoted
+            as load ``L`` in the FKM nonlinear guideline.
+        rtol : float, optional
+            Relative tolerance for solving the implicit equation. Default is ``1e-4``.
+        tol : float, optional
+            Absolute tolerance for solving the implicit equation. Default is ``1e-4``.
 
         Returns
         -------
-        stress : array-like float
-            The resulting stress
-        '''
+        float or numpy.ndarray
+            Elastic-plastic stress in MPa on the primary path.
+        """
         # initial value as given by correction document to FKM nonlinear
         x0 = np.asarray(load * (1 - (1 - 1/self._K_p)/1000))
 
@@ -103,22 +106,18 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         return stress[0]
 
     def strain(self, stress):
-        '''Calculate the strain of the primary path in the stress-strain diagram at a given stress and load.
-        The formula is given by eq. 2.8-39 of FKM nonlinear.
-        load / stress * self._K_p * e_star
+        """Calculate primary-path elastic-plastic strain from stress.
 
         Parameters
         ----------
-        stress : array-like float
-            The stress
-        load : array-like float
-            The load
+        stress : array_like
+            Elastic-plastic stress in MPa on the primary path.
 
         Returns
         -------
-        strain : array-like float
-            The resulting strain
-        '''
+        float or numpy.ndarray
+            Elastic-plastic strain on the primary path, dimensionless.
+        """
 
         if not isinstance(stress, float):
             stress = stress.astype(float)
@@ -126,26 +125,22 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         return self._ramberg_osgood_relation.strain(stress)
 
     def load(self, stress, *, rtol=1e-4, tol=1e-4):
-        '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
-        from the elastic-plastic stress as from the notch approximation.
-        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
-
-        This method is the inverse operation of "stress", i.e., ``L = load(stress(L))`` and ``S = stress(load(stress))``.
-
-        Note that this method is only implemented for the scalar case, as the  FKM nonlinear surface layer & roughness
-        also only handles the scalar case with one assessment point at once, not with entire meshes.
+        """Calculate linear-elastic load from elastic-plastic stress.
 
         Parameters
         ----------
-        stress : array-like float
-            The elastic-plastic stress as computed by the notch approximation
+        stress : array_like
+            Elastic-plastic stress in MPa on the primary path.
+        rtol : float, optional
+            Relative tolerance for solving the implicit equation. Default is ``1e-4``.
+        tol : float, optional
+            Absolute tolerance for solving the implicit equation. Default is ``1e-4``.
 
         Returns
         -------
-        load : array-like float
-            The resulting load or linear elastic stress.
-
-        '''
+        float or numpy.ndarray
+            Linear-elastic load in MPa that produces ``stress``.
+        """
 
         x0 = stress / (1 - (1 - 1/self._K_p)/1000)
 
@@ -163,31 +158,22 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         return load
 
     def stress_secondary_branch(self, delta_load, *, rtol=1e-4, tol=1e-4):
-        '''Calculate the stress on secondary branches in the stress-strain diagram at a given
-        elastic-plastic stress (load), from a FE computation.
-        This is done by solving for the root of f(sigma) in eq. 2.8-43 of FKM nonlinear.
+        """Calculate stress increment from secondary-branch load increment.
 
         Parameters
         ----------
-        delta_load : array-like float
-            The load increment of the hysteresis
+        delta_load : array_like
+            Linear-elastic load increment in MPa for a hysteresis branch.
+        rtol : float, optional
+            Relative tolerance for solving the implicit equation. Default is ``1e-4``.
+        tol : float, optional
+            Absolute tolerance for solving the implicit equation. Default is ``1e-4``.
 
         Returns
         -------
-        delta_stress : array-like float
-            The resulting stress increment within the hysteresis
-
-        Todo
-        ----
-
-        In the future, we can evaluate the runtime performance and try a Newton method instead
-        of the currently used secant method to speed up the computation.
-
-        .. code::
-
-            fprime=self._d_stress_secondary_implicit_numeric
-
-        '''
+        float or numpy.ndarray
+            Elastic-plastic stress increment in MPa on the secondary branch.
+        """
 
         # initial value as given by correction document to FKM nonlinear
         delta_load = np.asarray(delta_load)
@@ -218,21 +204,18 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         return delta_stress[0]
 
     def strain_secondary_branch(self, delta_stress):
-        '''Calculate the strain on secondary branches in the stress-strain diagram at a given stress and load.
-        The formula is given by eq. 2.8-43 of FKM nonlinear.
+        """Calculate secondary-branch strain increment from stress increment.
 
         Parameters
         ----------
-        delta_sigma : array-like float
-            The stress increment
-        delta_load : array-like float
-            The load increment
+        delta_stress : array_like
+            Elastic-plastic stress increment in MPa on a secondary hysteresis branch.
 
         Returns
         -------
-        strain : array-like float
-            The resulting strain
-        '''
+        float or numpy.ndarray
+            Elastic-plastic strain increment on the secondary branch, dimensionless.
+        """
 
         if not isinstance(delta_stress, float):
             delta_stress = delta_stress.astype(float)
@@ -240,26 +223,22 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         return self._ramberg_osgood_relation.delta_strain(delta_stress)
 
     def load_secondary_branch(self, delta_stress, *, rtol=1e-4, tol=1e-4):
-        '''Apply the notch-approximation law "backwards", i.e., compute the linear-elastic stress (called "load" or "L" in FKM nonlinear)
-        from the elastic-plastic stress as from the notch approximation.
-        This backward step is needed for the pfp FKM nonlinear surface layer & roughness.
-
-        This method is the inverse operation of "stress", i.e., ``L = load(stress(L))`` and ``S = stress(load(stress))``.
-
-        Note that this method is only implemented for the scalar case, as the  FKM nonlinear surface layer & roughness
-        also only handles the scalar case with one assessment point at once, not with entire meshes.
+        """Calculate load increment from secondary-branch stress increment.
 
         Parameters
         ----------
-        delta_stress : array-like float
-            The increment of the elastic-plastic stress as computed by the notch approximation
+        delta_stress : array_like
+            Elastic-plastic stress increment in MPa on a secondary hysteresis branch.
+        rtol : float, optional
+            Relative tolerance for solving the implicit equation. Default is ``1e-4``.
+        tol : float, optional
+            Absolute tolerance for solving the implicit equation. Default is ``1e-4``.
 
         Returns
         -------
-        delta_load : array-like float
-            The resulting load or linear elastic stress.
-
-        '''
+        float or numpy.ndarray
+            Linear-elastic load increment in MPa that produces ``delta_stress``.
+        """
 
         x0 = delta_stress / (1 - (1 - 1/self._K_p)/1000)
 
@@ -277,20 +256,14 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         return delta_load
 
     def _e_star(self, load):
-        """Compute the plastic corrected strain term e^{\ast} from the Neuber approximation
-        (eq. 2.5-43 in FKM nonlinear)
-
-        ``e_star = L/K_p / E + (L/K_p / K')^(1/n')``
+        """Calculate the Neuber-corrected primary strain term.
         """
 
         corrected_load = load / self._K_p
         return self._ramberg_osgood_relation.strain(corrected_load)
 
     def _neuber_strain(self, stress, load):
-        """Compute the additional strain term from the Neuber approximation
-        (2nd summand in eq. 2.5-45 in FKM nonlinear)
-
-        ``(L/sigma * K_p * e_star)``
+        """Calculate the primary Neuber strain term.
         """
 
         e_star = self._e_star(load)
@@ -305,34 +278,16 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         return factor * self._K_p * e_star
 
     def _u_term(self, stress, load):
-        '''
-        Compute the "u-term" from equation 2.8.40
-
-        ``(pi/2*(L/Sigma-1/k_p-1))``
-
-        '''
+        """Calculate the Seeger-Beste primary geometry term.
+        """
         if not isinstance(load, float):
             load = load.astype(float)
         factor = np.divide(load, stress, out=np.ones_like(load), where=stress!=0)
         return (np.pi/2)*((factor-1)/(self._K_p-1))
 
     def _middle_term(self, stress, load):
-        '''
-        Compute the middle term of euqation 2.8.42
-
-        (2/u^2)*ln(1/cos(u))+(Sigma/L)^2-(Sigma/L)
-
-        Note, this is only possible for
-
-        .. code::
-
-          1/cos(u) > 0
-          <=>  0 <= u < pi/2
-          <=>  0 <= L/Sigma - 1/k_p - 1 < 1
-          <=>  1 <= L/Sigma - 1/k_p < 2
-          <=>  1/(L/Sigma - 2) < k_p <= 1/(L/Sigma - 1)
-
-        '''
+        """Calculate the Seeger-Beste primary correction factor.
+        """
         # convert stress value to float
         if not isinstance(stress, float):
             stress = stress.astype(float)
@@ -344,24 +299,21 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         return (factor1)*np.log(factor2)+(factor)**2-(factor)
 
     def _stress_implicit(self, stress, load):
-        """Compute the implicit function of the stress, f(sigma),
-        defined in eq.2.8-42 of FKM nonlinear
-
-        f(sigma) = sigma/E + (sigma/K')^(1/n') - ((2/u^2)*ln(1/cos(u))+(Sigma/L)^2-(Sigma/L)) * (L/sigma * K_p * e_star)
+        """Calculate the primary implicit stress residual.
         """
 
         return self._ramberg_osgood_relation.strain(stress) / ((self._middle_term(stress, load))*(self._neuber_strain(stress, load))) - 1
 
     def _delta_e_star(self, delta_load):
-        """Compute the plastic corrected strain term e^{\ast} from the Neuber approximation
-        (eq. 2.5-43 in FKM nonlinear), for secondary branches in the stress-strain diagram
+        """Calculate the Neuber-corrected secondary strain term.
         """
 
         corrected_load = delta_load / self._K_p
         return self._ramberg_osgood_relation.delta_strain(corrected_load)
 
     def _neuber_strain_secondary(self, delta_stress, delta_load):
-        """Compute the additional strain term from the Neuber approximation (2nd summand in eq. 2.5-45 in FKM nonlinear)"""
+        """Calculate the secondary Neuber strain term.
+        """
 
         delta_e_star = self._delta_e_star(delta_load)
 
@@ -375,33 +327,16 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         return factor * self._K_p * delta_e_star
 
     def _u_term_secondary(self, delta_stress, delta_load):
-        '''
-        Compute the "u-term" from equation 2.8.45 for the secondary branch
-
-        ``(pi/2*(delta_L/delta_Sigma-1/k_p-1))``
-
-        '''
+        """Calculate the Seeger-Beste secondary geometry term.
+        """
         if not isinstance(delta_load, float):
             delta_load = delta_load.astype(float)
         factor = np.divide(delta_load, delta_stress, out=np.ones_like(delta_load), where=delta_stress!=0)
         return (np.pi/2)*((factor-1)/(self._K_p-1))
 
     def _middle_term_secondary(self, delta_stress, delta_load):
-        '''
-        Compute the middle term of euqation 2.8.42 for the secondary branch
-
-        ``(2/u^2)*ln(1/cos(u))+(Sigma/L)^2-(Sigma/L)``
-
-        Note, this is only possible for
-        .. code::
-
-          1/cos(u) > 0
-          <=>  0 <= u < pi/2
-          <=>  0 <= delta_L/delta_Sigma - 1/k_p - 1 < 1
-          <=>  1 <= delta_L/delta_Sigma - 1/k_p < 2
-          <=>  1/(delta_L/delta_Sigma - 2) < k_p <= 1/(delta_L/delta_Sigma - 1)
-
-        '''
+        """Calculate the Seeger-Beste secondary correction factor.
+        """
         if not isinstance(delta_stress, float):
             delta_stress = delta_stress.astype(float)
         factor = np.divide(delta_stress, delta_load, out=np.ones_like(delta_stress), where=delta_load!=0)
@@ -412,55 +347,34 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         return (factor1)*np.log(factor2)+(factor)**2-(factor)
 
     def _stress_secondary_implicit(self, delta_stress, delta_load):
-        """Compute the implicit function of the stress, f(sigma), defined in eq.2.8-43 of FKM nonlinear.
-        There are in principal two different approaches:
-
-        * find root of ``f(sigma)-epsilon``
-        * find root of ``f(sigma)/epsilon - 1``
-
-        The second approach is numerically more stable and is used here.
-        The code for the first approach would be:
-
-        .. code::
-
-            return self._ramberg_osgood_relation.delta_strain(delta_stress) \
-                - (self._middle_term_secondary(delta_stress, delta_load))*(self._neuber_strain_secondary(delta_stress, delta_load))
+        """Calculate the secondary implicit stress residual.
         """
 
         return self._ramberg_osgood_relation.delta_strain(delta_stress) \
             / ((self._middle_term_secondary(delta_stress, delta_load))*(self._neuber_strain_secondary(delta_stress, delta_load))) - 1
 
     def _d_stress_secondary_implicit_numeric(self, delta_stress, delta_load):
-        """Compute the first derivative of self._stress_secondary_implicit
-        df/dsigma
+        """Calculate the numerical derivative of the secondary stress residual.
         """
 
         h = 1e-4
         return (self._stress_secondary_implicit(delta_stress+h, delta_load) - self._stress_secondary_implicit(delta_stress-h, delta_load)) / (2*h)
 
     def _load_implicit(self, load, stress):
-         """Compute the implicit function of the stress, f(sigma),
-         as a function of the load,
-         defined in eq.2.8-42 of FKM nonlinear.
-         This is needed to apply the notch approximation law "backwards", i.e.,
-         to get from stress back to load. This is required for the FKM nonlinear roughness & surface layer.
+         """Calculate the primary implicit load residual.
          """
 
          return self._stress_implicit(stress, load)
 
     def _load_secondary_implicit(self, delta_load, delta_stress):
-        """Compute the implicit function of the stress, f(Δsigma),
-        as a function of the load,
-        defined in eq.2.8-43 of FKM nonlinear.
-        This is needed to apply the notch approximation law "backwards", i.e.,
-        to get from stress back to load. This is required for the FKM nonlinear roughness & surface layer.
+        """Calculate the secondary implicit load residual.
         """
 
         return self._stress_secondary_implicit(delta_stress, delta_load)
 
     def _stress_fix_not_converged_values(self, stress, load, x0, rtol, tol):
-        '''For the values that did not converge in the previous vectorized call to optimize.newton,
-        call optimize.newton again on the scalar value. This usually finds the correct solution.'''
+        """Recompute non-converged primary stress values scalar-wise.
+        """
 
         indices_diverged = np.where(~stress[1].all(axis=1))[0]
         x0_array = np.asarray(x0)
@@ -483,8 +397,8 @@ class SeegerBeste(pylife.materiallaws.notch_approximation_law.NotchApproximation
         return stress
 
     def _stress_secondary_fix_not_converged_values(self, delta_stress, delta_load, x0, rtol, tol):
-        '''For the values that did not converge in the previous vectorized call to optimize.newton,
-        call optimize.newton again on the scalar value. This usually finds the correct solution.'''
+        """Recompute non-converged secondary stress values scalar-wise.
+        """
 
         indices_diverged = np.where(~delta_stress[1].all(axis=1))[0]
         x0_array = np.asarray(x0)

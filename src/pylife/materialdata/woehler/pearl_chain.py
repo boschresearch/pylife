@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Evaluate finite-life scatter with the pearl chain method.
+
+The module shifts fracture tests to one normalized load level and fits their
+failure probabilities in log-cycle direction.
+"""
 
 import numpy as np
 
@@ -22,21 +27,26 @@ from pylife.utils.probability_data import ProbabilityFit
 
 
 class PearlChainProbability(ProbabilityFit):
-    """Shift all the data point to a normalized load level.
+    """Shift fracture data to a normalized load level.
 
-    Pearl chain method: consists of shifting the fractured data to a median
-    load level.  The shifted data points are assigned to a Rossow failure
-    probability.  The scatter in load-cycle direction can be computed from the
-    probability net.
+    The pearl chain method moves fracture test results along a Wöhler slope to
+    a common load level.  Rossow cumulative failure probabilities are then
+    assigned to the sorted shifted cycle numbers and fitted in a probability
+    net.  The fit is used to derive the scatter in cycle direction ``TN``.
 
     Parameters
     ----------
-    fracutres: pd.DataFrame consisting `load` and `cycles`
-        The data point of the fractures to be shifted.
+    fractures : pandas.DataFrame
+        Fracture test data with ``load`` and ``cycles`` columns.
+    slope : float
+        Slope used to shift the fracture tests in double-logarithmic Wöhler
+        space.  The elementary analyzer passes the fitted regression slope.
 
-    slope: float
-        The ``k_1`` slope the data is to be shifted along.
-
+    Notes
+    -----
+    The method is commonly used for DIN 50100-style Wöhler evaluations when
+    fracture points at several load levels need to be represented by one
+    probability distribution in cycle direction.
     """
 
     def __init__(self, fractures, slope):
@@ -48,10 +58,10 @@ class PearlChainProbability(ProbabilityFit):
 
     @property
     def normed_load(self):
-        """The normalized (shifted) load level."""
+        """Return the normalized load level."""
         return self._normed_load
 
     @property
     def normed_cycles(self):
-        """The cycles shifted to the normalized load level."""
+        """Return the cycle numbers shifted to ``normed_load``."""
         return self._normed_cycles

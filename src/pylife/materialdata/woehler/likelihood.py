@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Calculate log-likelihoods for Wöhler curve parameter estimation.
+
+The likelihood formulations combine fracture tests in the finite-life region
+with fracture and runout outcomes around the endurance limit.
+"""
+
 __author__ = "Mustapha Kassem"
 __maintainer__ = "Johannes Mueller"
 
@@ -27,53 +33,80 @@ from pylife.utils.functions import scattering_range_to_std, std_to_scattering_ra
 
 
 class AbstractLikelihood(ABC):
-    """Calculate the likelihood a fatigue dataset matches with Wöhler curve parameters.
+    """Calculate log-likelihoods for Wöhler curve parameters.
 
-    This is an abstract base class that must be subclassed from.
+    Subclasses define which fracture tests contribute to the finite-life term
+    and which tests contribute to the endurance-limit term.  The likelihoods
+    are used by the maximum-likelihood analyzers to fit ``SD``, ``TS``,
+    ``k_1``, ``ND``, and ``TN``.
+
+    Parameters
+    ----------
+    fatigue_data : FatigueData
+        Validated Wöhler fatigue data accessor.
+
+    Notes
+    -----
+    The finite-life likelihood evaluates shifted cycle numbers
+
+    .. math::
+
+        x_i = \\log_{10}\\left(N_i \\left(\\frac{S_i}{SD}\\right)^{k_1}\\right)
+
+    against a normal distribution with mean ``log10(ND)`` and standard
+    deviation derived from ``TN``.  The endurance-limit likelihood evaluates
+    the fracture probability at each load level with a log-normal distribution
+    around ``SD`` and scatter ``TS``; runouts contribute the survival
+    probability.
     """
 
     def __init__(self, fatigue_data):
         self._fd = fatigue_data
 
     def likelihood_total(self, SD, TS, k_1, ND, TN):
-        """Determine the likelihood for a certain Wöhler curve.
+        """Return the total log-likelihood for Wöhler curve parameters.
 
         Parameters
         ----------
-        SD: float
-            The tested endurance infinite limit
-        k_1: float
-            The tested slope for the finite zone of the Wöhler curve
-        TN: float
-            The tested scatter of the finite endurance limit
-        ND: float
-            The testsd finite limit cycle of the Wöhler curve
+        SD : float
+            Endurance limit load at the knee point.
+        TS : float
+            Scatter in load direction, expressed as the 10 %/90 % load ratio.
+        k_1 : float
+            Finite-life Wöhler slope above the endurance limit.
+        ND : float
+            Cycle number at the knee point.
+        TN : float
+            Scatter in cycle direction, expressed as the 10 %/90 % cycle
+            ratio.
 
         Returns
         -------
-        likelihood : float
-            The likelihood that the parameters are correct.
+        float
+            Sum of the finite-life and endurance-limit log-likelihoods.
         """
         return self.likelihood_finite(SD, k_1, ND, TN) + self.likelihood_infinite(SD, TS)
 
     def likelihood_finite(self, SD, k_1, ND, TN):
-        """Determine the likelihood for a certain finite endurance curve.
+        """Return the finite-life log-likelihood for fractures.
 
         Parameters
         ----------
-        SD: float
-            The tested endurance infinite limit
-        k_1: float
-            The tested slope for the finite zone of the Wöhler curve
-        TN: float
-            The tested scatter of the finite endurance limit
-        ND: float
-            The testsd finite limit cycle of the Wöhler curve
+        SD : float
+            Endurance limit load at the knee point.
+        k_1 : float
+            Finite-life Wöhler slope above the endurance limit.
+        ND : float
+            Cycle number at the knee point.
+        TN : float
+            Scatter in cycle direction, expressed as the 10 %/90 % cycle
+            ratio.
 
         Returns
         -------
-        likelihood : float
-            The likelihood that the parameters are correct.
+        float
+            Log-likelihood that the selected fracture tests follow the
+            finite-life branch defined by ``SD``, ``k_1``, ``ND``, and ``TN``.
         """
         if SD <= 0.0:
             return -np.inf
@@ -86,20 +119,21 @@ class AbstractLikelihood(ABC):
         return log_likelihood.sum()
 
     def likelihood_infinite(self, SD, TS):
-        """Determine the likelihood for a certain inifinite endurance limit.
+        """Return the endurance-limit log-likelihood for outcomes.
 
         Parameters
         ----------
-        SD:
-            Endurnace limit start value to be optimzed, unless the user fixed it.
-        TS:
-            The scatter in load direction TS to be optimzed, unless the user fixed it.
+        SD : float
+            Endurance limit load at the knee point.
+        TS : float
+            Scatter in load direction, expressed as the 10 %/90 % load ratio.
 
         Returns
         -------
-        likelihood : float
-            The likelihood that the parameters are correct.
-
+        float
+            Log-likelihood that fracture and runout outcomes around the
+            endurance limit follow the log-normal distribution defined by
+            ``SD`` and ``TS``.
         """
         relevant_zone = self._zone_for_infinite_likelihood()
         std_log = scattering_range_to_std(TS)
@@ -112,16 +146,24 @@ class AbstractLikelihood(ABC):
         return np.log(non_log_likelihood).sum()
 
     def _zone_for_infinite_likelihood(self):
-        """The zone for the infinite likelihood. By default the whole dataset."""
+        """Return the tests used for the endurance-limit likelihood."""
         return self._fd
 
     @abstractmethod
     def _fractures_for_finite_likelihood(self):
-        """The fractures for the finite likelihood. Must be implemented by subclasses."""
+        """Return the fractures used for the finite-life likelihood."""
         ...
 
 
 class LikelihoodPureFiniteZone(AbstractLikelihood):
+    """Use finite-zone fractures for the finite-life likelihood.
+
+    Parameters
+    ----------
+    fatigue_data : FatigueData
+        Validated Wöhler fatigue data accessor.
+    """
+
     def _zone_for_infinite_likelihood(self):
         return self._fd
 
@@ -131,6 +173,14 @@ class LikelihoodPureFiniteZone(AbstractLikelihood):
 
 
 class LikelihoodHighestMixedLevel(AbstractLikelihood):
+    """Use pure finite fractures and the highest mixed load level.
+
+    Parameters
+    ----------
+    fatigue_data : FatigueData
+        Validated Wöhler fatigue data accessor.
+    """
+
     def _fractures_for_finite_likelihood(self):
         fractures = self._fd.fractures
         loads = fractures.load
@@ -140,11 +190,26 @@ class LikelihoodHighestMixedLevel(AbstractLikelihood):
 
 
 class LikelihoodAllFractures(AbstractLikelihood):
+    """Use all fracture tests for the finite-life likelihood.
+
+    Parameters
+    ----------
+    fatigue_data : FatigueData
+        Validated Wöhler fatigue data accessor.
+    """
+
     def _fractures_for_finite_likelihood(self):
         return self._fd.fractures
 
 
 class LikelihoodLegacy(AbstractLikelihood):
+    """Use the likelihood formulation from pyLife 2.1.x and earlier.
+
+    Parameters
+    ----------
+    fatigue_data : FatigueData
+        Validated Wöhler fatigue data accessor.
+    """
 
     def _zone_for_infinite_likelihood(self):
         return self._fd.infinite_zone

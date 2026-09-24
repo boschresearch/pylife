@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Provide pandas accessors for Wöhler fatigue curves.
+
+The module exposes the ``.woehler`` accessor for :class:`pandas.Series` and
+:class:`pandas.DataFrame` objects that describe S-N curves for fatigue-life
+calculations.
+"""
+
 import pandas as pd
 import numpy as np
 import scipy.stats as stats
@@ -26,30 +33,42 @@ from pylife import PylifeSignal
 @pd.api.extensions.register_series_accessor('woehler')
 @pd.api.extensions.register_dataframe_accessor('woehler')
 class WoehlerCurve(PylifeSignal):
-    """A PylifeSignal accessor for Wöhler Curve data.
+    """Represent a Wöhler curve stored in a pandas object.
 
-    Wöhler Curve (aka SN-curve) determines after how many load cycles at a
-    certain load amplitude the component is expected to fail.
+    A Wöhler curve, also called an S-N curve, relates a load amplitude to the
+    number of cycles to failure. The accessor accepts scalar curve parameters
+    in a :class:`pandas.Series` or row-wise curve parameters in a
+    :class:`pandas.DataFrame`.
 
-    The signal has the following mandatory keys:
+    Parameters
+    ----------
+    pandas_obj : pandas.Series or pandas.DataFrame
+        Pandas object containing Wöhler curve parameters.
 
-    * ``k_1`` : The slope of the Wöhler Curve
-    * ``ND`` : The cycle number of the endurance limit
-    * ``SD`` : The load level of the endurance limit
+    Notes
+    -----
+    The signal contract is validated and completed as follows:
 
-    The ``_50`` suffixes imply that the values are valid for a 50% probability
-    of failure.
+    * ``k_1`` : Mandatory slope in the finite-life range above the knee point,
+      dimensionless.
+    * ``ND`` : Mandatory number of cycles at the knee point, sometimes called
+      endurance cycles, in cycles.
+    * ``SD`` : Mandatory load amplitude at the knee point, sometimes called
+      endurance limit, in a consistent load unit such as MPa or N.
+    * ``k_2`` : Optional slope below the knee point, dimensionless. Default is
+      ``numpy.inf``, representing a horizontal endurance branch.
+    * ``TN`` : Optional scatter range in cycle direction, defined as
+      ``N_90 / N_10``. Default is ``1.0`` if neither ``TN`` nor ``TS`` is
+      given; otherwise it is derived from ``TS ** k_1``.
+    * ``TS`` : Optional scatter range in load direction, defined as
+      ``SD_90 / SD_10``. Default is ``1.0`` if neither ``TN`` nor ``TS`` is
+      given; otherwise it is derived from ``TN ** (1 / k_1)``.
+    * ``failure_probability`` : Optional failure probability represented by
+      the stored curve. Default is ``0.5``.
 
-    There are the following optional keys:
-
-    * ``k_2`` : The slope of the Wöhler Curve below the endurance limit
-                If the key is missing it is assumed to be infinity, i.e. perfect endurance
-    * ``TN`` : The scatter in cycle direction, (N_90/N_10)
-               If the key is missing it is assumed to be 1.0 – i.e. no scatter –
-               or calculated from ``TS`` if given.
-    * ``TS`` : The scatter in load direction, (SD_90/SD_10)
-               If the key is missing it is assumed to be 1.0 – i.e. no scatter –
-               or calculated from ``TN`` if given.
+    The S-N terminology follows fatigue testing practice, for example DIN
+    50100. The load unit is not fixed by pyLife; use one consistent unit for
+    ``SD`` and all load values passed to the accessor.
     """
 
     def _validate(self):
@@ -76,34 +95,44 @@ class WoehlerCurve(PylifeSignal):
 
     @property
     def SD(self):
+        """Return the load amplitude at the knee point.
+        """
         return self._obj.SD
 
     @property
     def ND(self):
+        """Return the number of cycles at the knee point.
+        """
         return self._obj.ND
 
     @property
     def k_1(self):
-        """The second Wöhler slope."""
+        """Return the finite-life Wöhler slope.
+        """
         return self._obj.k_1
 
     @property
     def k_2(self):
-        """The second Wöhler slope."""
+        """Return the Wöhler slope below the knee point.
+        """
         return self._obj.k_2
 
     @property
     def TN(self):
-        """The load direction scatter value TN."""
+        """Return the scatter range in cycle direction.
+        """
         return self._obj.TN
 
     @property
     def TS(self):
-        """The load direction scatter value TS."""
+        """Return the scatter range in load direction.
+        """
         return self._obj.TS
 
     @property
     def failure_probability(self):
+        """Return the represented failure probability.
+        """
         return self._failure_probability
 
     def transform_to_failure_probability(self, failure_probability):
@@ -111,13 +140,15 @@ class WoehlerCurve(PylifeSignal):
 
         Parameters
         ----------
-        failure_probability : float | None
-            The new failure probablility. If ``None`` the object itself is returned
+        failure_probability : float or array_like or None
+            Target failure probability. If ``None``, return the accessor
+            itself without changing the stored curve.
 
         Returns
         -------
-        transformed : WoehlerCurve
-            The transformed ``WoehlerCurve`` object or ``self``.
+        WoehlerCurve
+            Curve accessor transformed to ``failure_probability`` or ``self``
+            if ``failure_probability`` is ``None``.
         """
         if failure_probability is None:
             return self
@@ -142,105 +173,128 @@ class WoehlerCurve(PylifeSignal):
         return WoehlerCurve(transformed)
 
     def miner_original(self):
-        """Set k_2 to inf according Miner Original method (k_2 = inf).
+        """Set ``k_2`` according to the Miner original method.
 
         Returns
         -------
-        modified copy of self
+        WoehlerCurve
+            Copy of the curve with ``k_2`` set to ``numpy.inf``.
         """
         new = self._obj.copy()
         new['k_2'] =  np.inf
         return self.__class__(new)
 
     def miner_elementary(self):
-        """Set k_2 to k_1 according Miner Elementary method (k_2 = k_1).
+        """Set ``k_2`` according to the Miner elementary method.
 
         Returns
         -------
-        modified copy of self
+        WoehlerCurve
+            Copy of the curve with ``k_2`` set to ``k_1``.
         """
         new = self._obj.copy()
         new['k_2'] =  self._obj.k_1
         return self.__class__(new)
 
     def miner_haibach(self):
-        """Set k_2 to value according Miner Haibach method (k_2 = 2 * k_1 - 1).
+        """Set ``k_2`` according to the Miner-Haibach method.
 
         Returns
         -------
-        modified copy of self
+        WoehlerCurve
+            Copy of the curve with ``k_2`` set to ``2 * k_1 - 1``.
         """
         new = self._obj.copy()
         new['k_2'] = 2. * self._obj.k_1 - 1.
         return self.__class__(new)
 
     def cycles(self, load, failure_probability=None):
-        """Calculate the cycles numbers from loads.
+        """Calculate cycle numbers from load amplitudes.
 
         Parameters
         ----------
         load : array_like
-            The load levels for which the corresponding cycle numbers are to be calculated.
-        failure_probability : float, optional
-            The failure probability with which the component should fail when
-            charged with `load` for the calculated cycle numbers. If not given, the
-            current `failure_probablility` attribute is used.
+            Load amplitudes in the same unit as ``SD``.
+        failure_probability : float or array_like or None, optional
+            Failure probability for which the cycle numbers are calculated. If
+            ``None``, use the accessor's current ``failure_probability``.
+            Default is ``None``.
 
         Returns
         -------
-        cycles : numpy.ndarray
-            The cycle numbers at which the component fails for the given `load` values
-
+        numpy.ndarray or pandas.Series
+            Numbers of cycles to failure for the given ``load`` values. The
+            result is a :class:`pandas.Series` if ``load`` is a series.
 
         Notes
         -----
         By default the calculation is performed according to the Basquin
-        equation using :meth:`basquin_cycles`.  Derived classes can choose to
-        override this in order to implement a different fatigue law.
+        equation using :meth:`basquin_cycles`. Derived classes can override
+        this method to implement a different fatigue law.
         """
         return self.basquin_cycles(load, failure_probability)
 
     def load(self, cycles, failure_probability=None):
-        """Calculate the load values from loads.
+        """Calculate load amplitudes from cycle numbers.
 
         Parameters
         ----------
         cycles : array_like
-            The cycle numbers for which the corresponding load levels are to be calculated.
-        failure_probability : float, optional
-            The failure probability with which the component should fail when
-            charged with `load` for the calculated cycle numbers. If not given, the
-            current `failure_probablility` attribute is used.
+            Numbers of cycles to failure.
+        failure_probability : float or array_like or None, optional
+            Failure probability for which the load amplitudes are calculated.
+            If ``None``, use the accessor's current ``failure_probability``.
+            Default is ``None``.
 
         Returns
         -------
-        cycles : numpy.ndarray
-            The cycle numbers at which the component fails for the given `load` values
+        numpy.ndarray or pandas.Series
+            Load amplitudes in the same unit as ``SD``. The result is a
+            :class:`pandas.Series` if ``cycles`` is a series.
 
         Notes
         -----
         By default the calculation is performed according to the Basquin
-        equation using :meth:`basquin_cycles`.  Derived classes can choose to
-        override this in order to implement a different fatigue law.
+        equation using :meth:`basquin_load`. Derived classes can override this
+        method to implement a different fatigue law.
         """
         return self.basquin_load(cycles, failure_probability)
 
     def basquin_cycles(self, load, failure_probability=None):
-        """Calculate the cycles numbers from loads according to the Basquin equation.
+        r"""Calculate cycle numbers from loads using the Basquin equation.
 
         Parameters
         ----------
         load : array_like
-            The load levels for which the corresponding cycle numbers are to be calculated.
-        failure_probability : float, optional
-            The failure probability with which the component should fail when
-            charged with `load` for the calculated cycle numbers. If not given, the
-            current `failure_probablility` attribute is used.
+            Load amplitudes in the same unit as ``SD``.
+        failure_probability : float or array_like or None, optional
+            Failure probability for which the cycle numbers are calculated. If
+            ``None``, use the accessor's current ``failure_probability``.
+            Default is ``None``.
 
         Returns
         -------
-        cycles : numpy.ndarray
-            The cycle numbers at which the component fails for the given `load` values
+        numpy.ndarray or pandas.Series
+            Numbers of cycles to failure for the given ``load`` values. The
+            result is a :class:`pandas.Series` if ``load`` is a series.
+
+        Notes
+        -----
+        The finite-life branch follows
+
+        .. math::
+
+            N = ND \left(\frac{L}{SD}\right)^{-k}
+
+        with ``k_1`` above the knee point and ``k_2`` below it. If ``k_2`` is
+        infinite, loads below ``SD`` lead to infinite life.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> wc = pd.Series({'k_1': 5.0, 'ND': 1e6, 'SD': 100.0}).woehler
+        >>> float(wc.basquin_cycles(200.0))
+        31250.0
         """
         def ensure_float_to_prevent_int_overflow(load):
             if isinstance(load, pd.Series):
@@ -262,21 +316,31 @@ class WoehlerCurve(PylifeSignal):
         return pd.Series(cycles, index=ld.index)
 
     def basquin_load(self, cycles, failure_probability=None):
-        """Calculate the load values from loads according to the Basquin equation.
+        r"""Calculate loads from cycle numbers using the Basquin equation.
 
         Parameters
         ----------
         cycles : array_like
-            The cycle numbers for which the corresponding load levels are to be calculated.
-        failure_probability : float, optional
-            The failure probability with which the component should fail when
-            charged with `load` for the calculated cycle numbers. If not given, the
-            current `failure_probablility` attribute is used.
+            Numbers of cycles to failure.
+        failure_probability : float or array_like or None, optional
+            Failure probability for which the load amplitudes are calculated.
+            If ``None``, use the accessor's current ``failure_probability``.
+            Default is ``None``.
 
         Returns
         -------
-        cycles : numpy.ndarray
-            The cycle numbers at which the component fails for the given `load` values
+        numpy.ndarray or pandas.Series
+            Load amplitudes in the same unit as ``SD``. The result is a
+            :class:`pandas.Series` if ``cycles`` is a series.
+
+        Notes
+        -----
+        This method inverts the Basquin relation used by
+        :meth:`basquin_cycles`:
+
+        .. math::
+
+            L = SD \left(\frac{N}{ND}\right)^{-1/k}
         """
         transformed = self.transform_to_failure_probability(failure_probability)
 
