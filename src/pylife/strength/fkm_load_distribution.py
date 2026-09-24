@@ -14,34 +14,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r"""Scale up a load sequence to incorporate safety factors for FKM
-nonlinear lifetime assessment.
+r"""Scale a load sequence for FKM nonlinear load distribution safety.
 
-Given a pandas Series of load values, return a scaled version where the safety
-has been incorporated.  The series is scaled by a constant value
-:math:`\gamma_L`, which models the distribution of the load, the severity of
-the failure (modeled by :math:`P_A`) and the considered load probability of
-either :math:`P_L=2.5 \%` or :math:`P_L=50 \%`.
+The accessors in this module multiply a stress or load sequence by the FKM
+nonlinear load factor :math:`\gamma_L`.  The factor accounts for the assumed
+load distribution, the assessment failure probability :math:`P_A`, and the
+load probability :math:`P_L` of either ``2.5`` percent or ``50`` percent.
 
 The FKM nonlinear guideline defines three possible methods to consider the
 statistical distribution of the load:
 
-    * a normal distribution with given standard deviation, :math:`s_L`
-    * a logarithmic-normal distribution with given standard deviation :math:`LSD_s`
-    * an unknown distribution, use the constant factor :math:`\gamma_L=1.1` for
-      :math:`P_L = 2.5\%`
+* Normal distribution with standard deviation :math:`s_L`.
+* Lognormal distribution with logarithmic standard deviation :math:`LSD_s`.
+* Unknown distribution, using :math:`\gamma_L = 1.1` for
+  :math:`P_L = 2.5\%`.
 
-For these three methods, there exist the three accessors
-`fkm_safety_normal_from_stddev`, `fkm_safety_lognormal_from_stddev`, and
-`fkm_safety_blanket`.
+The corresponding accessors are ``fkm_safety_normal_from_stddev``,
+``fkm_safety_lognormal_from_stddev``, and ``fkm_safety_blanket``.
 
 The resulting scaling factor can be retrieved with
 ``.gamma_L(input_parameters)``, the scaled load series can be obtained with
 ``.scaled_load_sequence(input_parameters)``.
 
+Notes
+-----
+The statistical load factors implement FKM nonlinear guideline clause 2.3.2.
+
 Examples
 --------
-
 >>> input_parameters = pd.Series({"P_A": 1e-5, "P_L": 50, "s_L": 10, "LSD_s": 1e-2,})
 >>> load_sequence = pd.Series([100.0, 150.0, 200.0], name="load")
 >>> # uses input_parameters.s_L, input_parameters.P_L, input_parameters.P_A
@@ -64,7 +64,6 @@ Name: load, dtype: float64
 1    150.0
 2    200.0
 Name: load, dtype: float64
-
 """
 
 __author__ = "Benjamin Maier"
@@ -77,35 +76,36 @@ from pylife import PylifeSignal
 @pd.api.extensions.register_dataframe_accessor("fkm_load_sequence")
 @pd.api.extensions.register_series_accessor("fkm_load_sequence")
 class FKMLoadSequence(PylifeSignal):
-    """Base class used by the safety scaling method. It is used to compute the beta parameter
-    and to scale the load sequence by a constant ``gamma_L``.
+    r"""Scale load data by a constant FKM load factor.
 
-    This class can be used from user code to scale a load sequence, potentially
-    on a mesh with other fields set for every node.
+    This accessor is available as ``.fkm_load_sequence`` on
+    :class:`pandas.Series` and :class:`pandas.DataFrame` objects.  It is the
+    shared base for the FKM statistical load distribution accessors and can also
+    be used directly when a factor :math:`\gamma_L` is already known.
 
-    In such a case, the other fields are not modified.
+    Signal contract:
 
-    Example
-    -------
+    * A :class:`pandas.Series` represents one scalar load value per load step.
+    * A :class:`pandas.DataFrame` with one column represents one scalar load
+      value per index row.
+    * A :class:`pandas.DataFrame` with multiple columns stores the load in the
+      first column; additional columns, such as a stress gradient, are copied
+      unchanged by :meth:`scaled_by_constant`.
+    * The object must not be empty.
 
-    .. jupyter-execute::
+    Parameters
+    ----------
+    pandas_obj : pandas.Series or pandas.DataFrame
+        Load sequence, stress sequence, or mesh-indexed load table to scale.
+        Load or stress values are interpreted in the units used by the
+        subsequent assessment, typically MPa for stresses.
 
-
-        import pandas as pd
-        import pylife.strength.fkm_load_distribution
-
-        # create an example load sequence with stress (S_v) and an arbitrary other column (col2)
-        mesh = pd.DataFrame(
-            index=pd.MultiIndex.from_product([range(2), range(4)], names=["load_step", "node_id"]),
-            data={
-                "S_v": [10, 20, -10, -20, 30, 60, 40, 80],
-                "col2":  [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-            })
-        print(mesh)
-
-        # scale the load sequence by the factor 2, note that col2 is not scaled
-        mesh.fkm_load_sequence.scaled_by_constant(2)
+    Notes
+    -----
+    Mesh-like data are commonly indexed by ``load_step`` and ``node_id``.  The
+    scaling methods preserve the original index and all non-load columns.
     """
+
 
     def scaled_by_constant(self, gamma_L):
         """Scale the load sequence by the given constant ``gamma_L``.
@@ -124,11 +124,14 @@ class FKMLoadSequence(PylifeSignal):
         Parameters
         ----------
         gamma_L : float
-            scaling factor for the load sequence.
+            Scaling factor for the load sequence, dimensionless.
 
         Returns
         -------
-        The scaled load sequence.
+        pandas.Series or pandas.DataFrame
+            Scaled copy of the load sequence.  For a multi-column
+            :class:`pandas.DataFrame`, only the first column is multiplied by
+            ``gamma_L``.
         """
 
         # `self._obj` can be either a pd.Series or a pd.DataFrame. A gradient can only be included if we have a pd.DataFrame
@@ -155,23 +158,15 @@ class FKMLoadSequence(PylifeSignal):
         Parameters
         ----------
         max_load_independently_for_nodes : bool, optional
-            If the maximum absolute should be computed separately for every node.
-
-            If set to False, a single maximum value is computed over all nodes.
-            The default is False, which means the whole mesh will be assessed
-            by the same maximum load. This, however, means that calculating the
-            FKMnonlinear assessment for the whole mesh at once yields a
-            different result than calculating the assessment for every single
-            node one after each other. (When doing it all at once, the maximum
-            absolute load used for the failure probability is the maximum of
-            the loads at every node, when doing it only for a single node, the
-            maximum absolute load value may be lower.)
+            Flag indicating whether to compute the maximum absolute load
+            separately for every node.  If set to ``False``, a single maximum
+            value is computed over all nodes.  Default is ``False``.
 
         Returns
         -------
-        L_max : float
-            The maximum absolute load.
-
+        float
+            Maximum absolute load.  The unit is the same as the load sequence,
+            typically MPa for stress values.
         """
 
         # if the load sequence is a pd.Series
@@ -213,7 +208,7 @@ class FKMLoadSequence(PylifeSignal):
                 raise ValueError(f"Given parameters have to include \"{required_parameter}\".")
 
     def _get_beta(self, input_parameters):
-        """Compute a scaling factor for assessing a load sequence for a given failure probability.
+        r"""Compute the reliability index for the assessment failure probability.
 
         For details, refer to the FKM nonlinear document.
 
@@ -225,19 +220,20 @@ class FKMLoadSequence(PylifeSignal):
         Parameters
         ----------
         input_parameters : pd.Series
-            The set of assessment parameters, has to contain the assessment failure probability ``input_parameters.P_A``.
-            This variable has to be one of {1e-7, 1e-6, 1e-5, 7.2e-5, 1e-3, 2.3e-1, 0.5}.
-
-        Raises
-        ------
-        ValueError
-            If the given failure probability has an invalid value.
+            Assessment parameters.  The series must contain ``P_A``, the
+            assessment failure probability as a dimensionless value.  Supported
+            values are ``1e-7``, ``1e-6``, ``1e-5``, ``7.2e-5``, ``1e-3``,
+            ``2.3e-1``, and ``0.5``.
 
         Returns
         -------
         float
-            The value of the beta parameter.
+            Reliability index :math:`\beta`, dimensionless.
 
+        Raises
+        ------
+        ValueError
+            If ``P_A`` is not one of the tabulated probabilities.
         """
 
         # list of predefined P_A and beta values
@@ -256,21 +252,36 @@ class FKMLoadSequence(PylifeSignal):
 @pd.api.extensions.register_dataframe_accessor("fkm_safety_normal_from_stddev")
 @pd.api.extensions.register_series_accessor("fkm_safety_normal_from_stddev")
 class FKMLoadDistributionNormal(FKMLoadSequence):
-    r"""Series accessor to get a scaled up load series.
+    r"""Scale a load sequence assuming normally distributed loads.
 
-    A load series is a list of load values with included load safety, as used
-    in FKM nonlinear lifetime assessments.
+    Use this accessor when the load values are normally distributed and the
+    standard deviation :math:`s_L` is known in the same unit as the load
+    sequence.  It converts a load sequence from the reference load probability
+    to the requested FKM load probability and assessment failure probability.
 
-    The loads are assumed to follow a **normal distribution** with standard
-    deviation :math:`s_L`.  To incorporate safety, reduce the values of the
-    load series from :math:`P_L = 50\%` up to the given load probability
-    :math:`P_L` and the given failure probability :math:`P_A`.
+    Signal contract:
 
-    For more information, see 2.3.2.1 of the FKM nonlinear guideline.
+    * The accessor accepts the same non-empty :class:`pandas.Series` or
+      :class:`pandas.DataFrame` objects as :class:`FKMLoadSequence`.
+    * In a multi-column :class:`pandas.DataFrame`, the first column contains the
+      load or stress values to scale; further columns are copied unchanged.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.Series or pandas.DataFrame
+        Load sequence or stress sequence.  Stress values are typically given in
+        MPa.
 
     See Also
     --------
-    :class:`AbstractFKMLoadDistribution`: accesses meshes with connectivity information
+    FKMLoadDistributionLognormal : Scale loads with a lognormal distribution.
+    FKMLoadDistributionBlanket : Scale loads when the distribution is unknown.
+
+    Notes
+    -----
+    Implement FKM nonlinear guideline clause 2.3.2.1.  Prefer this accessor
+    over :class:`FKMLoadDistributionLognormal` when additive scatter in load or
+    stress is the appropriate model.
     """
 
     def gamma_L(self, input_parameters):
@@ -292,16 +303,15 @@ class FKMLoadDistributionNormal(FKMLoadSequence):
             * ``input_parameters.max_load_independently_for_nodes``: optional, whether the scaling should be performed
               independently at every node (True), or uniformly over all nodes (False). The default value is False.
 
+        Returns
+        -------
+        float
+            Load scaling factor :math:`\gamma_L`, dimensionless.
+
         Raises
         ------
         ValueError
-            If not all parameters that are required were given.
-
-        Returns
-        -------
-        gamma_L : float
-            The resulting scaling factor.
-
+            If a required parameter is missing or ``P_A`` is not supported.
         """
 
         self._validate_parameters(input_parameters, required_parameters=["P_L", "s_L", "P_A"])
@@ -324,7 +334,7 @@ class FKMLoadDistributionNormal(FKMLoadSequence):
         return gamma_L
 
     def scaled_load_sequence(self, input_parameters):
-        r"""The scaled load sequence according to the given parameters.
+        r"""Scale the load sequence with the normal-distribution factor.
 
         The following parameters are used: s_L, P_L, P_A.
 
@@ -338,17 +348,17 @@ class FKMLoadDistributionNormal(FKMLoadSequence):
             * ``input_parameters.P_A``: probability in [%], one of {1e-7, 1e-6, 1e-5, 7.2e-5, 1e-3, 2.3e-1, 0.5}
               (de: Ausfallwahrscheinlichkeit)
 
+        Returns
+        -------
+        pandas.Series or pandas.DataFrame
+            Scaled copy of the input object.  The load column is multiplied by
+            :math:`\gamma_L` according to FKM nonlinear guideline clause
+            2.3.2.1.
+
         Raises
         ------
         ValueError
-            If not all parameters that are required were given.
-
-        Returns
-        -------
-        pandas Series
-            The input series where all values have been scaled by :math:`\gamma_L`,
-            see 2.3.2.1 of the FKM nonlinear guideline.
-
+            If a required parameter is missing or ``P_A`` is not supported.
         """
         gamma_L = self.gamma_L(input_parameters)
 
@@ -358,22 +368,36 @@ class FKMLoadDistributionNormal(FKMLoadSequence):
 @pd.api.extensions.register_dataframe_accessor("fkm_safety_lognormal_from_stddev")
 @pd.api.extensions.register_series_accessor("fkm_safety_lognormal_from_stddev")
 class FKMLoadDistributionLognormal(FKMLoadSequence):
-    r"""Series accessor to get a scaled up load series.
+    r"""Scale a load sequence assuming lognormally distributed loads.
 
-    A load series is a list of load values with included load safety, as used
-    in FKM nonlinear lifetime assessments.
+    Use this accessor when the logarithm of the load values is normally
+    distributed and the logarithmic standard deviation :math:`LSD_s` is known.
+    It is suited to multiplicative scatter, where the safety factor is
+    independent of the absolute load level.
 
-    The loads are assumed to follow a **lognormal distribution** with standard
-    deviation :math:`LSD_s`.  To incorporate safety, reduce the values of the
-    load series from :math:`P_L = 50\%` up to the given load probability
-    :math:`P_L` and the given failure probability :math:`P_A`.
+    Signal contract:
 
-    For more information, see 2.3.2.2 of the FKM nonlinear guideline.
+    * The accessor accepts the same non-empty :class:`pandas.Series` or
+      :class:`pandas.DataFrame` objects as :class:`FKMLoadSequence`.
+    * In a multi-column :class:`pandas.DataFrame`, the first column contains the
+      load or stress values to scale; further columns are copied unchanged.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.Series or pandas.DataFrame
+        Load sequence or stress sequence.  Stress values are typically given in
+        MPa.
 
     See Also
     --------
-    :class:`AbstractFKMLoadDistribution`: accesses meshes with connectivity information
+    FKMLoadDistributionNormal : Scale loads with a normal distribution.
+    FKMLoadDistributionBlanket : Scale loads when the distribution is unknown.
 
+    Notes
+    -----
+    Implement FKM nonlinear guideline clause 2.3.2.2.  Prefer this accessor
+    over :class:`FKMLoadDistributionNormal` when scatter acts as a relative
+    factor on the load level.
     """
 
     def gamma_L(self, input_parameters):
@@ -389,16 +413,15 @@ class FKMLoadDistributionLognormal(FKMLoadSequence):
             * ``input_parameters.P_A``: probability in [%], one of {1e-7, 1e-6, 1e-5, 7.2e-5, 1e-3, 2.3e-1, 0.5}
               (de: Ausfallwahrscheinlichkeit)
 
+        Returns
+        -------
+        float
+            Load scaling factor :math:`\gamma_L`, dimensionless.
+
         Raises
         ------
         ValueError
-            If not all parameters that are required were given.
-
-        Returns
-        -------
-        gamma_L : float
-            The resulting scaling factor.
-
+            If a required parameter is missing or ``P_A`` is not supported.
         """
 
         self._validate_parameters(input_parameters, required_parameters=["P_L", "LSD_s", "P_A"])
@@ -416,7 +439,7 @@ class FKMLoadDistributionLognormal(FKMLoadSequence):
         return gamma_L
 
     def scaled_load_sequence(self, input_parameters):
-        r"""The scaled load sequence according to the given parameters.
+        r"""Scale the load sequence with the lognormal-distribution factor.
 
         The following parameters are used: LSD_s, P_L, P_A.
 
@@ -430,17 +453,17 @@ class FKMLoadDistributionLognormal(FKMLoadSequence):
             * ``input_parameters.P_A``: probability in [%], one of {1e-7, 1e-6, 1e-5, 7.2e-5, 1e-3, 2.3e-1, 0.5}
               (de: Ausfallwahrscheinlichkeit)
 
+        Returns
+        -------
+        pandas.Series or pandas.DataFrame
+            Scaled copy of the input object.  The load column is multiplied by
+            :math:`\gamma_L` according to FKM nonlinear guideline clause
+            2.3.2.2.
+
         Raises
         ------
         ValueError
-            If not all parameters which are required were given.
-
-        Returns
-        -------
-        pandas Series
-            The input series where all values have been scaled by :math:`\gamma_L`,
-            see 2.3.2.2 of the FKM nonlinear guideline.
-
+            If a required parameter is missing or ``P_A`` is not supported.
         """
         gamma_L = self.gamma_L(input_parameters)
 
@@ -450,19 +473,34 @@ class FKMLoadDistributionLognormal(FKMLoadSequence):
 @pd.api.extensions.register_dataframe_accessor("fkm_safety_blanket")
 @pd.api.extensions.register_series_accessor("fkm_safety_blanket")
 class FKMLoadDistributionBlanket(FKMLoadSequence):
-    r"""Series accessor to get a scaled up load series, i.e., a list of load values with included load safety,
-      as used in FKM nonlinear lifetime assessments.
+    r"""Scale a load sequence with the FKM blanket load factor.
 
-      The distribution of loads is unknown, therefore a scaling factor of :math:`\gamma_L` = 1.1 is assumed.
-      This is only used for :math:`P_L = 2.5\%`.
-      As an alternative, we can use no scaling for the load distribution at all,
-      corresponding to :math:`\gamma_L` = 1 and :math:`P_L = 50\%`
+    Use this accessor when the statistical load distribution is unknown.  For
+    :math:`P_L = 2.5\%` it applies the constant blanket factor
+    :math:`\gamma_L = 1.1`; for :math:`P_L = 50\%` it leaves the load unchanged.
 
-      For more information, see 2.3.2.3 of the FKM nonlinear guideline.
+    Signal contract:
 
-    See also
+    * The accessor accepts the same non-empty :class:`pandas.Series` or
+      :class:`pandas.DataFrame` objects as :class:`FKMLoadSequence`.
+    * In a multi-column :class:`pandas.DataFrame`, the first column contains the
+      load or stress values to scale; further columns are copied unchanged.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.Series or pandas.DataFrame
+        Load sequence or stress sequence.  Stress values are typically given in
+        MPa.
+
+    See Also
     --------
-    :class:`AbstractFKMLoadDistribution`: accesses meshes with connectivity information
+    FKMLoadDistributionNormal : Scale loads with a normal distribution.
+    FKMLoadDistributionLognormal : Scale loads with a lognormal distribution.
+
+    Notes
+    -----
+    Implement FKM nonlinear guideline clause 2.3.2.3.  Prefer this accessor
+    when no reliable statistical distribution parameters are available.
     """
 
     def gamma_L(self, input_parameters):
@@ -476,16 +514,15 @@ class FKMLoadDistributionBlanket(FKMLoadSequence):
             * ``input_parameters.P_L``: probability in [%] of the load for which to do the assessment,
               has to be on of {2.5, 50}. (de: Ausfallwahrscheinlichkeit)
 
+        Returns
+        -------
+        float
+            Load scaling factor :math:`\gamma_L`, dimensionless.
+
         Raises
         ------
         ValueError
-            If not all parameters which are required were given.
-
-        Returns
-        -------
-        gamma_L : float
-            The resulting scaling factor.
-
+            If ``P_L`` is missing or is neither ``2.5`` nor ``50`` percent.
         """
 
         self._validate_parameters(input_parameters, required_parameters=["P_L"])
@@ -504,9 +541,9 @@ class FKMLoadDistributionBlanket(FKMLoadSequence):
         return gamma_L
 
     def scaled_load_sequence(self, input_parameters):
-        r"""The scaled load sequence according to the given parameters.
+        r"""Scale the load sequence with the blanket load factor.
 
-        The following parameters are used: LSD_s, P_L, P_A.
+        The only required input parameter is ``P_L``.
 
         Parameters
         ----------
@@ -516,17 +553,17 @@ class FKMLoadDistributionBlanket(FKMLoadSequence):
             * ``input_parameters.P_L``: probability in [%] of the load
               for which to do the assessment, one of {2.5, 50}
 
+        Returns
+        -------
+        pandas.Series or pandas.DataFrame
+            Scaled copy of the input object.  The load column is multiplied by
+            :math:`\gamma_L` according to FKM nonlinear guideline clause
+            2.3.2.3.
+
         Raises
         ------
         ValueError
-            If not all parameters which are required were given.
-
-        Returns
-        -------
-        pandas Series
-            The input series where all values have been scaled by :math:`\gamma_L`,
-            see 2.3.2.2 of the FKM nonlinear guideline.
-
+            If ``P_L`` is missing or is neither ``2.5`` nor ``50`` percent.
         """
         gamma_L = self.gamma_L(input_parameters)
 

@@ -14,6 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Provide strength assessment tools for fatigue engineering.
+
+The :mod:`pylife.strength` package collects user-facing accessors and helper
+classes for S-N curve based fatigue assessment. It covers Wöhler curve damage
+calculation, Miner damage accumulation, mean stress correction, failure
+probability evaluation, and the FKM linear and nonlinear assessment
+procedures.
+"""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 

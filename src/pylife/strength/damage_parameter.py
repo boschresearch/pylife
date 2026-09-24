@@ -14,6 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+r"""Calculate FKM nonlinear damage parameters for closed hystereses.
+
+The module evaluates the ``P_RAM`` and ``P_RAJ`` damage parameters from a
+collective created by the FKM nonlinear rainflow/HCM workflow.  The resulting
+damage-parameter columns are consumed by
+:class:`pylife.strength.woehler_fkm_nonlinear.WoehlerCurvePRAM` and
+:class:`pylife.strength.woehler_fkm_nonlinear.WoehlerCurvePRAJ`.
+
+Notes
+-----
+The implemented formulae follow the FKM nonlinear guideline damage-parameter
+assessment in chapters 2.6 and 2.9.
+"""
+
 __author__ = "Benjamin Maier"
 __maintainer__ = __author__
 
@@ -27,33 +41,55 @@ import pylife.strength.woehler_fkm_nonlinear
 from pylife.strength.fkm_nonlinear.constants import FKMNLConstants
 
 class P_RAM:
-    """This class implements the damage parameter P_RAM according to guideline FKM nonlinear.
-    The resulting values are added to the collective in a new column, which can be retrieved by the ``.collective`` accessor.
+    r"""Calculate the ``P_RAM`` damage parameter for a collective.
+
+    ``P_RAM`` combines stress amplitude, mean stress, strain amplitude, and the
+    material's mean-stress sensitivity into one scalar damage parameter per
+    hysteresis.  Use it for the elastic-plastic fatigue assessment path that is
+    evaluated with
+    :class:`pylife.strength.woehler_fkm_nonlinear.WoehlerCurvePRAM`.
+
+    Parameters
+    ----------
+    collective : pandas.DataFrame
+        Hysteresis collective from the FKM nonlinear HCM recorder.  Each row
+        represents one closed hysteresis and must contain:
+
+        * ``S_a``: Stress amplitude in MPa.
+        * ``S_m``: Mean stress in MPa.
+        * ``epsilon_a``: Strain amplitude, dimensionless.
+    assessment_parameters : pandas.Series
+        Material and assessment parameters.  The series must contain ``R_m``,
+        the ultimate tensile strength in MPa, and ``E``, Young's modulus in MPa.
+
+    See Also
+    --------
+    pylife.strength.woehler_fkm_nonlinear.WoehlerCurvePRAM : Evaluate lifetimes
+        from ``P_RAM`` values.
+
+    Notes
+    -----
+    The FKM nonlinear guideline defines ``P_RAM`` in chapter 2.6 as
+
+    .. math::
+
+        P_{RAM} =
+        \sqrt{\left(\sigma_a + k\,\sigma_m\right)\epsilon_a E}
+
+    for non-negative discriminants and as ``0`` otherwise.  The mean-stress
+    factor ``k`` is selected from the material-dependent parameter ``M_sigma``.
     """
 
     def __init__(self, collective, assessment_parameters):
-        """Initialize the P_RAM object and compute the damage parameter P_RAM according to FKM nonlinear.
-        The resulting values are added to the collective, which can be retrieved by the ``.collective`` accessor.
+        """Initialize and compute the ``P_RAM`` damage parameter.
 
         Parameters
         ----------
-        collective : pandas DataFrame
-            A load collective with stress and strain amplitude and mean stress,
-            resulting from two runs of the HCM algorithm and computed by the FKMNonlinearRecorder.
-            Every row corresponds to one closed hysteresis.
-
-            More specifically, the table has to contain the following columns:
-
-            * ``S_a``: the stress amplitude of the hysteresis
-            * ``S_m``: the mean stress of the hysteresis
-            * ``epsilon_a`` the strain amplitude of the hysteresis
-        assessment_parameters : pandas Series
-            All material parameters collected so far. Has to contain the ``R_m`` and ``E`` entries.
-
-        Returns
-        -------
-        None.
-
+        collective : pandas.DataFrame
+            Hysteresis collective with ``S_a`` in MPa, ``S_m`` in MPa, and
+            dimensionless ``epsilon_a``.
+        assessment_parameters : pandas.Series
+            Material parameters containing ``R_m`` in MPa and ``E`` in MPa.
         """
         self._collective = collective.copy()
         self._assessment_parameters = assessment_parameters
@@ -74,11 +110,11 @@ class P_RAM:
 
     @property
     def collective(self):
+        """Return the collective with the computed ``P_RAM`` column."""
         return self._collective
 
     def _compute_values(self):
-        """Compute the P_RAM damage parameter according to FKM nonlinear.
-        """
+        """Compute the ``P_RAM`` damage parameter according to FKM nonlinear."""
 
         # determine R_m from HV, if not given directly
         if "R_m" in self._assessment_parameters:
@@ -106,43 +142,80 @@ class P_RAM:
 
 
 class P_RAJ:
-    """This class implements the damage parameter P_RAJ according to guideline FKM nonlinear.
-    The resulting values are added to the collective in a new column, which can be retrieved by the ``.collective`` accessor.
+    r"""Calculate the ``P_RAJ`` crack-mechanics damage parameter.
+
+    ``P_RAJ`` describes the effective cyclic J-integral range used by the
+    FKM nonlinear crack-opening assessment.  The algorithm accounts for crack
+    opening and closing history over the HCM runs and updates the finite-life
+    contribution with
+    :class:`pylife.strength.woehler_fkm_nonlinear.WoehlerCurvePRAJ`.
+
+    Parameters
+    ----------
+    collective : pandas.DataFrame
+        Hysteresis collective from the FKM nonlinear HCM recorder.  Each row
+        represents one hysteresis and must contain:
+
+        * ``S_a``: Stress amplitude in MPa.
+        * ``S_m``: Mean stress in MPa.
+        * ``S_min``: Minimum stress in MPa.
+        * ``S_max``: Maximum stress in MPa.
+        * ``R``: Stress ratio ``S_min / S_max``, dimensionless.
+        * ``epsilon_a``: Strain amplitude, dimensionless.
+        * ``epsilon_min``: Minimum strain, dimensionless.
+        * ``epsilon_max``: Maximum strain, dimensionless.
+        * ``epsilon_min_LF``: Lower reversal strain of the load-following
+          branch, dimensionless.
+        * ``epsilon_max_LF``: Upper reversal strain of the load-following
+          branch, dimensionless.
+        * ``is_closed_hysteresis``: Flag indicating a closed hysteresis.
+        * ``run_index``: HCM run number, either ``1`` or ``2``.
+    assessment_parameters : pandas.Series
+        Material and assessment parameters.  The series must contain ``R_m`` in
+        MPa, ``E`` in MPa, ``n_prime`` as the cyclic strain-hardening exponent,
+        and ``K_prime`` as the cyclic strength coefficient in MPa.
+    component_woehler_curve_P_RAJ : WoehlerCurvePRAJ
+        Component Wöhler curve for ``P_RAJ``.  It is usually created with the
+        ``.woehler_P_RAJ`` accessor from ``P_RAJ_Z``, ``P_RAJ_D_0``, and
+        ``d_RAJ`` parameters.
+
+    See Also
+    --------
+    pylife.strength.woehler_fkm_nonlinear.WoehlerCurvePRAJ : Evaluate lifetimes
+        and update fatigue limits from ``P_RAJ`` values.
+
+    Notes
+    -----
+    The FKM nonlinear guideline defines ``P_RAJ`` in chapter 2.9 from the
+    effective stress and strain ranges as
+
+    .. math::
+
+        P_{RAJ} =
+        1.24\,\frac{\Delta\sigma_\mathrm{eff}^2}{E}
+        + \frac{1.02}{\sqrt{n'}}
+          \Delta\sigma_\mathrm{eff}
+          \left(\Delta\epsilon_\mathrm{eff}
+          - \frac{\Delta\sigma_\mathrm{eff}}{E}\right)
+
+    The implementation computes crack-opening stress, crack-opening strain,
+    effective ranges, cumulative damage, and the updated fatigue limit for each
+    hysteresis.
     """
 
     def __init__(self, collective, assessment_parameters, component_woehler_curve_P_RAJ):
-        """Initialize the P_RAJ object and compute the damage parameter P_RAJ according to FKM nonlinear.
-        The resulting values are added to the collective, which can be retrieved by the ``.collective`` accessor.
+        """Initialize and compute the ``P_RAJ`` damage parameter.
 
         Parameters
         ----------
-        collective : pandas DataFrame
-            A load collective with stress and strain amplitude and mean stress,
-            resulting from two runs of the HCM algorithm and computed by the FKMNonlinearRecorder.
-            Every row corresponds to one closed hysteresis.
-
-            More specifically, the table has to contain the following columns:
-
-            * ``S_a``: the stress amplitude of the hysteresis
-            * ``S_m``: the mean stress of the hysteresis
-            * ``epsilon_a``: the strain amplitude of the hysteresis
-            * ``is_closed_hysteresis``:  whether the hysteresis is closed and counts as full damage
-            * ``run_index``: which run of the HCM algorithm the hysteresis belows to, has to be one of {1,2}.
-        assessment_parameters : pandas Series
-            All material and assessment parameters collected so far. Has to contain entries
-            for ``R_m``, ``E``, ``n_prime``, ``K_prime``.
-        component_woehler_curve_P_RAJ : class WoehlerCurvePRAJ
-            The woehler curve, which can be obtained using the ``woehler_P_RAJ`` accessor as follows:
-
-            .. code:: python
-
-                component_woehler_curve_parameters = assessment_parameters[["P_RAJ_Z", "P_RAJ_D_0", "d_RAJ"]]
-                component_woehler_curve_P_RAJ = component_woehler_curve_parameters.woehler_P_RAJ
-
-        Returns
-        -------
-        None.
-
+        collective : pandas.DataFrame
+            Hysteresis collective with stress values in MPa and strains as
+            dimensionless values.
+        assessment_parameters : pandas.Series
+            Material parameters containing ``R_m`` in MPa, ``E`` in MPa,
+            ``n_prime``, and ``K_prime`` in MPa.
+        component_woehler_curve_P_RAJ : WoehlerCurvePRAJ
+            Component Wöhler curve created with the ``.woehler_P_RAJ`` accessor.
         """
         self._collective = collective.copy()
         self._assessment_parameters = assessment_parameters
@@ -188,11 +261,11 @@ class P_RAJ:
 
     @property
     def collective(self):
+        """Return the collective with computed ``P_RAJ`` and damage columns."""
         return self._collective
 
     def _compute_values(self):
-        """Compute the P_RAJ damage parameter according to FKM nonlinear.
-        """
+        """Compute the ``P_RAJ`` damage parameter according to FKM nonlinear."""
 
         # compute the crack opening stress S_open (chapter 2.8.9.1) for every hysteresis
         self._compute_S_open()
@@ -213,7 +286,7 @@ class P_RAJ:
         #self._collective.drop(columns = ["A_0", "A_1", "A_2", "A_3"], inplace=True)
 
     def _compute_S_open(self):
-        """compute the crack opening stress S_open (chapter 2.8.9.1)"""
+        """Compute the crack-opening stress ``S_open`` in MPa."""
 
         # determine R_m from HV, if not given directly
         if "R_m" in self._assessment_parameters:
@@ -252,7 +325,7 @@ class P_RAJ:
         self._collective.drop(columns=["A_0", "A_1", "A_2", "A_3", "S_open_factor"], inplace=True)
 
     def _calculate_P_RAJ(self, delta_S_eff, delta_epsilon_eff):
-        """compute P_RAJ according to eq. 2.9-110"""
+        """Calculate ``P_RAJ`` from effective stress and strain ranges."""
 
         P_RAJ = 1.24 * np.power(delta_S_eff,2) / self._assessment_parameters.E \
             + 1.02 / np.sqrt(self._assessment_parameters.n_prime) * delta_S_eff \
@@ -260,7 +333,7 @@ class P_RAJ:
         return P_RAJ
 
     def _calculate_fatigue_limit_variables(self, D_akt):
-        """Compute a_0, delta_J_eff_th, P_RAJ_D"""
+        """Compute the crack length, threshold range, and fatigue limit."""
 
         # standard calculation of m according to eq. (2.8-60), (2.9-117)
         m = -1/self._component_woehler_curve_P_RAJ.d
@@ -293,7 +366,7 @@ class P_RAJ:
         return a_0, delta_J_eff_th, P_RAJ_D
 
     def _compute_crack_opening_loop(self):
-        """compute crack opening strain with history (chapter 2.8.9.3, chapter 2.9.8.1 is better)"""
+        """Compute history-dependent crack-opening strain and damage."""
 
         # initialize new columns in collective DataFrame
         self._collective["epsilon_open_alt"] = 0.0
