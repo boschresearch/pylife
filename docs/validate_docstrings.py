@@ -64,6 +64,12 @@ DEFAULT_IGNORED_CHECKS = frozenset({"ES01", "EX01", "SA01", "GL08"})
 #: Objects whose docstrings are not authored by pyLife (generated or vendored).
 IGNORED_PREFIXES = ("pylife.vmap.VMAPExport.__", "pylife.vmap.VMAPImport.__")
 
+#: Modules that must not be imported by the documentation tooling.
+#:
+#: ``pylife.materialdata.woehler.bayesian`` deliberately raises on import
+#: because the Bayesian Wöhler analyzer has been shut down.
+IGNORED_MODULES = ("pylife.materialdata.woehler.bayesian",)
+
 #: Matches the ``{'b', 'a'}`` set reprs that numpydoc embeds into some messages.
 _SET_REPR = re.compile(r"\{[^{}]*\}")
 
@@ -115,6 +121,8 @@ def _iter_modules(package):
     """
     yield package.__name__
     for _, name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
+        if name in IGNORED_MODULES:
+            continue
         yield name
 
 
