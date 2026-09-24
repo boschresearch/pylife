@@ -14,6 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Run the Abaqus-side ODB server command loop.
+
+The server is launched by ``odbclient.OdbClient`` with the Abaqus Python
+interpreter.  It receives pickled command tuples on standard input, queries the
+ODB through :class:`odbserver.interface.OdbInterface`, and writes pickled
+responses plus optional NumPy arrays to standard output.
+"""
+
 from __future__ import print_function
 
 __author__ = "Johannes Mueller"
@@ -30,6 +38,13 @@ from .interface import OdbInterface
 import odbserver
 
 class OdbServer:
+    """Dispatch client protocol commands to an ODB interface.
+
+    Parameters
+    ----------
+    odbfile : str
+        Path to the Abaqus ODB file opened inside the Abaqus Python process.
+    """
 
     def __init__(self, odbfile):
         self._odb = OdbInterface(odbfile)
@@ -53,15 +68,31 @@ class OdbServer:
         }
 
     def instances(self, _args):
+        """Send available instance names to the client."""
         _send_response(self._odb.instance_names())
 
     def steps(self, _args):
+        """Send available analysis step names to the client."""
         _send_response(self._odb.step_names())
 
     def frames(self, step_name):
+        """Send frame IDs for one analysis step to the client.
+
+        Parameters
+        ----------
+        step_name : str
+            Name of the Abaqus analysis step.
+        """
         _send_response(self._odb.frame_names(step_name))
 
     def nodes(self, args):
+        """Send node labels and coordinates for an instance or node set.
+
+        Parameters
+        ----------
+        args : tuple
+            Pair ``(instance_name, node_set_name)`` received from the client.
+        """
         instance_name, node_set_name = args
         try:
             nodes = self._odb.nodes(instance_name, node_set_name)
@@ -71,6 +102,13 @@ class OdbServer:
             _send_response(nodes)
 
     def connectivity(self, args):
+        """Send element labels and connectivity for an instance or element set.
+
+        Parameters
+        ----------
+        args : tuple
+            Pair ``(instance_name, element_set_name)`` received from the client.
+        """
         instance_name, element_set_name = args
         try:
             conn = self._odb.connectivity(instance_name, element_set_name)
@@ -80,24 +118,30 @@ class OdbServer:
             _send_response(conn)
 
     def node_sets(self, instance_name):
+        """Send node set names for the selected assembly scope."""
         _send_response(self._odb.node_sets(instance_name))
 
     def element_sets(self, instance_name):
+        """Send element set names for the selected assembly scope."""
         _send_response(self._odb.element_sets(instance_name))
 
     def node_set(self, args):
+        """Send node labels contained in one node set."""
         instance_name, node_set_name = args
         _send_response(self._odb.node_set(instance_name, node_set_name))
 
     def element_set(self, args):
+        """Send element labels contained in one element set."""
         instance_name, element_set_name = args
         _send_response(self._odb.element_set(instance_name, element_set_name))
 
     def variable_names(self, args):
+        """Send field output variable names for one step and frame."""
         step, frame = args
         _send_response(self._odb.variable_names(step, int(frame)))
 
     def variable(self, args):
+        """Send field output labels and values for one variable query."""
         instance_name, step, frame, var_name, nset, elset, elem_pos = args
         try:
             variable = self._odb.variable(instance_name, step, frame, var_name, nset, elset, elem_pos)
@@ -107,21 +151,26 @@ class OdbServer:
             _send_response(variable)
 
     def history_regions(self, step_name):
+        """Send history region names for one analysis step."""
         _send_response(self._odb.history_regions(step_name))
 
     def history_outputs(self, args):
+        """Send history output names for one history region."""
         step_name, historyregion_name = args
         _send_response(self._odb.history_outputs(step_name, historyregion_name))
 
     def history_output_values(self, args):
+        """Send abscissa and ordinate arrays for one history output."""
         step_name, historyregion_name, historyoutput_name = args
         _send_response(self._odb.history_output_values(step_name, historyregion_name, historyoutput_name))
 
     def history_region_description(self, args):
+        """Send the Abaqus description of one history region."""
         step_name, historyregion_name = args
         _send_response(self._odb.history_region_description(step_name, historyregion_name))
 
     def history_info(self, args):
+        """Send the nested history-output metadata dictionary."""
         _send_response(self._odb.history_info())
 
 
@@ -159,6 +208,7 @@ else:
 
 
 def main():
+    """Run the server process until the client sends ``QUIT``."""
 
     def decode_strings_if_not_on_python_2(parameters):
         if sys.version_info.major == 2:

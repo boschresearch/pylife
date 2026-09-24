@@ -1,3 +1,10 @@
+"""Expose the user-facing Abaqus ODB client package.
+
+The separately distributed ``pylife-odbclient`` package lets a normal
+Python 3 process query Abaqus ODB files through an ``odbserver`` process
+started inside Abaqus.
+"""
+
 # Copyright (c) 2019-2021 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
