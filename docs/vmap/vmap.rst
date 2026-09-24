@@ -1,5 +1,6 @@
+*************************
 VMAP interface for pyLife
-=========================
+*************************
 
 `VMAP <https://www.vmap.eu.com/>`_ *is a vendor-neutral standard
 for CAE data storage to enhance interoperability in virtual

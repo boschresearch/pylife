@@ -1,5 +1,6 @@
+****************************
 The pylife-odbclient package
-============================
+****************************
 
 .. include:: ../../../tools/odbclient/README.md
    :parser: myst_parser.sphinx_

@@ -1,5 +1,6 @@
+****************************
 The pyLife stress subpackage
-############################
+****************************
 
 The ``stress`` subpackage contains all the pyLife modules that deal with stress
 resp. load analysis.

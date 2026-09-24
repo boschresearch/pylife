@@ -1,9 +1,17 @@
+*********
 Tutorials
-=========
+*********
 
-This section contains tutorials that teach the use of pyLife and its
-principles.  As opposed to the :doc:`/cookbook` it does not show actual
-workflows.  The notebook files are available in the ``/demos`` `directory
+These tutorials teach pyLife and its principles step by step.  Each one takes
+a single concept — a Wöhler curve, a load collective, an FKM assessment — and
+builds it up from scratch, so that you understand *why* pyLife works the way
+it does.
+
+Read the tutorials if you are new to pyLife.  If you already know what you
+want to compute and are looking for a complete, ready to adapt workflow,
+go to the :doc:`cookbook` instead.
+
+The notebook files are available in the ``/demos`` `directory
 <https://github.com/boschresearch/pylife/tree/develop/demos>`_ of
 pyLife's codebase.
 

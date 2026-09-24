@@ -1,9 +1,17 @@
+***************
 pyLife Cookbook
-===============
+***************
 
-The pyLife Cookbook aggregates some demo notebooks that show how pyLife is
-meant to be used for some use cases.  Here find the statically rendered HTML
-pages.  The notebook files are available in the ``/demos`` `directory
+The cookbook collects complete, runnable workflows that solve a concrete
+task — calculate the lifetime of a component, detect hotspots in an FE mesh,
+import a mesh from a VMAP file.  Take the recipe that comes closest to your
+problem and adapt it.
+
+The recipes assume that you already know the pyLife basics.  If you do not
+yet, start with the :doc:`tutorials`, which teach the concepts one at a time.
+
+Here you find the statically rendered HTML pages.  The notebook files are
+available in the ``/demos`` `directory
 <https://github.com/boschresearch/pylife/tree/develop/demos>`_ of
 pyLife's codebase.
 

@@ -1,5 +1,6 @@
+*******************
 Reading a VMAP file
-===================
+*******************
 
 The most common use case is to get the element nodal stress tensor for
 a certain geometry ``1`` and a certain load state ``STATE-2`` out of the
@@ -60,6 +61,5 @@ The VMAPImport Class
 --------------------
 
 .. autoclass:: pylife.vmap.VMAPImport
-	:undoc-members:
-	:members:
-	:inherited-members:
+   :members:
+   :inherited-members:

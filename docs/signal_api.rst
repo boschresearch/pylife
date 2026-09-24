@@ -1,5 +1,6 @@
+*********************
 The pyLife Signal API
-=====================
+*********************
 
 The signal api is the higher level API of pyLife. It is the API that you
 probably should be using. Some of the domain specific functions are also
@@ -116,7 +117,6 @@ class from individual parameters.  So a
       wc = WoehlerCurve.from_parameters(k_1=7.0, ND=2e6, SD= 320.)
 
 
-
 How to use predefined signal accessors
 ``````````````````````````````````````
 
@@ -176,7 +176,6 @@ Now a 3D mesh
    df.plain_mesh.coordinates
 
 
-
 Defining your own signal accessors
 ----------------------------------
 
@@ -193,13 +192,13 @@ register as a pandas DataFrame accessor using a decorator
     @pd.api.extensions.register_dataframe_accessor('my_mesh_processor')
     class MyMesh(meshsignal.Mesh):
         def do_something(self):
-	    # ... your code here
-	    # the DataFrame is accessible by self._obj
-	    # usually you would calculate a DataFrame df to return it.
-	    df = ...
-	    # you might want copy the index of self._obj to the returned
-	    # DataFrame.
-	    return df.set_index(self._obj.index)
+            # ... your code here
+            # the DataFrame is accessible by self._obj
+            # usually you would calculate a DataFrame df to return it.
+            df = ...
+            # you might want copy the index of self._obj to the returned
+            # DataFrame.
+            return df.set_index(self._obj.index)
 
 As `MyMesh` is derived from :class:`~.meshsignal.Mesh` the
 validation of `Mesh` is performed. So in the method `do_something()`
@@ -256,8 +255,8 @@ You would put the signal class into a module file `my_signal_mod.py`
                     raise ValueError("All values of %s need to be positive. "
                                      "At least one is less than 0" % k)
 
-	def some_method(self):
-	    return self._obj[['alpha', 'beta', 'gamma']] * -3.0
+        def some_method(self):
+            return self._obj[['alpha', 'beta', 'gamma']] * -3.0
 
 You can then validate signals and/or call ``some_method()``.
 
@@ -301,20 +300,19 @@ set these attributes with setter methods.
 
     @pd.api.extensions.register_dataframe_accessor('my_signal')
     class MySignal(PylifeSignal):
-	def __init__(self, pandas_obj):
-	    super(MySignal, self).__init__(pandas_obj)
-	    self._my_attribute = 'the default value'
+        def __init__(self, pandas_obj):
+            super(MySignal, self).__init__(pandas_obj)
+            self._my_attribute = 'the default value'
 
         def set_my_attribute(self, my_attribute):
-	    self._my_attribute = my_attribute
-	    return self
+            self._my_attribute = my_attribute
+            return self
 
-	def do_something(self, some_parameter):
-	    # ... use some_parameter, self._my_attribute and self._obj
+        def do_something(self, some_parameter):
+            # ... use some_parameter, self._my_attribute and self._obj
 
 
 >>> df.my_signal.set_my_attribute('foo').do_something(2342)
-
 
 
 Registering a method to an existing accessor class
@@ -338,8 +336,8 @@ new method to any class deriving from :class:`~.pylife.PylifeSignal`.
 
     @pl.signal_register_method(equistress.StressTensorEquistress, 'my_equistress')
     def my_equistress_method(df)
-	# your code here
-	return ...
+        # your code here
+        return ...
 
 Then you can call the method on any `DataFrame` that is accessed by
 `equistress`:
@@ -355,8 +353,8 @@ You can also have additional arguments in the registered method:
 
     @pl.signal_register_method(equistress.StressTensorEquistress, 'my_equistress_with_arg')
     def my_equistress_method_with_arg(df, additional_arg)
-	# your code here
-	return ...
+        # your code here
+        return ...
 
 
 >>> df.equistress.my_equistress_with_arg(my_additional_arg)
