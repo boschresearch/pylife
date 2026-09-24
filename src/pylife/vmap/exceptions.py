@@ -14,15 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Define VMAP-specific exceptions used by the import and export helpers."""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 
 class FeatureNotSupportedError(Exception):
-    '''Feature of VMAP standard not supported by pyLife'''
+    """Report a VMAP standard feature that pyLife cannot process yet."""
     pass
 
 
 class APIUseError(Exception):
-    '''The API has been used in a wrong way'''
+    """Report an invalid call sequence in the VMAP helper API."""
     pass

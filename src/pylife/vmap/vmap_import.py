@@ -14,6 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Read VMAP files into pandas meshes.
+
+VMAP stores finite-element geometry and result data in HDF5 groups.  This
+module maps VMAP node and element blocks, load states, and variable fields to
+the pandas ``DataFrame`` representation used by pyLife mesh accessors.  The
+resulting index uses ``element_id`` and ``node_id`` so that coordinates,
+stresses, displacements, and other fields can be processed by pyLife.
+"""
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
@@ -27,18 +35,50 @@ from . import vmap_structures
 
 
 class VMAPImport:
-    """The interface class to import a vmap file
+    """Read VMAP geometry and result variables into a pandas mesh.
+
+    Use this class to bring finite-element results from a ``.vmap`` file into
+    pyLife.  A VMAP file contains one or more geometries, load states, and
+    variables.  A geometry defines node coordinates and element connectivity, a
+    state represents a load step or increment, and variables are result fields such
+    as ``DISPLACEMENT``, ``STRESS_CAUCHY``, or ``E``.
+
+    The usual workflow is to open the file, inspect available geometries and
+    states, create a mesh with :meth:`make_mesh`, add coordinates with
+    :meth:`join_coordinates`, add one or more variables with :meth:`join_variable`,
+    and finish with :meth:`to_frame`.  The returned ``DataFrame`` is indexed by
+    ``element_id`` and ``node_id`` where element-nodal data is present and can be
+    used by the ``pylife.mesh`` accessors.  Coordinate units, stress units, and all
+    other physical units follow the originating finite-element model; pyLife does
+    not convert them during import.
 
     Parameters
     ----------
-    filename : string
-        The path to the vmap file to be read
+    filename : str
+        Path to the VMAP file to read.
 
     Raises
     ------
     Exception
-        if the file cannot be read an exception is raised.
-        So far any exception from the ``h5py`` module is passed through.
+        Raised by :mod:`h5py` when the file cannot be opened or read.
+
+    See Also
+    --------
+    pylife.vmap.VMAPExport : Write pyLife mesh data and variables to VMAP.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        import pylife.vmap as vmap
+
+        mesh = (
+            vmap.VMAPImport("demos/plate_with_hole.vmap")
+            .make_mesh("1", "STATE-2")
+            .join_coordinates()
+            .join_variable("STRESS_CAUCHY")
+            .to_frame()
+        )
     """
 
     def __init__(self, filename):
@@ -54,43 +94,94 @@ class VMAPImport:
         pass
 
     def geometries(self):
-        """Returns a list of geometry strings of geometries present in the vmap data
+        """List geometry names stored in the VMAP file.
+
+        Returns
+        -------
+        KeysView
+            View of the VMAP geometry names.  Pass one of these names to
+            :meth:`make_mesh`, :meth:`nodes`, :meth:`node_sets`, or
+            :meth:`element_sets`.
         """
         return self._file["/VMAP/GEOMETRY"].keys()
 
     def states(self):
-        """Returns a list of state strings of states present in the vmap data
+        """List state names stored in the VMAP file.
+
+        Returns
+        -------
+        KeysView
+            View of the VMAP state names.  A state represents a load step or increment
+            and can be passed to :meth:`make_mesh`, :meth:`variables`, or
+            :meth:`join_variable`.
         """
         return self._file["/VMAP/VARIABLES/"].keys()
 
     def node_sets(self, geometry):
-        """Returns a list of the node_sets present in the vmap file
-        """
-        return self._geometry_sets(geometry, 'nsets').keys()
-
-    def element_sets(self, geometry):
-        """Returns a list of the element_sets present in the vmap file
-        """
-        return self._geometry_sets(geometry, 'elsets').keys()
-
-    def nodes(self, geometry):
-        """Retrieves the node positions
+        """List node set names for a geometry.
 
         Parameters
         ----------
-        geometry : string
-            The geometry defined in the vmap file
+        geometry : str
+            Name of the VMAP geometry whose node sets are requested.
 
         Returns
         -------
-        node_positions : DataFrame
-            a DataFrame with the node numbers as index and the columns 'x', 'y' and 'z' for the
-            node coordinates.
+        dict_keys
+            View of node set names defined for ``geometry``.  Use these names with
+            :meth:`filter_node_set` to restrict the current mesh to selected nodes.
 
         Raises
         ------
         KeyError
-            if the geometry is not found of if the vmap file is corrupted
+            Raised when ``geometry`` is not present or the VMAP geometry set data is
+            malformed.
+        """
+        return self._geometry_sets(geometry, 'nsets').keys()
+
+    def element_sets(self, geometry):
+        """List element set names for a geometry.
+
+        Parameters
+        ----------
+        geometry : str
+            Name of the VMAP geometry whose element sets are requested.
+
+        Returns
+        -------
+        dict_keys
+            View of element set names defined for ``geometry``.  Use these names with
+            :meth:`filter_element_set` to restrict the current mesh to selected
+            elements.
+
+        Raises
+        ------
+        KeyError
+            Raised when ``geometry`` is not present or the VMAP geometry set data is
+            malformed.
+        """
+        return self._geometry_sets(geometry, 'elsets').keys()
+
+    def nodes(self, geometry):
+        """Return node coordinates for a geometry.
+
+        Parameters
+        ----------
+        geometry : str
+            Name of the VMAP geometry whose node coordinates are requested.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Node coordinate table indexed by ``node_id`` with columns ``x``, ``y``,
+            and ``z``.  Coordinate values use the length unit of the source finite-
+            element model, commonly millimetres.
+
+        Raises
+        ------
+        KeyError
+            Raised when ``geometry`` is not present or the VMAP file does not contain
+            the expected coordinate datasets.
         """
         return pd.DataFrame(
             self._file["/VMAP/GEOMETRY/%s/POINTS/MYCOORDINATES" % geometry][()],
@@ -99,61 +190,51 @@ class VMAPImport:
         )
 
     def make_mesh(self, geometry, state=None):
-        """Makes the initial mesh
+        """Create the working mesh for a geometry and optional state.
+
+        The working mesh contains the element-to-node connectivity as a pandas
+        ``MultiIndex`` with levels ``element_id`` and ``node_id``.  Subsequent calls to
+        :meth:`filter_node_set`, :meth:`filter_element_set`, :meth:`join_coordinates`,
+        and :meth:`join_variable` operate on this mesh until :meth:`to_frame` returns
+        it and resets the importer.
 
         Parameters
         ----------
-        geometry : string
-            The geometry defined in the vmap file
-        state : string, optional
-            The load state of which the field variable is to be read.
-            If not given, the state must be defined in ``join_variable()``.
+        geometry : str
+            Name of the VMAP geometry to use.
+        state : str, optional
+            Name of the VMAP state to use for following :meth:`join_variable` calls.
+            If omitted, pass a state to the first :meth:`join_variable` call.  Default
+            is ``None``.
 
         Returns
         -------
-        self
+        VMAPImport
+            The importer itself to allow fluent method chaining.
 
         Raises
         ------
         KeyError
-            if the ``geometry`` is not found of if the vmap file is corrupted
-        KeyError
-            if the ``node_set`` or ``element_set`` is not found in the geometry.
-        APIUseError
-            if both, a ``node_set`` and an ``element_set`` are given
+            Raised when ``geometry`` is not present or the VMAP connectivity data is
+            malformed.
 
-        Notes
-        -----
-        This methods defines the initial mesh to which coordinate data can be joined by ``join_coordinates()``
-        and field variables can be joined by ``join_variable()``
+        See Also
+        --------
+        pylife.vmap.VMAPImport.join_coordinates : Add node coordinates to the mesh.
+        pylife.vmap.VMAPImport.join_variable : Add a VMAP result variable to the mesh.
+        pylife.vmap.VMAPImport.to_frame : Return the finished pandas mesh.
 
         Examples
         --------
-        Get the mesh data with the coordinates of geometry '1' and the stress tensor of 'STATE-2'
+        .. code-block:: python
 
-        >>> (
-        ...     VMAPImport('demos/plate_with_hole.vmap')
-        ...     .make_mesh('1', 'STATE-2')
-        ...     .join_coordinates()
-        ...     .join_variable('STRESS_CAUCHY')
-        ...     .to_frame()
-        ... )
-                                    x         y    z  ...        S12  S13  S23
-        element_id node_id                            ...
-        1          1734     14.897208  5.269875  0.0  ... -13.687358  0.0  0.0
-                   1582     14.555333  5.355806  0.0  ... -10.732705  0.0  0.0
-                   1596     14.630658  4.908741  0.0  ... -17.866833  0.0  0.0
-                   4923     14.726271  5.312840  0.0  ... -12.210032  0.0  0.0
-                   4924     14.592996  5.132274  0.0  ... -14.299768  0.0  0.0
-        ...                       ...       ...  ...  ...        ...  ...  ...
-        4770       3812    -13.189782 -5.691876  0.0  ... -14.706686  0.0  0.0
-                   12418   -13.560289 -5.278386  0.0  ... -14.260107  0.0  0.0
-                   14446   -13.673285 -5.569107  0.0  ... -13.836027  0.0  0.0
-                   14614   -13.389065 -5.709927  0.0  ... -13.774759  0.0  0.0
-                   14534   -13.276068 -5.419206  0.0  ... -14.580153  0.0  0.0
-        <BLANKLINE>
-        [37884 rows x 9 columns]
-
+            mesh = (
+                VMAPImport("demos/plate_with_hole.vmap")
+                .make_mesh("1", "STATE-2")
+                .join_coordinates()
+                .join_variable("STRESS_CAUCHY")
+                .to_frame()
+            )
         """
         self._mesh = pd.DataFrame(index=self._mesh_index(geometry))
         self._geometry = geometry
@@ -161,21 +242,24 @@ class VMAPImport:
         return self
 
     def filter_node_set(self, node_set):
-        """Filters a node set out of the current mesh
+        """Restrict the working mesh to a node set.
 
         Parameters
         ----------
-        node_set : string
-            The node set defined in the vmap file as geometry set
+        node_set : str
+            Name of the VMAP node set in the current geometry.
 
         Returns
         -------
-        self
+        VMAPImport
+            The importer itself to allow fluent method chaining.
 
         Raises
         ------
         APIUseError
-            if the mesh has not been initialized using ``make_mesh()``
+            Raised when :meth:`make_mesh` has not been called before filtering.
+        KeyError
+            Raised when ``node_set`` is not defined for the current geometry.
         """
         self._check_mesh_for_filtering()
         node_set_ids = self._node_set_ids(self._geometry, node_set)
@@ -183,21 +267,24 @@ class VMAPImport:
         return self
 
     def filter_element_set(self, element_set):
-        """Filters a node set out of the current mesh
+        """Restrict the working mesh to an element set.
 
         Parameters
         ----------
-        element_set : string, optional
-            The element set defined in the vmap file as geometry set
+        element_set : str
+            Name of the VMAP element set in the current geometry.
 
         Returns
         -------
-        self
+        VMAPImport
+            The importer itself to allow fluent method chaining.
 
         Raises
         ------
         APIUseError
-            if the mesh has not been initialized using ``make_mesh()``
+            Raised when :meth:`make_mesh` has not been called before filtering.
+        KeyError
+            Raised when ``element_set`` is not defined for the current geometry.
         """
         self._check_mesh_for_filtering()
         element_set_ids = self._element_set_ids(self._geometry, element_set)
@@ -209,37 +296,35 @@ class VMAPImport:
             raise APIUseError("Need to make_mesh() before filtering node or element sets.")
 
     def join_coordinates(self):
-        """Join the coordinates of the predefined geometry in the mesh
+        """Join node coordinates to the working mesh.
+
+        The added columns are ``x``, ``y``, and ``z``.  Values use the length unit of
+        the source finite-element model, commonly millimetres.
 
         Returns
         -------
-        self
+        VMAPImport
+            The importer itself to allow fluent method chaining.
 
         Raises
         ------
         APIUseError
-            if the mesh has not been initialized using ``make_mesh()``
+            Raised when :meth:`make_mesh` has not been called before joining
+            coordinates.
+        KeyError
+            Raised when the current geometry does not contain the expected coordinate
+            datasets.
 
         Examples
         --------
-        Receive the mesh with the node coordinates
+        .. code-block:: python
 
-        >>> VMAPImport('demos/plate_with_hole.vmap').make_mesh('1').join_coordinates().to_frame()
-                                    x         y    z
-        element_id node_id
-        1          1734     14.897208  5.269875  0.0
-                   1582     14.555333  5.355806  0.0
-                   1596     14.630658  4.908741  0.0
-                   4923     14.726271  5.312840  0.0
-                   4924     14.592996  5.132274  0.0
-        ...                       ...       ...  ...
-        4770       3812    -13.189782 -5.691876  0.0
-                   12418   -13.560289 -5.278386  0.0
-                   14446   -13.673285 -5.569107  0.0
-                   14614   -13.389065 -5.709927  0.0
-                   14534   -13.276068 -5.419206  0.0
-        <BLANKLINE>
-        [37884 rows x 3 columns]
+            mesh = (
+                VMAPImport("demos/plate_with_hole.vmap")
+                .make_mesh("1")
+                .join_coordinates()
+                .to_frame()
+            )
         """
         if self._mesh is None:
             raise APIUseError("Need to make_mesh() before joining the coordinates.")
@@ -247,23 +332,25 @@ class VMAPImport:
         return self
 
     def to_frame(self):
-        """Returns the mesh and resets the mesh
+        """Return the completed mesh and reset the importer.
 
         Returns
         -------
-        mesh : DataFrame
-            The mesh data joined so far
+        pandas.DataFrame
+            Mesh data joined so far.  The frame is usually indexed by ``element_id``
+            and ``node_id`` and contains any coordinates or variable columns added to
+            the working mesh.
 
         Raises
         ------
         APIUseError
-            if there is no mesh present, i.e. make_mesh() has not been called yet
-            or the mesh has been reset in the meantime.
+            Raised when :meth:`make_mesh` has not been called or the working mesh has
+            already been returned.
 
         Notes
         -----
-        This method resets the mesh, i.e. ``make_mesh()`` must be called again in order to
-        fetch more mesh data in another mesh.
+        Calling this method clears the working mesh.  Call :meth:`make_mesh` again to
+        start importing another geometry, state, or filtered subset.
         """
         if self._mesh is None:
             raise(APIUseError("Need to make_mesh() before requesting a resulting frame."))
@@ -272,24 +359,26 @@ class VMAPImport:
         return ret
 
     def variables(self, geometry, state):
-        """Ask for available variables for a certain geometry and state.
+        """List variable names for a geometry and state.
 
         Parameters
         ----------
-        geometry : string
-            Name of the geometry
-        state : string
-            Name of the state
+        geometry : str
+            Name of the VMAP geometry to inspect.
+        state : str
+            Name of the VMAP state to inspect.
 
         Returns
         -------
-        variables : list
-            List of available variable names for the geometry state combination
+        list of str
+            Names of result variables available for the ``geometry`` and ``state``
+            combination, for example ``DISPLACEMENT`` or ``STRESS_CAUCHY``.
 
         Raises
         ------
         KeyError
-            if the geometry state combination is not available.
+            Raised when ``geometry`` or ``state`` is unknown, or when the state does
+            not contain data for the geometry.
         """
         self._fail_if_unknown_geometry(geometry)
         self._fail_if_unknown_state(state)
@@ -298,78 +387,68 @@ class VMAPImport:
         return list(self._file['/VMAP/VARIABLES/%s/%s' % (state, geometry)].keys())
 
     def join_variable(self, var_name, state=None, column_names=None):
-        """Joins a field output variable to the mesh
+        """Join a VMAP result variable to the working mesh.
+
+        Variables are result fields stored for a geometry and state.  Typical VMAP
+        variables are ``DISPLACEMENT`` for nodal displacement, ``STRESS_CAUCHY`` for
+        Cauchy stress, and ``E`` for strain.  Their numeric units follow the source
+        finite-element model; stresses are commonly stored in MPa.
 
         Parameters
         ----------
-        var_name : string
-            The name of the field variables
-        state : string, opional
-            The load state of which the field variable is to be read
-            If not given, the last defined state, either defined in ``make_mesh()``
-            or defeined in ``join_variable()`` is used.
-        column_names : list of string, optional
-            The names of the columns names to be used in the DataFrame
-            If not provided, it will be chosen according to the list shown below.
-            The length of the list must match the dimension of the variable.
+        var_name : str
+            Name of the VMAP variable to join.
+        state : str, optional
+            Name of the state from which to read ``var_name``.  If omitted, the state
+            set by :meth:`make_mesh` or by the previous :meth:`join_variable` call is
+            used.  Default is ``None``.
+        column_names : list of str, optional
+            Column names to use in the returned ``DataFrame``.  The list length must
+            match the VMAP variable dimension.  If omitted, pyLife uses predefined
+            names for known variables.  Default is ``None``.
 
         Returns
         -------
-        self
+        VMAPImport
+            The importer itself to allow fluent method chaining.
 
         Raises
         ------
         APIUseError
-            if the mesh has not been initialized using ``make_mesh()``
+            Raised when :meth:`make_mesh` has not been called or no state is known.
         KeyError
-            if the geometry, state or varname is not found of if the vmap file is corrupted
-        KeyError
-            if there are no column names given and known for the variable.
+            Raised when the geometry, state, or variable is not present, or when no
+            predefined column names exist for ``var_name`` and ``column_names`` is not
+            supplied.
         ValueError
-            if the length of the column_names does not match the dimension of the variable
+            Raised when ``column_names`` does not match the variable dimension.
+        FeatureNotSupportedError
+            Raised when the VMAP variable location is not node, element, or element-
+            nodal data.
 
         Notes
         -----
-        The mesh must be initialized with ``make_mesh()``. The final DataFrame can be retrieved with ``to_frame()``.
+        When ``column_names`` is omitted, pyLife uses these predefined names:
 
-        If the ``column_names`` argument is not provided the following column names are chosen
+        * ``DISPLACEMENT``: ``dx``, ``dy``, ``dz``.
+        * ``STRESS_CAUCHY``: ``S11``, ``S22``, ``S33``, ``S12``, ``S13``, ``S23``.
+        * ``E``: ``E11``, ``E22``, ``E33``, ``E12``, ``E13``, ``E23``.
 
-        * 'DISPLACEMENT': ``['dx', 'dy', 'dz']``
-        * 'STRESS_CAUCHY': ``['S11', 'S22', 'S33', 'S12', 'S13', 'S23']``
-        * 'E': ``['E11', 'E22', 'E33', 'E12', 'E13', 'E23']``
-
-        If that fails a ``KeyError`` exception is risen.
+        .. todo:: Move the central definition of pyLife VMAP column names into user
+           documentation.
 
         Examples
         --------
-        Receiving the 'DISPLACEMENT' of 'STATE-1' , the stress and strain tensors of 'STATE-2'
+        .. code-block:: python
 
-        >>> (
-        ...     VMAPImport('demos/plate_with_hole.vmap')
-        ...     .make_mesh('1')
-        ...     .join_variable('DISPLACEMENT', 'STATE-1')
-        ...     .join_variable('STRESS_CAUCHY', 'STATE-2')
-        ...     .join_variable('E').to_frame()
-        ... )
-                             dx   dy   dz        S11  ...  E33       E12  E13  E23
-        element_id node_id                            ...
-        1          1734     0.0  0.0  0.0  27.080811  ...  0.0 -0.000169  0.0  0.0
-                   1582     0.0  0.0  0.0  28.319006  ...  0.0 -0.000133  0.0  0.0
-                   1596     0.0  0.0  0.0  47.701195  ...  0.0 -0.000221  0.0  0.0
-                   4923     0.0  0.0  0.0  27.699907  ...  0.0 -0.000151  0.0  0.0
-                   4924     0.0  0.0  0.0  38.010101  ...  0.0 -0.000177  0.0  0.0
-        ...                 ...  ...  ...        ...  ...  ...       ...  ...  ...
-        4770       3812     0.0  0.0  0.0  36.527439  ...  0.0 -0.000182  0.0  0.0
-                   12418    0.0  0.0  0.0  32.868889  ...  0.0 -0.000177  0.0  0.0
-                   14446    0.0  0.0  0.0  34.291058  ...  0.0 -0.000171  0.0  0.0
-                   14614    0.0  0.0  0.0  36.063541  ...  0.0 -0.000171  0.0  0.0
-                   14534    0.0  0.0  0.0  33.804211  ...  0.0 -0.000181  0.0  0.0
-        <BLANKLINE>
-        [37884 rows x 15 columns]
-
-        TODO
-        ----
-        Write a more central document about pyLife's column names.
+            mesh = (
+                VMAPImport("demos/plate_with_hole.vmap")
+                .make_mesh("1")
+                .join_variable("DISPLACEMENT", "STATE-1")
+                .join_variable("STRESS_CAUCHY", "STATE-2")
+                .join_variable("E")
+                .to_frame()
+            )
         """
         if self._mesh is None:
             raise APIUseError("Need to make_mesh() before joining a variable.")

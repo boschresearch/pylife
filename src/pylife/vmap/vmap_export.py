@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Write pandas meshes and result fields to VMAP files.
+
+This module creates VMAP HDF5 files from pyLife mesh data.  It stores node
+coordinates, element connectivity, optional node and element sets, and result
+variables in VMAP geometry and state groups so that CAE post-processors can
+read them again.
+"""
 __author__ = "Gyöngyvér Kiss"
 __maintainer__ = __author__
 
@@ -37,23 +44,54 @@ from .vmap_integration_type import VMAPIntegrationType
 
 
 class VMAPExportError(Exception):
+    """Raise when VMAP export cannot complete an object atomically."""
+
     pass
 
 
 class VMAPExport:
-    """
-    The interface class to export a vmap file
+    """Write pyLife mesh data and variables to a VMAP file.
+
+    Use this class to export a pandas mesh from pyLife to the HDF5-based VMAP
+    format.  A geometry stores node coordinates and element connectivity, optional
+    node and element sets describe named subsets, and variables store result fields
+    inside VMAP states for later post-processing in CAE tools.
+
+    The input mesh is a ``DataFrame`` indexed by ``element_id`` and ``node_id``.
+    Coordinate columns ``x`` and ``y`` are required for two-dimensional meshes;
+    ``z`` is used when present for three-dimensional meshes.  Variables are read
+    from mesh columns such as ``dx``, ``dy``, ``dz`` for ``DISPLACEMENT`` or
+    ``S11`` through ``S23`` for ``STRESS_CAUCHY``.  Numeric values are written as
+    provided, so units follow the pyLife data and the originating finite-element
+    model.
 
     Parameters
     ----------
-    file_name : string
-        The path to the vmap file to be read
+    file_name : str
+        Path to the VMAP file to create.  Existing files are overwritten by
+        :mod:`h5py` in write mode.
 
     Raises
     ------
-    Exception
-        if the file cannot be read an exception is raised.
-        So far any exception from the ``h5py`` module is passed through.
+    OSError
+        Raised when the VMAP file cannot be created.  A partially created file is
+        removed before the exception is re-raised.
+
+    See Also
+    --------
+    pylife.vmap.VMAPImport : Read VMAP geometry and variables into pandas.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        exporter = VMAPExport("results.vmap")
+        (
+            exporter
+            .add_geometry("1", mesh)
+            .add_variable("STATE-1", "1", "DISPLACEMENT", mesh)
+            .add_variable("STATE-1", "1", "STRESS_CAUCHY", mesh)
+        )
     """
 
     """
@@ -112,59 +150,80 @@ class VMAPExport:
 
     @property
     def file_name(self):
-        """
-        Gets the name of the VMAP file that we are exporting
+        """Return the path of the VMAP file being written.
+
+        Returns
+        -------
+        str
+            Path passed to :class:`VMAPExport` during construction.
         """
         return self._file_name
 
     def variable_column_names(self, parameter_name):
-        """
-        Gets the column names that the given parameter consists of
+        """Return pyLife column names for a VMAP variable.
 
         Parameters
         ----------
-        parameter_name: string
-            The name of the parameter
+        parameter_name : str
+            VMAP variable name, for example ``DISPLACEMENT`` or ``STRESS_CAUCHY``.
 
         Returns
         -------
-        The column names of the given parameter in the mesh
+        list of str
+            Column names expected in the mesh for ``parameter_name``.
 
+        Raises
+        ------
+        KeyError
+            Raised when ``parameter_name`` is not a predefined VMAP variable in
+            pyLife.
+
+        Examples
+        --------
+        >>> VMAPExport.__new__(VMAPExport).variable_column_names("DISPLACEMENT")
+        ['dx', 'dy', 'dz']
         """
         return vmap_structures.column_names[parameter_name][0]
 
     def variable_location(self, parameter_name):
-        """
-        Gets the location of the given parameter
+        """Return the predefined VMAP location for a variable.
 
         Parameters
         ----------
-        parameter_name: string
-            The name of the parameter
+        parameter_name : str
+            VMAP variable name, for example ``DISPLACEMENT`` or ``STRESS_CAUCHY``.
 
         Returns
         -------
-        The location of the given parameter
+        enum.Enum
+            VMAP location used by pyLife for the variable, such as nodal or
+            element-nodal data.
 
+        Raises
+        ------
+        KeyError
+            Raised when ``parameter_name`` is not a predefined VMAP variable in
+            pyLife.
         """
         return vmap_structures.column_names[parameter_name][1]
 
     def set_group_attribute(self, object_path, key, value):
-        """
-        Sets the 'MYNAME' attribute of the VMAP objects
+        """Set an attribute on an existing VMAP HDF5 object.
 
         Parameters
         ----------
-        object_path: string
-            The full path to the object that we want to rename
-        key: string
-            The key of the attribute that we want to set
-        value: np.dtype
-            The value that we want to set to the attribute
+        object_path : str
+            Absolute path of the VMAP group or dataset whose attribute is written.
+        key : str
+            Name of the attribute to create.
+        value : numpy.dtype
+            Attribute value to store.  The value must be accepted by
+            :meth:`h5py.AttributeManager.create`.
 
-        Returns
-        -------
-        -
+        Raises
+        ------
+        KeyError
+            Raised when ``object_path`` does not exist in the VMAP file.
         """
         with h5py.File(self._file_name, 'a') as file:
             try:
@@ -174,19 +233,32 @@ class VMAPExport:
             vmap_object.attrs.create(key, value)
 
     def add_geometry(self, geometry_name, mesh):
-        """
-        Exports geometry with given name and mesh data
+        """Add a geometry from a pyLife mesh to the VMAP file.
+
+        The geometry contains node coordinates and element connectivity.  The mesh
+        must be indexed by ``element_id`` and ``node_id`` and must contain coordinate
+        columns ``x`` and ``y``; column ``z`` is written when present.
 
         Parameters
         ----------
-        geometry_name: string
-            Name of the geometry to add
-        mesh: Pandas DataFrame
-            The Data Frame that holds the data of the mesh to export
+        geometry_name : str
+            Name of the VMAP geometry to create.
+        mesh : pandas.DataFrame
+            Mesh to export.  The frame must contain one row per element-node pair and
+            coordinate columns in the length unit used by the model.
+
         Returns
         -------
-        self
+        VMAPExport
+            The exporter itself to allow fluent method chaining.
 
+        Raises
+        ------
+        KeyError
+            Raised when ``geometry_name`` already exists.
+        VMAPExportError
+            Raised when geometry creation fails.  The partially created geometry is
+            removed before the exception is re-raised.
         """
         with h5py.File(self._file_name, 'a') as file:
             geometry_group = file["/VMAP/GEOMETRY"]
@@ -203,23 +275,34 @@ class VMAPExport:
         return self
 
     def add_node_set(self, geometry_name, indices, mesh, name=None):
-        """
-        Exports node-type geometry set into given geometry
+        """Add a named node set to an existing geometry.
 
         Parameters
         ----------
-        geometry_name: string`
-            The geometry to where we want to export the geometry set
-        indices: Pandas Index
-            List of node indices that we want to export
-        mesh: Pandas DataFrame
-            The Data Frame that holds the data of the mesh to export
-        name: value of attribute MYSETNAME
+        geometry_name : str
+            Name of the VMAP geometry that receives the set.
+        indices : pandas.Index
+            Node ids to include in the set.  Every id must be present in ``mesh``.
+        mesh : pandas.DataFrame
+            Mesh whose ``node_id`` index level defines the valid node ids.
+        name : str, optional
+            User-visible value of the VMAP ``MYSETNAME`` attribute.  If omitted, an
+            empty string is written.  Default is ``None``.
 
         Returns
         -------
-        self
+        VMAPExport
+            The exporter itself to allow fluent method chaining.
 
+        Raises
+        ------
+        KeyError
+            Raised when an id in ``indices`` is not present in ``mesh`` or the
+            geometry does not exist.
+        TypeError
+            Raised when ``name`` is not a string.
+        VMAPExportError
+            Raised when writing the VMAP geometry set fails.
         """
         node_id_set = set(mesh.index.get_level_values('node_id'))
         index_set = set(indices)
@@ -229,23 +312,34 @@ class VMAPExport:
         return self
 
     def add_element_set(self, geometry_name, indices, mesh, name=None):
-        """
-        Exports element-type geometry set into given geometry
+        """Add a named element set to an existing geometry.
 
         Parameters
         ----------
-        geometry_name: string
-            The geometry to where we want to export the geometry set
-        indices: Pandas Index
-            List of node indices that we want to export
-        mesh: Pandas DataFrame
-            The Data Frame that holds the data of the mesh to export
-        name: value of attribute MYSETNAME
+        geometry_name : str
+            Name of the VMAP geometry that receives the set.
+        indices : pandas.Index
+            Element ids to include in the set.  Every id must be present in ``mesh``.
+        mesh : pandas.DataFrame
+            Mesh whose ``element_id`` index level defines the valid element ids.
+        name : str, optional
+            User-visible value of the VMAP ``MYSETNAME`` attribute.  If omitted, an
+            empty string is written.  Default is ``None``.
 
         Returns
         -------
-        self
+        VMAPExport
+            The exporter itself to allow fluent method chaining.
 
+        Raises
+        ------
+        KeyError
+            Raised when an id in ``indices`` is not present in ``mesh`` or the
+            geometry does not exist.
+        TypeError
+            Raised when ``name`` is not a string.
+        VMAPExportError
+            Raised when writing the VMAP geometry set fails.
         """
         element_id_set = set(mesh.index.get_level_values('element_id'))
         index_set = set(indices)
@@ -255,46 +349,82 @@ class VMAPExport:
         return self
 
     def add_integration_types(self, content):
-        """
-        Creates system dataset IntegrationTypes with the given content
+        """Add VMAP integration type definitions to the system group.
 
         Parameters
         ----------
-        content: the content of the dataset
+        content : dict
+            Mapping of integration type keys to constructor arguments for
+            :class:`~pylife.vmap.vmap_integration_type.VMAPIntegrationType`.
 
         Returns
         -------
-        self
+        VMAPExport
+            The exporter itself to allow fluent method chaining.
 
+        Raises
+        ------
+        KeyError
+            Raised when the VMAP integration type dataset already exists.
+        VMAPExportError
+            Raised when writing the system dataset fails.
         """
         self._create_system_dataset(VMAPIntegrationType, content)
         return self
 
     def add_variable(self, state_name, geometry_name, variable_name, mesh, column_names=None, location=None):
-        """Exports variable into given state and geometry
+        """Add a result variable to a state and geometry.
+
+        The variable values are taken from columns in ``mesh`` and written below the
+        VMAP ``VARIABLES`` group.  When the state or state-specific geometry group does
+        not yet exist, it is created automatically.  Known pyLife variables use
+        predefined column names and VMAP locations; custom variables require explicit
+        ``column_names`` and may require an explicit ``location``.
 
         Parameters
         ----------
-        state_name: string
-            State where we want to export the parameter
-        geometry_name: string
-            Geometry where we want to export the parameter
-        variable_name: string
-            The name of the variable to export
-        mesh: Pandas DataFrame
-            The Data Frame that holds the data of the mesh to export
-        column_names: List, optional
-            The columns that the parameter consists of
-        location: Enum, optional
-            The location of the parameter
-            * 2 - node
-            * 3 - element - not supported yet
-            * 6 - element nodal
+        state_name : str
+            Name of the VMAP state, usually a load step or increment such as
+            ``STATE-1``.
+        geometry_name : str
+            Name of the VMAP geometry that owns the variable.
+        variable_name : str
+            Name of the VMAP variable to create, for example ``DISPLACEMENT`` or
+            ``STRESS_CAUCHY``.
+        mesh : pandas.DataFrame
+            Mesh containing the columns to export.  For nodal variables one value per
+            ``node_id`` is written; for element-nodal variables the values are written
+            for the mesh rows.
+        column_names : list of str, optional
+            Mesh columns to export for ``variable_name``.  If omitted, predefined
+            pyLife column names are used for known variables.  Default is ``None``.
+        location : enum.Enum, optional
+            VMAP variable location.  Use ``VariableLocations.NODE`` for nodal data or
+            ``VariableLocations.ELEMENT_NODAL`` for element-nodal data.  If omitted,
+            the predefined location for a known variable is used.  Default is
+            ``None``.
 
         Returns
         -------
-        self
+        VMAPExport
+            The exporter itself to allow fluent method chaining.
 
+        Raises
+        ------
+        KeyError
+            Raised when ``geometry_name`` does not exist, the variable already exists,
+            or no predefined column names are available.
+        APIUseError
+            Raised when ``location`` is missing for an unknown variable or is not a
+            ``VariableLocations`` value.
+        VMAPExportError
+            Raised when writing the variable fails.  The partially created variable is
+            removed before the exception is re-raised.
+
+        Notes
+        -----
+        Only nodal and element-nodal variables are supported by the current export
+        implementation.  Values are written without unit conversion.
         """
         with h5py.File(self._file_name, 'a') as file:
             try:
