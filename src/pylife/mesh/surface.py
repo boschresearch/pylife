@@ -13,6 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Evaluate surface information for three-dimensional meshes.
+
+The module registers the ``surface_3D`` accessor.  It identifies surface nodes
+and outward surface normals on connected solid meshes.  These quantities are
+used together with stress gradients as input for FKM nonlinear support-factor
+assessments.
+"""
 
 __author__ = "Benjamin Maier"
 __maintainer__ = "Johannes Mueller"
@@ -25,17 +32,50 @@ from .meshsignal import Mesh
 
 @pd.api.extensions.register_dataframe_accessor('surface_3D')
 class Surface3D(Mesh):
-    '''Determines nodes at the surface in a 3D mesh.
-    It also computes the outward normal vectors of the surface.
+    r"""Determine surface nodes and normals of a 3D solid mesh.
+
+    The accessor works on pyLife finite-element meshes with coordinates in mm
+    and an ``element_id``/``node_id`` index.  It produces per-row information
+    that can be joined to stress and stress-gradient data for FKM nonlinear
+    assessments.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.DataFrame
+        Mesh DataFrame with coordinate columns ``x``, ``y`` and ``z`` in mm
+        and a :class:`pandas.MultiIndex` containing ``element_id`` and
+        ``node_id``.
 
     Raises
     ------
     AttributeError
-        if at least one of the columns `x`, `y`, `z` is missing
+        If at least one of the coordinate columns ``x`` or ``y`` is missing.
     AttributeError
-        if the index of the DataFrame is not a two level MultiIndex
-        with the names `node_id` and `element_id`
-    '''
+        If the index of the DataFrame does not contain the levels ``node_id``
+        and ``element_id``.
+
+    See Also
+    --------
+    pylife.mesh.gradient.Gradient3D : Compute stress gradients used together
+        with surface normals.
+    pylife.mesh.meshsignal.Mesh : Define the finite-element mesh signal
+        contract.
+
+    Notes
+    -----
+    Surface detection sums the solid angle contributions around each
+    ``node_id``.  Interior nodes of a closed volume reach approximately
+
+    .. math::
+
+        \sum \Omega_i = 4\pi
+
+    whereas nodes with a smaller angle sum are classified as surface nodes.
+
+    The implementation is intended for 3D solid meshes and can be slow for
+    large industrial models.  If possible, determine surface nodes and normals
+    in the FE solver and import them with the result data.
+    """
 
     def _solid_angle(self, df):
         n = len(df)
@@ -152,29 +192,25 @@ class Surface3D(Mesh):
         return df3
 
     def is_at_surface(self):
-        ''' Determines for every point in the mesh if it is at the mesh's surface.
-
-        Example usage:
-
-        .. code::
-
-            # df_mesh is a pandas DataFrame with columns "x", "y", "z" and
-            # one row per node, indexed by a mult-index with levels
-            # "element_id" and "node_id".
-            is_at_surface_1 = df_mesh.surface_3D.is_at_surface()
-
-            # The result will be a series with values 0 or 1 for every node
-
-        .. note::
-            This function is slow for large meshes. A better approach would be
-            to determine surface nodes in the commercial solver (Abaqus, Ansys).
+        """Determine whether each mesh row lies on the component surface.
 
         Returns
         -------
-        is_at_surface : pd.Series
-            A series with the same index as the given DataFrame, indicating
-            whether the node is at a surface of the component or not.
-        '''
+        pandas.Series
+            Boolean series with the same ``element_id``/``node_id`` index as
+            the accessed mesh.  ``True`` marks rows whose ``node_id`` is on the
+            surface of the component.
+
+        Notes
+        -----
+        The method requires coordinates ``x``, ``y`` and ``z`` in mm.  The
+        result has the full finite-element mesh index, not a node-averaged
+        index, so duplicated ``node_id`` values can occur for nodes shared by
+        several elements.
+
+        This calculation is slow for large meshes.  Prefer importing surface
+        flags from the FE solver when they are available.
+        """
         assert "x" in self._obj
         assert "y" in self._obj
         assert "z" in self._obj
@@ -185,33 +221,26 @@ class Surface3D(Mesh):
         return result["is_at_surface"]
 
     def is_at_surface_with_normals(self):
-        ''' Determines for every point in the mesh if it is at the mesh's surface,
-        additionally calculate the outward normals.
-
-        Example usage:
-
-        .. code::
-
-            # df_mesh is a pandas DataFrame with columns "x", "y", "z" and
-            # one row per node, indexed by a mult-index with levels
-            # "element_id" and "node_id".
-            is_at_surface_2 = df_mesh.surface_3D.is_at_surface_with_normals()
-
-            # The result will be a DataFrame with values 0 or 1 for every node
-
-        .. note::
-            This function is slow for large meshes. A better approach would be
-            to determine surface nodes in the commercial solver (Abaqus, Ansys).
+        """Determine surface membership and outward normal vectors.
 
         Returns
         -------
-        is_at_surface : pd.Series
-            A DataFrame with the same index as the given DataFrame and columns
-            "is_at_surface", "normal_x", "normal_y", "normal_z".
-            The column is_at_surface determines whether the node is at a surface
-            of the component or not. If at the surface, the other columns specify
-            the outward normal vector at this point.
-        '''
+        pandas.DataFrame
+            DataFrame with the same ``element_id``/``node_id`` index as the
+            accessed mesh and the columns ``is_at_surface``, ``normal_x``,
+            ``normal_y`` and ``normal_z``.  Normal components are unitless and
+            describe the outward normal direction at surface rows; non-surface
+            rows contain ``NaN`` normal components.
+
+        Notes
+        -----
+        Coordinates are interpreted in mm.  The result retains the full
+        finite-element mesh index, so a ``node_id`` shared by several elements
+        can appear multiple times.
+
+        This calculation is slow for large meshes.  Prefer importing surface
+        normal vectors from the FE solver when they are available.
+        """
 
         df = self._determine_is_at_surface()
 

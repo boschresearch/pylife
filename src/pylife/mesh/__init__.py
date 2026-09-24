@@ -13,6 +13,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Provide pandas accessors for finite-element mesh data.
+
+The :mod:`pylife.mesh` package works with mesh data stored in
+:class:`pandas.DataFrame` objects.  The accessors registered here interpret
+columns ``x``, ``y`` and optionally ``z`` as coordinates in mm and use index
+levels such as ``node_id`` and ``element_id`` to distinguish plain point
+clouds from connected finite-element meshes.
+"""
 
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__

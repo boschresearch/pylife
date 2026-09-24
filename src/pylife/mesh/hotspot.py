@@ -23,47 +23,79 @@ import pylife.mesh.meshsignal as meshsignal
 
 @pd.api.extensions.register_dataframe_accessor('hotspot')
 class HotSpot(meshsignal.Mesh):
+    """Find connected hotspot regions on finite-element meshes.
+
+    A hotspot is a connected region of high scalar values, for example damage
+    or stress in MPa, on a pyLife finite-element mesh.  Connectivity is taken
+    from the ``element_id`` and ``node_id`` levels of the mesh index.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.DataFrame
+        Mesh DataFrame with coordinate columns ``x`` and ``y`` and a
+        :class:`pandas.MultiIndex` containing ``element_id`` and ``node_id``.
+        The scalar field used for clustering must be stored in an additional
+        column.
+
+    See Also
+    --------
+    pylife.mesh.meshsignal.Mesh : Define the finite-element mesh signal
+        contract used by this accessor.
+    """
 
     def calc(self, value_key, limit_frac=0.9, artefact_threshold=None):
-        '''Calculates hotspots on a FE mesh
+        r"""Calculate connected hotspots of a scalar field.
+
+        The method labels all connected regions whose value is at least
+        ``limit_frac`` times the relevant maximum.  Regions are connected if
+        rows share a ``node_id`` or an ``element_id`` in the full mesh
+        :class:`pandas.MultiIndex`.
 
         Parameters
         ----------
-        value_key : string
-            Column name of the field variable, on which the Hot Spot
-            calculation is done.
-
+        value_key : str
+            Column name of the scalar field used for hotspot clustering, for
+            example damage or stress in MPa.  Values must be defined for every
+            row of the accessed mesh.
         limit_frac : float, optional
-            Fraction of the max field variable. Example: If you set
-            limit_frac = 0.9, the function finds all nodes and regions
-            which are >= 90% of the maximum value of the field
-            variable.  default: 0.9
-
+            Fraction of the maximum field value used as hotspot threshold.
+            With ``limit_frac=0.9``, all connected rows with values greater
+            than or equal to 90 percent of the maximum are labeled.  Default
+            is ``0.9``.
         artefact_threshold : float, optional
-            If set all the values above the `artefact_threshold` limit are not
-            taken into account for the calculation of the maximum value. This
-            is meant to be used for numerical artefacts which would take
-            the threshold value for hotspot determined by `limit_frac` to such
-            a high level, that all the relevant hotspots would "hide" underneath
-            it.
+            Upper cutoff for calculating the maximum.  Values above
+            ``artefact_threshold`` remain in the mesh but are ignored when the
+            reference maximum is determined.  Use this to suppress numerical
+            artefacts that would otherwise hide physically relevant hotspots.
+            Default is ``None``.
 
         Returns
         -------
-        hotspots : pandas.Series
-            A Series of integers with the same index of the accessed
-            mesh object indicating which mesh point belongs to which hotspot.
-            A value 0 means below the `limit_frac`.
+        pandas.Series
+            Integer hotspot labels with the same ``element_id``/``node_id``
+            index as the accessed mesh.  ``0`` marks rows below the threshold;
+            positive integers identify connected hotspot regions and can be
+            used for grouping, plotting or selecting critical areas.
 
         Notes
         -----
-        A loop is defined in the following way:
-                * Select the node with the maximum stress value
-                * Find all elements > `limit_frac` belonging to this node
-                * Select all nodes > `limit_frac` belonging to these elements
-                * Start loop again until all nodes > `limit_frac` are assigned to a hotspot
+        The threshold value is
 
-        Attention: All stress values are node based, not integration point based
-        '''
+        .. math::
+
+            v_\mathrm{limit} = \mathrm{limit\_frac} \cdot
+            \max(v_i)
+
+        or the same maximum after removing values above
+        ``artefact_threshold``.  Starting from the remaining maximum row, the
+        algorithm repeatedly adds all above-threshold rows sharing an
+        ``element_id`` or ``node_id`` until the connected component is
+        complete, then continues with the next component.
+
+        The algorithm assumes node-based values.  Integration-point values
+        should be extrapolated or averaged to the node-element mesh rows
+        before calling this method.
+        """
         max_value = (self._obj[value_key].max() if artefact_threshold is None
                      else self._obj.loc[self._obj[value_key] < artefact_threshold, value_key].max())
         above_limit = self._obj[value_key] >= limit_frac*max_value
