@@ -14,13 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Utility Functions
-=================
-
-A collection of functions frequently used in lifetime estimation
-business.
-"""
+"""Provide fatigue statistics helper functions."""
 
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
@@ -29,91 +23,140 @@ import numpy as np
 
 
 def scattering_range_to_std(T):
-    """Convert a scattering range (``TS`` or ``TN`` in DIN 50100:2016-12) into standard deviation.
+    r"""Convert a fatigue scattering range to a log-standard deviation.
+
+    The scattering range ``T`` is the ratio of the 90 % quantile to the
+    10 % quantile of a log-normal distribution, as used for ``TS`` and
+    ``TN`` in DIN 50100:2016-12.  The returned standard deviation is the
+    normal standard deviation of the base-10 logarithm of the quantity.
 
     Parameters
     ----------
     T : float
-        inverted scattering range
+        Scattering range as the 90 %/10 % quantile ratio of a log-normal
+        distribution.
 
     Returns
     -------
-    std : float
-        standard deviation corresponding to TS or TN assuming a normal distribution
+    float
+        Standard deviation in log10 units corresponding to ``T``.
+
+    See Also
+    --------
+    pylife.utils.functions.std_to_scattering_range : Convert a log10 standard
+        deviation to a scattering range.
 
     Notes
     -----
-    Actually ``1/(2*norm.ppf(0.9))*np.log10(T)``
+    The conversion follows from the symmetric 10 % and 90 % quantiles of a
+    normal distribution in log10 space:
 
-    Inverse of ``std_to_scattering_range()``
+    .. math::
+
+        \sigma_{\log_{10}} =
+        \frac{\log_{10}(T)}{2 \Phi^{-1}(0.9)}
+
+    where :math:`\Phi^{-1}` is the inverse standard normal cumulative
+    distribution function.
+
+    Examples
+    --------
+    >>> round(float(scattering_range_to_std(10.0)), 6)
+    0.390152
+    >>> round(float(std_to_scattering_range(scattering_range_to_std(1.25))), 6)
+    1.25
     """
     return 0.39015207303618954*np.log10(T)
 
 
 def std_to_scattering_range(std):
-    """Convert a standard deviation into scattering range (``TS`` or ``TN`` in DIN 50100:2016-12).
+    r"""Convert a log-standard deviation to a fatigue scattering range.
+
+    The scattering range ``T`` is the ratio of the 90 % quantile to the
+    10 % quantile of a log-normal distribution, as used for ``TS`` and
+    ``TN`` in DIN 50100:2016-12.  The input ``std`` is the standard
+    deviation of the base-10 logarithm of the quantity.
 
     Parameters
     ----------
     std : float
-        standard deviation
+        Standard deviation in log10 units.
 
     Returns
     -------
-    T : float
-        inverted scattering range corresponding to ``std`` assuming a normal distribution
+    float
+        Scattering range as the 90 %/10 % quantile ratio of a log-normal
+        distribution.
+
+    See Also
+    --------
+    pylife.utils.functions.scattering_range_to_std : Convert a scattering
+        range to a log10 standard deviation.
 
     Notes
     -----
-    Actually ``10**(2*norm.ppf(0.9)*std``
+    The conversion is the inverse of
+    :func:`pylife.utils.functions.scattering_range_to_std`:
 
-    Inverse of ``scattering_range_to_std()``
+    .. math::
+
+        T = 10^{2 \Phi^{-1}(0.9) \sigma_{\log_{10}}}
+
+    where :math:`\Phi^{-1}` is the inverse standard normal cumulative
+    distribution function.
+
+    Examples
+    --------
+    >>> round(float(std_to_scattering_range(0.39015207303618954)), 6)
+    10.0
+    >>> round(float(scattering_range_to_std(std_to_scattering_range(0.2))), 6)
+    0.2
     """
     return 10**(2.5631031310892007*std)
 
 
 def rossow_cumfreqs(N):
-    """Cumulative frequency estimator according to Rossow.
+    r"""Estimate cumulative frequencies according to Rossow.
+
+    Use this estimator to assign plotting positions to sorted fatigue test
+    samples before fitting them in probability paper.  The estimate gives the
+    probability that the next observation is below the ``i``-th value of
+    ``N`` sorted samples [Rossow1964]_.
 
     Parameters
     ----------
     N : int
-        The sample size of the statistical population
+        Sample size of the statistical population.
 
     Returns
     -------
-    cumfreqs : numpy.ndarray
-        The estimated cumulated frequencies of the N samples
+    numpy.ndarray
+        Estimated cumulative frequencies for the ``N`` sorted samples.
 
     Notes
     -----
-    The returned value is the probability that the next taken sample
-    is below the value of the i-th sample of n sorted samples.
+    For one-based sample ranks :math:`i = 1, \ldots, N`, Rossow's estimator
+    computes the cumulative frequency as
+
+    .. math::
+
+        P_i = \frac{3 i - 1}{3 N + 1}
+
+    The estimates are symmetric around 0.5 and sum to ``N / 2``.
+
+    References
+    ----------
+    .. [Rossow1964] Rossow, E., "Statistics of Metal Fatigue in Engineering",
+       page 16.
 
     Examples
     --------
     >>> rossow_cumfreqs(1)
     array([0.5])
-
-    If we have one sample, the probability that the next sample will
-    be below it is 0.5.
-
     >>> rossow_cumfreqs(3)
     array([0.2, 0.5, 0.8])
-
-    If we have three sorted samples, the probability that the next
-    sample will be
-    * below the first is 0.2
-    * below the second is 0.5
-    * below the third is 0.8
-
-
-    References
-    ----------
-    *Statistics of Metal Fatigue in Engineering' page 16*
-
-    https://books.google.de/books?isbn=3752857722
-
+    >>> round(float(rossow_cumfreqs(4).sum()), 6)
+    2.0
     """
     i = np.arange(1, N+1)
     return (3.*i-1.)/(3.*N+1)

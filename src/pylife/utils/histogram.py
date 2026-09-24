@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Provide helpers for interval-indexed histograms."""
+
 __author__ = "Daniel Christopher Kreuter"
 __maintainer__ = "Johannes Mueller"
 
@@ -24,56 +26,62 @@ import pandas as pd
 
 
 def combine_histogram(hist_list, method='sum'):
-    """Combine a list of histograms to one.
+    r"""Combine several interval-indexed histograms into one histogram.
+
+    Histograms are represented by :class:`pandas.Series` objects whose index is
+    either a :class:`pandas.IntervalIndex` or a :class:`pandas.MultiIndex` with
+    interval-valued histogram dimensions.  Equal bins are grouped and
+    aggregated; bins that do not occur in an input histogram are not filled
+    before aggregation.
 
     Parameters
     ----------
-    hist_list: list of :class:`pandas.Series`
-        list of histograms with all histograms as interval indexed :class:`pandas.Series`
-    method: str or aggregating function
-        method used for the aggregation, e.g. 'sum', 'min', 'max', 'mean', 'std'
-        or any callable function that would aggregate a :class:`pandas.Series`.
-        default is 'sum'
+    hist_list : list of pandas.Series
+        Histograms to combine.  Each non-empty series must use compatible
+        interval-indexed dimensions.
+    method : str or callable, optional
+        Aggregation passed to ``pandas`` group-by aggregation, for example
+        ``'sum'``, ``'min'``, ``'max'``, ``'mean'``, ``'std'`` or a callable
+        accepting a :class:`pandas.Series`.  Default is ``'sum'``.
 
     Returns
     -------
-    histogram : :class:`pd.Series`
-        The resulting histogram
+    pandas.Series
+        Combined histogram with the grouped interval bins as its index.
 
     Raises
     ------
     ValueError
-        if the index levels of the histograms do not match.
+        Raised if the index levels of the histograms do not match.
+
+    See Also
+    --------
+    pylife.utils.histogram.rebin_histogram : Rebin a histogram before or after
+        combining histograms.
 
     Notes
     -----
-    Identical bins are grouped and then aggregated using ``method``.  Note that
-    neither before or after the aggregation any rebinning takes place.  You
-    might consider piping your histograms through
-    :func:`~pylife.utils.histogram.rebin_histogram` before or after combining them.
+    For every unique bin :math:`b`, the combined value is computed from all
+    values with that exact bin:
 
-    The histograms need to have compatible indices. Those can either be a
-    simple class:`pandas.IntervalIndex` for a one dimensional histogram or a
-    :class:`pandas.MultiIndex` whose levels are all ``IntervalIndex`` for
-    multidimensional histograms.  For multidimensional histograms the names of
-    the index levels must match throughout the input histogram list.
+    .. math::
+
+        h_\mathrm{combined}(b) =
+        \operatorname{agg}\{h_k(b) \mid b \in \operatorname{index}(h_k)\}
+
+    No rebinning is performed before or after the aggregation.  Rebin the
+    inputs explicitly with :func:`pylife.utils.histogram.rebin_histogram` when
+    histograms use different but geometrically overlapping bins.
+
+    Limitations: additional dimensions that are not histogram bins are only
+    valid if their index level names and values are compatible with pandas
+    grouping.  This operation does not align values onto missing combinations
+    of non-histogram dimensions.
 
     Examples
     --------
-    Two one dimensional histograms:
-
     >>> h1 = pd.Series([5., 10.], index=pd.interval_range(start=0, end=2))
     >>> h2 = pd.Series([12., 3., 20.], index=pd.interval_range(start=1, periods=3))
-    >>> h1
-    (0, 1]     5.0
-    (1, 2]    10.0
-    dtype: float64
-    >>> h2 = pd.Series([12., 3., 20.], index=pd.interval_range(start=1, periods=3))
-    >>> h2
-    (1, 2]    12.0
-    (2, 3]     3.0
-    (3, 4]    20.0
-    dtype: float64
     >>> combine_histogram([h1, h2])
     (0, 1]     5.0
     (1, 2]    22.0
@@ -98,11 +106,6 @@ def combine_histogram(hist_list, method='sum'):
     (2, 3]     3.0
     (3, 4]    20.0
     dtype: float64
-
-    Limitations
-    -----------
-    At the moment, additional dimensions i.e. index level that are not histogram bins,
-    are not supported.  This limitation might fall in the future.
     """
     def dimensions_are_consistent():
         for h in hist_list[1:]:
@@ -132,36 +135,71 @@ def combine_histogram(hist_list, method='sum'):
 
 
 def rebin_histogram(histogram, binning, nan_default=False):
-    """Rebin a histogram to a given binning.
+    r"""Rebin an interval-indexed histogram to a target binning.
+
+    The function redistributes bin contents by geometric overlap.  It works
+    with a one-dimensional :class:`pandas.IntervalIndex` and with
+    :class:`pandas.MultiIndex` histograms that contain interval-valued
+    dimensions.
 
     Parameters
     ----------
-    histogram : :class:`pandas.Series` with :class:`pandas.IntervalIndex`
-        The histogram data to be rebinned
-
-    binning : :class:`pandas.IntervalIndex` or int
-        The given binning or number of bins
-
-    nan_default : bool
-        If True non occupied bins will be occupied with ``np.nan``, else 0.0
-        Default False
+    histogram : pandas.Series
+        Histogram data to rebin.  The index must be a
+        :class:`pandas.IntervalIndex` or a :class:`pandas.MultiIndex` that
+        contains interval-valued histogram dimensions.
+    binning : pandas.IntervalIndex or pandas.MultiIndex or int
+        Target binning.  If an integer is given, equally spaced bins spanning
+        the original histogram range are created for each rebinned interval
+        dimension.
+    nan_default : bool, optional
+        Fill unoccupied target bins with ``numpy.nan`` instead of ``0.0``.
+        Default is ``False``.
 
     Returns
     -------
-    rebinned : :class:`pandas.Series` with :class:`pandas.IntervalIndex`
-        The rebinned histogram
+    pandas.Series
+        Rebinned histogram with the target interval bins as its index.
 
     Raises
     ------
     TypeError
-        if the ``histogram`` or the ``binning`` do not have an ``IntervalIndex``.
+        Raised if ``histogram`` does not use an interval-indexed histogram
+        dimension or if ``binning`` is not an interval index when explicit
+        bins are supplied.
     ValueError
-        if the binning is not monotonic increasing or has gaps.
+        Raised if the target binning is not monotonic increasing, overlaps, or
+        has gaps.
+
+    Warns
+    -----
+    RuntimeWarning
+        Raised if the target binning does not cover the full histogram range
+        and values outside the target range are discarded.
+
+    See Also
+    --------
+    pylife.utils.histogram.combine_histogram : Combine histograms that already
+        share compatible bins.
 
     Notes
     -----
-    The events collected in the bins of the original histogram are distributed
-    linearly to the bins in the target bins.
+    Each source bin value is distributed proportionally to its overlap with a
+    target bin.  For source bins :math:`s_i`, target bins :math:`t_j`, source
+    values :math:`h_i`, and interval length :math:`|s_i|`, the rebinned value
+    is
+
+    .. math::
+
+        h'_j = \sum_i h_i
+        \frac{|s_i \cap t_j|}{|s_i|}
+
+    This preserves the total sum when the target bins cover the complete
+    source range and have no gaps.
+
+    Limitations: additional non-interval index levels are preserved and the
+    operation is applied independently for their combinations.  The function
+    does not interpolate within those non-histogram dimensions.
 
     Examples
     --------
@@ -207,11 +245,6 @@ def rebin_histogram(histogram, binning, nan_default=False):
     (3.0, 3.5]    20.0
     (3.5, 4.0]    20.0
     dtype: float64
-
-    Limitations
-    -----------
-    At the moment, additional dimensions i.e. index level that are not histogram bins,
-    are not supported.  This limitation might fall in the future.
     """
     default_value = np.nan if nan_default else 0.0
 
