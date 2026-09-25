@@ -95,8 +95,8 @@ def _sign_trace(s11, s22, s33):
     s11 = np.array(s11)
     s22 = np.array(s22)
     s33 = np.array(s33)
-    assert (s11.shape == s22.shape and
-            s11.shape == s33.shape), "Components' shape is not consistent."
+    if not (s11.shape == s22.shape == s33.shape):
+        raise ValueError("Components' shape is not consistent.")
     sgn = np.sign(s11 + s22 + s33)  # calculate sign of trace, careful: sign of 0 is 0
     if sgn.ndim == 0:
         if sgn == 0:
@@ -363,7 +363,7 @@ def mises(s11, s22, s33, s12, s13, s23):
 
     Raises
     ------
-    AssertionError
+    ValueError
         Components' shape is not consistent.
     """
     s11 = np.array(s11)
@@ -373,11 +373,8 @@ def mises(s11, s22, s33, s12, s13, s23):
     s13 = np.array(s13)
     s23 = np.array(s23)
 
-    assert (s11.shape == s22.shape and
-            s11.shape == s33.shape and
-            s11.shape == s12.shape and
-            s11.shape == s13.shape and
-            s11.shape == s23.shape), "Components' shape is not consistent."
+    if not (s11.shape == s22.shape == s33.shape == s12.shape == s13.shape == s23.shape):
+        raise ValueError("Components' shape is not consistent.")
 
     mises_stress = np.sqrt(s11 ** 2 + s22 ** 2 + s33 ** 2
                            - s11 * s22 - s11 * s33 - s22 * s33
