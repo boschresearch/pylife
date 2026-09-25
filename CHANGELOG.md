@@ -9,6 +9,10 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 * No longer use `setuptools.pkg_resources` in odbserver for python-3.x.
 
+### Improvments
+
+* Turning assertions into exceptions (#209)
+
 ## 2.3.1
 
 ### Improvement / fix
