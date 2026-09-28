@@ -128,3 +128,17 @@ computations as accessor methods/properties rather than free functions.
   change, referencing the GitHub issue number if applicable.
 - Commits require a DCO `Signed-off-by:` trailer (`git commit -s`); PRs
   target the `develop` branch (not `master`) except urgent bugfixes.
+
+  ### Using coding agents
+
+You may use a coding agent to help prepare a pull request. The contributor
+remains responsible for understanding, reviewing, testing, and licensing all
+submitted changes.
+
+Before opening the pull request:
+
+- Review every agent-generated change.
+- Run the relevant tests and documentation checks locally.
+- Verify that no secrets, private data, or unrelated changes were included.
+- Describe significant agent assistance in the pull request description.
+- Ensure all commits include the required `Signed-off-by:` tag.
