@@ -19,14 +19,10 @@ Install pyLife
 
 .. code-block:: console
 
-   $ pip install pylife[extras]
+  $ uv pip install "pylife[extras]"
 
-See :doc:`INSTALLATION` for conda, development installs and the optional
+See :doc:`INSTALLATION` for development installs and the optional
 dependencies.
-
-You can also try pyLife without installing anything, by running the example
-notebooks on `MyBinder
-<https://mybinder.org/v2/gh/boschresearch/pylife/develop?labpath=demos%2Findex.ipynb>`_.
 
 
 Your first damage calculation

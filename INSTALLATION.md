@@ -1,64 +1,47 @@
-# Installation / Getting started
-
-## Just a glimpse
-
-If you just want to check out pyLife's demos, you can use the our notebooks at
-[mybinder](https://mybinder.org/v2/gh/boschresearch/pylife/master?filepath=demos%2Findex.ipynb). We
-will add new notebooks as soon as we have new functionality.
-
+# Installation
 
 ## Installation to use pyLife
 
 ### Prerequisites
 
-You need a python installation e.g. a virtual environment with `pip` a recent
-(brand new ones might not work) python versions installed. There are several
-ways to achieve that.
+You need a python installation with a recent (brand new ones might not work)
+python version installed. The recommended way to manage that is
+[uv](https://docs.astral.sh/uv/), a fast python package and project manager.
 
 Although you can install and use pyLife with Python version >= 3.9 and pandas
 version >= 2.2, it is strongly recommended to use at least Python 3.11 and
 pandas 3.0.0.
 
 
-#### Using miniconda or anaconda
+#### Install uv
 
-Install [miniconda](https://conda.io/miniconda.html) or
-[anaconda](http://anaconda.com) on your computer and create a virtual
-environment with python installed. See the [conda
-documentation](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
-on how to do that. The newly created environment must be activated.
-
-The following command lines should do it
-```
-conda create -n pylife-env python=3.13 --yes
-conda activate pylife-env
-```
-
-#### Using virtualenv
-
-Setup a python virtual environment containing pip according to [these
-instructions](https://docs.python.org/3/tutorial/venv.html) and activate it.
-
-
-#### Using the python installation of your Linux distribution
-
-That's not recommended. If you really want to do that, you probably know how to
-do it.
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
+following the instructions for your operating system. uv can also install
+and manage the python versions for you, so a separate python installation is
+not required.
 
 
 ### Install the pyLife package
 
-The simplest way to install pyLife is just using the pip package
+The simplest way to install pyLife is to add it to a uv-managed project
 ```
-pip install pylife[all]
+uv add "pylife[all]"
 ```
 That installs pyLife with all the dependencies to use pyLife in python
 programs. You might want to install some further packages like `jupyter` in
 order to work with jupyter notebooks.
 ```
-pip install pylife[all,extras]
+uv add "pylife[all,extras]"
 ```
 might be a good start.
+
+If you prefer a plain virtual environment instead of a uv-managed project,
+you can create and populate one with
+```
+uv venv
+uv pip install "pylife[all]"
+```
+and activate it as usual.
 
 
 ## Installation to develop pyLife
