@@ -3,9 +3,9 @@
 pyLife is an Open Source Python library (Bosch Research) for fatigue and
 reliability lifetime assessment of mechanical components. Core numerical
 computations use `numpy`/`scipy`, with `pandas` as the primary data container
-via a custom accessor framework (see Architecture below). Two Cython
-extensions (`rainflow_ext`, `_fkm_linear_functions`) provide performance
-critical code.
+via a custom accessor framework (see Architecture below). Cython extensions
+(e.g. `rainflow_ext`, `_fkm_linear_functions`) provide performance critical
+code.
 
 ## Build / test / lint
 
