@@ -168,6 +168,7 @@ def fs_calc(df):
 
     Examples
     --------
+    >>> from pylife.stress.timesignal import fs_calc
     >>> df = pd.DataFrame({"stress": [0.0, 1.0, 0.0]},
     ...                   index=[0.0, 0.5, 1.0])
     >>> float(fs_calc(df))

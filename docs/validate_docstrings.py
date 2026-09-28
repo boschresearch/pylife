@@ -31,12 +31,17 @@ Compare against a recorded baseline so that the situation can only improve::
 
     python docs/validate_docstrings.py --baseline docs/docstring_baseline.txt
 
+Require that every public object is documented::
+
+    python docs/validate_docstrings.py --min-coverage 100
+
 Exit codes
 ----------
 0
     No violations, or no more violations than the baseline allows.
 1
-    Violations were found that are not covered by the baseline.
+    Violations were found that are not covered by the baseline, or the
+    documentation coverage dropped below ``--min-coverage``.
 """
 
 import argparse
@@ -57,9 +62,8 @@ except ImportError:  # pragma: no cover - depends on the docs dependency group
 #:
 #: ``ES01``/``EX01``/``SA01`` demand an extended summary, an examples section
 #: and a see-also section on *every* object, which is stricter than what numpy
-#: and scipy enforce themselves.  ``GL08`` (missing docstring) is reported
-#: separately as a coverage number rather than as a style violation.
-DEFAULT_IGNORED_CHECKS = frozenset({"ES01", "EX01", "SA01", "GL08"})
+#: and scipy enforce themselves.  ``GL08`` (missing docstring) is enforced.
+DEFAULT_IGNORED_CHECKS = frozenset({"ES01", "EX01", "SA01"})
 
 #: Objects whose docstrings are not authored by pyLife (generated or vendored).
 IGNORED_PREFIXES = ("pylife.vmap.VMAPExport.__", "pylife.vmap.VMAPImport.__")
@@ -242,6 +246,12 @@ def main(argv=None):
         default=",".join(sorted(DEFAULT_IGNORED_CHECKS)),
         help="comma separated numpydoc check codes to skip",
     )
+    parser.add_argument(
+        "--min-coverage",
+        type=float,
+        default=0.0,
+        help="fail if less than this percentage of the objects are documented",
+    )
     args = parser.parse_args(argv)
 
     ignored = {code.strip() for code in args.ignore.split(",") if code.strip()}
@@ -270,6 +280,13 @@ def main(argv=None):
     print(f"{len(violations)} violations, {len(new_violations)} of them new")
     for violation in new_violations:
         print(f"  {violation}")
+
+    if coverage + 1e-9 < args.min_coverage:
+        print(
+            f"documentation coverage {coverage:.1f}% is below the required "
+            f"{args.min_coverage:.1f}%"
+        )
+        return 1
 
     return 1 if new_violations else 0
 

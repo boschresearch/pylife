@@ -14,6 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Estimate spatial gradients of nodal quantities on finite-element meshes.
+
+The module provides the ``gradient`` DataFrame accessor, which differentiates
+a scalar nodal field, e.g. a stress in MPa, with respect to the mesh
+coordinates.  It is typically used to quantify stress gradients for
+notch-sensitive fatigue assessments.
+"""
+
 __author__ = "Mustapha Kassem, Benjamin Maier"
 __maintainer__ = "Johannes Mueller"
 

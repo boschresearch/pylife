@@ -113,6 +113,7 @@ class HaighDiagram(PylifeSignal):
 
         Examples
         --------
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> HaighDiagram.from_dict({
         ...    (1.0, np.inf): 0.0,
         ...    (-np.inf, 0.0): 0.5,
@@ -170,6 +171,7 @@ class HaighDiagram(PylifeSignal):
         --------
         Create a diagram with default ``M2``.
 
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> HaighDiagram.fkm_goodman(pd.Series({"M": 0.5})).to_pandas()
         R
         (1.0, inf]     0.000000
@@ -179,6 +181,7 @@ class HaighDiagram(PylifeSignal):
 
         Create a diagram with a manual ``M2``.
 
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> HaighDiagram.fkm_goodman(pd.Series({"M": 0.5, "M2": 0.2})).to_pandas()
         R
         (1.0, inf]     0.0
@@ -186,6 +189,7 @@ class HaighDiagram(PylifeSignal):
         (0.0, 1.0]     0.2
         dtype: float64
 
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> collective = pd.DataFrame(
         ...     {
         ...         "range": [600.0, 300.0, 500.0],
@@ -265,6 +269,7 @@ class HaighDiagram(PylifeSignal):
 
         Examples
         --------
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> haigh = HaighDiagram.five_segment(
         ...    pd.Series(
         ...        {"M0": 0.5, "M1": 0.25, "M2": 0.125, "M3": 1.0, "M4": -2.0, "R12": 0.2, "R23": 0.8}
@@ -279,12 +284,18 @@ class HaighDiagram(PylifeSignal):
         (0.8, 1.0]     1.000
         dtype: float64
 
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> collective = pd.DataFrame(
         ...     {
         ...         "range": [600.0, 300.0, 500.0],
         ...         "mean": [400.0, -150.0, 0.0],
         ...         "cycles": [1.0, 10.0, 100.0],
         ...     }
+        ... )
+        >>> haigh = HaighDiagram.five_segment(
+        ...    pd.Series(
+        ...        {"M0": 0.5, "M1": 0.25, "M2": 0.125, "M3": 1.0, "M4": -2.0, "R12": 0.2, "R23": 0.8}
+        ...    )
         ... )
         >>> haigh.transform(collective, 0.0)
                 range        mean  cycles
@@ -370,6 +381,7 @@ class HaighDiagram(PylifeSignal):
 
         Examples
         --------
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> collective = pd.DataFrame(
         ...     {
         ...         "from": [300.0, -150.0, -250.0],
@@ -383,6 +395,7 @@ class HaighDiagram(PylifeSignal):
         1  200.000000  100.000000    10.0
         2  333.333333  166.666667   100.0
 
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> collective = pd.DataFrame(
         ...     {
         ...         "range": [600.0, 300.0, 500.0],

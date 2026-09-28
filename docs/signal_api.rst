@@ -312,7 +312,10 @@ set these attributes with setter methods.
             # ... use some_parameter, self._my_attribute and self._obj
 
 
->>> df.my_signal.set_my_attribute('foo').do_something(2342)
+.. code-block:: pycon
+
+    >>> df = pd.DataFrame({'alpha': [1.0], 'beta': [1.0], 'gamma': [1.0]})
+    >>> df.my_signal.set_my_attribute('foo').do_something(2342)
 
 
 Registering a method to an existing accessor class
@@ -342,7 +345,10 @@ new method to any class deriving from :class:`~.pylife.PylifeSignal`.
 Then you can call the method on any `DataFrame` that is accessed by
 `equistress`:
 
->>> df.equistress.my_equistress()
+.. code-block:: pycon
+
+    >>> df = pd.DataFrame(...)
+    >>> df.equistress.my_equistress()
 
 
 You can also have additional arguments in the registered method:
@@ -357,4 +363,7 @@ You can also have additional arguments in the registered method:
         return ...
 
 
->>> df.equistress.my_equistress_with_arg(my_additional_arg)
+.. code-block:: pycon
+
+    >>> df = pd.DataFrame(...)
+    >>> df.equistress.my_equistress_with_arg(my_additional_arg)

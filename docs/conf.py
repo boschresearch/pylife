@@ -132,6 +132,17 @@ extensions = [
 
 napoleon_custom_sections = ["Limitations"]
 
+# -- sphinx.ext.doctest ------------------------------------------------------
+# Examples are executed with an empty namespace, unlike the doctests collected
+# by ``pytest --doctest-modules``, which see the globals of their module.  The
+# aliases below are the ones numpy, scipy and pandas assume as universally
+# known, so examples do not have to repeat them.  Everything else must be
+# imported by the example itself.
+doctest_global_setup = """
+import numpy as np
+import pandas as pd
+"""
+
 # -- sphinx-copybutton -------------------------------------------------------
 # Strip prompts so users can copy doctest examples and shell commands verbatim.
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "

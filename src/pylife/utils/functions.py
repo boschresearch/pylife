@@ -61,6 +61,7 @@ def scattering_range_to_std(T):
 
     Examples
     --------
+    >>> from pylife.utils.functions import scattering_range_to_std, std_to_scattering_range
     >>> round(float(scattering_range_to_std(10.0)), 6)
     0.390152
     >>> round(float(std_to_scattering_range(scattering_range_to_std(1.25))), 6)
@@ -107,6 +108,7 @@ def std_to_scattering_range(std):
 
     Examples
     --------
+    >>> from pylife.utils.functions import scattering_range_to_std, std_to_scattering_range
     >>> round(float(std_to_scattering_range(0.39015207303618954)), 6)
     10.0
     >>> round(float(scattering_range_to_std(std_to_scattering_range(0.2))), 6)
@@ -151,6 +153,7 @@ def rossow_cumfreqs(N):
 
     Examples
     --------
+    >>> from pylife.utils.functions import rossow_cumfreqs
     >>> rossow_cumfreqs(1)
     array([0.5])
     >>> rossow_cumfreqs(3)

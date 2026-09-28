@@ -1,5 +1,13 @@
 
 
+"""Provide the compiled inner loops of the pyLife rainflow counters.
+
+The module implements the performance critical loops of the three-point and
+four-point rainflow counting algorithms in Cython.  It is an implementation
+detail of :mod:`pylife.stress.rainflow`; use the detector classes defined
+there rather than calling these functions directly.
+"""
+
 cimport cython
 import numpy as np
 from libc.math cimport fabs

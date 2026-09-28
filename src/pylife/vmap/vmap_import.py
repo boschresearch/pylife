@@ -569,6 +569,25 @@ class VMAPImport:
         }
 
     def try_get_geometry_set(self, geometry_name, geometry_set_name):
+        """Read a geometry set without raising if it is absent.
+
+        Parameters
+        ----------
+        geometry_name : str
+            Name of the geometry the set belongs to.
+        geometry_set_name : str
+            Name of the geometry set to read.
+
+        Returns
+        -------
+        pandas.Index or None
+            The node or element IDs of the geometry set, or ``None`` if the
+            set does not exist in the VMAP file.
+
+        See Also
+        --------
+        try_get_vmap_object : Read an arbitrary VMAP group without raising.
+        """
         try:
             geometry_set = self._file["/VMAP/GEOMETRY/%s/GEOMETRYSETS/%s/MYGEOMETRYSETDATA"
                                       % (geometry_name, geometry_set_name)]
@@ -577,6 +596,23 @@ class VMAPImport:
             return None
 
     def try_get_vmap_object(self, group_full_path):
+        """Read a VMAP group or dataset without raising if it is absent.
+
+        Parameters
+        ----------
+        group_full_path : str
+            Full path of the group inside the VMAP file, e.g.
+            ``'/VMAP/GEOMETRY/1'``.
+
+        Returns
+        -------
+        h5py.Group or h5py.Dataset or None
+            The requested HDF5 object, or ``None`` if the path does not exist.
+
+        See Also
+        --------
+        try_get_geometry_set : Read a geometry set without raising.
+        """
         try:
             return self._file[group_full_path]
         except KeyError:

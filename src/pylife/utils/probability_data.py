@@ -55,6 +55,7 @@ class ProbabilityFit:
 
     Examples
     --------
+    >>> from pylife.utils.probability_data import ProbabilityFit
     >>> from pylife.utils.functions import rossow_cumfreqs
     >>> occurrences = np.array([1.0e4, 2.0e4, 4.0e4])
     >>> fit = ProbabilityFit(rossow_cumfreqs(len(occurrences)), occurrences)

@@ -96,6 +96,7 @@ class RambergOsgood:
 
         Examples
         --------
+        >>> from pylife.materiallaws import RambergOsgood
         >>> rg = RambergOsgood(210000.0, 1000.0, 0.2)
         >>> round(float(rg.strain(300.0)), 6)
         0.003859

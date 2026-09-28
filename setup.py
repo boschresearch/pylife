@@ -81,7 +81,18 @@ def vectorize(in_code):
         sp = param.split(" ")
         return (sp[0].strip(), sp[1].strip())
 
-    out_code = "cimport cython\nimport numpy as np\nfrom cython.cimports.libc.math import exp, log, log10, sqrt, isnan\n"
+    out_code = (
+        '"""Provide the compiled kernels of the FKM linear assessment.\n\n'
+        "The module implements the performance critical material and component\n"
+        "strength calculations of the FKM linear guideline in Cython.  It is an\n"
+        "implementation detail of :mod:`pylife.strength.fkm_linear`; use the\n"
+        "assessment functions defined there rather than calling these functions\n"
+        "directly.\n\n"
+        "This file is generated from ``extension.pyx.in`` by ``setup.py``.\n"
+        '"""\n\n'
+        "cimport cython\nimport numpy as np\n"
+        "from cython.cimports.libc.math import exp, log, log10, sqrt, isnan\n"
+    )
 
     while True:
         pos = in_code.find(VECTORIZE)

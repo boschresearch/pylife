@@ -14,6 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Cluster connected regions of high scalar values on finite-element meshes.
+
+The module provides the ``hotspot`` DataFrame accessor, which groups mesh
+nodes whose scalar value, e.g. a damage sum or a stress in MPa, exceeds a
+given fraction of the maximum into connected hotspot regions.  Hotspots
+identify the critical locations of a component.
+"""
+
 __author__ = "Daniel Christopher Kreuter"
 __maintainer__ = "Johannes Mueller"
 

@@ -80,6 +80,7 @@ def combine_histogram(hist_list, method='sum'):
 
     Examples
     --------
+    >>> from pylife.utils.histogram import combine_histogram
     >>> h1 = pd.Series([5., 10.], index=pd.interval_range(start=0, end=2))
     >>> h2 = pd.Series([12., 3., 20.], index=pd.interval_range(start=1, periods=3))
     >>> combine_histogram([h1, h2])
@@ -203,6 +204,7 @@ def rebin_histogram(histogram, binning, nan_default=False):
 
     Examples
     --------
+    >>> from pylife.utils.histogram import rebin_histogram
     >>> h = pd.Series([10.0, 20.0, 30.0, 40.0], index=pd.interval_range(0.0, 4.0, 4))
     >>> h
     (0.0, 1.0]    10.0

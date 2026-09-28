@@ -14,6 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Validate stress tensor signals stored in Voigt notation.
+
+The module provides the ``voigt`` DataFrame accessor for symmetric Cauchy
+stress tensors given by the six components ``S11, S22, S33, S12, S13, S23``
+in MPa, as they are written by finite-element solvers and consumed by the
+equivalent stress and fatigue strength modules of pyLife.
+"""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
@@ -70,10 +78,12 @@ class StressTensorVoigt(PylifeSignal):
 
     Examples
     --------
+    >>> import pylife.stress.stresssignal
     >>> df = pd.DataFrame({'S11': [1.0], 'S22': [0.0], 'S33': [0.0],
     ...                    'S12': [0.0], 'S13': [0.0], 'S23': [0.0]})
-    >>> isinstance(df.voigt, StressTensorVoigt)
-    True
+    >>> df.voigt.to_pandas()
+       S11  S22  S33  S12  S13  S23
+    0  1.0  0.0  0.0  0.0  0.0  0.0
     """
     def _validate(self):
         self.fail_if_key_missing(['S11', 'S22', 'S33', 'S12', 'S13', 'S23'])

@@ -548,6 +548,7 @@ def compute_beta(P_A):
 
     Examples
     --------
+    >>> from pylife.strength.fkm_nonlinear.parameter_calculations import compute_beta
     >>> round(float(abs(compute_beta(0.5))), 6)
     0.0
     """

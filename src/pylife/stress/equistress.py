@@ -25,6 +25,7 @@ validated pyLife stress signal.
 
 Examples
 --------
+>>> from pylife.stress.equistress import mises
 >>> round(float(mises(100.0, 0.0, 0.0, 0.0, 0.0, 0.0)), 6)
 100.0
 """

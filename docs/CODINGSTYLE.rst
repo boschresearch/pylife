@@ -360,13 +360,24 @@ The essentials:
 
 Before you open a pull request, check your docstrings::
 
-   python docs/validate_docstrings.py --baseline docs/docstring_baseline.txt
+   python docs/validate_docstrings.py --baseline docs/docstring_baseline.txt --min-coverage 100
 
-The script validates the public pyLife API with ``numpydoc`` and fails only on
-violations that are *not* in ``docs/docstring_baseline.txt``.  The baseline
-records the violations that pyLife still carries, so that the situation can
-only improve.  Never add entries to it — if you fixed docstrings, regenerate
-it with ``--write-baseline`` so that the removed violations cannot come back.
+The script validates the public pyLife API with ``numpydoc`` and fails on
+violations that are *not* in ``docs/docstring_baseline.txt``, and on a
+documentation coverage below 100%.  Every public module, class, method,
+property and function therefore needs a docstring.  The baseline records the
+violations that pyLife still carries, so that the situation can only improve.
+Never add entries to it — if you fixed docstrings, regenerate it with
+``--write-baseline`` so that the removed violations cannot come back.
+
+The ``Examples`` sections are executed in the continuous integration::
+
+   pytest --doctest-modules src/pylife -q
+
+So make sure that every doctest you write actually runs, and that it does not
+depend on mutable global state.  If an example needs an external resource such
+as an Abaqus ODB or a VMAP file, write it as a ``.. code-block:: python`` or
+``.. code-block:: pycon`` instead of as a doctest.
 
 .. note::
 

@@ -52,6 +52,7 @@ class psdSignal:
 
     Examples
     --------
+    >>> from pylife.stress.frequencysignal import psdSignal
     >>> psd = pd.DataFrame({"stress": [1.0, 1.0]}, index=[1.0, 2.0])
     >>> round(float(psdSignal.rms_psd(psd).iloc[0]), 6)
     1.0
@@ -61,6 +62,33 @@ class psdSignal:
         self.df = df
 
     def rms_psd(self):
+        r"""Compute the RMS value of every PSD column.
+
+        Returns
+        -------
+        pandas.Series
+            Root mean square value of each column, in the unit of the square
+            root of the PSD unit times Hz, e.g. MPa for a stress PSD given in
+            MPa²/Hz.  The index holds the original column names.
+
+        Notes
+        -----
+        The PSD is first resampled onto 2048 logarithmically spaced frequency
+        points between the smallest and the largest frequency of the index and
+        then integrated with the trapezoidal rule,
+
+        .. math::
+
+            x_\mathrm{rms} = \sqrt{\int_{f_\mathrm{min}}^{f_\mathrm{max}}
+            S_{xx}(f)\,df}.
+
+        Examples
+        --------
+        >>> from pylife.stress.frequencysignal import psdSignal
+        >>> psd = pd.DataFrame({"stress": [1.0, 1.0]}, index=[1.0, 2.0])
+        >>> round(float(psdSignal.rms_psd(psd).iloc[0]), 6)
+        1.0
+        """
         f  = np.logspace(np.log10(self.index.values.min()),np.log10(
                               self.index.values.max()),2048)
         psd = pd.DataFrame()

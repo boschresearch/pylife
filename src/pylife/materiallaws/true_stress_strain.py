@@ -50,6 +50,7 @@ def true_strain(tech_strain):
 
     Examples
     --------
+    >>> from pylife.materiallaws.true_stress_strain import true_strain
     >>> round(float(true_strain(0.1)), 6)
     0.09531
     """

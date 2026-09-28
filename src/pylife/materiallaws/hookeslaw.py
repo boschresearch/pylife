@@ -159,6 +159,7 @@ class HookesLaw1d:
 
     Examples
     --------
+    >>> from pylife.materiallaws import HookesLaw1d
     >>> law = HookesLaw1d(210000.0)
     >>> float(law.stress(0.001))
     210.0

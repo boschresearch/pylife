@@ -180,8 +180,12 @@ class VMAPExport:
 
         Examples
         --------
-        >>> VMAPExport.__new__(VMAPExport).variable_column_names("DISPLACEMENT")
+        >>> from pylife.vmap import VMAPExport
+        >>> VMAPExport.variable_column_names(None, "DISPLACEMENT")
         ['dx', 'dy', 'dz']
+
+        In practice the method is called on an export object, e.g.
+        ``export.variable_column_names("STRESS_CAUCHY")``.
         """
         return vmap_structures.column_names[parameter_name][0]
 
