@@ -12,6 +12,52 @@ brings rainflow counting, Wöhler curve (SN-curve) analysis, mean stress
 transformation, damage accumulation and the FKM guidelines together in one
 consistent, `pandas <https://pandas.pydata.org/>`_ based data model.
 
+
+What pyLife can do for you
+==========================
+
+.. grid:: 1 2 3 3
+   :gutter: 3
+   :padding: 2 2 0 0
+
+   .. grid-item-card:: Analyse load data
+      :shadow: none
+
+      Rainflow counting, load collectives, equivalent stresses and time
+      signal processing — see :mod:`pylife.stress`.
+
+   .. grid-item-card:: Fit material data
+      :shadow: none
+
+      Derive Wöhler curve parameters from experimental fatigue test data with
+      maximum likelihood or Bayesian methods — see
+      :mod:`pylife.materialdata.woehler`.
+
+   .. grid-item-card:: Model material behaviour
+      :shadow: none
+
+      Ramberg-Osgood, Hooke's law, notch approximation laws and Wöhler
+      curves — see :mod:`pylife.materiallaws`.
+
+   .. grid-item-card:: Assess lifetime
+      :shadow: none
+
+      Damage accumulation, failure probabilities and the FKM guideline,
+      linear and nonlinear — see :mod:`pylife.strength`.
+
+   .. grid-item-card:: Work with FE meshes
+      :shadow: none
+
+      Stress gradients, hotspot detection and mesh mapping on FE results —
+      see :mod:`pylife.mesh`.
+
+   .. grid-item-card:: Exchange FE results
+      :shadow: none
+
+      Read and write `VMAP <https://www.vmap.eu.com/>`_ files and import
+      Abaqus ODB data — see :mod:`pylife.vmap` and :doc:`tools/index`.
+
+
 .. grid:: 1 2 2 2
    :gutter: 4
    :padding: 2 2 0 0
@@ -111,51 +157,6 @@ consistent, `pandas <https://pandas.pydata.org/>`_ based data model.
          :expand:
 
          To the contributor guide
-
-
-What pyLife can do for you
-==========================
-
-.. grid:: 1 2 3 3
-   :gutter: 3
-   :padding: 2 2 0 0
-
-   .. grid-item-card:: Analyse load data
-      :shadow: none
-
-      Rainflow counting, load collectives, equivalent stresses and time
-      signal processing — see :mod:`pylife.stress`.
-
-   .. grid-item-card:: Fit material data
-      :shadow: none
-
-      Derive Wöhler curve parameters from experimental fatigue test data with
-      maximum likelihood or Bayesian methods — see
-      :mod:`pylife.materialdata.woehler`.
-
-   .. grid-item-card:: Model material behaviour
-      :shadow: none
-
-      Ramberg-Osgood, Hooke's law, notch approximation laws and Wöhler
-      curves — see :mod:`pylife.materiallaws`.
-
-   .. grid-item-card:: Assess lifetime
-      :shadow: none
-
-      Damage accumulation, failure probabilities and the FKM guideline,
-      linear and nonlinear — see :mod:`pylife.strength`.
-
-   .. grid-item-card:: Work with FE meshes
-      :shadow: none
-
-      Stress gradients, hotspot detection and mesh mapping on FE results —
-      see :mod:`pylife.mesh`.
-
-   .. grid-item-card:: Exchange FE results
-      :shadow: none
-
-      Read and write `VMAP <https://www.vmap.eu.com/>`_ files and import
-      Abaqus ODB data — see :mod:`pylife.vmap` and :doc:`tools/index`.
 
 
 Try it without installing
