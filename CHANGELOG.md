@@ -3,11 +3,21 @@
 In this file noteworthy changes of new releases of pyLife are documented since
 2.0.0.
 
+## Unreleased
+
+### Bugfixes
+
+* No longer use `setuptools.pkg_resources` in odbserver for python-3.x.
+
+### Improvments
+
+* Turning assertions into exceptions (#209)
+
 ## 2.3.1
 
 ### Improvement / fix
 
-Remove `_cython` affix from function names
+* Remove `_cython` affix from function names
 
 ## 2.3.0
 

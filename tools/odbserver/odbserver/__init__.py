@@ -1,13 +1,11 @@
-"""Expose version metadata for the Abaqus-side ODB server package.
-
-Users normally do not import this package directly.  ``pylife-odbclient``
-starts it inside Abaqus so that ODB data can be queried from a regular Python
-process.
-"""
-
-import pkg_resources
+import sys
 
 try:
-    __version__ = pkg_resources.get_distribution("pylife-odbserver").version
-except:
-    __version__ = 'unknown'
+    if sys.version_info[:2] >= (3, 8):
+        from importlib.metadata import PackageNotFoundError, version
+        __version__ = version("pylife-odbserver")
+    else:
+        import pkg_resources
+        __version__ = pkg_resources.get_distribution("pylife-odbserver").version
+except Exception:
+    __version__ = "unknown"
