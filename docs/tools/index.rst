@@ -1,9 +1,8 @@
-.. include:: ../../tools/README.md
-   :parser: myst_parser.sphinx_
-
+****************
+Additional tools
+****************
 
 .. toctree::
-   :hidden:
    :maxdepth: 1
 
    odbclient/index

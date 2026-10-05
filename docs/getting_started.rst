@@ -21,8 +21,6 @@ Install pyLife
 
   $ uv pip install "pylife[extras]"
 
-See :doc:`INSTALLATION` for development installs and the optional
-dependencies.
 
 
 Your first damage calculation
@@ -182,7 +180,7 @@ The pyLife documentation is organised along what you want to do:
    * - If you want to ...
      - ... read this
    * - learn pyLife step by step
-     - the :doc:`tutorials`, hands on notebooks that teach one concept at a
+     - the :doc:`tutorials/index`, hands on notebooks that teach one concept at a
        time
    * - understand how pyLife thinks
      - the :doc:`user_guide`, which explains the data model and the signal API

@@ -9,7 +9,7 @@ it does.
 
 Read the tutorials if you are new to pyLife.  If you already know what you
 want to compute and are looking for a complete, ready to adapt workflow,
-go to the :doc:`cookbook` instead.
+go to the :doc:`../cookbook` instead.
 
 The notebook files are available in the ``/demos`` `directory
 <https://github.com/boschresearch/pylife/tree/develop/demos>`_ of
@@ -22,8 +22,6 @@ computer, you can use `MyBinder
 .. toctree::
    :maxdepth: 1
 
-   tutorials/woehler_curve
-   tutorials/load_collective
-   tutorials/stress-strength
-   demos/fkm_nonlinear
-   demos/fkm_nonlinear_full
+   woehler_curve
+   load_collective
+   stress-strength

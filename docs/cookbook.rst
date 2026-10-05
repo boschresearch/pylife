@@ -8,7 +8,7 @@ import a mesh from a VMAP file.  Take the recipe that comes closest to your
 problem and adapt it.
 
 The recipes assume that you already know the pyLife basics.  If you do not
-yet, start with the :doc:`tutorials`, which teach the concepts one at a time.
+yet, start with the :doc:`tutorials/index`, which teach the concepts one at a time.
 
 Here you find the statically rendered HTML pages.  The notebook files are
 available in the ``/demos`` `directory

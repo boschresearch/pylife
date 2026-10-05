@@ -29,16 +29,16 @@ If you are looking for an introduction rather than a lookup, start with
       and equivalent stresses.
 
    .. grid-item-card:: Strength
-      :link: reference-strength
-      :link-type: ref
+      :link: strength/index
+      :link-type: doc
       :shadow: none
 
       Damage accumulation, mean stress transformation, failure probabilities
       and the FKM guidelines.
 
    .. grid-item-card:: Material laws
-      :link: reference-materiallaws
-      :link-type: ref
+      :link: materiallaws/index
+      :link-type: doc
       :shadow: none
 
       Models that predict how a material responds: Hooke, Ramberg-Osgood,
@@ -52,22 +52,22 @@ If you are looking for an introduction rather than a lookup, start with
       Fit material parameters to experimental fatigue test data.
 
    .. grid-item-card:: Mesh
-      :link: reference-mesh
-      :link-type: ref
+      :link: mesh/index
+      :link-type: doc
       :shadow: none
 
       Operations on FE meshes: gradients, hotspots and mesh mapping.
 
    .. grid-item-card:: VMAP
-      :link: vmap/vmap
+      :link: vmap/index
       :link-type: doc
       :shadow: none
 
       Read and write FE results in the vendor neutral VMAP format.
 
    .. grid-item-card:: Utils
-      :link: reference-utils
-      :link-type: ref
+      :link: utils/index
+      :link-type: doc
       :shadow: none
 
       Mathematical helpers used throughout the code base.
@@ -80,134 +80,57 @@ If you are looking for an introduction rather than a lookup, start with
       Companion packages, such as the Abaqus ODB client.
 
 
-Core
-====
-
-The base classes that give pandas objects their pyLife behaviour.  See
-:doc:`signal_api` for how to use and extend them.
-
 .. toctree::
    :maxdepth: 1
+   :hidden:
 
    general/signal
 
-
-Stress
-======
-
-Everything that describes what acts *on* the component.
-
 .. toctree::
    :maxdepth: 1
+   :hidden:
 
    stress/index
-   stress/timesignal
-   stress/frequencysignal
-   stress/rainflow
-   stress/collective
-   stress/equistress
-   stress/stresssignal
-
-
-.. _reference-strength:
-
-Strength
-========
-
-Everything that describes what the component *tolerates*, and how the two are
-brought together into a lifetime statement.
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
 
-   strength/fatigue
-   strength/miner
-   strength/meanstress
-   strength/failure_probability
-   strength/damage_parameters
-   strength/fkm_load_distribution
+   strength/index
 
-The FKM guideline, linear and nonlinear:
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
 
-   strength/fkm_linear
-   strength/fkm_nonlinear
-   strength/fkm_nonlinear_parameter_calculations
-   strength/fkm_nonlinear_damage_calculator
-   strength/woehler_fkm_nonlinear
-
-
-.. _reference-materiallaws:
-
-Material laws
-=============
-
-Models that predict material behaviour from material parameters.
+   materiallaws/index
 
 .. toctree::
    :maxdepth: 1
-
-   materiallaws/hookeslaw
-   materiallaws/rambgood
-   materiallaws/woehlercurve
-   materiallaws/true_stress_strain
-   materiallaws/notch_approximation_laws
-
-
-Material data
-=============
-
-Fitting material parameters to experimental data.
-
-.. toctree::
-   :maxdepth: 1
+   :hidden:
 
    materialdata/woehler
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
 
-.. _reference-mesh:
-
-Mesh
-====
-
-Operations on FE meshes.
+   mesh/index
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
 
-   mesh/meshsignal
-   mesh/hotspot
-   mesh/gradient
-   mesh/gradient3D
-   mesh/meshmapping
-   mesh/surface3D
-
-
-VMAP interface
-==============
-
-Import and export of FE results in the VMAP format.
+   utils/index
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
 
-   vmap/vmap
-   vmap/vmap_import
-   vmap/vmap_export
-
-
-.. _reference-utils:
-
-Utils
-=====
-
-Mathematical helper functions used throughout pyLife.
+   vmap/index
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
 
-   utils/functions
-   utils/histogram
-   utils/probability_data
+   tools/index
