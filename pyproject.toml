@@ -55,7 +55,7 @@ testing = [
   {include-group = "visuals"}
 ]
 docs = [
-  "sphinx<9.0.0",
+  "sphinx",
   "nbsphinx",
   "nbsphinx-link",
   "pydata-sphinx-theme>=0.16",
@@ -68,7 +68,8 @@ docs = [
   "pyvista[all,jupyter]",
   "trame",
   "trame-vtk<2.10.3",
-  {include-group = "visuals"}
+  {include-group = "visuals"},
+  "pylife-odbclient @ file://localhost/${PROJECT_ROOT}/tools/odbclient"
 ]
 
 [project.readme]
