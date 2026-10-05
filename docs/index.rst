@@ -41,8 +41,9 @@ What pyLife can do for you
 
       .. image:: _static/images/mesh.png
 
-      Stress gradients, hotspot detection and mesh mapping on FE results —
-      see :mod:`pylife.mesh`.
+      Stress gradients, hotspot detection and mesh mapping on FE results. All
+      the damage calculation and lifetime assessment operations you can map on
+      a mesh.
 
    .. grid-item-card:: Fit material data
       :shadow: none
