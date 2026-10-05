@@ -52,21 +52,19 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # The two greens of the pyLife logo.
 DARK_GREEN = "#006249"
 LIGHT_GREEN = "#78be20"
+DARK_BACKGROUND = "#1b1f23"\
 
-# Gradient for the fitted curve's scatter band, taken from woehler_collective.py:
-# white fading into pyLife blue.
-GRADIENT_WOEHLER_BAND = ["#ffffff", "#008ecf"]
 
 BACKGROUND_SETTINGS = {
     "light": {
         "background_color": "#ffffff",
         "data_color": DARK_GREEN,
-        "band_colors": GRADIENT_WOEHLER_BAND,
+        "band_colors": ["#ffffff", "#008ecf"],
     },
     "dark": {
-        "background_color": "#1b1f23",
+        "background_color": DARK_BACKGROUND,
         "data_color": LIGHT_GREEN,
-        "band_colors": list(reversed(GRADIENT_WOEHLER_BAND)),
+        "band_colors": [DARK_BACKGROUND, "#008ecf"]
     },
 }
 

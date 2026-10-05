@@ -55,7 +55,6 @@ GRADIENT_COLLECTIVE = ["#006249", "#78be20"]
 GRADIENT_WOEHLER_BAND = ["#ffffff", "#008ecf"]
 
 COLOR_COLLECTIVE = GRADIENT_COLLECTIVE[-1]
-COLOR_WOEHLER = GRADIENT_WOEHLER_BAND[0]
 
 BACKGROUND_COLORS = {
     "transparent": None,
@@ -255,7 +254,10 @@ def plot(amplitude, cumulated_cycles, wc, background, collective_gradient):
 
     # On a dark background the gradient is inverted so the band still reads
     # as a glow: blue at the edges fading to white at the 50 % line.
-    band_colors = list(reversed(GRADIENT_WOEHLER_BAND)) if background == 'dark' else GRADIENT_WOEHLER_BAND
+    band_colors: = GRADIENT_WOEHLER_BAND
+    if background == 'dark':
+        band_colors[0] = BACKGROUND_COLORS["dark"]
+
     _fill_band_gradient(ax, cycles, load_10, load_90, band_colors, zorder=1)
 
     dashed_color = band_colors[0]
