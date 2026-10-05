@@ -224,8 +224,10 @@ pygments_style = "sphinx"
 # a list of builtin themes.  We use the same theme as numpy and scipy so that
 # users moving between the scientific Python projects find a familiar layout.
 html_theme = "pydata_sphinx_theme"
+html_logo = "_static/images/pyLife_logo_no_elefant.png"
 
 html_theme_options = {
+    "show_nav_level": 2,
     "github_url": "https://github.com/boschresearch/pylife",
     "collapse_navigation": True,
     "show_prev_next": False,
@@ -377,5 +379,3 @@ intersphinx_mapping = {
 }
 
 suppress_warnings = ["config.cache"]
-
-

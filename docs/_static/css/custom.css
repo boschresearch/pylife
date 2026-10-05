@@ -40,11 +40,24 @@ table.dataframe tbody tr:hover {
   background-color: var(--pst-color-surface) !important;
 }
 
+html[data-theme="light"] {
+    --pst-color-primary: #006249;
+    --pst-color-secondary: #008ecf;
+}
+
+html[data-theme="dark"] {
+    --pst-color-primary: #78be20;
+    --pst-color-secondary: #008ecf;
+}
+
 /* Landing page feature cards. */
-.pylife-card-grid .sd-card {
+.pylife-add-card-grid .pylife-chap-card-grid .sd-card {
   border: 1px solid var(--pst-color-border);
   border-radius: 0.5rem;
 }
-.pylife-card-grid .sd-card-title {
+.pylife-add-card-grid .sd-card-title {
+  color: var(--pst-color-secondary);
+}
+.pylife-chap-card-grid .sd-card-title {
   color: var(--pst-color-primary);
 }

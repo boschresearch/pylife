@@ -9,6 +9,8 @@
 pyLife is an Open Source Python library for state of the art algorithms used in
 lifetime assessment of mechanical components subjected to fatigue.
 
+![](docs/_static/images/overview.png#gh-light-mode-only)
+![](docs/_static/images/overview-dark.png#gh-dark-mode-only)
 
 ## Purpose of the project
 

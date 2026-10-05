@@ -67,3 +67,5 @@ src/pylife/stress/rainflow/extension.c
 .mutmut-cache
 .python-version
 /load_signal.csv
+.ipynb_checkpoints/
+__marimo__
