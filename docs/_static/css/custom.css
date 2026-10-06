@@ -50,6 +50,11 @@ html[data-theme="dark"] {
     --pst-color-secondary: #008ecf;
 }
 
+img {
+    background: transparent !important;
+    background-color: rgba(0, 0, 0, 0);
+}
+
 /* Landing page feature cards. */
 .pylife-add-card-grid .pylife-chap-card-grid .sd-card {
   border: 1px solid var(--pst-color-border);
