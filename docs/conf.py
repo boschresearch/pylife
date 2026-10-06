@@ -227,7 +227,7 @@ html_theme = "pydata_sphinx_theme"
 html_logo = "_static/images/pyLife_logo_no_elefant.png"
 
 html_theme_options = {
-    "show_nav_level": 2,
+    "show_nav_level": 1,
     "github_url": "https://github.com/boschresearch/pylife",
     "collapse_navigation": True,
     "show_prev_next": False,
