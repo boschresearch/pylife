@@ -17,7 +17,7 @@ parametrization_data_strain = np.array([
 ])
 
 
-@pytest.mark.parametrize('tech_strain, expected', map(tuple, parametrization_data_strain))
+@pytest.mark.parametrize('tech_strain, expected', list(map(tuple, parametrization_data_strain)))
 def test_true_strain_scalar(tech_strain, expected):
     np.testing.assert_approx_equal(true_strain(tech_strain), expected, significant=5)
 
@@ -28,7 +28,7 @@ parametrization_data_stress = np.array([
     [2.0, 2.0, 6.0]
 ])
 
-@pytest.mark.parametrize('tech_stress, tech_strain, expected', map(tuple, parametrization_data_stress))
+@pytest.mark.parametrize('tech_stress, tech_strain, expected', list(map(tuple, parametrization_data_stress)))
 def test_true_stress_scalar(tech_stress, tech_strain, expected):
     np.testing.assert_approx_equal(true_stress(tech_stress, tech_strain), expected, significant=5)
 
@@ -40,7 +40,7 @@ parametrization_fracture_strain= np.array([
 ])
 
 
-@pytest.mark.parametrize('reduction_area_fracture, expected', map(tuple, parametrization_fracture_strain))
+@pytest.mark.parametrize('reduction_area_fracture, expected', list(map(tuple, parametrization_fracture_strain)))
 def test_true_fracture_strain_scalar(reduction_area_fracture, expected):
     np.testing.assert_approx_equal(true_fracture_strain(reduction_area_fracture), expected, significant=5)
 
@@ -51,6 +51,6 @@ parametrization_fracture_stress= np.array([
    ])
 
 
-@pytest.mark.parametrize('fracture_force, initial_cross_section, reduction_area_fracture, expected', map(tuple, parametrization_fracture_stress))
+@pytest.mark.parametrize('fracture_force, initial_cross_section, reduction_area_fracture, expected', list(map(tuple, parametrization_fracture_stress)))
 def test_true_fracture_stress_scalar(fracture_force, initial_cross_section, reduction_area_fracture, expected):
     np.testing.assert_approx_equal(true_fracture_stress(fracture_force, initial_cross_section, reduction_area_fracture), expected, significant=5)
