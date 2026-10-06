@@ -17,9 +17,104 @@ to do next.
 Install pyLife
 ==============
 
-.. code-block:: console
+There are three ways you can install pyLife:
 
-  $ uv pip install "pylife[extras]"
+Project based
+    When you want to use pyLife in your own code. Let's say you are writing
+    your own small tool for your engineering and want to make use of pyLife's
+    functionality.
+
+Environment based
+    You want to have a python environment with pyLife available. Let's say you
+    are using `Jupyter <https://jupyter.org/>`_ or `Marimo <https://marimo.io/>`_
+    notebooks to perform complex calculation and you want to use pyLife's
+    functionality in them.
+
+Install from the git repository
+    That's only relevant if you actually want to develop and contribute to
+    pyLife.
+
+
+.. note::
+
+   The installation instructions on this page assume that you have basic
+   familiarity with UNIX command line or a command shell on
+   Windows. Unfortunately we cannot cover the usage of command line tools in
+   this documentation as it is way beyond our scope.
+
+.. tab-set::
+
+   .. tab-item:: Project based
+
+      Project based tools such as `uv <https://docs.astral.sh/uv/>`_ or
+      `pixi <https://pixi.sh/>`_ keep each project in its own folder with a
+      manifest and a lockfile describing exact, reproducible dependencies,
+      and manage the virtual environment for you. If unsure, use ``uv``.
+
+      Once you installed ``uv`` you can setup a python project that uses pyLife
+      like this:
+
+      .. code-block:: console
+
+         $ uv init my_project
+         $ cd my_project
+         $ uv add pylife
+
+      Now you can use pyLife in python files inside this python project.
+
+      We recommend checking out `uv <https://docs.astral.sh/uv/>`_ in more
+      detail if you plan to write your own python packages or if you often work
+      on python projects.
+
+      Happy coding
+
+   .. tab-item:: Environment based
+
+      You will probably use some version of the ``conda`` tool to manage your
+      python environments. It is commercially available from `Anaconda
+      <https://www.anaconda.com/>`_ as well as a free community miniforge
+      variant from `conda forge <https://conda-forge.org/download/>`_. If
+      unsure, go with the miniforge variant.
+
+      Once you installed your ``conda`` tool you can setup a python environment
+      like this:
+
+      .. code-block:: console
+
+         $ conda create -n pylife-env python
+         $ conda activate pylife-env
+         $ pip install pylife
+
+      If you want to use `Jupyter <https://jupyter.org/>`_ or
+      `Marimo <https://marimo.io/>`_ notebooks for your work you can install
+      the ``jupyter`` or the ``marimo`` package inside your environment.
+
+      Deactivate the environment again with ``deactivate`` once you are
+      done.
+
+      Happy engineering
+
+   .. tab-item:: From the git repository
+
+      If you want to contribute to pyLife – read the :doc:`contributing guide
+      <contributing>` for that – you can setup your pyLife working copy. First
+      you need to install the `uv <https://docs.astral.sh/uv/>`_ tool. Once you
+      have done that you can setup your pyLife working copy like this.
+
+      .. code-block:: console
+
+         $ git clone https://github.com/boschresearch/pylife.git
+         $ cd pylife
+         $ uv sync
+
+      Now you should be able to run the test suite wit
+
+      .. code-block:: console
+
+         $ uv run pytest
+
+      Happy coding
+
 
 
 
@@ -99,73 +194,6 @@ everywhere in pyLife:
   when you import the corresponding module.  They validate the data and add
   the fatigue specific methods.  This is the :doc:`Signal API <signal_api>`.
 
-
-What pyLife can do for you
-==========================
-
-pyLife groups its functionality into the following tasks.
-
-Analyse loads and stresses
---------------------------
-
-Basic operations on time signals as well as more complex ones such as rainflow
-counting.
-
-* :mod:`pylife.stress.timesignal` — operations on time signals
-* :mod:`pylife.stress.rainflow` — a versatile module for rainflow counting
-* :mod:`pylife.stress.collective` — handling of load collectives
-* :mod:`pylife.stress.equistress` — equivalent stresses from stress tensors
-
-Fit material data
------------------
-
-Extract material parameters from experimental data.  As of now this is a
-versatile set of classes to fit Wöhler curve parameters from experimental
-fatigue data.
-
-* :mod:`pylife.materialdata.woehler`
-
-Predict material behaviour
---------------------------
-
-Use material parameters — for example the ones fitted by the modules above —
-to predict how the material responds.
-
-* :class:`pylife.materiallaws.WoehlerCurve`
-* :class:`pylife.materiallaws.RambergOsgood`
-* :mod:`pylife.materiallaws.true_stress_strain` — true stress and true strain
-
-Assess the lifetime of components
----------------------------------
-
-Calculate lifetimes, failure probabilities and endurance limits of components
-from load sequences and material data.
-
-* :mod:`pylife.strength.fatigue` — damage accumulation
-* :mod:`pylife.strength.meanstress` — mean stress transformation
-* :mod:`pylife.strength.fkm_nonlinear.assessment_nonlinear_standard` — local
-  strain concept of the nonlinear FKM guideline
-
-Work with FE meshes
--------------------
-
-* :mod:`pylife.mesh.meshsignal` — accessors for general mesh operations
-* :class:`pylife.mesh.HotSpot` — hotspot detection
-* :class:`pylife.mesh.Gradient` — gradients of scalar values along a mesh
-* :class:`pylife.mesh.Meshmapper` — map a mesh onto another one of the same
-  geometry by interpolation
-
-Exchange FE results
--------------------
-
-* :mod:`pylife.vmap` — import from and export to `VMAP
-  <https://www.vmap.eu.com/>`_ files
-* :doc:`tools/index` — read Abaqus ODB files
-
-Utilities
----------
-
-* :mod:`pylife.utils` — mathematical helpers used throughout the code base
 
 
 Where to go next
