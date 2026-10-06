@@ -79,7 +79,8 @@ img {
   border: 1px solid var(--pst-color-border);
   border-radius: 0.5rem;
 }
-.pylife-add-card-grid .sd-card-title {
+.pylife-add-card-grid .sd-card-title
+.pylife-about-card-grid .sd-card-title {
   color: var(--pst-color-secondary);
 }
 .pylife-chap-card-grid .sd-card-title {

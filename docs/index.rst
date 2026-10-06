@@ -81,7 +81,7 @@ What pyLife can do for you
 
          Get started
 
-   .. grid-item-card:: Tutorials
+   .. grid-item-card:: Learn
       :shadow: md
 
       Learning oriented, hands on notebooks that walk you through pyLife's
@@ -90,46 +90,14 @@ What pyLife can do for you
 
       +++
 
-      .. button-ref:: tutorials/index
+      .. button-ref:: learn
          :ref-type: doc
          :color: primary
          :expand:
 
-         To the tutorials
+         Learn pyLife
 
-   .. grid-item-card:: User guide
-      :shadow: md
-
-      The concepts behind pyLife: how fatigue data is stored in pandas
-      objects, how the signal API applies calculations to it and how
-      broadcasting between load and strength works.
-
-      +++
-
-      .. button-ref:: user_guide
-         :ref-type: doc
-         :color: primary
-         :expand:
-
-         To the user guide
-
-   .. grid-item-card:: Cookbook
-      :shadow: md
-
-      Task oriented recipes for real workflows — lifetime calculation,
-      hotspot detection, stress gradients, FE result import and time series
-      handling.
-
-      +++
-
-      .. button-ref:: cookbook
-         :ref-type: doc
-         :color: primary
-         :expand:
-
-         To the cookbook
-
-   .. grid-item-card:: API reference
+   .. grid-item-card:: Reference
       :shadow: md
 
       The detailed description of every public module, class and function in
@@ -145,7 +113,7 @@ What pyLife can do for you
 
          To the reference
 
-   .. grid-item-card:: Contributor guide
+   .. grid-item-card:: Contributing
       :shadow: md
 
       pyLife is developed in the open and welcomes contributions from
@@ -154,13 +122,32 @@ What pyLife can do for you
 
       +++
 
-      .. button-ref:: CONTRIBUTING
+      .. button-ref:: contributing
          :ref-type: doc
          :color: primary
          :expand:
 
          To the contributor guide
 
+
+.. grid:: 1 1 1 1
+   :gutter: 4
+   :padding: 2 2 0 0
+   :class-container: pylife-about-card-grid
+
+   .. grid-item-card:: About
+      :shadow: md
+
+      Some meta information about pyLife like changelogs, authors and license.
+
+      +++
+
+      .. button-ref:: about
+         :ref-type: doc
+         :color: secondary
+         :expand:
+
+         To about pylife
 
 Try it without installing
 =========================
