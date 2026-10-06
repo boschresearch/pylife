@@ -160,30 +160,9 @@ without installing anything on your computer.
 
 .. toctree::
    :hidden:
-   :caption: Getting started
 
    Getting started <getting_started>
-
-.. toctree::
-   :hidden:
-   :caption: Learn
-
    Learn <learn>
-
-.. toctree::
-   :hidden:
-   :caption: Reference
-
    Reference <reference>
-
-.. toctree::
-   :hidden:
-   :caption: Contributing
-
    Contributing <contributing>
-
-.. toctree::
-   :hidden:
-   :caption: About
-
    About <about>
