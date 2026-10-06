@@ -490,6 +490,7 @@ def test_woehler_max_likelihood_inf_limit_no_runouts():
         woehler.MaxLikeInf(fd).analyze().sort_index()
 
 
+@pytest.mark.filterwarnings("ignore:Precision loss occurred.*:RuntimeWarning")
 def test_woehler_max_likelihood_inf_limit_only_two_fractures():
     data = pd.DataFrame(np.array([[350.0, 1e7], [350.0, 5e5],[340.0, 1e7], [340.0, 1e5], [390.0, 1e4], [380.0, 1e5]]), columns=['load', 'cycles'])
     fd = woehler.determine_fractures(data, 1e7).fatigue_data
@@ -678,6 +679,7 @@ def test_max_likelihood_parameter_sign(data, no):
     assert_positive_or_nan_but_not_zero(wl['TN'])
 
 
+@pytest.mark.filterwarnings("ignore:Precision loss occurred.*:RuntimeWarning")
 @pytest.mark.parametrize("invalid_data", [data_01_one_fracture_level, data_01_two_fractures])
 def test_max_likelihood_min_three_fractures_on_two_load_levels(invalid_data):
     fd = woehler.determine_fractures(invalid_data, 1e7).fatigue_data
