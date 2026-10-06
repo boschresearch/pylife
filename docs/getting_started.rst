@@ -8,10 +8,10 @@ to do next.
 
 .. note::
 
-   This guide assumes a basic familiarity with `pandas
-   <https://pandas.pydata.org/>`_ and `numpy <https://numpy.org/>`_, since
-   pyLife stores all its data in :class:`pandas.Series` and
-   :class:`pandas.DataFrame` objects.
+   This guide assumes a basic familiarity with programming in python, especially
+   with `pandas <https://pandas.pydata.org/>`_ and `numpy
+   <https://numpy.org/>`_, since pyLife stores all its data in
+   :class:`pandas.Series` and :class:`pandas.DataFrame` objects.
 
 
 Install pyLife
@@ -114,7 +114,6 @@ Install from the git repository
          $ uv run pytest
 
       Happy coding
-
 
 
 
