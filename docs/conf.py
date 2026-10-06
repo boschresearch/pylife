@@ -168,7 +168,7 @@ master_doc = "index"
 
 # General information about the project.
 project = u'pyLife'
-copyright = u'2017 – 2023, pyLife Developer Team'
+copyright = u'2017 – 2026, pyLife Developer Team'
 author = u'pyLife Developer Team'
 
 # The version info for the project you're documenting, acts as replacement for

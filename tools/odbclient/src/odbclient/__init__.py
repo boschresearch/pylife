@@ -5,7 +5,7 @@ Python 3 process query Abaqus ODB files through an ``odbserver`` process
 started inside Abaqus.
 """
 
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
