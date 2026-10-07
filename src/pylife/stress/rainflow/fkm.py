@@ -28,6 +28,15 @@ class FKMDetector(AbstractDetector):
     The algorithm has been published by Clormann & Seeger 1985 and has
     been cited heavily since.
 
+    Parameters
+    ----------
+    recorder : pylife.stress.rainflow.AbstractRecorder, optional
+        Recorder receiving the detected loop start and end load values in
+        MPa. Use :class:`pylife.stress.rainflow.LoopValueRecorder` for a
+        load collective and a recorder histogram, or a compatible recorder
+        implementing ``record_values()``. If not given, a new
+        :class:`pylife.stress.rainflow.LoopValueRecorder` is created.
+
     .. jupyter-execute::
 
         from pylife.stress.timesignal import TimeSignalGenerator
@@ -62,6 +71,28 @@ class FKMDetector(AbstractDetector):
         ----------
         recorder : subclass of :class:`.AbstractRecorder`
             The recorder that the detector will report to.
+
+    Examples
+    --------
+    >>> from pylife.stress.rainflow import FKMDetector
+    >>> detector = FKMDetector()
+    >>> detector.process([0.0, 3.0, -1.0, 2.0, -2.0, 0.0], flush=True) is detector
+    True
+    >>> detector.recorder.collective
+       from   to
+    0  -1.0  2.0
+    """
+
+    def __init__(self, recorder=None):
+        """Instantiate an FKM detector.
+
+        Parameters
+        ----------
+        recorder : pylife.stress.rainflow.AbstractRecorder, optional
+            Recorder receiving the detected loop start and end load values
+            in MPa. The recorder must implement ``record_values()``. If not
+            given, a new :class:`pylife.stress.rainflow.LoopValueRecorder`
+            is created.
         """
         super().__init__(recorder)
         self._ir = 1

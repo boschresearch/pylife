@@ -27,6 +27,14 @@ from .general import AbstractDetector
 class FourPointDetector(AbstractDetector):
     r"""Implements four point rainflow counting algorithm.
 
+    Parameters
+    ----------
+    recorder : pylife.stress.rainflow.AbstractRecorder, optional
+        Recorder receiving detected loop loads in MPa. If not given, a new
+        :class:`pylife.stress.rainflow.LoopValueRecorder` is created. Use
+        :class:`pylife.stress.rainflow.FullRecorder` to store the sample
+        indices of the two turning points in addition to the load values.
+
     .. jupyter-execute::
 
         from pylife.stress.timesignal import TimeSignalGenerator
@@ -76,15 +84,29 @@ class FourPointDetector(AbstractDetector):
     So, if a cycle exsist from B to C then delete these peaks from the turns array
     and perform next iteration by joining A&D else if no cylce exsists, then B would
     be the next strarting point.
+
+
+    Examples
+    --------
+    >>> from pylife.stress.rainflow import FourPointDetector
+    >>> detector = FourPointDetector()
+    >>> detector.process([0.0, 3.0, -1.0, 2.0, -2.0, 0.0], flush=True) is detector
+    True
+    >>> detector.recorder.collective
+       from   to
+    0  -1.0  2.0
     """
 
-    def __init__(self, recorder):
-        """Instantiate a FourPointDetector.
+    def __init__(self, recorder=None):
+        """Instantiate a four-point detector.
 
         Parameters
         ----------
-        recorder : subclass of :class:`.AbstractRecorder`
-            The recorder that the detector will report to.
+        recorder : pylife.stress.rainflow.AbstractRecorder, optional
+            Recorder receiving detected loop loads in MPa. The recorder must
+            implement ``record_values()``; recorders that also implement
+            ``record_index()`` receive sample indices. If not given, a new
+            :class:`pylife.stress.rainflow.LoopValueRecorder` is created.
         """
         super().__init__(recorder)
 

@@ -21,8 +21,15 @@ Overview over pyLife's rainflow counting module
 
 From pyLife-2.0.0 on rainflow counting has been split into two different subtasks:
 
-* hysteresis loop detection, done by a subclass of :class:`.AbstractDetector`.
-* hysteresis loop recording, done by a subclass of :class:`.AbstractRecorder`.
+* Create a detector, for example ``ThreePointDetector()``.  By default the
+  detector creates its own :class:`pylife.stress.rainflow.LoopValueRecorder`;
+  pass an explicit recorder, for example
+  :class:`pylife.stress.rainflow.FullRecorder`, when sample indices or other
+  additional data are needed.
+* Call ``detector.process(samples)`` once or repeatedly for streamed chunks.
+* Read ``detector.recorder.collective`` and pass the resulting load
+  collective to fatigue-strength routines such as those in
+  ``pylife.strength.fatigue``.
 
 That means you can combine detectors and recorders freely. You can choose
 recorders and detectors that come with pyLife but also write your own custom
@@ -84,11 +91,11 @@ As of now, pyLife comes with the following recorders:
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
-from .general import find_turns, AbstractDetector, AbstractRecorder
+from .general import find_turns, AbstractDetector
+from .recorders import AbstractRecorder, LoopValueRecorder, FullRecorder
 from .threepoint import ThreePointDetector
 from .fourpoint import FourPointDetector
 from .fkm import FKMDetector
-from .recorders import LoopValueRecorder, FullRecorder
 
 from .compat import RainflowCounterThreePoint, RainflowCounterFKM
 

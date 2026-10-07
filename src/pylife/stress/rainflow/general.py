@@ -22,6 +22,10 @@ import warnings
 import numpy as np
 import pandas as pd
 
+from .recorders import AbstractRecorder, LoopValueRecorder  # noqa: F401  (re-exported for backward compatibility)
+
+__all__ = ['find_turns', 'AbstractDetector', 'AbstractRecorder']
+
 
 def find_turns(samples):
     """Find the turning points in a sample chunk.
@@ -119,6 +123,13 @@ class AbstractDetector(metaclass=ABCMeta):
     report the size of each processed sample chunk to the recorder using
     ``report_chunk()``.
 
+    Parameters
+    ----------
+    recorder : AbstractRecorder, optional
+        Recorder that receives the detected rainflow loops.  If ``None``
+        (the default), a new :class:`pylife.stress.rainflow.LoopValueRecorder`
+        is created for this detector.
+
     The ``process()`` method is supposed return ``self`` and to be implemented
     in a way, that the result is independent of the sample chunksize, so
     ``dtor.process(signal)`` should be equivalent to
@@ -129,16 +140,19 @@ class AbstractDetector(metaclass=ABCMeta):
     ``super().__init__()``.
     """
 
-    def __init__(self, recorder):
-        """Instantiate an AbstractDetector.
+    def __init__(self, recorder=None):
+        """Instantiate a detector base.
 
         Parameters
         ----------
-        recorder : subclass of :class:`.AbstractRecorder`
-            The recorder that the detector will report to.
+        recorder : AbstractRecorder, optional
+            Recorder that receives detected rainflow loops.  If ``None``
+            (the default), a new
+            :class:`pylife.stress.rainflow.LoopValueRecorder` is created for
+            this detector.
         """
         self._sample_tail = np.array([])
-        self._recorder = recorder
+        self._recorder = recorder if recorder is not None else LoopValueRecorder()
         self._head_index = 0
         self._residual_index = np.array([0], dtype=np.uintp)
         self._residuals = np.array([])
@@ -367,99 +381,3 @@ class AbstractDetector(metaclass=ABCMeta):
                             for index in turn_index]
 
         return turn_index, selected_samples
-
-class AbstractRecorder:
-    """A common base class for rainflow recorders.
-
-    Subclasses implementing a rainflow recorder are supposed to implement the
-    following methods:
-
-    * ``record_values()``
-    * ``record_index()``
-    """
-
-    def __init__(self):
-        """Instantiate an AbstractRecorder."""
-        self._chunks = np.array([], dtype=np.int64)
-
-    @property
-    def chunks(self):
-        """The limits index of the chunks processed so far.
-
-        Note
-        ----
-        The first chunk limit is the length of the first chunk, so identical to
-        the index to the first sample of the second chunk, if a second chunk
-        exists.
-        """
-        return self._chunks
-
-    def report_chunk(self, chunk_size):
-        """Report a chunk.
-
-        Parameters
-        ----------
-        chunk_size : int
-            The length of the chunk previously processed by the detector.
-
-        Note
-        ----
-        Should be called by the detector after the end of ``process()``.
-        """
-        self._chunks = np.append(self._chunks, chunk_size)
-
-    def chunk_local_index(self, global_index):
-        """Transform the global index to an index valid in a certain chunk.
-
-        Parameters
-        ----------
-        global_index : array-like int
-            The global index to be transformed.
-
-        Returns
-        -------
-        chunk_number : array of ints
-            The number of the chunk the indexed sample is in.
-        chunk_local_index : array of ints
-            The index of the sample in its chunk.
-        """
-        chunk_index = np.insert(np.cumsum(self._chunks), 0, 0)
-        chunk_num = np.searchsorted(chunk_index, global_index, side='right') - 1
-
-        return chunk_num, global_index - chunk_index[chunk_num]
-
-    def record_values(self, values_from, values_to):  # pragma: no cover
-        """Report hysteresis loop values to the recorder.
-
-        Parameters
-        ----------
-        values_from : list of floats
-            The sample values where the hysteresis loop starts from.
-
-        values_to : list of floats
-            The sample values where the hysteresis loop goes to and turns back from.
-
-        Note
-        ----
-        Default implementation does nothing. Can be implemented by recorders
-        interested in the hysteresis loop values.
-        """
-        pass
-
-    def record_index(self, indeces_from, indeces_to):  # pragma: no cover
-        """Record hysteresis loop index to the recorder.
-
-        Parameters
-        ----------
-        indeces_from : list of ints
-            The sample indeces where the hysteresis loop starts from.
-
-        indeces_to : list of ints
-            The sample indeces where the hysteresis loop goes to and turns back from.
-
-        Note
-        ----
-        Default implementation does nothing. Can be implemented by recorders
-        interested in the hysteresis loop values.
-        """
-        pass
