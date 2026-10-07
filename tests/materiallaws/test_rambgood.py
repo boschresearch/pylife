@@ -49,12 +49,12 @@ parametrization_data_monotone = np.array([
 ])
 
 
-@pytest.mark.parametrize('stress, expected', map(tuple, parametrization_data_monotone))
+@pytest.mark.parametrize('stress, expected', list(map(tuple, parametrization_data_monotone)))
 def test_rambgood_strain_scalar(ramberg_osgood_monotone, stress, expected):
     np.testing.assert_approx_equal(ramberg_osgood_monotone.strain(stress), expected, significant=5)
 
 
-@pytest.mark.parametrize('expected, strain', map(tuple, parametrization_data_monotone))
+@pytest.mark.parametrize('expected, strain', list(map(tuple, parametrization_data_monotone)))
 def test_rambgood_stress_scalar(ramberg_osgood_monotone, expected, strain):
     np.testing.assert_approx_equal(ramberg_osgood_monotone.stress(strain), expected, significant=5)
 
@@ -91,7 +91,7 @@ def test_rambgood_plastic_strain_scalar(ramberg_osgood_monotone, stress, expecte
     np.testing.assert_allclose(ramberg_osgood_monotone.plastic_strain(stress), expected, rtol=1e-5)
 
 
-@pytest.mark.parametrize('stress, expected', map(tuple, parametrization_data_monotone_plastic))
+@pytest.mark.parametrize('stress, expected', list(map(tuple, parametrization_data_monotone_plastic)))
 def test_rambgood_plastic_strain_array(ramberg_osgood_monotone, stress, expected):
     np.testing.assert_approx_equal(ramberg_osgood_monotone.plastic_strain(stress), expected, significant=5)
 
@@ -107,7 +107,7 @@ parametrization_data_monotone_tang_compl = np.array([
 ])
 
 
-@pytest.mark.parametrize('stress, expected', map(tuple, parametrization_data_monotone_tang_compl))
+@pytest.mark.parametrize('stress, expected', list(map(tuple, parametrization_data_monotone_tang_compl)))
 def test_rambgood_tangential_compliance_scalar(ramberg_osgood_monotone, stress, expected):
     np.testing.assert_approx_equal(ramberg_osgood_monotone.tangential_compliance(stress), expected, significant=5)
 
@@ -119,7 +119,7 @@ def test_rambgood_tangential_compliance_array(ramberg_osgood_monotone, stress, e
     np.testing.assert_allclose(ramberg_osgood_monotone.tangential_compliance(stress), expected, rtol=1e-5)
 
 
-@pytest.mark.parametrize('stress, expected', map(tuple, parametrization_data_monotone_tang_compl))
+@pytest.mark.parametrize('stress, expected', list(map(tuple, parametrization_data_monotone_tang_compl)))
 def test_rambgood_tangential_modulus_scalar(ramberg_osgood_monotone, stress, expected):
     np.testing.assert_approx_equal(ramberg_osgood_monotone.tangential_modulus(stress), 1./expected, significant=5)
 
@@ -145,12 +145,12 @@ parametrization_data_delta = np.array([
 ])
 
 
-@pytest.mark.parametrize('delta_stress, expected', map(tuple, parametrization_data_delta))
+@pytest.mark.parametrize('delta_stress, expected', list(map(tuple, parametrization_data_delta)))
 def test_rambgood_delta_strain_scalar(ramberg_osgood_cyclic, delta_stress, expected):
     np.testing.assert_approx_equal(ramberg_osgood_cyclic.delta_strain(delta_stress), expected, significant=5)
 
 
-@pytest.mark.parametrize('expected, delta_strain', map(tuple, parametrization_data_delta))
+@pytest.mark.parametrize('expected, delta_strain', list(map(tuple, parametrization_data_delta)))
 def test_rambgood_delta_stress_scalar(ramberg_osgood_cyclic, expected, delta_strain):
     np.testing.assert_approx_equal(ramberg_osgood_cyclic.delta_stress(delta_strain), expected, significant=5)
 
@@ -191,12 +191,12 @@ parametrization_data_monotone_real = np.array([
 ])
 
 
-@pytest.mark.parametrize('stress, expected', map(tuple, parametrization_data_monotone_real))
+@pytest.mark.parametrize('stress, expected', list(map(tuple, parametrization_data_monotone_real)))
 def test_rambgood_char_strain_scalar(ramberg_osgood, stress, expected):
     np.testing.assert_approx_equal(ramberg_osgood.strain(stress), expected, significant=5)
 
 
-@pytest.mark.parametrize('expected, strain', map(tuple, parametrization_data_monotone_real))
+@pytest.mark.parametrize('expected, strain', list(map(tuple, parametrization_data_monotone_real)))
 def test_rambgood_char_stress_scalar(ramberg_osgood, expected, strain):
     np.testing.assert_approx_equal(ramberg_osgood.stress(strain), expected, significant=5)
 
@@ -220,12 +220,12 @@ parametrization_data_delta_real = np.array([
 ])
 
 
-@pytest.mark.parametrize('delta_stress, expected', map(tuple, parametrization_data_delta_real))
+@pytest.mark.parametrize('delta_stress, expected', list(map(tuple, parametrization_data_delta_real)))
 def test_rambgood_char_delta_strain_scalar(ramberg_osgood, delta_stress, expected):
     np.testing.assert_approx_equal(ramberg_osgood.delta_strain(delta_stress), expected, significant=5)
 
 
-@pytest.mark.parametrize('expected, delta_strain', map(tuple, parametrization_data_delta_real))
+@pytest.mark.parametrize('expected, delta_strain', list(map(tuple, parametrization_data_delta_real)))
 def test_rambgood_char_delta_stress_scalar(ramberg_osgood, expected, delta_strain):
     np.testing.assert_approx_equal(ramberg_osgood.delta_stress(delta_strain), expected, significant=5)
 
@@ -244,7 +244,7 @@ parametrization_data_monotone_tang_compl_real = np.array([
 ])
 
 
-@pytest.mark.parametrize('stress, expected', map(tuple, parametrization_data_monotone_tang_compl_real))
+@pytest.mark.parametrize('stress, expected', list(map(tuple, parametrization_data_monotone_tang_compl_real)))
 def test_rambgood_tangential_compliance_real_scalar(ramberg_osgood, stress, expected):
     np.testing.assert_approx_equal(ramberg_osgood.tangential_compliance(stress), expected, significant=5)
 
@@ -256,7 +256,7 @@ def test_rambgood_tangential_compliance_real_array(ramberg_osgood, stress, expec
     np.testing.assert_allclose(ramberg_osgood.tangential_compliance(stress), expected, rtol=1e-5)
 
 
-@pytest.mark.parametrize('stress, expected', map(tuple, parametrization_data_monotone_tang_compl_real))
+@pytest.mark.parametrize('stress, expected', list(map(tuple, parametrization_data_monotone_tang_compl_real)))
 def test_rambgood_tangential_modulus_real_scalar(ramberg_osgood, stress, expected):
     np.testing.assert_approx_equal(ramberg_osgood.tangential_modulus(stress), 1./expected, significant=5)
 
