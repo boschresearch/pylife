@@ -67,7 +67,7 @@ docs = [
   "myst_parser",
   "pyvista[all,jupyter]",
   "trame",
-  "trame-vtk<2.10.3",
+  "trame-vtk",
   {include-group = "visuals"},
   "pylife-odbclient @ file://localhost/${PROJECT_ROOT}/tools/odbclient"
 ]
