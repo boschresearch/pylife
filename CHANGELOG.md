@@ -8,6 +8,8 @@ In this file noteworthy changes of new releases of pyLife are documented since
 ### Bugfixes
 
 * No longer use `setuptools.pkg_resources` in odbserver for python-3.x.
+* Wrap `map()` objects used as `pytest.mark.parametrize()` argvalues in `list()`
+  to avoid the `PytestRemovedIn10Warning` deprecation in pytest 9.1
 
 ### Improvments
 
