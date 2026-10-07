@@ -15,6 +15,8 @@ In this file noteworthy changes of new releases of pyLife are documented since
 
 * Turning assertions into exceptions (#209)
 * Big overhaul of documentation
+* Make the `recorder` argument of rainflow detectors optional defaulting to a
+  new `LoopValueRecorder` (#257)
 
 ## 2.3.1
 

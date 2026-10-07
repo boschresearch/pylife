@@ -44,11 +44,12 @@ class FKMDetector(AbstractDetector):
 
     Parameters
     ----------
-    recorder : pylife.stress.rainflow.AbstractRecorder
+    recorder : pylife.stress.rainflow.AbstractRecorder, optional
         Recorder receiving the detected loop start and end load values in
         MPa. Use :class:`pylife.stress.rainflow.LoopValueRecorder` for a
         load collective and a recorder histogram, or a compatible recorder
-        implementing ``record_values()``.
+        implementing ``record_values()``. If not given, a new
+        :class:`pylife.stress.rainflow.LoopValueRecorder` is created.
 
     See Also
     --------
@@ -92,8 +93,8 @@ class FKMDetector(AbstractDetector):
 
     Examples
     --------
-    >>> from pylife.stress.rainflow import FKMDetector, LoopValueRecorder
-    >>> detector = FKMDetector(recorder=LoopValueRecorder())
+    >>> from pylife.stress.rainflow import FKMDetector
+    >>> detector = FKMDetector()
     >>> detector.process([0.0, 3.0, -1.0, 2.0, -2.0, 0.0], flush=True) is detector
     True
     >>> detector.recorder.collective
@@ -101,14 +102,16 @@ class FKMDetector(AbstractDetector):
     0  -1.0  2.0
     """
 
-    def __init__(self, recorder):
+    def __init__(self, recorder=None):
         """Instantiate an FKM detector.
 
         Parameters
         ----------
-        recorder : pylife.stress.rainflow.AbstractRecorder
+        recorder : pylife.stress.rainflow.AbstractRecorder, optional
             Recorder receiving the detected loop start and end load values
-            in MPa. The recorder must implement ``record_values()``.
+            in MPa. The recorder must implement ``record_values()``. If not
+            given, a new :class:`pylife.stress.rainflow.LoopValueRecorder`
+            is created.
         """
         super().__init__(recorder)
         self._ir = 1

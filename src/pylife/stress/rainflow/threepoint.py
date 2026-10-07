@@ -43,8 +43,9 @@ class ThreePointDetector(AbstractDetector):
 
     Parameters
     ----------
-    recorder : pylife.stress.rainflow.AbstractRecorder
-        Recorder receiving detected loop loads in MPa. Use
+    recorder : pylife.stress.rainflow.AbstractRecorder, optional
+        Recorder receiving detected loop loads in MPa. If not given, a new
+        :class:`pylife.stress.rainflow.LoopValueRecorder` is created. Use
         :class:`pylife.stress.rainflow.FullRecorder` to store the sample
         indices of the two turning points in addition to the load values.
 
@@ -78,24 +79,36 @@ class ThreePointDetector(AbstractDetector):
 
     Examples
     --------
-    >>> from pylife.stress.rainflow import ThreePointDetector, LoopValueRecorder
-    >>> detector = ThreePointDetector(recorder=LoopValueRecorder())
+    >>> from pylife.stress.rainflow import ThreePointDetector
+    >>> detector = ThreePointDetector()
     >>> detector.process([0.0, 3.0, -1.0, 2.0, -2.0, 0.0], flush=True) is detector
     True
     >>> detector.recorder.collective
        from   to
     0  -1.0  2.0
+
+    Inject a :class:`pylife.stress.rainflow.FullRecorder` explicitly when
+    sample indices are needed in addition to the loop loads:
+
+    >>> from pylife.stress.rainflow import FullRecorder
+    >>> detector = ThreePointDetector(recorder=FullRecorder())
+    >>> detector.process([0.0, 3.0, -1.0, 2.0, -2.0, 0.0], flush=True) is detector
+    True
+    >>> detector.recorder.collective
+       from   to  index_from  index_to
+    0  -1.0  2.0           2         3
     """
 
-    def __init__(self, recorder):
+    def __init__(self, recorder=None):
         """Instantiate a three-point detector.
 
         Parameters
         ----------
-        recorder : pylife.stress.rainflow.AbstractRecorder
+        recorder : pylife.stress.rainflow.AbstractRecorder, optional
             Recorder receiving detected loop loads in MPa. The recorder must
             implement ``record_values()``; recorders that also implement
-            ``record_index()`` receive sample indices.
+            ``record_index()`` receive sample indices. If not given, a new
+            :class:`pylife.stress.rainflow.LoopValueRecorder` is created.
         """
         super().__init__(recorder)
 

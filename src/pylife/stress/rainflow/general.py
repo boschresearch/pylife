@@ -24,6 +24,10 @@ import warnings
 import numpy as np
 import pandas as pd
 
+from .recorders import AbstractRecorder, LoopValueRecorder  # noqa: F401  (re-exported for backward compatibility)
+
+__all__ = ['find_turns', 'AbstractDetector', 'AbstractRecorder']
+
 
 def find_turns(samples):
     """Find turning points in a sample chunk.
@@ -117,8 +121,10 @@ class AbstractDetector(metaclass=ABCMeta):
 
     Parameters
     ----------
-    recorder : AbstractRecorder
-        Recorder that receives the detected rainflow loops.
+    recorder : AbstractRecorder, optional
+        Recorder that receives the detected rainflow loops.  If ``None``
+        (the default), a new :class:`pylife.stress.rainflow.LoopValueRecorder`
+        is created for this detector.
 
     Notes
     -----
@@ -133,16 +139,19 @@ class AbstractDetector(metaclass=ABCMeta):
     counting methods.
     """
 
-    def __init__(self, recorder):
+    def __init__(self, recorder=None):
         """Instantiate a detector base.
 
         Parameters
         ----------
-        recorder : AbstractRecorder
-            Recorder that receives detected rainflow loops.
+        recorder : AbstractRecorder, optional
+            Recorder that receives detected rainflow loops.  If ``None``
+            (the default), a new
+            :class:`pylife.stress.rainflow.LoopValueRecorder` is created for
+            this detector.
         """
         self._sample_tail = np.array([])
-        self._recorder = recorder
+        self._recorder = recorder if recorder is not None else LoopValueRecorder()
         self._head_index = 0
         self._residual_index = np.array([0], dtype=np.uintp)
         self._residuals = np.array([])
@@ -384,105 +393,3 @@ class AbstractDetector(metaclass=ABCMeta):
 
         return turn_index, selected_samples
 
-class AbstractRecorder:
-    """Define the common base class for rainflow recorders.
-
-    Recorders receive loop data from an :class:`AbstractDetector`.  Subclasses
-    choose which data to keep, for example only loop loads or also sample
-    indices.
-
-    Notes
-    -----
-    Override ``record_values()`` to store loop turning loads and
-    ``record_index()`` to store the corresponding sample indices.
-    """
-
-    def __init__(self):
-        """Instantiate a recorder base."""
-        self._chunks = np.array([], dtype=np.int64)
-
-    @property
-    def chunks(self):
-        """Return chunk boundary indices reported so far.
-
-        Returns
-        -------
-        numpy.ndarray
-            Sizes of the processed chunks in processing order.
-
-        Notes
-        -----
-        The first chunk limit is the length of the first chunk, so identical to
-        the index to the first sample of the second chunk, if a second chunk
-        exists.
-        """
-        return self._chunks
-
-    def report_chunk(self, chunk_size):
-        """Record the size of a processed sample chunk.
-
-        Parameters
-        ----------
-        chunk_size : int
-            Length of the chunk previously processed by the detector.
-
-        Notes
-        -----
-        Should be called by the detector after the end of ``process()``.
-        """
-        self._chunks = np.append(self._chunks, chunk_size)
-
-    def chunk_local_index(self, global_index):
-        """Transform global sample indices into chunk-local indices.
-
-        Parameters
-        ----------
-        global_index : array_like
-            Global sample indices to transform.
-
-        Returns
-        -------
-        chunk_number : numpy.ndarray
-            Number of the chunk containing each indexed sample.
-        chunk_local_index : numpy.ndarray
-            Index of each sample within its chunk.
-        """
-        chunk_index = np.insert(np.cumsum(self._chunks), 0, 0)
-        chunk_num = np.searchsorted(chunk_index, global_index, side='right') - 1
-
-        return chunk_num, global_index - chunk_index[chunk_num]
-
-    def record_values(self, values_from, values_to):  # pragma: no cover
-        """Report hysteresis loop values to the recorder.
-
-        Parameters
-        ----------
-        values_from : array_like
-            Load values where each hysteresis loop starts, typically in MPa.
-        values_to : array_like
-            Load values where each hysteresis loop turns back, typically in
-            MPa.
-
-        Notes
-        -----
-        Default implementation does nothing. Can be implemented by recorders
-        interested in the hysteresis loop values.
-        """
-        pass
-
-    def record_index(self, indeces_from, indeces_to):  # pragma: no cover
-        """Report hysteresis loop sample indices to the recorder.
-
-        Parameters
-        ----------
-        indeces_from : array_like
-            Sample indices where each hysteresis loop starts.
-        indeces_to : array_like
-            Sample indices where each hysteresis loop turns back.
-
-        Notes
-        -----
-        Default implementation does nothing. Can be implemented by recorders
-        interested in the hysteresis loop indices.
-        """
-        pass

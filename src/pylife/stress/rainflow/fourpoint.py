@@ -44,8 +44,9 @@ class FourPointDetector(AbstractDetector):
 
     Parameters
     ----------
-    recorder : pylife.stress.rainflow.AbstractRecorder
-        Recorder receiving detected loop loads in MPa. Use
+    recorder : pylife.stress.rainflow.AbstractRecorder, optional
+        Recorder receiving detected loop loads in MPa. If not given, a new
+        :class:`pylife.stress.rainflow.LoopValueRecorder` is created. Use
         :class:`pylife.stress.rainflow.FullRecorder` to store the sample
         indices of the two turning points in addition to the load values.
 
@@ -80,8 +81,8 @@ class FourPointDetector(AbstractDetector):
 
     Examples
     --------
-    >>> from pylife.stress.rainflow import FourPointDetector, LoopValueRecorder
-    >>> detector = FourPointDetector(recorder=LoopValueRecorder())
+    >>> from pylife.stress.rainflow import FourPointDetector
+    >>> detector = FourPointDetector()
     >>> detector.process([0.0, 3.0, -1.0, 2.0, -2.0, 0.0], flush=True) is detector
     True
     >>> detector.recorder.collective
@@ -89,15 +90,16 @@ class FourPointDetector(AbstractDetector):
     0  -1.0  2.0
     """
 
-    def __init__(self, recorder):
+    def __init__(self, recorder=None):
         """Instantiate a four-point detector.
 
         Parameters
         ----------
-        recorder : pylife.stress.rainflow.AbstractRecorder
+        recorder : pylife.stress.rainflow.AbstractRecorder, optional
             Recorder receiving detected loop loads in MPa. The recorder must
             implement ``record_values()``; recorders that also implement
-            ``record_index()`` receive sample indices.
+            ``record_index()`` receive sample indices. If not given, a new
+            :class:`pylife.stress.rainflow.LoopValueRecorder` is created.
         """
         super().__init__(recorder)
 
