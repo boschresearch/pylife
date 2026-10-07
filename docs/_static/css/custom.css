@@ -59,14 +59,58 @@ table.dataframe tr th:last-child {
   background-color: var(--pst-color-surface) !important;
 }
 
+/* pyLife brand colours, taken from the pixels of the pyLife logo:
+ *   - light green #78be20
+ *   - dark green  #006249
+ *   - blue        #008ecf
+ * A fourth, darker blue (#003f5b) completes the palette. It is derived from
+ * the brand blue by applying the same lightness ratio that the dark green
+ * has relative to the light green (~44 %), so the blue gains a "dark" shade
+ * analogous to the two greens.
+ *
+ * `--pst-color-primary`/`--pst-color-secondary` are the pydata-sphinx-theme
+ * variables actually used throughout the theme. Beyond those two, this also
+ * fixes/completes the matching `-text` (foreground colour on top of the
+ * brand colour) and `-highlight` (hover state) variables, which previously
+ * were not set and therefore silently fell back to the theme's default
+ * teal/violet. `--sd-color-primary-hover`/`--sd-color-secondary-hover` were
+ * never actually read by sphinx-design (the real hover variable is
+ * `--sd-color-*-highlight`), so they have been replaced.
+ *
+ * Colours with a fixed semantic meaning across the theme (danger = red,
+ * warning = orange, info = blue, success = green, ...) are intentionally
+ * left untouched so they keep their universally recognisable appearance.
+ */
 html[data-theme="light"] {
     --pst-color-primary: #006249;
+    --pst-color-primary-text: #ffffff;
+    --pst-color-primary-highlight: #78be20;
+    --pst-color-primary-highlight-text: #14181e;
+
     --pst-color-secondary: #008ecf;
+    --pst-color-secondary-text: #ffffff;
+    --pst-color-secondary-highlight: #003f5b;
+    --pst-color-secondary-highlight-text: #ffffff;
+    --pst-color-secondary-bg: #daeaf1;
+
+    --pst-color-link-higher-contrast: #004735;
+    --pst-color-table-row-hover-bg: #daeaf1;
 }
 
 html[data-theme="dark"] {
     --pst-color-primary: #78be20;
+    --pst-color-primary-text: #14181e;
+    --pst-color-primary-highlight: #006249;
+    --pst-color-primary-highlight-text: #ffffff;
+
     --pst-color-secondary: #008ecf;
+    --pst-color-secondary-text: #ffffff;
+    --pst-color-secondary-highlight: #003f5b;
+    --pst-color-secondary-highlight-text: #ffffff;
+    --pst-color-secondary-bg: #102b37;
+
+    --pst-color-link-higher-contrast: #78be20;
+    --pst-color-table-row-hover-bg: #102b37;
 }
 
 img {
