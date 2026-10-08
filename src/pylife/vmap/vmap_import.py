@@ -103,7 +103,7 @@ class VMAPImport:
             :meth:`make_mesh`, :meth:`nodes`, :meth:`node_sets`, or
             :meth:`element_sets`.
         """
-        return self._file["/VMAP/GEOMETRY"].keys()
+        return list(self._file["/VMAP/GEOMETRY"].keys())
 
     def states(self):
         """List state names stored in the VMAP file.
@@ -115,7 +115,7 @@ class VMAPImport:
             and can be passed to :meth:`make_mesh`, :meth:`variables`, or
             :meth:`join_variable`.
         """
-        return self._file["/VMAP/VARIABLES/"].keys()
+        return list(self._file["/VMAP/VARIABLES/"].keys())
 
     def node_sets(self, geometry):
         """List node set names for a geometry.
