@@ -20,6 +20,8 @@ What pyLife can do for you
       :shadow: none
 
       .. image:: _static/images/rainflow-matrix-jet.png
+         :class: hover-highlight
+         :target: tutorials/rainflow.html
 
       Rainflow counting, load collectives, equivalent stresses and time
       signal processing — see :mod:`pylife.stress`.
@@ -28,10 +30,12 @@ What pyLife can do for you
       :shadow: none
 
       .. image:: _static/images/damage-calculation.png
-         :class: only-light
+         :class: only-light hover-highlight
+         :target: demos/lifetime_calc.html
 
       .. image:: _static/images/damage-calculation-dark.png
-         :class: only-dark
+         :class: only-dark hover-highlight
+         :target: demos/lifetime_calc.html
 
       Damage accumulation, failure probabilities and the FKM guideline,
       linear and nonlinear — see :mod:`pylife.strength`.
@@ -40,6 +44,8 @@ What pyLife can do for you
       :shadow: none
 
       .. image:: _static/images/mesh.png
+         :class: hover-highlight
+         :target: tutorials/import_mesh_vmap.html
 
       Stress gradients, hotspot detection and mesh mapping on FE results. All
       the damage calculation and lifetime assessment operations you can map on
@@ -49,10 +55,12 @@ What pyLife can do for you
       :shadow: none
 
       .. image:: _static/images/woehler_analyzer.png
-         :class: only-light
+         :class: only-light hover-highlight
+         :target: demos/woehler_analyzer.html
 
       .. image:: _static/images/woehler_analyzer_dark.png
-         :class: only-dark
+         :class: only-dark hover-highlight
+         :target: demos/woehler_analyzer.html
 
       Derive Wöhler curve parameters from experimental fatigue test data with
       maximum likelihood or Bayesian methods — see

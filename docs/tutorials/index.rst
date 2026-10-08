@@ -25,3 +25,4 @@ computer, you can use `MyBinder
    woehler_curve
    load_collective
    stress-strength
+   import_mesh_vmap

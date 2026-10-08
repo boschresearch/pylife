@@ -130,3 +130,11 @@ img {
 .pylife-chap-card-grid .sd-card-title {
   color: var(--pst-color-primary);
 }
+
+.hover-highlight {
+    transition: transform 0.2s ease-out;
+}
+
+.hover-highlight:hover {
+    transform: scale(1.02);
+}

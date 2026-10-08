@@ -84,7 +84,7 @@ class TimeSignalGenerator:
         S(t) = \sum_i s_i(t).
     """
 
-    def __init__(self, sample_rate, sine_set, gauss_set, log_gauss_set):
+    def __init__(self, sample_rate, sine_set, gauss_set=None, log_gauss_set=None):
         sine_amplitudes = stats.norm.rvs(
             loc=sine_set["amplitude_median"],
             scale=sine_set["amplitude_std_dev"],
