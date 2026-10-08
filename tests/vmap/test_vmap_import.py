@@ -30,6 +30,8 @@ def beam_2d_squ_lin_and_quad():
 
 
 def assert_list_equal(l1, l2):
+    assert isinstance(l1, list)
+    assert isinstance(l2, list)
     assert len(l1) == len(l2)
     for e in l1:
         assert e in l2

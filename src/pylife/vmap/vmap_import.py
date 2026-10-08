@@ -56,22 +56,22 @@ class VMAPImport:
     def geometries(self):
         """Returns a list of geometry strings of geometries present in the vmap data
         """
-        return self._file["/VMAP/GEOMETRY"].keys()
+        return list(self._file["/VMAP/GEOMETRY"].keys())
 
     def states(self):
         """Returns a list of state strings of states present in the vmap data
         """
-        return self._file["/VMAP/VARIABLES/"].keys()
+        return list(self._file["/VMAP/VARIABLES/"].keys())
 
     def node_sets(self, geometry):
         """Returns a list of the node_sets present in the vmap file
         """
-        return self._geometry_sets(geometry, 'nsets').keys()
+        return list(self._geometry_sets(geometry, 'nsets').keys())
 
     def element_sets(self, geometry):
         """Returns a list of the element_sets present in the vmap file
         """
-        return self._geometry_sets(geometry, 'elsets').keys()
+        return list(self._geometry_sets(geometry, 'elsets').keys())
 
     def nodes(self, geometry):
         """Retrieves the node positions
