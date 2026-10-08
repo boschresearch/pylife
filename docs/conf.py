@@ -31,6 +31,13 @@ if 'DISPLAY' not in os.environ and not sys.platform.startswith('win'):
 
 os.environ['PYDEVD_DISABLE_FILE_VALIDATION'] = "1"
 
+# Let all kernel managers (nbsphinx, jupyter_sphinx, nbconvert) provision CurveZMQ keys.
+# This avoids "[IPKernelApp] WARNING | Kernel is running over TCP without encryption".
+# Older jupyter_client versions don't have this trait, so we skip it there.
+from jupyter_client.manager import KernelManager as _KernelManager
+if hasattr(_KernelManager, 'transport_encryption'):
+    _KernelManager.transport_encryption.default_value = 'auto'
+
 ipython_dir = os.path.join(__projectdir__, "_build", "ipythondir")
 os.environ['IPYTHONDIR'] = ipython_dir
 
