@@ -137,7 +137,7 @@ class VMAPImport:
             Raised when ``geometry`` is not present or the VMAP geometry set data is
             malformed.
         """
-        return self._geometry_sets(geometry, 'nsets').keys()
+        return list(self._geometry_sets(geometry, 'nsets').keys())
 
     def element_sets(self, geometry):
         """List element set names for a geometry.
@@ -160,7 +160,7 @@ class VMAPImport:
             Raised when ``geometry`` is not present or the VMAP geometry set data is
             malformed.
         """
-        return self._geometry_sets(geometry, 'elsets').keys()
+        return list(self._geometry_sets(geometry, 'elsets').keys())
 
     def nodes(self, geometry):
         """Retrieve the node positions.
