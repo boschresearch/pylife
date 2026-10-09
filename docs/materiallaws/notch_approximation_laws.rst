@@ -1,5 +1,6 @@
+***********************************
 The notch approximation law classes
-======================================
+***********************************
 
 The following classes are available: ``ExtendedNeuber``, ``SeegerBeste``, and ``Binned``.
 
@@ -11,16 +12,13 @@ The respective stress and strain values from the notch approximation for equi-sp
 This speeds up the computation as only the initialization step is compute intense.
 
 .. autoclass:: pylife.materiallaws.notch_approximation_law.ExtendedNeuber
-	:undoc-members:
-	:members:
-	:inherited-members:
+   :members:
+   :inherited-members:
 
 .. autoclass:: pylife.materiallaws.notch_approximation_law_seegerbeste.SeegerBeste
-	:undoc-members:
-	:members:
-	:inherited-members:
+   :members:
+   :inherited-members:
 
 .. autoclass:: pylife.materiallaws.notch_approximation_law.NotchApproxBinner
-	:undoc-members:
-	:members:
-	:inherited-members:
+   :members:
+   :inherited-members:

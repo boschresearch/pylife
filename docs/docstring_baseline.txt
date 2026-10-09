@@ -1,0 +1,1 @@
+pylife.core.pylifesignal.register_method: PR02 Unknown parameters {'cls'}

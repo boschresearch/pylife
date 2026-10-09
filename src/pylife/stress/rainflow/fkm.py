@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,6 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Detect rainflow cycles by the FKM recommended procedure.
+
+The module provides the classic FKM detector for nominal load time series.
+Use :class:`pylife.stress.rainflow.FKMDetector` when the assessment method
+requires the FKM rainflow counting sequence, and use
+:class:`pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector` for the nonlinear HCM
+procedure with local stress-strain histories.
+"""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
@@ -23,10 +32,15 @@ from .general import AbstractDetector
 
 
 class FKMDetector(AbstractDetector):
-    """Rainflow detector as described in FKM non linear.
+    r"""Count rainflow cycles by the FKM recommended procedure.
 
-    The algorithm has been published by Clormann & Seeger 1985 and has
-    been cited heavily since.
+    Use this detector for classic FKM assessments that need closed loops
+    from a nominal load signal. The detector reports the loop start and end
+    load values to a recorder, usually
+    :class:`pylife.stress.rainflow.LoopValueRecorder`, and the recorder
+    converts them into a load collective for downstream fatigue assessment.
+    For the FKM nonlinear guideline with local stress and strain histories,
+    use :class:`pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector` instead.
 
     Parameters
     ----------
@@ -37,40 +51,45 @@ class FKMDetector(AbstractDetector):
         implementing ``record_values()``. If not given, a new
         :class:`pylife.stress.rainflow.LoopValueRecorder` is created.
 
-    .. jupyter-execute::
+    See Also
+    --------
+    pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector : Count cycles for the FKM nonlinear HCM assessment.
+    pylife.stress.rainflow.FourPointDetector : Count cycles with the general four-point criterion.
+    pylife.stress.rainflow.ThreePointDetector : Count cycles with the classic three-point criterion.
+    pylife.stress.rainflow.LoopValueRecorder : Store loop start and end load values.
 
-        from pylife.stress.timesignal import TimeSignalGenerator
-        import pylife.stress.rainflow as RF
+    Notes
+    -----
+    The detector implements the FKM recommended rainflow procedure published
+    by Clormann and Seeger [FKM-Classic-Rainflow]_. It keeps residual turning
+    points and closes a loop when the current load excursion covers the
+    previous excursion, i.e. for three successive turning points
+    :math:`x_{i-2}`, :math:`x_{i-1}`, and the current point :math:`x_i` when
 
-        ts = TimeSignalGenerator(10, {
-            'number': 50,
-            'amplitude_median': 1.0, 'amplitude_std_dev': 0.5,
-            'frequency_median': 4, 'frequency_std_dev': 3,
-            'offset_median': 0, 'offset_std_dev': 0.4}, None, None).query(10000)
+    .. math::
 
-        rfc = RF.FKMDetector(recorder=RF.LoopValueRecorder())
-        rfc.process(ts)
+        |x_i - x_{i-1}| \ge |x_{i-1} - x_{i-2}|.
 
-        rfc.recorder.collective
+    The resulting loop is recorded by its two reversal loads. A recorder or
+    downstream collective can convert these loads to load range
+    :math:`L_R = |L_\mathrm{to} - L_\mathrm{from}|`, load amplitude
+    :math:`L_a = L_R / 2`, mean load
+    :math:`L_m = (L_\mathrm{to} + L_\mathrm{from}) / 2`, and number of
+    cycles.
 
-    Alternatively you can ask the recorder for a histogram matrix:
+    The detector supports chunked processing. Repeated calls to
+    :meth:`process` continue the count across chunk boundaries and keep
+    residual turning points open until later chunks close them. This detector
+    does not report sample indices; use
+    :class:`pylife.stress.rainflow.FourPointDetector` or
+    :class:`pylife.stress.rainflow.ThreePointDetector` with
+    :class:`pylife.stress.rainflow.FullRecorder` when indices are required.
 
-    .. jupyter-execute::
-
-        rfc.recorder.histogram(bins=16)
-
-    Note
-    ----
-    This detector **does not** report the loop index.
-    """
-
-    def __init__(self, recorder):
-        """Instantiate a FKMDetector.
-
-        Parameters
-        ----------
-        recorder : subclass of :class:`.AbstractRecorder`
-            The recorder that the detector will report to.
+    References
+    ----------
+    .. [FKM-Classic-Rainflow] U. Clormann and T. Seeger, "Rainflow-HCM.
+       Rainflow counting for operational fatigue assessments on
+       werkstoffmechanischer Grundlage", Stahlbau, 1985.
 
     Examples
     --------
@@ -100,17 +119,23 @@ class FKMDetector(AbstractDetector):
         self._max_turn = 0.0
 
     def process(self, samples, flush=False):
-        """Process a sample chunk.
+        """Process a chunk of load samples.
 
         Parameters
         ----------
-        samples : array_like, shape (N, )
-            The samples to be processed
+        samples : array_like
+            Load samples in MPa. The values are scanned for turning points;
+            residual turning points are kept for subsequent chunks.
+        flush : bool, optional
+            Force processing of the last value as a turning point. Default is
+            ``False``. Leave this disabled for streaming data and enable it
+            for the final chunk if the last value shall close possible loops.
 
         Returns
         -------
-        self : FKMDetector
-            The ``self`` object so that processing can be chained
+        FKMDetector
+            The detector itself, so that repeated ``process()`` calls can be
+            chained.
         """
         ir = self._ir
         max_turn = self._max_turn

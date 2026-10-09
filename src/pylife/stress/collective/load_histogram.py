@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -13,6 +13,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Provide the binned ``.load_collective`` accessor implementation."""
 
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
@@ -30,6 +32,30 @@ from .abstract_load_collective import AbstractLoadCollective
 
 @pd.api.extensions.register_series_accessor('load_collective')
 class LoadHistogram(PylifeSignal, AbstractLoadCollective):
+    """Represent binned rainflow cycles as a load histogram.
+
+    The accessor is registered as ``Series.load_collective`` for compatibility
+    with explicit collectives.  The series values are the number of cycles in
+    each bin.  The series index must be a :class:`pandas.MultiIndex` that
+    contains one of the following interval-index structures:
+
+    * ``range`` and optionally ``mean``: Load range (peak-to-peak) classes and
+      mean-load classes, usually in MPa.
+    * ``from`` and ``to``: Classes of the two loop turning loads, usually in
+      MPa.
+
+    Every load axis listed above must be a :class:`pandas.IntervalIndex`.
+    Derived properties use the interval midpoint by default.  They expose
+    ``amplitude = range / 2`` for ``range``/``mean`` histograms or
+    ``amplitude = abs(from - to) / 2`` for ``from``/``to`` histograms,
+    ``meanstress``, ``upper``, ``lower``, ``R = lower / upper`` with missing
+    values filled by ``0.0``, and ``cycles``.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.Series
+        Series containing cycle counts indexed by load intervals.
+    """
 
     def _validate(self):
         self._class_location = 'mid'
@@ -55,42 +81,53 @@ class LoadHistogram(PylifeSignal, AbstractLoadCollective):
 
     @property
     def amplitude(self):
-        """Calculate the amplitudes of the load collective.
+        """Calculate the load amplitude for each histogram bin.
 
         Returns
         -------
-        amplitude : pd.Series
-            The amplitudes of the load collective
+        pandas.Series
+            Load amplitude in the same unit as the histogram load axes,
+            typically MPa.
         """
         rng = self._impl.amplitude()
         return pd.Series(rng/2., name='amplitude', index=self._obj.index)
 
     @property
     def amplitude_histogram(self):
+        """Return the cycle histogram indexed by load-amplitude intervals.
+
+        Returns
+        -------
+        pandas.Series
+            Number of cycles indexed by load-amplitude intervals in the same
+            unit as the histogram load axes, typically MPa.
+        """
         index = self._impl.amplitude_histogram_index()
         index.name = 'amplitude'
         return pd.Series(self._obj.values, index=index, name='cycles')
 
     @property
     def meanstress(self):
-        """Calculate the mean load values of the load collective.
+        """Calculate the mean load for each histogram bin.
 
         Returns
         -------
-        mean : pd.Series
-            The mean load values of the load collective
+        pandas.Series
+            Mean load in the same unit as the histogram load axes, typically
+            MPa.
         """
         mean = self._impl.meanstress()
         return pd.Series(mean, name='meanstress', index=self._obj.index)
 
     @property
     def R(self):
-        """Calculate the R values of the load collective.
+        """Calculate the stress ratio ``R`` for each histogram bin.
 
         Returns
         -------
-        R : pd.Series
-            The R values of the load collective
+        pandas.Series
+            Stress ratio ``R = lower / upper``, dimensionless.  Undefined
+            ratios are returned as ``0.0``.
         """
         res = (self.lower / self.upper).fillna(0.0)
         res.name = 'R'
@@ -98,12 +135,13 @@ class LoadHistogram(PylifeSignal, AbstractLoadCollective):
 
     @property
     def upper(self):
-        """Calculate the upper load values of the load collective.
+        """Calculate the upper turning load for each histogram bin.
 
         Returns
         -------
-        upper : pd.Series
-            The upper load values of the load collective
+        pandas.Series
+            Upper load in the same unit as the histogram load axes, typically
+            MPa.
         """
         res = self.meanstress + self.amplitude
         res.name = 'upper'
@@ -111,12 +149,13 @@ class LoadHistogram(PylifeSignal, AbstractLoadCollective):
 
     @property
     def lower(self):
-        """Calculate the lower load values of the load collective.
+        """Calculate the lower turning load for each histogram bin.
 
         Returns
         -------
-        lower : pd.Series
-            The lower load values of the load collective
+        pandas.Series
+            Lower load in the same unit as the histogram load axes, typically
+            MPa.
         """
         res = self.meanstress - self.amplitude
         res.name = 'lower'
@@ -124,73 +163,83 @@ class LoadHistogram(PylifeSignal, AbstractLoadCollective):
 
     @property
     def cycles(self):
-        """The cycles of each class of the collective.
+        """Return the number of cycles in each histogram bin.
 
         Returns
         -------
-        cycles : pd.Series
-            The cycles of each class of the collective
+        pandas.Series
+            Number of cycles represented by each histogram bin.
         """
         cycles = self._obj.copy()
         cycles.name = 'cycles'
         return cycles
 
     def use_class_right(self):
-        """Use the upper limit of the class bins.
-
+        """Use the right interval boundary for derived load values.
 
         Returns
         -------
-        self
+        LoadHistogram
+            The same histogram accessor, configured to use right interval
+            boundaries.
         """
         self._impl._class_location = 'right'
         return self
 
     def use_class_left(self):
-        """Use the lower limit of the class bins.
+        """Use the left interval boundary for derived load values.
 
         Returns
         -------
-        self
+        LoadHistogram
+            The same histogram accessor, configured to use left interval
+            boundaries.
         """
         self._impl._class_location = 'left'
         return self
 
     def scale(self, factors):
-        """Scale the collective.
+        """Scale all load-axis intervals of the histogram.
 
         Parameters
         ----------
-        factors : scalar or :class:`pandas.Series`
-            The factor(s) to scale the collective with.
+        factors : float or pandas.Series
+            Factor or row-wise factors used to multiply load interval
+            boundaries.  The ``range`` axis is not scaled when shifting but is
+            scaled here.
 
         Returns
         -------
-        scaled : ``LoadCollective``
-            The scaled collective.
+        LoadHistogram
+            Scaled histogram accessor.
         """
         return self._shift_or_scale(lambda x, y: x * y, factors).load_collective
 
     def shift(self, diffs):
-        """Shift the collective.
+        """Shift all load-axis intervals of the histogram.
 
         Parameters
         ----------
-        diffs : scalar or :class:`pandas.Series`
-            The diff(s) to shift the collective by.
+        diffs : float or pandas.Series
+            Difference or row-wise differences added to load interval
+            boundaries.  The ``range`` axis is not shifted because a constant
+            offset changes mean load but not load range.
 
         Returns
         -------
-        shifted : ``LoadCollective``
-            The shifted collective.
+        LoadHistogram
+            Shifted histogram accessor.
         """
         return self._shift_or_scale(lambda x, y: x + y, diffs, skip=['range']).load_collective
 
     @property
     def index_levels(self) -> list[str]:
-        """The index levels names defining the stress axis of the data object.
+        """Return the index levels that define the load axes.
 
-        Either `["range", "mean"]` or `["from", "to"]`
+        Returns
+        -------
+        list of str
+            Either ``["range", "mean"]`` or ``["from", "to"]``.
         """
         return self._axes
 
@@ -215,6 +264,13 @@ class LoadHistogram(PylifeSignal, AbstractLoadCollective):
         return pd.Series(obj.values, index=new_index, name='cycles')
 
     def cumulated_range(self):
+        """Cumulate cycle counts along the load-range classes.
+
+        Returns
+        -------
+        pandas.Series
+            Cumulative number of cycles within each ``range`` interval.
+        """
         return pd.Series(self._obj.groupby('range').transform(lambda g: np.cumsum(g)),
                          name='cumulated_cycles')
 

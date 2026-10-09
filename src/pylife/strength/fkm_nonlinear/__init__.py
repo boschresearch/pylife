@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -13,6 +13,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+r"""Provide the FKM nonlinear strength assessment workflow.
+
+The package supports the user workflow from an assessment-parameter series to
+an FKM nonlinear lifetime result.  Start with material and component inputs,
+derive guideline parameters with ``parameter_calculations``, apply nonlinear
+notch approximation laws from ``pylife.materiallaws``, count hysteresis loops
+with ``pylife.stress.rainflow.fkm_nonlinear.FKMNonlinearDetector``, evaluate
+``P_RAM`` or ``P_RAJ`` damage parameters, and use the damage calculators to
+obtain damage sums and lifetimes.
+"""
 
 __author__ = "Benjamin Maier"
 __maintainer__ = __author__

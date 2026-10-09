@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,8 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Small helper functions for fatigue analysis
+"""Provide solidity factors for load collectives.
 
+Solidity, also called the collective shape factor, describes how strongly a
+load collective fills the range between zero load and the maximum amplitude.
+It is used by Gassner and Miner calculations to scale S-N curve life.
 """
 
 __author__ = "Cedric Philip Wagner"
@@ -29,40 +32,84 @@ import pylife.stress.collective as CL
 
 @pd.api.extensions.register_series_accessor('solidity')
 class SolidityAccessor(CL.LoadHistogram):
+    """Provide solidity calculations as a load histogram accessor.
+
+    The accessor is registered as ``.solidity`` on :class:`pandas.Series` load
+    histograms that satisfy the :class:`pylife.stress.collective.LoadHistogram`
+    contract.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.Series
+        Load histogram data passed by the pandas accessor machinery.
+
+    See Also
+    --------
+    pylife.strength.solidity.haibach : Calculate Haibach solidity.
+    pylife.strength.solidity.fkm : Calculate FKM solidity.
+    """
 
     def haibach(self, k):
+        """Calculate Haibach solidity for the histogram.
+
+        Parameters
+        ----------
+        k : float
+            Wöhler slope used to weight normalized amplitudes, dimensionless.
+
+        Returns
+        -------
+        float
+            Haibach solidity, dimensionless.
+        """
         return haibach(self, k)
 
     def fkm(self, k):
+        """Calculate FKM solidity for the histogram.
+
+        Parameters
+        ----------
+        k : float
+            Wöhler slope used to weight normalized amplitudes, dimensionless.
+
+        Returns
+        -------
+        float
+            FKM solidity, dimensionless.
+        """
         return fkm(self, k)
 
 
 def haibach(collective, k):
-    """Compute solidity according to Haibach
-
-    Refer to:
-    Haibach - Betriebsfestigkeit - 3. Auflage (2005) - S.271
+    r"""Calculate the Haibach solidity of a load collective.
 
     Parameters
     ----------
-    collective : np.ndarray
-        numpy array of shape (:, 2) where ":" depends on the number of classes
-        defined for the rainflow counting
-
-            1. column: class values in ascending order
-
-            2. column: accumulated number of cycles first entry is the total
-               number of cycles then in a descending manner till the number of
-               cycles of the highest stress class
-
+    collective : pylife.stress.collective.LoadCollective
+        Load collective or load histogram accessor exposing stress amplitudes
+        and cycle counts. Amplitudes may be stress amplitudes or load
+        amplitudes, but must use one consistent unit.
     k : float
-        slope of the S/N curve
+        Wöhler slope used to weight normalized amplitudes, dimensionless.
 
     Returns
     -------
-    V : np.ndarray (1,)
-        Völligkeitswert (solidity)
+    float
+        Haibach solidity ``V``, dimensionless.
 
+    Notes
+    -----
+    Following Haibach [Haibach-Solidity]_, with cycle counts ``n_i`` and
+    normalized amplitudes ``x_i = S_{a,i} / S_{a,max}``, Haibach solidity is
+
+    .. math::
+
+        V = \sum_i \frac{n_i}{\sum_j n_j} x_i^k.
+
+    References
+    ----------
+    .. [Haibach-Solidity] E. Haibach, "Betriebsfestigkeit", Springer-Verlag,
+       2006, p. 271.
     """
 
     S = collective.amplitude
@@ -75,29 +122,36 @@ def haibach(collective, k):
 
 
 def fkm(collective, k):
-    """Compute solidity according to the FKM guideline (2012)
-
-    Refer to:
-    FKM-Richtlinie - 6. Auflage (2012) - S.58 - Gl. (2.4.55) +  Gl. (2.4.55)
+    r"""Calculate the FKM solidity of a load collective.
 
     Parameters
     ----------
-    collective : np.ndarray
-        numpy array of shape (:, 2) where ":" depends on the number of classes
-        defined for the rainflow counting
-
-            1. column: class values in ascending order
-
-            2. column: accumulated number of cycles first entry is the total
-               number of cycles then in a descending manner till the number of
-               cycles of the highest stress class k : float slope of the S/N
-               curve
+    collective : pylife.stress.collective.LoadCollective
+        Load collective or load histogram accessor exposing stress amplitudes
+        and cycle counts. Amplitudes may be stress amplitudes or load
+        amplitudes, but must use one consistent unit.
+    k : float
+        Wöhler slope used to weight normalized amplitudes, dimensionless.
 
     Returns
     -------
-    V : np.ndarray
-        Völligkeitswert (solidity)
+    float
+        FKM solidity ``V_FKM``, dimensionless.
 
+    Notes
+    -----
+    According to the FKM guideline [FKM-Solidity]_, the solidity is derived
+    from the Haibach solidity ``V_H`` as
+
+    .. math::
+
+        V_{FKM} = V_H^{1/k}.
+
+    References
+    ----------
+    .. [FKM-Solidity] Forschungskuratorium Maschinenbau, "Rechnerischer
+       Festigkeitsnachweis für Maschinenbauteile", 6th ed., 2012,
+       Eq. 2.4.55.
     """
 
     V_haibach = haibach(collective, k)

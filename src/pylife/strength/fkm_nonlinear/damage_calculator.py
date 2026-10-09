@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,6 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+r"""Calculate FKM nonlinear damage and lifetime for ``P_RAM`` and ``P_RAJ``.
+
+The module provides the two damage calculators used after the HCM algorithm
+has produced damage-parameter collectives.  ``DamageCalculatorPRAM`` evaluates
+``P_RAM`` collectives by an elementary damage sum, while
+``DamageCalculatorPRAJ`` implements the guideline-specific ``P_RAJ``
+accumulation with logarithmic classing and crack-growth damage.
+
+Examples
+--------
+>>> from pylife.strength.fkm_nonlinear.damage_calculator import DamageCalculatorPRAM
+>>> DamageCalculatorPRAM.__name__
+'DamageCalculatorPRAM'
+"""
+
 __author__ = "Benjamin Maier"
 __maintainer__ = __author__
 
@@ -27,43 +42,51 @@ import pylife.strength.fkm_nonlinear.parameter_calculations
 from pylife.strength.fkm_nonlinear.constants import FKMNLConstants
 
 class DamageCalculatorPRAM:
-    """This class performs the lifetime assessment according to the FKM nonlinear assessment.
-    It holds damage values from two previous runs of the HCM algorithm and a component woehler curve of type
-    `WoehlerCurvePRAM`. The outputs are lifetime numbers and detection of infinite life.
+    r"""Calculate lifetime from a ``P_RAM`` damage-parameter collective.
 
-    This class implements the assessment procedure using the damage parameter P_RAM.
+    Use this calculator for the FKM nonlinear assessment path based on the
+    ``P_RAM`` damage parameter.  It expects the first and second HCM runs in one
+    collective and evaluates them against a ``WoehlerCurvePRAM`` component Wöhler
+    curve.
+
+    Parameters
+    ----------
+    collective : pandas.DataFrame
+        Damage-parameter collective.  Each row represents one hysteresis and must
+        contain ``P_RAM`` as damage parameter value, ``is_closed_hysteresis`` as
+        full-cycle flag, ``run_index`` as HCM run number, and ``S_min`` for the
+        hysteresis count.  A missing index is replaced by a two-level
+        ``MultiIndex`` with ``hysteresis_index`` and ``assessment_point_index``.
+    component_woehler_curve_P_RAM : WoehlerCurvePRAM
+        Component Wöhler curve for the ``P_RAM`` damage parameter.
+
+    Notes
+    -----
+    Implement the FKM nonlinear guideline assessment for ``P_RAM``, especially the
+    load-sequence repetition rule of clause 2.6, equation (2.6-90).  The damage of
+    hysteresis ``i`` is accumulated as
+
+    .. math::
+
+        D_i = \begin{cases}
+            1 / N_i, & \text{closed hysteresis}, \\
+            0.5 / N_i, & \text{memory-3 hysteresis}.
+        \end{cases}
+
+    The resulting damage sum is dimensionless; a value of ``1.0`` means failure.
     """
 
     def __init__(self, collective, component_woehler_curve_P_RAM):
-        """Initialize the computation with the Woehler curve, connect a load collective and assessment parameters to the object.
-
-        This function should be called once after initialization and before any other method is called.
+        """Initialize the ``P_RAM`` damage calculation.
 
         Parameters
         ----------
-        collective : pandas DataFrame
-            A load collective with computed damage parameter resulting from two runs of the HCM algorithm.
-            Every row corresponds to one closed hysteresis.
-
-            More specifically, the table has to contain the following columns:
-
-            * ``P_RAM``: the value of the P_RAM damage parameter for every hysteresis.
-            * ``is_closed_hysteresis``: The hysteresis fully lies on the secondary branch and is fully counted (True),
-              or it results from a "Memory 3" case and is only counted half the damage. (False)
-            * ``run_index`` number of the run of the HCM algorithm, either 1 for the first hystereses or 2 for the following ones.
-
-            The collective has to contain no index at all or a MultiIndex with two levels named
-            `hysteresis_index` and `assessment_point_index`. The first index level increments for every new hysteresis.
-            The second index level identifies a separate assessment point, e.g., a mesh node for which the assessment should be carried out.
-            It it, thus, possible to perform the assessment against this woehler curve for multiple points at once.
-
-        component_woehler_curve_P_RAM : object of class `pylife.strength.woehler_fkm_nonlinear.WoehlerCurvePRAM`
-            The component woehler curve used for the assessment.
-
-        Returns
-        -------
-        None.
-
+        collective : pandas.DataFrame
+            Damage-parameter collective with one row per hysteresis.  Required columns
+            are ``P_RAM``, ``is_closed_hysteresis``, ``run_index``, and ``S_min``.
+        component_woehler_curve_P_RAM : WoehlerCurvePRAM
+            Component Wöhler curve used to convert ``P_RAM`` values to bearable cycle
+            numbers.
         """
 
         self._collective = collective.copy()
@@ -90,13 +113,27 @@ class DamageCalculatorPRAM:
 
     @property
     def collective(self):
+        """Return the evaluated ``P_RAM`` collective.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Copy of the input collective enriched with bearable cycle numbers,
+            damage per hysteresis, and cumulative damage per assessment point.
+        """
         return self._collective
 
     @property
     def P_RAM_max(self):
-        """The maximum P_RAM damage parameter value of the second run of the HCM algorithm.
-        If this value is lower than the fatigue strength limit, the component has infinite life.
-        The method ``compute_damage`` needs to be called beforehand."""
+        """Return the maximum ``P_RAM`` value of the second HCM run.
+
+        Returns
+        -------
+        float or pandas.Series
+            Maximum ``P_RAM`` damage parameter per assessment point.  Values below or
+            equal to the fatigue strength limit indicate infinite life for this
+            criterion.
+        """
 
         # get maximum damage parameter
         P_RAM_max = self._collective.loc[self._collective["run_index"]==2, "P_RAM"].groupby("assessment_point_index").max()
@@ -105,8 +142,14 @@ class DamageCalculatorPRAM:
 
     @property
     def is_life_infinite(self):
-        """Whether the component has infinite life.
-        The method ``compute_damage`` needs to be called beforehand."""
+        """Return whether the ``P_RAM`` assessment predicts infinite life.
+
+        Returns
+        -------
+        bool or pandas.Series
+            ``True`` where ``P_RAM_max`` does not exceed the fatigue strength limit of
+            the component Wöhler curve; otherwise ``False``.
+        """
 
         # y/x = d, 1/d = x/y
 
@@ -121,8 +164,15 @@ class DamageCalculatorPRAM:
 
     @property
     def lifetime_n_times_load_sequence(self):
-        """The number of times the whole load sequence can be traversed until failure.
-        The method ``compute_damage`` needs to be called beforehand."""
+        """Return load-sequence repetitions until ``P_RAM`` failure.
+
+        Returns
+        -------
+        float or numpy.ndarray
+            Number of complete load sequence repetitions until the damage sum reaches
+            ``1.0``.  A value of ``0`` means that failure occurs before the end of the
+            second HCM run.
+        """
 
         # compute damage sums of both HCM runs
         damage_sum_first_run = self._collective.loc[self._collective["run_index"]==1, "D"].groupby("assessment_point_index").sum()
@@ -151,8 +201,15 @@ class DamageCalculatorPRAM:
 
     @property
     def lifetime_n_cycles(self):
-        """The number of load cycles (as defined in the load collective) until failure.
-        The method ``compute_damage`` needs to be called beforehand."""
+        """Return load cycles until ``P_RAM`` failure.
+
+        Returns
+        -------
+        float or numpy.ndarray
+            Number of cycles in the collective until the accumulated damage sum
+            reaches ``1.0``.  The value is expressed in counted load cycles, not in
+            seconds or load-sequence repetitions.
+        """
 
         x_plus_1 = self.lifetime_n_times_load_sequence
 
@@ -164,30 +221,31 @@ class DamageCalculatorPRAM:
         return lifetime.squeeze()
 
     def get_lifetime_functions(self, assessment_parameters):
-        """Return two python functions that can be used for detailed probabilistic assessment.
+        """Return probabilistic lifetime functions for the ``P_RAM`` assessment.
 
-        The first function, ``N_max_bearable(P_A, clip_gamma=False)``,
-        calculates the maximum number of cycles
-        that the component can withstand with the given failure probability.
-        The parameter ``clip_gamma`` specifies whether the scaling factor gamma_M
-        will be at least 1.1 (P_RAM) or 1.2 (P_RAJ), as defined
-        in eq. (2.5-38) (PRAM) / eq. (2.8-38) (PRAJ)
-
-        The second function, ``failure_probability(N)``, calculates the failure probability for a
-        given number of cycles.
+        The returned callables scale the deterministic lifetime with the material
+        scatter and safety factor of the FKM nonlinear guideline.
 
         Parameters
         ----------
-        assessment_parameters : pd.Series
-            The assessment parameters, only the material group is required to determine the respective
-            f_2,5% constant.
+        assessment_parameters : pandas.Series
+            Assessment parameters.  Only the material group is required here to select
+            the ``f_2.5%`` scatter constant for ``P_RAM``.
 
         Returns
         -------
-        N_max_bearable
-            python function, ``N_max_bearable(P_A)``
-        failure_probability
-            python function, ``failure_probability(N)``
+        N_max_bearable : callable
+            Function ``N_max_bearable(P_A, clip_gamma=False)`` returning the maximum
+            bearable number of cycles for failure probability ``P_A``.
+        failure_probability : callable
+            Function ``failure_probability(N)`` returning the failure probability for
+            ``N`` load cycles.
+
+        Notes
+        -----
+        Use FKM nonlinear guideline clause 2.5, equation (2.5-38), for the material
+        safety factor.  If ``clip_gamma`` is ``True``, ``gamma_M`` is clipped to at
+        least ``1.1`` for the ``P_RAM`` assessment.
         """
 
         constants = FKMNLConstants().for_material_group(assessment_parameters)
@@ -232,9 +290,11 @@ class DamageCalculatorPRAM:
         return N_max_bearable, failure_probability
 
     def _initialize_collective_index(self):
-        """Assert that the variable `self._collective` contains the proper index
-        and columns. If the collective does not contain any MultiIndex (or any index at all),
-        create the appropriate MultiIndex"""
+        """Validate and, if necessary, create the collective index.
+
+        The method requires the columns used by the ``P_RAM`` damage calculation and
+        stores the number of hysteresis entries for later lifetime conversion.
+        """
 
         # if assessment is done for multiple points at once, work with a multi-indexed data frame
         if not isinstance(self._collective.index, pd.MultiIndex):
@@ -253,9 +313,10 @@ class DamageCalculatorPRAM:
         self._n_hystereses_run_2 = self._collective[self._collective["run_index"]==2].groupby("assessment_point_index")["S_min"].count().values[0]
 
     def _initialize_P_RAM_Z_index(self):
-        """Properly initialize P_RAM_Z if it was computed individually for every node because of a stress gradient field G.
-        In such a case, add the proper multi-index with levels "hysteresis_index", "assessment_point_index" such that
-        the Series is compatible with self._collective.
+        """Align node-dependent ``P_RAM_Z`` values with the collective index.
+
+        If the Wöhler curve provides one ``P_RAM_Z`` value per assessment point, expand
+        it to the hysteresis-level ``MultiIndex`` used by the collective.
         """
         # if P_RAM_Z is a series without multi-index
         if isinstance(self._P_RAM_Z, pd.Series):
@@ -267,28 +328,20 @@ class DamageCalculatorPRAM:
                     index = self._collective.index)
 
     def _fill_with_default_for_missing_assessment_points(self, df, default_value):
-        """Add rows to a series df that are not yet there, such that the result has
-        a row for every assessment point. Example:
+        """Return a series containing all assessment points.
 
-        * input ``df``:
+        Parameters
+        ----------
+        df : pandas.Series
+            Series indexed by ``assessment_point_index`` that may miss some assessment
+            points.
+        default_value : float
+            Value inserted for missing assessment points.
 
-            .. code::
-
-                assessment_point_index
-                0    0.312183
-                2    0.312183
-                Name: stddev_log_N, dtype: float64
-
-        * default value: 5
-        * result:
-
-            .. code::
-
-                assessment_point_index
-                0    0.312183
-                1    5.000000
-                2    0.312183
-                Name: stddev_log_N, dtype: float64
+        Returns
+        -------
+        pandas.Series
+            Series indexed by every assessment point in the collective.
         """
         assessment_point_index = self._collective.index.get_level_values("assessment_point_index").unique()
         series_with_all_rows = pd.Series(np.nan, index=assessment_point_index, name="a")
@@ -299,47 +352,58 @@ class DamageCalculatorPRAM:
 
 
 class DamageCalculatorPRAJ:
-    """This class performs the lifetime assessment according to the FKM nonlinear assessment.
-    It holds damage values from two previous runs of the HCM algorithm and a component woehler curve of type
-    `WoehlerCurvePRAJ`. The outputs are lifetime numbers and detection of infinite life.
+    r"""Calculate lifetime from a ``P_RAJ`` collective by guideline accumulation.
 
-    This class implements the assessment procedure using the damage parameter P_RAJ.
+    Use this calculator for the official FKM nonlinear ``P_RAJ`` assessment.  It
+    uses the damage values computed during damage-parameter evaluation, classes the
+    second HCM run logarithmically, and accounts for the guideline's crack-growth
+    based degradation of the endurance limit.
+
+    Parameters
+    ----------
+    collective : pandas.DataFrame
+        Damage-parameter collective with one row per hysteresis.  Required columns
+        are ``P_RAJ``, ``P_RAJ_D``, ``D``, ``run_index``, and ``S_min``.  A missing
+        index is replaced by a two-level ``MultiIndex`` with ``hysteresis_index``
+        and ``assessment_point_index``.
+    assessment_parameters : pandas.Series
+        Parameters of the nonlinear ``P_RAJ`` assessment, including
+        ``P_RAJ_klass_max``, ``P_RAJ_D_e``, ``d_RAJ``, ``a_0``, ``a_end``,
+        ``l_star``, and optionally ``n_bins``.  Default for ``n_bins`` is ``200``.
+    component_woehler_curve_P_RAJ : WoehlerCurvePRAJ
+        Component Wöhler curve for the ``P_RAJ`` damage parameter.
+
+    See Also
+    --------
+    DamageCalculatorPRAM : Calculate damage from ``P_RAM`` with elementary accumulation.
+
+    Notes
+    -----
+    Implement the FKM nonlinear guideline assessment for ``P_RAJ`` in clause 2.9,
+    including equations (2.9-126), (2.9-135), and (2.9-138).  The class evaluates
+
+    .. math::
+
+        \bar{N} = H_0\,(2 + \bar{x}_{-2})
+
+    as the bearable number of cycles until crack initiation.  Choose
+    ``DamageCalculatorPRAJMinerElementary`` instead only for the modified
+    Miner-type ``P_RAJ`` accumulation, not for a strict guideline assessment.
     """
 
     def __init__(self, collective, assessment_parameters, component_woehler_curve_P_RAJ):
-        """Initialize the computation with the Woehler curve, connect a load collective and material parameters to the object.
-
-        This function should be called once after initialization, before any other method is called.
+        """Initialize the guideline ``P_RAJ`` damage calculation.
 
         Parameters
         ----------
-        collective : pandas DataFrame
-            A load collective with computed damage parameter resulting from two runs of the HCM algorithm.
-            Every row corresponds to one closed hysteresis.
-
-            More specifically, the table has to contain the following columns:
-
-            * ``P_RAJ``: the value of the P_RAJ damage parameter for every hysteresis.
-            * ``D``: The amount of damage of the hysteresis.
-            * ``run_index`` number of the run of the HCM algorithm, either 1 for the first hystereses or 2 for the following ones.
-
-        assessment_parameters : pandas Series
-            All assessment parameters collected so far. Has to contain the following fields:
-            * ``P_RAJ_klass_max``
-            * ``P_RAJ_D_e``
-            * ``P_RAJ_D_0``
-            * ``d_RAJ``
-            * ``a_0``
-            * ``a_end``
-            * ``l_star``
-            * ``P_RAJ_Z``
-            * ``d_RAJ``
-            * ``n_bins``: number of bins in the lookup table for speed up, "Klassierung", a larger value is more accurate but leads to longer runtimes (optional, default is 200)
-            Refer to the FKM nonlinear document for a description of these parameters.
-
-        Returns
-        -------
-        None.
+        collective : pandas.DataFrame
+            Damage-parameter collective with one row per hysteresis.  Required columns
+            are ``P_RAJ``, ``P_RAJ_D``, ``D``, ``run_index``, and ``S_min``.
+        assessment_parameters : pandas.Series
+            Assessment parameters controlling classing, crack growth, and the number
+            of logarithmic bins.  Default for missing ``n_bins`` is ``200``.
+        component_woehler_curve_P_RAJ : WoehlerCurvePRAJ
+            Component Wöhler curve used by the ``P_RAJ`` assessment.
         """
 
         self._collective = collective
@@ -377,13 +441,26 @@ class DamageCalculatorPRAJ:
 
     @property
     def collective(self):
+        """Return the evaluated ``P_RAJ`` collective.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Input collective enriched with cumulative damage per assessment point.
+        """
         return self._collective
 
     @property
     def P_RAJ_max(self):
-        """The maximum P_RAJ damage parameter value of the second run of the HCM algorithm.
-        If this value is lower than the fatigue strength limit, the component has infinite life.
-        The method ``compute_damage`` needs to be called beforehand."""
+        """Return the maximum ``P_RAJ`` value of the second HCM run.
+
+        Returns
+        -------
+        float or pandas.Series
+            Maximum ``P_RAJ`` damage parameter per assessment point.  Values below or
+            equal to the fatigue strength limit indicate infinite life for this
+            criterion.
+        """
 
         # get maximum damage parameter
         if isinstance(self._collective.index, pd.MultiIndex):
@@ -395,16 +472,29 @@ class DamageCalculatorPRAJ:
 
     @property
     def is_life_infinite(self):
-        """Whether the component has infinite life.
-        The method ``compute_damage`` needs to be called beforehand."""
+        """Return whether the ``P_RAJ`` assessment predicts infinite life.
+
+        Returns
+        -------
+        bool or pandas.Series
+            ``True`` where ``P_RAJ_max`` does not exceed the fatigue strength limit of
+            the component Wöhler curve; otherwise ``False``.
+        """
 
         result = self.P_RAJ_max <= self._component_woehler_curve_P_RAJ.fatigue_strength_limit
         return result.squeeze()
 
     @property
     def lifetime_n_times_load_sequence(self):
-        """The number of times the whole load sequence can be traversed until failure.
-        The method ``compute_damage`` needs to be called beforehand."""
+        """Return load-sequence repetitions until ``P_RAJ`` failure.
+
+        Returns
+        -------
+        float or numpy.ndarray
+            Number of complete load sequence repetitions until the damage sum reaches
+            ``1.0``.  A value of ``0`` means that failure occurs before the end of the
+            second HCM run.
+        """
 
         # If damage sum of D=1 is reached before end of second run of HCM algorithm, set lifetime_n_times_load_sequence to 0.
         # Else the value is x + 1
@@ -415,8 +505,14 @@ class DamageCalculatorPRAJ:
 
     @property
     def lifetime_n_cycles(self):
-        """The number of load cycles (as defined in the load collective) until failure.
-        The method ``compute_damage`` needs to be called beforehand."""
+        """Return load cycles until ``P_RAJ`` failure.
+
+        Returns
+        -------
+        float or numpy.ndarray
+            Number of cycles in the collective until crack initiation according to the
+            guideline ``P_RAJ`` accumulation.
+        """
 
         # if damage sum of D=1 is reached before end of second run of HCM algorithm
         lifetime = np.where(self._n_cycles_until_damage < self._n_hystereses,
@@ -426,28 +522,22 @@ class DamageCalculatorPRAJ:
         return lifetime.squeeze()
 
     def get_lifetime_functions(self):
-        """Return two python functions that can be used for detailed probabilistic assessment.
-
-        The first function, ``N_max_bearable(P_A, clip_gamma=False)``,
-        calculates the maximum number of cycles
-        that the component can withstand with the given failure probability.
-        The parameter ``clip_gamma`` specifies whether the scaling factor gamma_M
-        will be at least 1.1 (P_RAM) or 1.2 (P_RAJ), as defined
-        in eq. (2.5-38) (PRAM) / eq. (2.8-38) (PRAJ)        The second function, ``failure_probability(N)``, calculates the failure probability for a
-        given number of cycles.
-
-        Parameters
-        ----------
-        assessment_parameters : pd.Series
-            The assessment parameters, only the material group is required to determine the respective
-            f_2,5% constant.
+        """Return probabilistic lifetime functions for the ``P_RAJ`` assessment.
 
         Returns
         -------
-        N_max_bearable
-            python function, ``N_max_bearable(P_A)``
-        failure_probability
-            python function, ``failure_probability(N)``
+        N_max_bearable : callable
+            Function ``N_max_bearable(P_A, clip_gamma=False)`` returning the maximum
+            bearable number of cycles for failure probability ``P_A``.
+        failure_probability : callable
+            Function ``failure_probability(N)`` returning the failure probability for
+            ``N`` load cycles.
+
+        Notes
+        -----
+        Use FKM nonlinear guideline clause 2.8, equation (2.8-38), for the material
+        safety factor.  If ``clip_gamma`` is ``True``, ``gamma_M`` is clipped to at
+        least ``1.2`` for the ``P_RAJ`` assessment.
         """
 
         constants = FKMNLConstants().for_material_group(self._assessment_parameters)
@@ -482,9 +572,12 @@ class DamageCalculatorPRAJ:
         return N_max_bearable, failure_probability
 
     def _initialize_collective_index(self):
-        """Assert that the variable `self._collective` contains the proper index
-        and columns. If the collective does not contain any MultiIndex (or any index at all),
-        create the appropriate MultiIndex"""
+        """Validate and, if necessary, create the collective index.
+
+        The method requires the columns used by the ``P_RAJ`` guideline damage
+        calculation and stores the number of hysteresis entries for lifetime
+        conversion.
+        """
 
         # if assessment is done for multiple points at once, work with a multi-indexed data frame
         if not isinstance(self._collective.index, pd.MultiIndex):
@@ -502,28 +595,11 @@ class DamageCalculatorPRAJ:
         self._n_hystereses = self._collective.groupby("assessment_point_index")["S_min"].count().values[0]
 
     def _initialize_binning(self):
-        """
-        Create a lookup table for P_RAJ values, in ``self._binned_P_RAJ``
+        """Create logarithmic ``P_RAJ`` classes for the second HCM run.
 
-        The following vectorial assertions hold:
-
-        .. code::
-
-            if isinstance(delta_P, pd.Series):
-                assert np.allclose(delta_P[~np.isnan(delta_P)], np.log(log_bin_sizes[0][~np.isnan(log_bin_sizes[0])]))
-
-                # assert that first and last values are as desired
-                assert np.allclose(self._binned_P_RAJ[~np.isnan(self._binned_P_RAJ)][-1], P_RAJ_D_e[~np.isnan(P_RAJ_D_e)])
-                assert np.allclose(self._binned_P_RAJ[~np.isnan(self._binned_P_RAJ)][-1], P_RAJ_D_e[~np.isnan(P_RAJ_D_e)])
-                assert np.allclose(self._binned_P_RAJ[~np.isnan(self._binned_P_RAJ)][0], P_RAJ_klass_max)
-
-            # scalar assertions
-            else:
-                assert np.isclose(delta_P, np.log(log_bin_sizes[0]))
-
-                # assert that first and last values are as desired
-                assert np.isclose(self._binned_P_RAJ[-1], P_RAJ_D_e)
-                assert np.isclose(self._binned_P_RAJ[0], P_RAJ_klass_max)
+        The class boundaries and class-middle values implement the guideline's
+        ``Klassierung`` step.  The counts are stored per assessment point so that
+        several nodes can be evaluated in one calculator instance.
         """
 
         # initialize the classes for P_RAJ
@@ -601,7 +677,10 @@ class DamageCalculatorPRAJ:
         self._H_0 = np.sum(self._binned_h, axis=1) + self._n_not_in_bin
 
     def _compute_xbar_minus_2(self):
-        """Compute the value of self._xbar_minus_2, described by eq. (2.9-138)
+        """Compute the additional sequence repetitions after the second run.
+
+        The value ``xbar_minus_2`` corresponds to FKM nonlinear guideline equation
+        (2.9-138) and is later converted to cycles by multiplication with ``H_0``.
         """
 
         n_bins = self._assessment_parameters.n_bins

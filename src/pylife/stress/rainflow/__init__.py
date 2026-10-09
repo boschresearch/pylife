@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,12 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A module performing rainflow counting
+"""Count rainflow cycles from load-time signals.
 
-Overview over pyLife's rainflow counting module
------------------------------------------------
+The rainflow package separates hysteresis-loop detection from recording.  A
+detector implements a counting rule, for example
+:class:`pylife.stress.rainflow.FourPointDetector`,
+:class:`pylife.stress.rainflow.ThreePointDetector`, or
+:class:`pylife.stress.rainflow.FKMDetector`.  A recorder stores the detected
+loops, for example :class:`pylife.stress.rainflow.LoopValueRecorder` for loop
+loads or :class:`pylife.stress.rainflow.FullRecorder` for loop loads and
+sample indices.
 
-From pyLife-2.0.0 on rainflow counting has been split into two different subtasks:
+The user-facing workflow is:
 
 * Create a detector, for example ``ThreePointDetector()``.  By default the
   detector creates its own :class:`pylife.stress.rainflow.LoopValueRecorder`;
@@ -31,61 +37,24 @@ From pyLife-2.0.0 on rainflow counting has been split into two different subtask
   collective to fatigue-strength routines such as those in
   ``pylife.strength.fatigue``.
 
-That means you can combine detectors and recorders freely. You can choose
-recorders and detectors that come with pyLife but also write your own custom
-detectors and custom recorders.
+This separation lets engineers combine different counting standards with the
+amount of recorded data they need.  Detectors report closed hysteresis loops to
+their recorder.  All detectors report load values; detectors that retain sample
+indices also call ``record_index()`` and ``report_chunk()`` so additional time
+series information can be recovered from the original signal.
 
-Detectors
-^^^^^^^^^
+Warnings
+--------
+Remove ``NaN`` values before rainflow counting.  :func:`find_turns` drops
+``NaN`` values to avoid missing loops and issues a warning, but dropping them
+can make reported sample indices differ from the original input.
 
-Detectors process a one dimensional time signal and detect hysteresis loops in
-them. A hysteresis loop consists of the sample point where the hysteresis
-starts, and the sample of the turning point where the hysteresis loop starts to
-turn back towards the load level of the starting point.
-
-Once the detector has detected such a sample pair that makes a closed
-hysteresis loop it reports it to the recorder. All detectors report the load
-levels, some detectors also the index to the samples defining the loop limits.
-
-pyLife's detectors are implemented in a way that the samples are
-chunkable. That means that you don't need to feed them the complete signal at
-once, but you can resume the rainflow analysis later when you have the next
-sample chunk.
-
-As of now, pyLife comes with the following detectors:
-
-* :class:`.ThreePointDetector`, classic three point algorithm, reports sample index
-
-* :class:`.FourPointDetector`, recent four point algorithm, reports sample index
-
-* :class:`.FKMDetector`, algorithm described by Clormann & Seeger, recommended by FKM,
-  does not report sample index.
-
-
-Warning
-.......
-
-Make sure you don't have any ``NaN`` values in your input signal.  They are
-dropped in order to make sure not to miss any hysteresis loops and thus will
-render the index invalid.  A warning is issued by :func:`~.find_turns` if
-``NaN`` values are dropped.
-
-Recorders
-^^^^^^^^^
-
-Recorders are notified by detectors about loops and will process the loop
-information as they wish.
-
-As of now, pyLife comes with the following recorders:
-
-* :class:`.LoopValueRecorder`, only records the `from` and `to` values of all
-  the closed hysteresis loops.`
-
-* :class:`.FullRecorder`, records additionally to the `from` and `to` values
-  also the indices of the loop turning points in the original time series, so
-  that additional data like temperature during the loop or dwell times can be
-  looked up in the original time series data.
-
+Notes
+-----
+The available detectors cover common three-point and four-point rainflow
+counting variants and the FKM detector after Clormann and Seeger.  Repeated
+calls to ``process()`` continue a count, so large signals can be processed in
+chunks without changing the final result.
 """
 
 __author__ = "Johannes Mueller"

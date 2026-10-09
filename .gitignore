@@ -60,10 +60,12 @@ docs/demos/*
 .venv*
 _venv*
 .conda*
-uv.lock
+/uv.lock
 
 src/pylife/stress/rainflow/extension.c
 .hypothesis
 .mutmut-cache
 .python-version
 /load_signal.csv
+.ipynb_checkpoints/
+__marimo__

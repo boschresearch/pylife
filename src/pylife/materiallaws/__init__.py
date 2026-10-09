@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -13,6 +13,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Provide engineering material-law models for fatigue and plasticity.
+
+The package collects Hooke's law helpers, Ramberg-Osgood stress-strain
+relations, conversions between technical and true stress-strain quantities,
+Wöhler-curve accessors, and notch approximation laws used in pyLife fatigue
+and strength assessments.
+"""
 
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__

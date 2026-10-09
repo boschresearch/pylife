@@ -1,5 +1,6 @@
+************************
 Notes on Wöhler analysis
-########################
+************************
 
 Even though there are established Wöhler analysis algorithms they all leave
 some degrees of freedom.  Therfore we document the way we perform the analysis

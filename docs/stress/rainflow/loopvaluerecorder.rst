@@ -1,7 +1,7 @@
+*******************************
 The ``LoopValueRecorder`` class
-###############################
+*******************************
 
 .. autoclass:: pylife.stress.rainflow.LoopValueRecorder
-               :members:
-               :undoc-members:
-               :special-members: __init__
+   :members:
+   :special-members: __init__

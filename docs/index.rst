@@ -1,74 +1,176 @@
-pyLife Documentation
-====================
+:html_theme.sidebar_secondary.remove:
+
+******
+pyLife
+******
+
+pyLife – an open source Python library for state of the art algorithms used in
+the lifetime assessment of mechanical components subjected to fatigue.
+
+
+What pyLife can do for you
+==========================
+
+.. grid:: 1 1 2 2
+   :gutter: 3
+   :padding: 2 2 0 0
+   :class-container: pylife-add-card-grid
+
+   .. grid-item-card:: Analyse load data
+      :shadow: none
+
+      .. image:: _static/images/rainflow-matrix-jet.png
+         :class: hover-highlight
+         :target: tutorials/rainflow.html
+
+      Rainflow counting, load collectives, equivalent stresses and time
+      signal processing — see :mod:`pylife.stress`.
+
+   .. grid-item-card:: Assess lifetime
+      :shadow: none
+
+      .. image:: _static/images/damage-calculation.png
+         :class: only-light hover-highlight
+         :target: demos/lifetime_calc.html
+
+      .. image:: _static/images/damage-calculation-dark.png
+         :class: only-dark hover-highlight
+         :target: demos/lifetime_calc.html
+
+      Damage accumulation, failure probabilities and the FKM guideline,
+      linear and nonlinear — see :mod:`pylife.strength`.
+
+   .. grid-item-card:: Work with FE meshes
+      :shadow: none
+
+      .. image:: _static/images/mesh.png
+         :class: hover-highlight
+         :target: tutorials/import_mesh_vmap.html
+
+      Stress gradients, hotspot detection and mesh mapping on FE results. All
+      the damage calculation and lifetime assessment operations you can map on
+      a mesh.
+
+   .. grid-item-card:: Fit material data
+      :shadow: none
+
+      .. image:: _static/images/woehler_analyzer.png
+         :class: only-light hover-highlight
+         :target: demos/woehler_analyzer.html
+
+      .. image:: _static/images/woehler_analyzer_dark.png
+         :class: only-dark hover-highlight
+         :target: demos/woehler_analyzer.html
+
+      Derive Wöhler curve parameters from experimental fatigue test data with
+      maximum likelihood or Bayesian methods — see
+      :mod:`pylife.materialdata.woehler`.
+
+
+
+
+.. grid:: 1 2 2 2
+   :gutter: 4
+   :padding: 2 2 0 0
+   :class-container: pylife-chap-card-grid
+
+   .. grid-item-card:: Getting started
+      :shadow: md
+
+      New to pyLife?  Install the package and run your first damage
+      calculation.  This is the place to start.
+
+      +++
+
+      .. button-ref:: getting_started
+         :ref-type: doc
+         :color: primary
+         :expand:
+
+         Get started
+
+   .. grid-item-card:: Learn
+      :shadow: md
+
+      Learning oriented, hands on notebooks that walk you through pyLife's
+      building blocks: Wöhler curves, load collectives and the FKM nonlinear
+      assessment.
+
+      +++
+
+      .. button-ref:: learn
+         :ref-type: doc
+         :color: primary
+         :expand:
+
+         Learn pyLife
+
+   .. grid-item-card:: Reference
+      :shadow: md
+
+      The detailed description of every public module, class and function in
+      pyLife, including parameters, return values and the underlying
+      engineering standards.
+
+      +++
+
+      .. button-ref:: reference
+         :ref-type: doc
+         :color: primary
+         :expand:
+
+         To the reference
+
+   .. grid-item-card:: Contributing
+      :shadow: md
+
+      pyLife is developed in the open and welcomes contributions from
+      science, education and industry.  Find out how to report issues and
+      submit improvements.
+
+      +++
+
+      .. button-ref:: contributing
+         :ref-type: doc
+         :color: primary
+         :expand:
+
+         To the contributor guide
+
+
+.. grid:: 1 1 1 1
+   :gutter: 4
+   :padding: 2 2 0 0
+   :class-container: pylife-about-card-grid
+
+   .. grid-item-card:: About
+      :shadow: md
+
+      Some meta information about pyLife like changelogs, authors and license.
+
+      +++
+
+      .. button-ref:: about
+         :ref-type: doc
+         :color: secondary
+         :expand:
+
+         To about pylife
+
+Try it without installing
+=========================
+
+All notebooks in the tutorials and the cookbook can be run in the browser via
+`MyBinder
+<https://mybinder.org/v2/gh/boschresearch/pylife/develop?labpath=demos%2Findex.ipynb>`_
+without installing anything on your computer.
+
 
 .. toctree::
-   :maxdepth: 1
-   :caption: About
+   :hidden:
 
-   README
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Installation / Getting started
-
-   INSTALLATION
-
-.. toctree::
-   :maxdepth: 2
-
-   tutorials
-
-.. toctree::
-   :maxdepth: 2
-   :caption: User Guide
-
-   user_guide
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Cookbook
-
-   cookbook
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Reference
-
-   reference
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Additional tools
-
-   tools/index.rst
-
-.. toctree::
-   :maxdepth: 1
-   :caption: News
-
-   NEWS-2.0
-   CHANGELOG
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Hack pyLife
-
-   CONTRIBUTING
-   CODINGSTYLE
-   variable_names
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Licenses
-
-   NOTICE
-   LICENSE
-   3rd-party-licenses
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   Getting started <getting_started>
+   Learn <learn>
+   Reference <reference>
+   Contributing <contributing>
+   About <about>

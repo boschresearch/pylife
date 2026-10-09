@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -13,6 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Query Abaqus ODB result files from a regular Python process.
+
+Abaqus exposes ODB files through its own Python environment.  This module hides
+that restriction by launching the matching ``odbserver`` inside Abaqus and by
+communicating with it through a small pickle and NumPy-array protocol.
+"""
 
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
@@ -35,106 +42,119 @@ import odbclient
 
 
 class OdbServerError(Exception):
-    """Raised when the ODB Server launch fails."""
+    """Report that the Abaqus-backed ODB server could not be used."""
 
     pass
 
 
 class OdbClient:
-    """The interface class to access data from odb files provided by the odbserver.
+    """Read Abaqus ODB result data through an Abaqus-side server.
+
+    ``OdbClient`` is the user-facing entry point of ``pylife-odbclient``.  It runs
+    in a normal Python 3 interpreter, starts ``python -m odbserver`` with the
+    Abaqus Python executable, and exchanges commands with that server.  The split
+    is necessary because Abaqus ODB access is only available inside the Abaqus
+    Python environment, while pyLife analyses typically run in a modern Python
+    process.
 
     Parameters
     ----------
-    odb_file : string
-        The path to the odb file
+    odb_file : str
+        Path to the Abaqus ODB file to open.
+    abaqus_bin : str, optional
+        Path to the Abaqus executable used to start the server.  Default is
+        ``None``, which first reads ``ODBSERVER_ABAQUS_BIN`` and then tries known
+        Abaqus installation paths.
+    python_env_path : str, optional
+        Path to the Python environment that provides the ``odbserver`` package for
+        Abaqus.  Default is ``None``, which first reads
+        ``ODBSERVER_PYTHON_ENV_PATH`` and then tries common environment locations.
 
-    abaqus_bin : string, optional
-        The path to the abaqus *binary* (no .bat or shell script).
-        If not given, ``OdbClient`` will try to get this path from the environment
-        variable "ODBSERVER_ABAQUS_BIN".
-        If this doesn't exist or is invalid, ``OdbClient`` will try to guess this path.
-        Also see https://pylife.readthedocs.io/en/stable/tools/odbserver/index.html.
+    Raises
+    ------
+    ValueError
+        If the Abaqus executable or server Python environment cannot be guessed.
+    FileNotFoundError
+        If an explicitly selected executable or environment path does not exist.
+    OdbServerError
+        If the server process exits or does not announce readiness.
+    RuntimeError
+        If client and server package versions differ.
 
-    python_env_path : string, optional
-        The path to the python environmnent to be used by the odbserver.
-        If not given, ``OdbClient`` will try to get this path from the environment
-        variable "ODBSERVER_PYTHON_ENV_PATH".
-        If this doesn't exist or is invalid, ``OdbClient`` will try to guess this path.
-        Also see https://pylife.readthedocs.io/en/stable/tools/odbserver/index.html.
+    See Also
+    --------
+    odbclient.OdbClient.variable : Read field output values as a DataFrame.
+    odbclient.OdbClient.node_coordinates : Read nodal coordinates as a DataFrame.
 
     Examples
     --------
-    Instantiating and querying instance names
+    The snippets below need an actual Abaqus installation and ODB file, so they
+    are shown as a transcript rather than as executable doctests.
 
-    >>> import odbclient as CL
-    >>> client = CL.OdbClient("some_file.odb")
-    >>> client.instance_names()
-    ['PART-1-1']
+    Open an ODB file and list the part instances it contains.
 
-    Querying node coordinates
+    .. code-block:: pycon
 
-    >>> client.node_coordinates('PART-1-1')
-                x     y     z
-    node_id
-    1       -30.0  15.0  10.0
-    2       -30.0  25.0  10.0
-    3       -30.0  15.0   0.0
-    ...
+        >>> import odbclient as CL
+        >>> client = CL.OdbClient("some_file.odb")
+        >>> client.instance_names()
+        ['PART-1-1']
 
-    Querying step names
+    Query the node coordinates of an instance.
 
-    >>> client.step_names()
-    ['Load']
+    .. code-block:: pycon
 
-    Querying frames of a step
+        >>> client.node_coordinates('PART-1-1')
+                    x     y     z
+        node_id
+        1       -30.0  15.0  10.0
+        2       -30.0  25.0  10.0
+        3       -30.0  15.0   0.0
+        ...
 
-    >>> client.frame_ids('Load')
-    [0, 1]
+    Query the steps, the frames of a step and the field variables written in a
+    given frame.
 
-    Querying variable names of a frame and step
+    .. code-block:: pycon
 
-    >>> client.variable_names('Load', 1)
-    ['CF', 'COORD', 'E', 'EVOL', 'IVOL', 'RF', 'S', 'U']
+        >>> client.step_names()
+        ['Load']
+        >>> client.frame_ids('Load')
+        [0, 1]
+        >>> client.variable_names('Load', 1)
+        ['CF', 'COORD', 'E', 'EVOL', 'IVOL', 'RF', 'S', 'U']
 
-    Querying variable data of an instance, frame and step
+    Read the stress tensor of an instance for a given step and frame.
 
-    >>> client.variable('S', 'PART-1-1', 'Load', 1)
-                              S11        S22  ...       S13       S23
-    node_id element_id                        ...
-    5       1          -38.617779   2.705118  ... -3.578981  1.355571
-    7       1          -38.617779   2.705118  ...  3.578981 -1.355571
-    3       1          -50.749348 -21.749729  ... -7.597347 -0.000003
-    1       1          -50.749348 -21.749729  ...  7.597347  0.000003
-    6       1           38.643414  -2.588303  ...  3.522046  1.446851
-    ...                       ...        ...  ...       ...       ...
-    54      4            7.353698  -3.177251  ...  1.775653 -2.608372
-    56      4           -6.695759 -17.656754  ...  0.217049 -3.040078
-    55      4           -6.695759 -17.656754  ... -0.217049  3.040078
-    47      4           -0.226473   1.787100  ...  0.967435 -0.671089
-    48      4           -0.226473   1.787100  ... -0.967435  0.671089
+    .. code-block:: pycon
 
+        >>> client.variable('S', 'PART-1-1', 'Load', 1)
+                                  S11        S22  ...       S13       S23
+        node_id element_id                        ...
+        5       1          -38.617779   2.705118  ... -3.578981  1.355571
+        7       1          -38.617779   2.705118  ...  3.578981 -1.355571
+        3       1          -50.749348 -21.749729  ... -7.597347 -0.000003
+        1       1          -50.749348 -21.749729  ...  7.597347  0.000003
+        6       1           38.643414  -2.588303  ...  3.522046  1.446851
+        ...                       ...        ...  ...       ...       ...
 
     Oftentimes it is desirable to have the node coordinates and multiple field
-    variables in one dataframe.  This can be easily achieved by
+    variables in one data frame.  This is easily achieved by
     :meth:`~pandas.DataFrame.join` operations.
 
-    >>> node_coordinates = client.node_coordinates('PART-1-1')
-    >>> stress = client.variable('S', 'PART-1-1', 'Load', 1)
-    >>> strain = client.variable('E', 'PART-1-1', 'Load', 1)
-    >>> node_coordinates.join(stress).join(strain)
-                           x     y     z  ...           E12           E13           E23
-    node_id element_id                    ...
-    5       1          -20.0  15.0  10.0  ... -2.741873e-11 -4.652675e-11  1.762242e-11
-    7       1          -20.0  15.0   0.0  ... -2.741873e-11  4.652675e-11 -1.762242e-11
-    3       1          -30.0  15.0   0.0  ... -2.599339e-11 -9.876550e-11 -3.946581e-17
-    1       1          -30.0  15.0  10.0  ... -2.599339e-11  9.876550e-11  3.946581e-17
-    6       1          -20.0  25.0  10.0  ... -2.689760e-11  4.578660e-11  1.880906e-11
-    ...                  ...   ...   ...  ...           ...           ...           ...
-    54      4            5.0  25.0  10.0  ... -6.076223e-11  2.308349e-11 -3.390884e-11
-    56      4           10.0  20.0  10.0  ... -5.091068e-11  2.821631e-12 -3.952102e-11
-    55      4           10.0  20.0   0.0  ... -5.091068e-11 -2.821631e-12  3.952102e-11
-    47      4            0.0  20.0   0.0  ... -5.129363e-11  1.257666e-11 -8.724152e-12
-    48      4            0.0  20.0  10.0  ... -5.129363e-11 -1.257666e-11  8.724152e-12
+    .. code-block:: pycon
+
+        >>> node_coordinates = client.node_coordinates('PART-1-1')
+        >>> stress = client.variable('S', 'PART-1-1', 'Load', 1)
+        >>> strain = client.variable('E', 'PART-1-1', 'Load', 1)
+        >>> node_coordinates.join(stress).join(strain)
+                               x     y     z  ...           E12           E13           E23
+        node_id element_id                    ...
+        5       1          -20.0  15.0  10.0  ... -2.741873e-11 -4.652675e-11  1.762242e-11
+        7       1          -20.0  15.0   0.0  ... -2.741873e-11  4.652675e-11 -1.762242e-11
+        3       1          -30.0  15.0   0.0  ... -2.599339e-11 -9.876550e-11 -3.946581e-17
+        1       1          -30.0  15.0  10.0  ... -2.599339e-11  9.876550e-11  3.946581e-17
+        ...                  ...   ...   ...  ...           ...           ...           ...
     """
 
     def __init__(self, odb_file, abaqus_bin=None, python_env_path=None):
@@ -200,30 +220,36 @@ class OdbClient:
                 return
 
     def instance_names(self):
-        """Query the instance names from the odbserver.
+        """Return the instance names stored in the ODB root assembly.
 
         Returns
         -------
-        instance_names : list of string
-            The names of the instances.
+        list of str
+            Names of all part instances available for mesh and result queries.
         """
         return _ascii(_decode, self._query('get_instances'))
 
     def node_coordinates(self, instance_name, nset_name=''):
-        """Query the node coordinates of an instance.
+        """Read node coordinates for an instance or node set.
 
         Parameters
         ----------
-        instance_name : string
-            The name of the instance to be queried
-        nset_name : string, optional
-            A name of a node set of the instance that the query is to be limited to.
+        instance_name : str
+            Name of the Abaqus part instance to query.
+        nset_name : str, optional
+            Name of a node set that limits the query.  Default is ``''``, which
+            returns all nodes of ``instance_name``.
 
         Returns
         -------
-        node_coords : :class:`pandas.DataFrame`
-            The node list as a pandas data frame without connectivity.
-            The columns are named ``x``, ``y`` and ``z``.
+        pandas.DataFrame
+            Node coordinates with columns ``x``, ``y``, and ``z`` and an index named
+            ``node_id``.
+
+        Raises
+        ------
+        KeyError
+            If ``instance_name`` is not available in the ODB.
         """
         self._fail_if_instance_invalid(instance_name)
         index, node_data = self._query('get_nodes', (instance_name, nset_name))
@@ -234,21 +260,21 @@ class OdbClient:
         )
 
     def element_connectivity(self, instance_name, elset_name=''):
-        """Query the element connectivity of an instance.
+        """Read element connectivity for an instance or element set.
 
         Parameters
         ----------
-        instance_name : string
-            The name of the instance to be queried
-        elset_name : string, optional
-            A name of an element set of the instance that the query is to be limited to.
+        instance_name : str
+            Name of the Abaqus part instance to query.
+        elset_name : str, optional
+            Name of an element set that limits the query.  Default is ``''``, which
+            returns all elements of ``instance_name``.
 
         Returns
         -------
-        connectivity : :class:`pandas.DataFrame`
-            The connectivity as a :class:`pandas.DataFrame`.
-            For every element there is list of node ids that the element is connected to.
-
+        pandas.DataFrame
+            One column named ``connectivity`` containing lists of connected node IDs.
+            The index is named ``element_id``.
         """
         index, connectivity = self._query(
             'get_connectivity', (instance_name, elset_name)
@@ -264,143 +290,162 @@ class OdbClient:
         )
 
     def nset_names(self, instance_name=''):
-        """Query the available node set names.
+        """Return node set names available in the ODB.
 
         Parameters
         ----------
-        instance_name : string, optional
-            The name of the instance the node sets are queried from. If not given the
-            node sets of all instances are returned.
+        instance_name : str, optional
+            Instance whose node sets are requested.  Default is ``''``, which
+            requests assembly-level node sets.
 
         Returns
         -------
-        instance_names : list of strings
-            The names of the instances
+        list of str
+            Node set names visible at the selected scope.
+
+        Raises
+        ------
+        KeyError
+            If ``instance_name`` is not available in the ODB.
         """
         self._fail_if_instance_invalid(instance_name)
         return _ascii(_decode, self._query('get_node_sets', instance_name))
 
     def node_ids(self, nset_name, instance_name=''):
-        """Query the node ids of a certain node set.
+        """Read node IDs from a node set.
 
         Parameters
         ----------
-        nset_name : string
-            The name of the node set
-        instance_name : string, optional
-            The name of the instance the node set is to be taken from. If not given
-            node sets from all instances are considered.
+        nset_name : str
+            Name of the node set to query.
+        instance_name : str, optional
+            Instance that owns the node set.  Default is ``''``, which queries an
+            assembly-level node set.
 
         Returns
         -------
-        node_ids : :class:`pandas.Index`
-            The node ids as :class:`pandas.Index`
+        pandas.Index
+            Node identifiers with name ``node_id`` and integer dtype.
         """
         node_ids = self._query('get_node_set', (instance_name, nset_name))
         return pd.Index(node_ids, name='node_id', dtype=np.int64)
 
     def elset_names(self, instance_name=''):
-        """Query the available element set names.
+        """Return element set names available in the ODB.
 
         Parameters
         ----------
-        instance_name : string, optional
-            The name of the instance the element sets are queried from. If not given the
-            element sets of all instances are returned.
+        instance_name : str, optional
+            Instance whose element sets are requested.  Default is ``''``, which
+            requests assembly-level element sets.
 
         Returns
         -------
-        instance_names : list of strings
-            The names of the instances
+        list of str
+            Element set names visible at the selected scope.
+
+        Raises
+        ------
+        KeyError
+            If ``instance_name`` is not available in the ODB.
         """
         self._fail_if_instance_invalid(instance_name)
         return _ascii(_decode, self._query('get_element_sets', instance_name))
 
     def element_ids(self, elset_name, instance_name=''):
-        """Query the element ids of a certain element set.
+        """Read element IDs from an element set.
 
         Parameters
         ----------
-        elset_name : string
-            The name of the element set
-        instance_name : string, optional
-            The name of the instance the element set is to be taken from. If not given
-            element sets from all instances are considered.
+        elset_name : str
+            Name of the element set to query.
+        instance_name : str, optional
+            Instance that owns the element set.  Default is ``''``, which queries an
+            assembly-level element set.
 
         Returns
         -------
-        element_ids : :class:`pandas.Index`
-            The element ids as :class:`pandas.Index`
+        pandas.Index
+            Element identifiers with name ``element_id`` and integer dtype.
         """
         element_ids = self._query('get_element_set', (instance_name, elset_name))
         return pd.Index(element_ids, name='element_id', dtype=np.int64)
 
     def step_names(self):
-        """Query the step names from the odb file.
+        """Return analysis step names stored in the ODB.
 
         Returns
         -------
-        step_names : list of string
-            The names of all the steps stored in the odb file.
+        list of str
+            Names of all Abaqus analysis steps.
         """
         return _ascii(_decode, self._query('get_steps'))
 
     def frame_ids(self, step_name):
-        """Query the frames of a given step.
+        """Return frame IDs available in an analysis step.
 
         Parameters
         ----------
-        step_name : string
-            The name of the step
+        step_name : str
+            Name of the Abaqus analysis step.
 
         Returns
         -------
-        step_name : list of ints
-            The name of the step the frame ids are expected in.
+        list of int
+            Abaqus frame IDs contained in ``step_name``.
         """
         return self._query('get_frames', step_name)
 
     def variable_names(self, step_name, frame_id):
-        """Query the variable names of a certain step and frame.
+        """Return field output variable names for one frame.
 
         Parameters
         ----------
-        step_name : string
-            The name of the step
+        step_name : str
+            Name of the Abaqus analysis step.
         frame_id : int
-            The index of the frame
+            Abaqus frame ID within ``step_name``.
 
         Returns
         -------
-        variable_names : list of string
-            The names of the variables
+        list of str
+            Field output variable names, for example ``S`` or ``U``.
         """
         return _ascii(_decode, self._query('get_variable_names', (step_name, frame_id)))
 
     def variable(self, variable_name, instance_name, step_name, frame_id, nset_name='', elset_name='', position=None):
-        """Read field variable data.
+        """Read a field output variable as a pandas DataFrame.
 
         Parameters
         ----------
-        variable_name : string
-            The name of the variable.
-        instance_name : string
-            The name of the instance.
-        step_name : string
-            The name of the step
+        variable_name : str
+            Abaqus field output variable name, for example ``S``, ``E``, or ``U``.
+        instance_name : str
+            Name of the Abaqus part instance to query.
+        step_name : str
+            Name of the Abaqus analysis step.
         frame_id : int
-            The index of the frame
-        nset_name : string, optional
-            The name of the node set to be queried. If not given, the whole instance
-        elnset_name : string, optional
-            The name of the element set to be queried. If not given, the whole instance
-        position : string, optional
-            Position within element. Terminology as in Abaqus .inp file:
+            Abaqus frame ID within ``step_name``.
+        nset_name : str, optional
+            Node set that limits the field output query.  Default is ``''``, which
+            does not apply a node-set filter.
+        elset_name : str, optional
+            Element set that limits the field output query.  Default is ``''``,
+            which does not apply an element-set filter.
+        position : str, optional
+            Abaqus output position in input-file terminology, such as
             ``INTEGRATION POINTS``, ``CENTROIDAL``, ``WHOLE ELEMENT``, ``NODES``,
-            ``FACES``, ``AVERAGED AT NODES``
+            ``FACES``, or ``AVERAGED AT NODES``.  Default is ``None``, which uses the
+            native ODB position except that integration-point data is requested as
+            element-nodal data.
 
-            If not given the native position is taken, except for ``INTEGRATION_POINTS``
-            The ``ELEMENT_NODAL`` position is used.
+        Returns
+        -------
+        pandas.DataFrame
+            Field values with one column per scalar component.  The index is named
+            ``node_id`` or ``element_id`` for single-location data and is a MultiIndex
+            with labels such as ``node_id``, ``element_id``, ``ipoint_id``, or
+            ``face_id`` when Abaqus supplies multiple identifiers.
         """
         response = self._query('get_variable', (instance_name, step_name, frame_id, variable_name, nset_name, elset_name, position))
         (labels, index_labels, index_data, values) = response
@@ -415,52 +460,56 @@ class OdbClient:
         return pd.DataFrame(values, index=index, columns=column_names)
 
     def history_regions(self, step_name):
-         """Query the history Regions of a given step.
+         """Return history region names for one analysis step.
 
          Parameters
          ----------
-         step_name : string
-             The name of the step
+         step_name : str
+             Name of the Abaqus analysis step.
 
          Returns
          -------
-         historyRegions : list of strings
-             The name of history regions, which are in the required step.
+         list of str
+             History region names available in ``step_name``.
          """
          return self._query('get_history_regions', step_name)
 
     def history_outputs(self, step_name, history_region_name):
-         """Query the history Outputs of a given step in a given history region.
+         """Return history output names for a history region.
 
          Parameters
          ----------
-         step_name : string
-             The name of the step
-
-         history_region_name: string
-             The name of the history region
+         step_name : str
+             Name of the Abaqus analysis step.
+         history_region_name : str
+             Name of the Abaqus history region.
 
          Returns
          -------
-         historyOutputs : list of strings
-             The name of the history outputs, which are in the required step and under the required history region
+         list of str
+             History output names available in the selected region.
          """
          hisoutputs = self._query("get_history_outputs", (step_name, history_region_name))
 
          return hisoutputs
 
     def history_output_values(self, step_name, history_region_name, historyoutput_name):
-         """Query the history Regions of a given step.
+         """Read one history output as a pandas Series.
 
          Parameters
          ----------
-         step_name : string
-             The name of the step
+         step_name : str
+             Name of the Abaqus analysis step.
+         history_region_name : str
+             Name of the Abaqus history region.
+         historyoutput_name : str
+             Name of the history output variable.
 
          Returns
          -------
-         historyRegions : list of strings
-             The name of the step the history regions are in.
+         pandas.Series
+             History output values indexed by the time-like abscissa returned by
+             Abaqus.  The series name combines the region description and output name.
          """
          hisoutput_valuesx, hisoutput_valuesy = self._query("get_history_output_values", (step_name, history_region_name, historyoutput_name))
          history_region_description = self._query("get_history_region_description", (step_name, history_region_name))
@@ -469,29 +518,32 @@ class OdbClient:
          return historyoutput_data
 
     def history_region_description(self, step_name, history_region_name):
-         """Query the description of a history Regions of a given step.
+         """Return the descriptive text of a history region.
 
          Parameters
          ----------
-         step_name : string
-             The name of the step
-         history_region_name: string
-             The name of the history region
+         step_name : str
+             Name of the Abaqus analysis step.
+         history_region_name : str
+             Name of the Abaqus history region.
 
          Returns
          -------
-         historyRegion_description : list of strings
-             The description of the history region.
+         str
+             Description stored by Abaqus for the selected history region.
          """
          history_region_description = self._query("get_history_region_description", (step_name, history_region_name))
          return history_region_description
 
     def history_info(self):
-        """Query all the information about the history outputs in a given odb.
-         Returns
-         -------
-         dictionary : ldictionary which contains history information
-         """
+        """Return a nested summary of all history output metadata.
+
+        Returns
+        -------
+        dict
+            Mapping from history region descriptions to region names, output names,
+            and steps in which the region occurs.
+        """
         dictionary = _decode(self._query("get_history_info"))
         return dictionary
 

@@ -1,37 +1,140 @@
+/* Notebook (pandas) output tables.
+   Colours are taken from the pydata-sphinx-theme variables so that the tables
+   stay readable in both the light and the dark colour scheme. */
 
 table.dataframe {
-  border: none;
-  border-collapse: collapse;
-  border-spacing: 0;
-  color: black;
-  font-size: 12px;
-  table-layout: fixed;
+    border: none;
+    margin: 0.5em;
+    border-collapse: collapse;
+    border-spacing: 0;
+    color: var(--pst-color-text-base);
+    font-size: 12px;
+    table-layout: fixed;
 }
 table.dataframe thead {
-  border-bottom: 1px solid black;
-  vertical-align: bottom;
+    border-bottom: 1px solid var(--pst-color-border);
+    vertical-align: bottom;
 }
 table.dataframe tr,
 table.dataframe th,
 table.dataframe td {
-  text-align: right;
-  vertical-align: middle;
-  padding: 0.5em 0.5em;
-  line-height: normal;
-  white-space: normal;
-  max-width: none;
-  border: none;
+    text-align: right;
+    vertical-align: middle;
+    padding: 0.5em 0.5em;
+    line-height: normal;
+    white-space: normal;
+    max-width: none;
+    border: none;
 }
 table.dataframe th {
   font-weight: bold;
 }
 table.dataframe tbody tr:nth-child(odd) {
-  background: #f5f5f5;
+  background: var(--pst-color-surface);
 }
 table.dataframe tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
+  background: var(--pst-color-on-background);
 }
 
-.jupyter_container .cell_input, .jupyter_container .code_cell {
-    background-color: #eeffcc !important;
+table.dataframe thead tr:first-child th,
+table.dataframe thead tr:first-child td {
+    padding-top: 1em;
+}
+table.dataframe tbody tr:last-child th,
+table.dataframe tbody tr:last-child td {
+    padding-bottom: 1em;
+}
+
+table.dataframe tr td:first-child,
+table.dataframe tr th:first-child {
+    padding-left: 1em
+}
+table.dataframe tr td:last-child,
+table.dataframe tr th:last-child {
+    padding-right: 1em
+}
+
+.jupyter_container .cell_input,
+.jupyter_container .code_cell {
+  background-color: var(--pst-color-surface) !important;
+}
+
+/* pyLife brand colours, taken from the pixels of the pyLife logo:
+ *   - light green #78be20
+ *   - dark green  #006249
+ *   - blue        #008ecf
+ * A fourth, darker blue (#003f5b) completes the palette. It is derived from
+ * the brand blue by applying the same lightness ratio that the dark green
+ * has relative to the light green (~44 %), so the blue gains a "dark" shade
+ * analogous to the two greens.
+ *
+ * `--pst-color-primary`/`--pst-color-secondary` are the pydata-sphinx-theme
+ * variables actually used throughout the theme. Beyond those two, this also
+ * fixes/completes the matching `-text` (foreground colour on top of the
+ * brand colour) and `-highlight` (hover state) variables, which previously
+ * were not set and therefore silently fell back to the theme's default
+ * teal/violet. `--sd-color-primary-hover`/`--sd-color-secondary-hover` were
+ * never actually read by sphinx-design (the real hover variable is
+ * `--sd-color-*-highlight`), so they have been replaced.
+ *
+ * Colours with a fixed semantic meaning across the theme (danger = red,
+ * warning = orange, info = blue, success = green, ...) are intentionally
+ * left untouched so they keep their universally recognisable appearance.
+ */
+html[data-theme="light"] {
+    --pst-color-primary: #006249;
+    --pst-color-primary-text: #ffffff;
+    --pst-color-primary-highlight: #78be20;
+    --pst-color-primary-highlight-text: #14181e;
+
+    --pst-color-secondary: #008ecf;
+    --pst-color-secondary-text: #ffffff;
+    --pst-color-secondary-highlight: #003f5b;
+    --pst-color-secondary-highlight-text: #ffffff;
+    --pst-color-secondary-bg: #daeaf1;
+
+    --pst-color-link-higher-contrast: #004735;
+    --pst-color-table-row-hover-bg: #daeaf1;
+}
+
+html[data-theme="dark"] {
+    --pst-color-primary: #78be20;
+    --pst-color-primary-text: #14181e;
+    --pst-color-primary-highlight: #006249;
+    --pst-color-primary-highlight-text: #ffffff;
+
+    --pst-color-secondary: #008ecf;
+    --pst-color-secondary-text: #ffffff;
+    --pst-color-secondary-highlight: #003f5b;
+    --pst-color-secondary-highlight-text: #ffffff;
+    --pst-color-secondary-bg: #102b37;
+
+    --pst-color-link-higher-contrast: #78be20;
+    --pst-color-table-row-hover-bg: #102b37;
+}
+
+img {
+    background: transparent !important;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/* Landing page feature cards. */
+.pylife-add-card-grid .pylife-chap-card-grid .sd-card {
+  border: 1px solid var(--pst-color-border);
+  border-radius: 0.5rem;
+}
+.pylife-add-card-grid .sd-card-title
+.pylife-about-card-grid .sd-card-title {
+  color: var(--pst-color-secondary);
+}
+.pylife-chap-card-grid .sd-card-title {
+  color: var(--pst-color-primary);
+}
+
+.hover-highlight {
+    transition: transform 0.2s ease-out;
+}
+
+.hover-highlight:hover {
+    transform: scale(1.02);
 }

@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,8 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Small helper functions for fatigue analysis
+"""Provide deprecated helper functions for fatigue analysis.
 
+The module contains small stress-relation utilities and an irregularity-factor
+calculation for rainflow matrices. It is deprecated and no longer under active
+test; prefer the maintained accessors in :mod:`pylife.stress` and
+:mod:`pylife.materiallaws` for new code.
 """
 
 __author__ = "Cedric Philip Wagner"
@@ -33,54 +37,112 @@ warnings.warn(
 )
 
 class StressRelations:
-    """Namespace for simple relations of stress / amplitude / R-ratio
+    """Collect simple stress-amplitude-ratio relations.
 
-    Refer to:
-    Haibach (2006), p. 21
+    The static methods convert between stress amplitude, maximum stress, mean
+    stress, and stress ratio ``R = S_min / S_max`` for proportional cyclic
+    loads.
+
+    Notes
+    -----
+    The relations follow the definitions summarized by Haibach
+    [Haibach-Helpers]_.
+
+    References
+    ----------
+    .. [Haibach-Helpers] E. Haibach, "Betriebsfestigkeit", Springer-Verlag,
+       2006, p. 21.
     """
 
     @staticmethod
     def get_max_stress_from_amplitude(amplitude, R):
+        r"""Calculate maximum stress from amplitude and stress ratio.
+
+        Parameters
+        ----------
+        amplitude : float or array_like
+            Stress amplitude in MPa or another consistent stress unit.
+        R : float or array_like
+            Stress ratio ``R = S_min / S_max``, dimensionless.
+
+        Returns
+        -------
+        float or numpy.ndarray
+            Maximum stress in the same unit as ``amplitude``.
+
+        Notes
+        -----
+        The relation is
+
+        .. math::
+
+            S_{max} = \frac{2 S_a}{1 - R}.
+        """
         return 2 * amplitude / (1 - R)
 
     @staticmethod
     def get_mean_stress_from_amplitude(amplitude, R):
+        r"""Calculate mean stress from amplitude and stress ratio.
+
+        Parameters
+        ----------
+        amplitude : float or array_like
+            Stress amplitude in MPa or another consistent stress unit.
+        R : float or array_like
+            Stress ratio ``R = S_min / S_max``, dimensionless.
+
+        Returns
+        -------
+        float or numpy.ndarray
+            Mean stress in the same unit as ``amplitude``.
+
+        Notes
+        -----
+        The relation is
+
+        .. math::
+
+            S_m = S_a \frac{1 + R}{1 - R}.
+        """
         return amplitude * (1 + R) / (1 - R)
 
 
 def irregularity_factor(rainflow_matrix, residuals=np.empty(0), decision_bin=None):
-    """
-    Calculate the irregularity factor of a turning point sequence based on a rainflow matrix and its residuals.
-
-    Two sided irregularity factor:
-
-        ..math::
-        I = N_{mean crossings} / N_{turning points}
+    r"""Calculate the two-sided irregularity factor of a rainflow matrix.
 
     Parameters
     ----------
-    rainflow_matrix: np.ndarray[int, int]
-        2D-rainflow matrix (must be square shaped)
-    residuals: np.ndarray[int], Optional
-        1D array of residuals to consider for accurate calculation. Consecutive duplicates are removed beforehand.
-        Residuals must be provided as bin numbers.
-        Hint: Transformation from physical to binned values possible via np.digitize.
-    decision_bin: int, Optional
-        Bin number that equals the mean (two-sided). If not provided the decision_bin is inferred by the matrix entries
-        as the mean value based on the turning points and will be broadcasted to int-type.
+    rainflow_matrix : numpy.ndarray
+        Square two-dimensional rainflow matrix containing cycle counts by
+        class index.
+    residuals : numpy.ndarray, optional
+        One-dimensional residual turning-point sequence represented by class
+        indices. Consecutive duplicate residuals are removed before counting
+        mean crossings. Default is an empty array.
+    decision_bin : int or None, optional
+        Class index representing the mean line. If ``None``, infer it from the
+        rainflow matrix and residuals. Default is ``None``.
 
-    Todo
-    ----
-    Future version may provide the one-sided irregularity factor as a second option. Formula would be:
+    Returns
+    -------
+    float
+        Two-sided irregularity factor, dimensionless.
 
-    One sided irregularity factor:
+    Raises
+    ------
+    ValueError
+        Raised if ``rainflow_matrix`` is not square.
 
-        .. math::
+    Notes
+    -----
+    The two-sided irregularity factor is calculated as
 
-        I = N_{zero bin upwards crossing} / N_{peaks}
+    .. math::
 
-    N_{zero bin upwards crossings} equals positive_mean_bin_crossing if `decision_bin` is set to the bin of physical 0.
-    Inferring exact amount of peaks from rainflow-matrix and residuals is left to be done.
+        I = \frac{N_{mean\ crossings}}{N_{turning\ points}}.
+
+    The one-sided definition based on upward zero-bin crossings is not
+    implemented by this deprecated helper.
     """
     # Ensure input types
     assert isinstance(rainflow_matrix, np.ndarray)

@@ -1,0 +1,35 @@
+{# Displays the complete, site-wide TOC-subtree (rooted at the master doc) on every
+   page, fully expanded, instead of the theme default of only the toctree fragment
+   belonging to the current page's depth-1 ancestor. #}
+{# Overridden from pydata-sphinx-theme:
+   - ``startdepth=0`` roots the toctree at the global site root instead of the
+     current page's depth-1 ancestor (theme default: ``startdepth=1``).
+   - ``collapse=False`` keeps every branch expanded. With ``collapse=True`` (the
+     theme default) Sphinx's toctree resolver hides/drops branches that don't
+     contain the active page, which -- combined with ``startdepth=0`` -- produces
+     an inconsistent sidebar: pages whose own nested toctree happens to match
+     show their siblings, while others (e.g. leaf pages with no sub-toctree of
+     their own) end up with an empty sidebar. Disabling collapse avoids that. #}
+{% set show_nav_level = meta['html_theme.show_nav_level'] if (meta is defined and meta is not none and 'html_theme.show_nav_level' in meta) else theme_show_nav_level %}
+{# Per-page override: add a field-list entry at the very top of a page's source
+   (same mechanism Sphinx/this theme use for other ``html_theme.*`` options),
+   e.g. ``:html_theme.sidebar_startdepth: 1``, to make that one page's sidebar
+   fall back to the theme's normal depth-1-ancestor behaviour (or any other
+   depth) instead of the site-wide default of 0. #}
+{% set startdepth = meta['html_theme.sidebar_startdepth'] | int if (meta is defined and meta is not none and 'html_theme.sidebar_startdepth' in meta) else 0 %}
+<nav class="bd-docs-nav bd-links"
+     aria-label="{{ _('Section Navigation') }}">
+  <p class="bd-links__title" role="heading" aria-level="1">{{ _("Section Navigation") }}</p>
+  <div class="bd-toc-item navbar-nav">
+    {{- generate_toctree_html(
+      "sidebar",
+      startdepth=startdepth,
+      show_nav_level=show_nav_level | int,
+      maxdepth=theme_navigation_depth | int,
+      collapse=(startdepth > 0),
+      includehidden=theme_sidebar_includehidden | tobool,
+      titles_only=True
+      )
+    -}}
+  </div>
+</nav>

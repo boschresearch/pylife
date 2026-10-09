@@ -1,5 +1,6 @@
+**********************************
 The concept of stress and strength
-==================================
+**********************************
 
 The fundamental principle of component lifetime and reliability design is to
 calculate the superposition of *stress* and *strength*.  Sometimes you would also

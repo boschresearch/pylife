@@ -1,5 +1,6 @@
+*******************************
 The ``fkm_nonlinear`` functions
-###############################
+*******************************
 
 .. autofunction:: pylife.strength.fkm_nonlinear.assessment_nonlinear_standard.perform_fkm_nonlinear_assessment
 

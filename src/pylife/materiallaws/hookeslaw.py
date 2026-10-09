@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+r"""Provide isotropic linear elastic Hooke law relations.
+
+The module converts stresses and elastic strains for one-dimensional,
+plane-stress, plane-strain, and three-dimensional material states. Stresses
+and moduli use the same unit, typically MPa, while strains are dimensionless.
+"""
+
 __author__ = 'Alexander Maier'
 __maintainer__ = __author__
 
@@ -21,20 +28,26 @@ import numpy as np
 
 
 class _Hookeslawcore:
-    '''Parent class for the multidimensional Hooke's Law implementation. Defines the properties and checks for correct inputs'''
+    """Provide shared constants and validation for multidimensional Hooke laws.
+
+    Parameters
+    ----------
+    E : float
+        Young's modulus in MPa.
+    nu : float
+        Poisson's ratio, dimensionless. Must satisfy ``-1 <= nu <= 0.5``.
+    """
 
     def __init__(self, E, nu):
-        '''Instantiate a multidimensional Hooke's Law implementation
+        """Initialize isotropic elastic constants.
 
         Parameters
         ----------
-
         E : float
-            Young's modulus
-
+            Young's modulus in MPa.
         nu : float
-            Poisson's ratio. Must be between -1 and 1./2.
-        '''
+            Poisson's ratio, dimensionless. Must satisfy ``-1 <= nu <= 0.5``.
+        """
         self._validateinit(nu)
         self._E = E
         self._nu = nu
@@ -42,14 +55,39 @@ class _Hookeslawcore:
         self._K = E / (3. * (1 - 2 * nu))
 
     def _validateinit(self, nu):
-        '''Validates the input of the Poisson\'s ratio
-        '''
+        """Validate Poisson's ratio.
+
+        Parameters
+        ----------
+        nu : float
+            Poisson's ratio, dimensionless.
+
+        Raises
+        ------
+        ValueError
+            Raised if ``nu`` is outside ``[-1, 0.5]``.
+        """
         if nu < - 1 or nu > 1./2:
             raise ValueError('Poisson\'s ratio nu is %.2f but must be -1 <= nu <= 1./2.' % nu)
 
     def _as_consistant_arrays(self, *args):
-        '''Transforms the inputs into numpy arrays and checks the shape of the given inputs. If the shapes are note equal, a ValueError is raised
-        '''
+        """Convert component arrays and require equal shapes.
+
+        Parameters
+        ----------
+        *args : array_like
+            Component arrays to convert to :class:`numpy.ndarray`.
+
+        Returns
+        -------
+        tuple of numpy.ndarray
+            Converted arrays with identical shapes.
+
+        Raises
+        ------
+        ValueError
+            Raised if the component arrays do not have identical shapes.
+        """
         transformed = tuple(np.asarray(arg) for arg in args)
         shape0 = transformed[0].shape
         shape = [shape0 == arg.shape for arg in transformed]
@@ -60,99 +98,141 @@ class _Hookeslawcore:
 
     @property
     def E(self):
-        '''Get Young's modulus'''
+        """Return Young's modulus.
+
+        Returns
+        -------
+        float
+            Young's modulus in MPa.
+        """
         return self._E
 
     @property
     def nu(self):
-        '''Get Poisson's ratio'''
+        """Return Poisson's ratio.
+
+        Returns
+        -------
+        float
+            Poisson's ratio, dimensionless.
+        """
         return self._nu
 
     @property
     def G(self):
-        '''Get the sheer modulus'''
+        """Return the shear modulus.
+
+        Returns
+        -------
+        float
+            Shear modulus in MPa.
+        """
         return self._G
 
     @property
     def K(self):
-        '''Get the bulk modulus'''
+        """Return the bulk modulus.
+
+        Returns
+        -------
+        float
+            Bulk modulus in MPa.
+        """
         return self._K
 
 
 class HookesLaw1d:
-    '''Implementation of the one dimensional Hooke's Law
+    r"""Apply one-dimensional linear elastic Hooke's law.
 
     Parameters
     ----------
-
     E : float
-        Young's modulus
-    '''
+        Young's modulus in MPa.
+
+    Notes
+    -----
+    The implemented relation is
+
+    .. math::
+
+        \sigma = E \, \varepsilon .
+
+    Examples
+    --------
+    >>> from pylife.materiallaws import HookesLaw1d
+    >>> law = HookesLaw1d(210000.0)
+    >>> float(law.stress(0.001))
+    210.0
+    >>> float(law.strain(210.0))
+    0.001
+    """
 
     def __init__(self, E):
-        '''
-        Instantiate a one dimensional Hooke's Law implementation with a given Young's modulus
+        """Initialize one-dimensional Hooke's law.
 
         Parameters
         ----------
-
         E : float
-            Young's modulus
-        '''
+            Young's modulus in MPa.
+        """
         self._E = E
 
     @property
     def E(self):
-        '''Get Young's modulus'''
+        """Return Young's modulus.
+
+        Returns
+        -------
+        float
+            Young's modulus in MPa.
+        """
         return self._E
 
     def stress(self, strain):
-        '''Get the stress for a given elastic strain
+        """Calculate uniaxial stress from elastic strain.
 
         Parameters
         ----------
-        strain : array-like float
-            The elastic strain
+        strain : array_like
+            Elastic normal strain, dimensionless.
 
         Returns
         -------
-        strain : array-like float
-            The resulting stress
-        '''
+        numpy.ndarray
+            Stress in MPa.
+        """
         return np.asarray(strain) * self._E
 
     def strain(self, stress):
-        '''Get the elastic strain for a given stress
+        """Calculate uniaxial elastic strain from stress.
 
         Parameters
         ----------
-        stress : array-like float
-            The stress
+        stress : array_like
+            Stress in MPa.
 
         Returns
         -------
-        strain : array-like float
-            The resulting elastic strain
-        '''
+        numpy.ndarray
+            Elastic normal strain, dimensionless.
+        """
         return np.asarray(stress) / self._E
 
 
 class HookesLaw2dPlaneStress(_Hookeslawcore):
-    '''Implementation of the Hooke's Law under plane stress conditions.
+    """Apply isotropic Hooke's law for plane stress.
 
     Parameters
     ----------
-
     E : float
-        Young's modulus
-
+        Young's modulus in MPa.
     nu : float
-        Poisson's ratio. Must be between -1 and 1./2.
+        Poisson's ratio, dimensionless. Must satisfy ``-1 <= nu <= 0.5``.
 
     Notes
     -----
-
-    A cartesian coordinate system is assumed. The stress components in 3 direction are assumed to be zero, s33 = s13 = s23 = 0.'''
+    The out-of-plane stress components are ``s33 = s13 = s23 = 0``.
+    """
 
     def __init__(self, E, nu):
         super().__init__(E, nu)
@@ -160,30 +240,29 @@ class HookesLaw2dPlaneStress(_Hookeslawcore):
         self._nut = self._nu
 
     def strain(self, s11, s22, s12):
-        '''Get the elastic strain components for given stress components
+        """Calculate elastic strain components for plane stress.
 
         Parameters
         ----------
-        s11 : array-like float
-            The normal stress component with basis 1-1
-        s22 : array-like float
-            The normal stress component with basis 2-2
-        s12 : array-like float
-            The shear stress component with basis 1-2
-
+        s11 : array_like
+            Normal stress component in 1-direction in MPa.
+        s22 : array_like
+            Normal stress component in 2-direction in MPa.
+        s12 : array_like
+            Engineering shear stress component in the 1-2 plane in MPa.
 
         Returns
         -------
-        e11 : array-like float
-            The resulting elastic normal strain component with basis 1-1
-        e22 : array-like float
-            The resulting elastic normal strain component with basis 2-2
-        e33 : array-like float
-            The resulting elastic normal strain component with basis 3-3
-        g12 : array-like float
-            The resulting elastic engineering shear strain component with basis 1-2,
-            (1. / 2 * g12 is the tensor component)
-        '''
+        e11 : numpy.ndarray
+            Elastic normal strain component in 1-direction, dimensionless.
+        e22 : numpy.ndarray
+            Elastic normal strain component in 2-direction, dimensionless.
+        e33 : numpy.ndarray
+            Elastic normal strain component in 3-direction, dimensionless.
+        g12 : numpy.ndarray
+            Elastic engineering shear strain component in the 1-2 plane,
+            dimensionless. The tensor shear strain is ``0.5 * g12``.
+        """
         s11, s22, s12 = self._as_consistant_arrays(s11, s22, s12)
         e11 = 1. / self._Et * (s11 - self._nut * s22)
         e22 = 1. / self._Et * (s22 - self._nut * s11)
@@ -192,27 +271,27 @@ class HookesLaw2dPlaneStress(_Hookeslawcore):
         return e11, e22, e33, g12
 
     def stress(self, e11, e22, g12):
-        '''Get the stress components for given elastic strain components
+        """Calculate stress components for plane stress.
 
         Parameters
         ----------
-        e11 : array-like float
-            The elastic normal strain component with basis 1-1
-        e22 : array-like float
-            The elastic normal strain component with basis 2-2
-        g12 : array-like float
-            The elastic engineering shear strain component with basis 1-2,
-            (1. / 2 * g12 is the tensor component)
+        e11 : array_like
+            Elastic normal strain component in 1-direction, dimensionless.
+        e22 : array_like
+            Elastic normal strain component in 2-direction, dimensionless.
+        g12 : array_like
+            Elastic engineering shear strain component in the 1-2 plane,
+            dimensionless.
 
         Returns
         -------
-        s11 : array-like float
-            The resulting normal stress component with basis 1-1
-        s22 : array-like float
-            The resulting normal stress component with basis 2-2
-        s12 : array-like float
-            The resulting shear stress component with basis 1-2
-        '''
+        s11 : numpy.ndarray
+            Normal stress component in 1-direction in MPa.
+        s22 : numpy.ndarray
+            Normal stress component in 2-direction in MPa.
+        s12 : numpy.ndarray
+            Engineering shear stress component in the 1-2 plane in MPa.
+        """
         e11, e22, g12 = self._as_consistant_arrays(e11, e22, g12)
         factor = self._Et / (1 - np.power(self._nut, 2.))
         s11 = factor * (e11 + self._nut * e22)
@@ -222,22 +301,19 @@ class HookesLaw2dPlaneStress(_Hookeslawcore):
 
 
 class HookesLaw2dPlaneStrain(HookesLaw2dPlaneStress):
-    '''Implementation of the Hooke's Law under plane strain conditions.
+    """Apply isotropic Hooke's law for plane strain.
 
     Parameters
     ----------
-
     E : float
-        Young's modulus
-
+        Young's modulus in MPa.
     nu : float
-        Poisson's ratio. Must be between -1 and 1./2.
+        Poisson's ratio, dimensionless. Must satisfy ``-1 <= nu <= 0.5``.
 
     Notes
     -----
-
-    A cartesian coordinate system is assumed. The strain components in 3 direction are assumed to be zero, e33 = g13 = g23 = 0.
-    '''
+    The out-of-plane strain components are ``e33 = g13 = g23 = 0``.
+    """
 
     def __init__(self, E, nu):
         super().__init__(E, nu)
@@ -245,117 +321,111 @@ class HookesLaw2dPlaneStrain(HookesLaw2dPlaneStress):
         self._nut = self._nu / (1 - self._nu)
 
     def strain(self, s11, s22, s12):
-        '''Get the elastic strain components for given stress components
+        """Calculate elastic strain components for plane strain.
 
         Parameters
         ----------
-        s11 : array-like float
-            The normal stress component with basis 1-1
-        s22 : array-like float
-            The normal stress component with basis 2-2
-        s12 : array-like float
-            The shear stress component with basis 1-2
-
+        s11 : array_like
+            Normal stress component in 1-direction in MPa.
+        s22 : array_like
+            Normal stress component in 2-direction in MPa.
+        s12 : array_like
+            Engineering shear stress component in the 1-2 plane in MPa.
 
         Returns
         -------
-        e11 : array-like float
-            The resulting elastic normal strain component with basis 1-1
-        e22 : array-like float
-            The resulting elastic normal strain component with basis 2-2
-        g12 : array-like float
-            The resulting elastic engineering shear strain component with basis 1-2,
-            (1. / 2 * g12 is the tensor component)
-        '''
+        e11 : numpy.ndarray
+            Elastic normal strain component in 1-direction, dimensionless.
+        e22 : numpy.ndarray
+            Elastic normal strain component in 2-direction, dimensionless.
+        g12 : numpy.ndarray
+            Elastic engineering shear strain component in the 1-2 plane,
+            dimensionless. The tensor shear strain is ``0.5 * g12``.
+        """
         e11, e22, _, g12 = super().strain(s11, s22, s12)
         return e11, e22, g12
 
     def stress(self, e11, e22, g12):
-        '''Get the stress components for given elastic strain components
+        """Calculate stress components for plane strain.
 
         Parameters
         ----------
-        e11 : array-like float
-            The elastic normal strain component with basis 1-1
-        e22 : array-like float
-            The elastic normal strain component with basis 2-2
-        g12 : array-like float
-            The elastic engineering shear strain component with basis 1-2,
-            (1. / 2 * g12 is the tensor component)
+        e11 : array_like
+            Elastic normal strain component in 1-direction, dimensionless.
+        e22 : array_like
+            Elastic normal strain component in 2-direction, dimensionless.
+        g12 : array_like
+            Elastic engineering shear strain component in the 1-2 plane,
+            dimensionless.
 
         Returns
         -------
-        s11 : array-like float
-            The resulting normal stress component with basis 1-1
-        s22 : array-like float
-            The resulting normal stress component with basis 2-2
-        s33 : array-like float
-            The resulting normal stress component with basis 3-3
-        s12 : array-like float
-            The resulting shear stress component with basis 1-2
-        '''
+        s11 : numpy.ndarray
+            Normal stress component in 1-direction in MPa.
+        s22 : numpy.ndarray
+            Normal stress component in 2-direction in MPa.
+        s33 : numpy.ndarray
+            Normal stress component in 3-direction in MPa.
+        s12 : numpy.ndarray
+            Engineering shear stress component in the 1-2 plane in MPa.
+        """
         s11, s22, s12 = super().stress(e11, e22, g12)
         s33 = self.nu * (s11 + s22)
         return s11, s22, s33, s12
 
 
 class HookesLaw3d(_Hookeslawcore):
-    '''Implementation of the Hooke's Law in three dimensions.
+    """Apply isotropic Hooke's law in three dimensions.
 
     Parameters
     ----------
-
     E : float
-        Young's modulus
-
+        Young's modulus in MPa.
     nu : float
-        Poisson's ratio. Must be between -1 and 1./2
+        Poisson's ratio, dimensionless. Must satisfy ``-1 <= nu <= 0.5``.
 
     Notes
     -----
-
-    A cartesian coordinate system is assumed.
-    '''
+    Engineering shear strains ``g12``, ``g13``, and ``g23`` are twice the
+    corresponding tensor shear strains.
+    """
 
     def __init__(self, E, nu):
         super().__init__(E, nu)
 
     def strain(self, s11, s22, s33, s12, s13, s23):
-        '''Get the elastic strain components for given stress components
+        """Calculate three-dimensional elastic strain components.
 
         Parameters
         ----------
-        s11 : array-like float
-            The resulting normal stress component with basis 1-1
-        s22 : array-like float
-            The resulting normal stress component with basis 2-2
-        s33 : array-like float
-            The resulting normal stress component with basis 3-3
-        s12 : array-like float
-            The resulting shear stress component with basis 1-2
-        s13 : array-like float
-            The resulting shear stress component with basis 1-3
-        s23 : array-like float
-            The resulting shear stress component with basis 2-3
+        s11 : array_like
+            Normal stress component in 1-direction in MPa.
+        s22 : array_like
+            Normal stress component in 2-direction in MPa.
+        s33 : array_like
+            Normal stress component in 3-direction in MPa.
+        s12 : array_like
+            Engineering shear stress component in the 1-2 plane in MPa.
+        s13 : array_like
+            Engineering shear stress component in the 1-3 plane in MPa.
+        s23 : array_like
+            Engineering shear stress component in the 2-3 plane in MPa.
 
         Returns
         -------
-        e11 : array-like float
-            The resulting elastic normal strain component with basis 1-1
-        e22 : array-like float
-            The resulting elastic normal strain component with basis 2-2
-        e33 : array-like float
-            The resulting elastic normal strain component with basis 3-3
-        g12 : array-like float
-            The resulting elastic engineering shear strain component with basis 1-2,
-            (1. / 2 * g12 is the tensor component)
-        g13 : array-like float
-            The resulting elastic engineering shear strain component with basis 1-3,
-            (1. / 2 * g13 is the tensor component)
-        g23 : array-like float
-            The resulting elastic engineering shear strain component with basis 2-3,
-            (1. / 2 * g23 is the tensor component)
-        '''
+        e11 : numpy.ndarray
+            Elastic normal strain component in 1-direction, dimensionless.
+        e22 : numpy.ndarray
+            Elastic normal strain component in 2-direction, dimensionless.
+        e33 : numpy.ndarray
+            Elastic normal strain component in 3-direction, dimensionless.
+        g12 : numpy.ndarray
+            Elastic engineering shear strain component in the 1-2 plane, dimensionless.
+        g13 : numpy.ndarray
+            Elastic engineering shear strain component in the 1-3 plane, dimensionless.
+        g23 : numpy.ndarray
+            Elastic engineering shear strain component in the 2-3 plane, dimensionless.
+        """
         s11, s22, s33, s12, s13, s23 = self._as_consistant_arrays(s11, s22, s33, s12, s13, s23)
         e11 = 1 / self._E * (s11 - self._nu * (s22 + s33))
         e22 = 1 / self._E * (s22 - self._nu * (s11 + s33))
@@ -366,41 +436,38 @@ class HookesLaw3d(_Hookeslawcore):
         return e11, e22, e33, g12, g13, g23
 
     def stress(self, e11, e22, e33, g12, g13, g23):
-        '''Get the stress components for given elastic strain components
+        """Calculate three-dimensional stress components.
 
         Parameters
         ----------
-        e11 : array-like float
-            The elastic normal strain component with basis 1-1
-        e22 : array-like float
-            The elastic normal strain component with basis 2-2
-        e33 : array-like float
-            The elastic normal strain component with basis 3-3
-        g12 : array-like float
-            The elastic engineering shear strain component with basis 1-2,
-            (1. / 2 * g12 is the tensor component)
-        g13 : array-like float
-            The elastic engineering shear strain component with basis 1-3,
-            (1. / 2 * g13 is the tensor component)
-        g23 : array-like float
-            The elastic engineering shear strain component with basis 2-3,
-            (1. / 2 * g23 is the tensor component)
+        e11 : array_like
+            Elastic normal strain component in 1-direction, dimensionless.
+        e22 : array_like
+            Elastic normal strain component in 2-direction, dimensionless.
+        e33 : array_like
+            Elastic normal strain component in 3-direction, dimensionless.
+        g12 : array_like
+            Elastic engineering shear strain component in the 1-2 plane, dimensionless.
+        g13 : array_like
+            Elastic engineering shear strain component in the 1-3 plane, dimensionless.
+        g23 : array_like
+            Elastic engineering shear strain component in the 2-3 plane, dimensionless.
 
         Returns
         -------
-        s11 : array-like float
-            The resulting normal stress component with basis 1-1
-        s22 : array-like float
-            The resulting normal stress component with basis 2-2
-        s33 : array-like float
-            The resulting normal stress component with basis 3-3
-        s12 : array-like float
-            The resulting shear stress component with basis 1-2
-        s13 : array-like float
-            The resulting shear stress component with basis 1-3
-        s23 : array-like float
-            The resulting shear stress component with basis 2-3
-        '''
+        s11 : numpy.ndarray
+            Normal stress component in 1-direction in MPa.
+        s22 : numpy.ndarray
+            Normal stress component in 2-direction in MPa.
+        s33 : numpy.ndarray
+            Normal stress component in 3-direction in MPa.
+        s12 : numpy.ndarray
+            Engineering shear stress component in the 1-2 plane in MPa.
+        s13 : numpy.ndarray
+            Engineering shear stress component in the 1-3 plane in MPa.
+        s23 : numpy.ndarray
+            Engineering shear stress component in the 2-3 plane in MPa.
+        """
         e11, e22, e33, g12, g13, g23 = self._as_consistant_arrays(e11, e22, e33, g12, g13, g23)
         factor1 = self._E / ((1 + self._nu) * (1 - 2 * self._nu))
         factor2 = 1 - self._nu

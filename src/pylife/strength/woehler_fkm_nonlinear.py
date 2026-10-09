@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -13,6 +13,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Provide FKM nonlinear damage-parameter Wöhler curve accessors."""
 
 __author__ = "Benjamin Maier"
 __maintainer__ = __author__
@@ -29,21 +31,39 @@ from pylife import PylifeSignal
 @pd.api.extensions.register_series_accessor('woehler_P_RAM')
 @pd.api.extensions.register_dataframe_accessor('woehler_P_RAM')
 class WoehlerCurvePRAM(PylifeSignal):
-    """This class represents the type of (component) Wöhler curve that is used
-    in the FKM nonlinear fatigue assessment with damage parameter P_RAM.
+    r"""Represent the FKM nonlinear Wöhler curve for ``P_RAM``.
 
-    The Wöhler Curve (aka SN-curve) determines after how many load cycles at a
-    certain load amplitude the component is expected to fail.
+    This accessor is available as ``.woehler_P_RAM`` on
+    :class:`pandas.Series` and :class:`pandas.DataFrame` objects.  It evaluates
+    the component Wöhler curve used for damage parameters calculated by
+    :class:`pylife.strength.damage_parameter.P_RAM`.
 
-    This Wöhler curve is defined piecewise with three sections: Two sections with slopes :math:`d_1`, :math:`d_2` and
-    then a horizontal section at the endurance limit (cf. Sec. 2.5.6 of the FKM nonlinear document).
+    Signal contract:
 
-    The signal has the following mandatory keys:
+    * ``P_RAM_Z``: Damage-parameter value at ``N = 1e3`` cycles, in MPa.
+    * ``P_RAM_D``: Endurance-limit damage-parameter value, in MPa.  It equals
+      ``P_RAM_D_WS / f_RAM`` in FKM nonlinear equation 2.6-89.
+    * ``d_1``: First finite-life slope for ``N < 1e3``, dimensionless and
+      negative.
+    * ``d_2``: Second finite-life slope for ``N >= 1e3``, dimensionless and
+      negative.
 
-    * ``d_1`` : The slope of the Wöhler Curve in the first section, for N < 1e3
-    * ``d_2`` : The slope of the Wöhler Curve in the second section, for N >= 1e3
-    * ``P_RAM_Z`` : The damage parameter value that separates the first and second section, corresponding to N = 1e3
-    * ``P_RAM_D`` : The damage parameter value of the endurance limit of the component, computed as P_RAM_D_WS / f_RAM (FKM nonlinear, eq. 2.6-89)
+    Parameters
+    ----------
+    pandas_obj : pandas.Series or pandas.DataFrame
+        Wöhler curve parameters for one assessment point or vectorized
+        parameters for several assessment points.
+
+    See Also
+    --------
+    pylife.strength.damage_parameter.P_RAM : Calculate ``P_RAM`` collectives.
+    WoehlerCurvePRAJ : Evaluate the FKM nonlinear Wöhler curve for ``P_RAJ``.
+
+    Notes
+    -----
+    The curve has two finite-life branches with slopes :math:`d_1` and
+    :math:`d_2`, followed by a horizontal endurance-limit branch at
+    ``P_RAM_D``.  This follows FKM nonlinear guideline section 2.5.6.
     """
 
     def _validate(self):
@@ -60,19 +80,18 @@ class WoehlerCurvePRAM(PylifeSignal):
             raise ValueError(f"d_2 ({self._obj.d_2}) has to be negative!")
 
     def get_woehler_curve_minimum_lifetime(self):
-        """If this woehler curve is vectorized, i.e., holds values for multiple assessment points at once,
-        get a version of this woehler curve for the assessment point with the minimum lifetime.
-        This function is usually needed after an FKM nonlinear assessment for multiple points (e.g, o whole mesh at once),
-        if the woehler curve should be plotted afterwards. Plotting is only possible for a specific woehler curve of
-        a single point.
+        """Get the scalar curve for the assessment point with minimum lifetime.
 
-        If the woehler curve was for a single assessment point before, nothing is changed.
+        Use this method after a vectorized FKM nonlinear assessment, for
+        example on a mesh, when the resulting Wöhler curve should be plotted
+        for the most critical assessment point.  If the curve already contains
+        scalar values, the copied curve is unchanged.
 
         Returns
         -------
-        woehler_curve_minimum_lifetime : WoehlerCurvePRAJ
-            A deep copy of the current woehler curve object, but with scalar values. The
-            resulting values are the minimum of the stored vectorized values.
+        WoehlerCurvePRAM
+            Deep copy of the current Wöhler curve with scalar ``P_RAM_Z`` and
+            ``P_RAM_D`` values equal to the minima of the vectorized values.
         """
 
         # compute the minimum/maximum for the vectorized items
@@ -84,37 +103,37 @@ class WoehlerCurvePRAM(PylifeSignal):
 
     @property
     def d_1(self):
-        """The slope of the Wöhler Curve in the first section, for N < 1e3"""
+        """Return the first Wöhler curve slope for ``N < 1e3``."""
         return self._obj.d_1
 
     @property
     def d_2(self):
-        """The slope of the Wöhler Curve in the second section, for N >= 1e3"""
+        """Return the second Wöhler curve slope for ``N >= 1e3``."""
         return self._obj.d_2
 
     @property
     def P_RAM_Z(self):
-        """The damage parameter value that separates the first and second section, corresponding to N = 1e3"""
+        """Return the ``P_RAM`` transition value at ``N = 1e3`` cycles."""
         return self._obj.P_RAM_Z
 
     @property
     def P_RAM_D(self):
-        """The damage parameter value of the endurance limit"""
+        """Return the ``P_RAM`` endurance-limit value."""
         return self._obj.P_RAM_D
 
     def calc_N(self, P_RAM):
-        """Evaluate the woehler curve at the given damage paramater value, P_RAM.
+        """Evaluate the Wöhler curve at a ``P_RAM`` value.
 
         Parameters
         ----------
         P_RAM : float
-            The damage parameter value where to evaluate the woehler curve.
+            Damage-parameter value in MPa.
 
         Returns
         -------
-        N : float
-            The number of cycles for the given P_RAM value.
-
+        float
+            Number of cycles to failure.  The result is ``numpy.inf`` when
+            ``P_RAM`` is at or below the fatigue strength limit.
         """
 
         # silence warning "divide by zero in np.power. This happens for P_RAM=0, but then it will use the second branch with N=np.inf anyways
@@ -128,18 +147,17 @@ class WoehlerCurvePRAM(PylifeSignal):
         return N
 
     def calc_P_RAM(self, N):
-        """Evaluate the woehler curve at the specified number of cycles.
+        """Evaluate the Wöhler curve at a number of cycles.
 
         Parameters
         ----------
-        N : array-like
-            Number of cycles where to evaluate the woehler curve.
+        N : array_like
+            Number of cycles where to evaluate the Wöhler curve.
 
         Returns
         -------
-        array-like
-            The P_RAM values that correspond to the given N values.
-
+        numpy.ndarray
+            ``P_RAM`` values in MPa that correspond to the given cycle counts.
         """
         N = np.array(N)
 
@@ -153,15 +171,13 @@ class WoehlerCurvePRAM(PylifeSignal):
 
     @property
     def fatigue_strength_limit(self):
-        """The fatigue strength limit of the component, i.e.,
-        the P_RAM value below which we have infinite life."""
+        """Return the ``P_RAM`` value below which lifetime is infinite."""
 
         return self.P_RAM_D
 
     @property
     def fatigue_life_limit(self):
-        """The fatigue life limit N_D of the component, i.e.,
-        the number of cycles at the fatigue strength limit P_RAM_D."""
+        """Return the cycle count at the ``P_RAM`` fatigue strength limit."""
 
         # exp(log(P_RAM_Z) + (log(N) - log(1e3))*d_2)
         # P_RAM_Z * exp((log(N) - log(1e3))*d_2) = fatigue_strength_limit for N=fatigue_life_limit
@@ -174,21 +190,36 @@ class WoehlerCurvePRAM(PylifeSignal):
 @pd.api.extensions.register_series_accessor('woehler_P_RAJ')
 @pd.api.extensions.register_dataframe_accessor('woehler_P_RAJ')
 class WoehlerCurvePRAJ(PylifeSignal):
-    """This class represents the type of (component) Wöhler curve that is used in the
-    FKM nonlinear fatigue assessment with damage parameter P_RAJ.
+    r"""Represent the FKM nonlinear Wöhler curve for ``P_RAJ``.
 
-    The Wöhler Curve (aka SN-curve) determines after how many load cycles at a
-    certain load amplitude the component is expected to fail.
+    This accessor is available as ``.woehler_P_RAJ`` on
+    :class:`pandas.Series` and :class:`pandas.DataFrame` objects.  It evaluates
+    the component Wöhler curve used for crack-mechanics damage parameters
+    calculated by :class:`pylife.strength.damage_parameter.P_RAJ`.
 
-    This Wöhler curve is defined piecewise with two sections for finite and infinite life:
-    The sloped section with slope :math:`d` and the horizontal section at the endurance limit
-    (cf. Sec. 2.8.6 of the FKM nonlinear document).
+    Signal contract:
 
-    The signal has the following mandatory keys:
+    * ``P_RAJ_Z``: Damage-parameter value at ``N = 1`` cycle, in MPa.
+    * ``P_RAJ_D_0``: Initial endurance-limit damage-parameter value, in MPa.
+    * ``d_RAJ``: Finite-life slope, dimensionless and negative.
 
-    * ``d_RAJ`` : The slope of the Wöhler Curve in the finite life section.
-    * ``P_RAJ_Z`` : The load limit at N = 1
-    * ``P_RAJ_D_0`` : The initial load level of the endurance limit
+    Parameters
+    ----------
+    pandas_obj : pandas.Series or pandas.DataFrame
+        Wöhler curve parameters for one assessment point or vectorized
+        parameters for several assessment points.
+
+    See Also
+    --------
+    pylife.strength.damage_parameter.P_RAJ : Calculate ``P_RAJ`` collectives.
+    WoehlerCurvePRAM : Evaluate the FKM nonlinear Wöhler curve for ``P_RAM``.
+
+    Notes
+    -----
+    The curve has one finite-life branch with slope :math:`d_{RAJ}` and a
+    horizontal endurance-limit branch.  During the FKM nonlinear algorithm the
+    active fatigue strength may be lowered from ``P_RAJ_D_0`` to
+    :attr:`fatigue_strength_limit_final`.
     """
 
     def _validate(self):
@@ -206,30 +237,30 @@ class WoehlerCurvePRAJ(PylifeSignal):
 
 
     def update_P_RAJ_D(self, P_RAJ_D):
-        """This method is used to update the fatigue strength P_RAJ_D, which is stored in this woehler curve.
+        """Update the active ``P_RAJ`` fatigue strength limit.
 
         Parameters
         ----------
-        P_RAJ_D : pandas Series
-            The new fatigue strength values that will be set for the woehler curve for multiple assessment points.
+        P_RAJ_D : pandas.Series
+            New fatigue strength limit values in MPa for one or more assessment
+            points.
         """
 
         self._P_RAJ_D = P_RAJ_D
 
     def get_woehler_curve_minimum_lifetime(self):
-        """If this woehler curve is vectorized, i.e., holds values for multiple assessment points at once,
-        get a version of this woehler curve for the assessment point with the minimum lifetime.
-        This function is usually needed after an FKM nonlinear assessment for multiple points (e.g, o whole mesh at once),
-        if the woehler curve should be plotted afterwards. Plotting is only possible for a specific woehler curve of
-        a single point.
+        """Get the scalar curve for the assessment point with minimum lifetime.
 
-        If the woehler curve was for a single assessment point before, nothing is changed.
+        Use this method after a vectorized FKM nonlinear assessment, for
+        example on a mesh, when the resulting Wöhler curve should be plotted
+        for the most critical assessment point.  If the curve already contains
+        scalar values, the copied curve is unchanged.
 
         Returns
         -------
-        woehler_curve_minimum_lifetime : WoehlerCurvePRAJ
-            A deep copy of the current woehler curve object, but with scalar values. The
-            resulting values are the minimum of the stored vectorized values.
+        WoehlerCurvePRAJ
+            Deep copy of the current Wöhler curve with scalar ``P_RAJ_Z`` and
+            ``P_RAJ_D_0`` values equal to the minima of the vectorized values.
         """
 
         woehler_curve_minimum_lifetime = copy.deepcopy(self)
@@ -242,32 +273,31 @@ class WoehlerCurvePRAJ(PylifeSignal):
 
     @property
     def d(self):
-        """The slope of the Wöhler Curve in the first section"""
+        """Return the finite-life Wöhler curve slope."""
         return self._obj.d_RAJ
 
     @property
     def P_RAJ_D(self):
-        """The fatigue strength for multiple assessment points."""
+        """Return the active ``P_RAJ`` fatigue strength limit."""
         return self._P_RAJ_D
 
     @property
     def P_RAJ_Z(self):
-        """The P_RAJ value for N=1."""
+        """Return the ``P_RAJ`` value at ``N = 1`` cycle."""
         return self._obj.P_RAJ_Z
 
     def calc_P_RAJ(self, N):
-        """Evaluate the woehler curve at the specified number of cycles.
+        """Evaluate the Wöhler curve at a number of cycles.
 
         Parameters
         ----------
-        N : array-like
-            Number of cycles where to evaluate the woehler curve.
+        N : array_like
+            Number of cycles where to evaluate the Wöhler curve.
 
         Returns
         -------
-        array-like
-            The P_RAJ values that correspond to the given N values.
-
+        numpy.ndarray
+            ``P_RAJ`` values in MPa that correspond to the given cycle counts.
         """
         N = np.array(N)
 
@@ -282,20 +312,21 @@ class WoehlerCurvePRAJ(PylifeSignal):
                        self.fatigue_strength_limit)
 
     def calc_N(self, P_RAJ, P_RAJ_D=None):
-        """Evaluate the woehler curve at the given damage paramater value, P_RAJ.
+        """Evaluate the Wöhler curve at a ``P_RAJ`` value.
 
         Parameters
         ----------
         P_RAJ : float
-            The damage parameter value where to evaluate the woehler curve.
-        P_RAJ_D : float
-            (optional) A different fatigue strength limit P_RAJ_D, if not set, the normal fatigue strength limit is used.
+            Damage-parameter value in MPa.
+        P_RAJ_D : float, optional
+            Alternative fatigue strength limit in MPa.  If omitted, use the
+            active limit stored in the Wöhler curve.  Default is ``None``.
 
         Returns
         -------
-        N : float
-            The number of cycles for the given P_RAJ value.
-
+        float
+            Number of cycles to failure.  The result is ``numpy.inf`` when
+            ``P_RAJ`` is at or below the active fatigue strength limit.
         """
 
         if P_RAJ_D is None:
@@ -311,27 +342,25 @@ class WoehlerCurvePRAJ(PylifeSignal):
 
     @property
     def fatigue_strength_limit(self):
-        """The fatigue strength limit of the component."""
+        """Return the initial ``P_RAJ`` fatigue strength limit."""
 
         return self._obj.P_RAJ_D_0
 
     @property
     def fatigue_strength_limit_final(self):
-        """The fatigue strength limit of the component, after the FKM algorithm."""
+        """Return the ``P_RAJ`` fatigue strength limit after the FKM algorithm."""
 
         return self._P_RAJ_D
 
     @property
     def fatigue_life_limit(self):
-        """The fatigue strength limit N_D of the component, i.e.,
-        the number of cycles at the fatigue strength limit."""
+        """Return the cycle count at the initial ``P_RAJ`` fatigue limit."""
         # ND = (P_RAJ_D / P_RAJ_Z) ^ (1/d)
 
         return (self.fatigue_strength_limit / self.P_RAJ_Z) ** (1/self.d)
 
     @property
     def fatigue_life_limit_final(self):
-        """The fatigue strength limit N_D of the component, i.e.,
-        the number of cycles at the fatigue strength limit, after the FKM algorithm."""
+        """Return the cycle count at the final ``P_RAJ`` fatigue limit."""
 
         return (self.fatigue_strength_limit_final / self.P_RAJ_Z) ** (1/self.d)

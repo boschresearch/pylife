@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Provide common streaming helpers for rainflow detectors and recorders."""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
@@ -28,26 +30,19 @@ __all__ = ['find_turns', 'AbstractDetector', 'AbstractRecorder']
 
 
 def find_turns(samples):
-    """Find the turning points in a sample chunk.
+    """Find turning points in a sample chunk.
 
     Parameters
     ----------
-    samples : 1D numpy.ndarray
-        the sample chunk
+    samples : numpy.ndarray
+        One-dimensional sample chunk containing load values, typically in MPa.
 
     Returns
     -------
-    index : 1D numpy.ndarray
-        the indices where sample has a turning point
-    turns : 1D numpy.ndarray
-        the values of the turning points
-
-    Notes
-    -----
-    In case of plateaus i.e. multiple directly neighbored samples with exactly
-    the same values, building a turning point together, the first sample of the
-    plateau is indexed.
-
+    index : numpy.ndarray
+        Indices where ``samples`` has a turning point.
+    turns : numpy.ndarray
+        Load values at the turning points.
 
     Warnings
     --------
@@ -60,6 +55,11 @@ def find_turns(samples):
     If you do, it would be a good idea to clean them out before the rainflow
     detection.
 
+    Notes
+    -----
+    In case of plateaus, i.e. multiple directly neighboring samples with
+    exactly the same value building a turning point together, the first sample
+    of the plateau is indexed.
     """
 
     def clean_nans(samples: np.ndarray):
@@ -111,17 +111,13 @@ def find_turns(samples):
 
 
 class AbstractDetector(metaclass=ABCMeta):
-    """The common base class for rainflow detectors.
+    """Define the common base class for streaming rainflow detectors.
 
-    Subclasses implementing a specific rainflow counting algorithm are supposed
-    to implement a method ``process()`` that takes the signal samples as a
-    parameter, and reports all the hysteresis loop limits to ``self._recorder``
-    using its ``record_values()`` method of.
-
-    Some detectors also report the index of the loop limiting samples to the
-    recorder using its ``record_index()`` method. Those detectors should also
-    report the size of each processed sample chunk to the recorder using
-    ``report_chunk()``.
+    Subclasses implement a concrete rainflow counting rule, such as
+    three-point or four-point counting.  A detector receives load samples and
+    reports closed hysteresis loops to its recorder through
+    ``record_values()``.  Detectors that know the source sample indices also
+    call ``record_index()`` and ``report_chunk()``.
 
     Parameters
     ----------
@@ -130,14 +126,17 @@ class AbstractDetector(metaclass=ABCMeta):
         (the default), a new :class:`pylife.stress.rainflow.LoopValueRecorder`
         is created for this detector.
 
-    The ``process()`` method is supposed return ``self`` and to be implemented
-    in a way, that the result is independent of the sample chunksize, so
-    ``dtor.process(signal)`` should be equivalent to
-    ``dtor.process(signal[:n]).process(signal[n:])`` for any 0 < n < signal
-    length.
+    Notes
+    -----
+    Implement ``process()`` so processing is independent of chunk size:
+    ``detector.process(signal)`` should be equivalent to
+    ``detector.process(signal[:n]).process(signal[n:])`` for any split point
+    ``0 < n < len(signal)``.  This enables streamed rainflow counting for
+    large signals.
 
-    Should usually only be instantiated by a sublacsse's ``__init__()`` using
-    ``super().__init__()``.
+    Rainflow counting in pyLife is based on common three-point and four-point
+    algorithms, including the DIN 45667 / ASTM E1049 family of rainflow
+    counting methods.
     """
 
     def __init__(self, recorder=None):
@@ -160,20 +159,36 @@ class AbstractDetector(metaclass=ABCMeta):
 
     @property
     def residuals(self):
-        """The residual turning points of the time signal so far.
+        """Return the residual turning points of the signal processed so far.
 
-        The residuals are the loops not (yet) closed.
+        Returns
+        -------
+        numpy.ndarray
+            Load values of turning points that have not yet formed closed
+            hysteresis loops.
         """
         return self._residuals
 
     @property
     def residual_index(self):
-        """The index of the residual turning points of the time signal so far."""
+        """Return the sample indices of residual turning points.
+
+        Returns
+        -------
+        numpy.ndarray
+            Global sample indices of residual turning points.
+        """
         return np.append(self._residual_index, self._head_index - 1)
 
     @property
     def recorder(self):
-        """The recorder instance the detector is reporting to."""
+        """Return the recorder that receives detected loops.
+
+        Returns
+        -------
+        AbstractRecorder
+            Recorder instance passed at construction time.
+        """
         return self._recorder
 
     @abstractmethod
@@ -182,35 +197,31 @@ class AbstractDetector(metaclass=ABCMeta):
 
         Parameters
         ----------
-        samples : array_like, shape (N, )
-            The samples to be processed
-
-        flush : bool
-            Whether to flush the cached values at the end.
-
-            For explanations see :meth:`~pylife.stress.rainflow.FourPointDetector.process`
-
+        samples : array_like
+            Load samples to process, typically in MPa.
+        flush : bool, optional
+            Whether to flush cached values at the end.  See
+            :meth:`pylife.stress.rainflow.FourPointDetector.process` for
+            the user-facing behavior.  Default is ``False``.
 
         Returns
         -------
-        self : instance of the subclass
-            The ``self`` object so that processing can be chained
+        AbstractDetector
+            The detector itself so processing can be chained.
+
+        See Also
+        --------
+        flush : Process samples and force cached values to be emitted.
 
         Notes
         -----
         Must be implemented by subclasses.
-
-        See also
-        --------
-        :func:`flush()`
         """
 
         return self
 
     def flush(self, samples=[]):
-        """
-        Flush all remaining cached values from previous calls of ``process``.
-        Process all the given values until the end, leaving no cached values.
+        """Flush cached values after processing an optional final sample chunk.
 
         If ``process`` is called instead of ``flush``, the last value of a
         load sequence is cached for a subsequent call to ``process``,
@@ -220,44 +231,43 @@ class AbstractDetector(metaclass=ABCMeta):
         the desired effect as multiple increasing or decreasing values in a
         row could occur, instead of processing only turning points.
 
-        For examples see :meth:`~pylife.stress.rainflow.FourPointDetector.process`
-
-
         Parameters
         ----------
-        samples : array_like, shape (N, )
-            The samples to be processed
+        samples : array_like, optional
+            Final load samples to process, typically in MPa.  Default is
+            ``[]``.
 
         Returns
         -------
-        self : AbstractDetector
-            The ``self`` object so that processing can be chained
+        AbstractDetector
+            The detector itself so processing can be chained.
 
+        See Also
+        --------
+        process : Process samples without forcing cached values to be emitted.
 
         Notes
         -----
         This method is equivalent to ``process(samples, flush=True)``.
-
-
         """
         return self.process(samples, flush=True)
 
     def _new_turns(self, samples, flush=False, preserve_start=False):
         """Provide new turning points for the next chunk.
-        This method can handle samples as both 1-D arrays and multi-dimensional
-        DataFrames.
+
+        This method can handle samples as both one-dimensional arrays and
+        multi-dimensional data frames.
 
         Parameters
         ----------
-        samples : 1-D array of float or pandas DataFrame
-            The samples of the chunk to be processed
-
-        flush : bool
-            Whether to flush the values at the end, i.e., not keep a tail.
-
-        preserve_start : bool
-            If the beginning of the sequence should be preserved. If this is
-            False, only turning points are extracted, for example:
+        samples : array_like or pandas.DataFrame
+            Samples of the chunk to process.
+        flush : bool, optional
+            Whether to flush values at the end instead of keeping a tail.
+            Default is ``False``.
+        preserve_start : bool, optional
+            Whether to preserve the beginning of the sequence.  If this is
+            ``False``, only turning points are extracted, for example:
                 _new_turns([1, 2, 1])   # -> 2
                 _new_turns([0, 1])      # -> 1
             If ``preserve_start`` is True, the first point is also added, even
@@ -266,14 +276,14 @@ class AbstractDetector(metaclass=ABCMeta):
                 _new_turns([0, 1], preserve_start=True)      # -> 0, 1
 
             This option has no effect if there are samples left over
-            from a previous call with flush=False.
+            from a previous call with ``flush=False``.  Default is ``False``.
 
         Returns
         -------
-        turn_index : 1-D array of int
-            The global index of the turning points of the chunk to be processed
-        turn_values : 1-D array of float
-            The values of the turning points
+        turn_index : numpy.ndarray
+            Global indices of turning points in the processed chunk.
+        turn_values : numpy.ndarray
+            Load values of the turning points.
 
         Notes
         -----
@@ -334,22 +344,23 @@ class AbstractDetector(metaclass=ABCMeta):
 
 
     def _new_turns_multiple_assessment_points(self, samples, flush=False, preserve_start=False):
-        """Provide new turning points for the next chunk. This function
-        is used when the assessment considers multiple points at once.
-        The function is called from `_new_turns`.
+        """Provide new turning points for multiple assessment points.
+
+        This method is used when the assessment considers multiple points at
+        once.  It is called from ``_new_turns``.
 
         Parameters
         ----------
         samples : pandas DataFrame
-            The samples of the chunk to be processed, has to be a DataFrame
-            with a MultiIndex of "load_step" and "node_id".
-
-        flush : bool
-            Whether to flush the values at the end, i.e., not keep a tail.
-
-        preserve_start : bool
-            If the beginning of the sequence should be preserved. If this is
-            False, only turning points are extracted, for example:
+            Samples of the chunk to process.  The index must be a
+            :class:`pandas.MultiIndex` with levels ``load_step`` and
+            ``node_id``.
+        flush : bool, optional
+            Whether to flush values at the end instead of keeping a tail.
+            Default is ``False``.
+        preserve_start : bool, optional
+            Whether to preserve the beginning of the sequence.  If this is
+            ``False``, only turning points are extracted, for example:
                 _new_turns([1, 2, 1])   # -> 2
                 _new_turns([0, 1])      # -> 1
             If ``preserve_start`` is True, the first point is also added, even
@@ -359,10 +370,10 @@ class AbstractDetector(metaclass=ABCMeta):
 
         Returns
         -------
-        turn_index : 1-D array of int
-            The global index of the turning points of the chunk to be processed
-        turn_values : list of pandas DataFrame's
-            The values of the turning points as data frames.
+        turn_index : numpy.ndarray
+            Global indices of turning points in the processed chunk.
+        turn_values : list of pandas.DataFrame
+            Values of the turning points for all assessment points.
         """
 
         assert isinstance(samples[0], pd.DataFrame)
@@ -381,3 +392,4 @@ class AbstractDetector(metaclass=ABCMeta):
                             for index in turn_index]
 
         return turn_index, selected_samples
+

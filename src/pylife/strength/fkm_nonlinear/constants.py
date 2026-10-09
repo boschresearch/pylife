@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,6 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+r"""Store tabulated constants for the FKM nonlinear guideline.
+
+The constants describe the material groups ``Steel``, ``SteelCast``, and
+``Al_wrought`` used by the FKM nonlinear assessment.  They include cyclic
+Ramberg-Osgood parameters, material Wöhler curve coefficients, statistical
+support constants, roughness coefficients, and corrected ``P_RAJ`` values
+used by the parameter calculation functions.
+
+Examples
+--------
+>>> from pylife.strength.fkm_nonlinear.constants import FKMNLConstants
+>>> sorted(set(FKMNLConstants()) & {'Steel', 'SteelCast', 'Al_wrought'})
+['Al_wrought', 'Steel', 'SteelCast']
+"""
 __author__ = ["Benjamin Maier", "Sebastian Bucher", "Kristina Lepper"]
 __maintainer__ = __author__
 
@@ -22,7 +36,12 @@ import pandas as pd
 
 
 class FKMNLConstants:
-    """A singleton class that contains all the FKM non-linear constants."""
+    """Expose material-group constants for FKM nonlinear calculations.
+
+    The class is implemented as a singleton so that custom materials added by
+    :meth:`add_custom_material` are visible to all parameter calculation calls in
+    the current Python process.
+    """
 
 
     _instance = None
@@ -34,7 +53,7 @@ class FKMNLConstants:
         return cls._instance
 
     def _initialize(self):
-        """Constants for various formulas used in the FKM nonlinear procedure."""
+        """Initialize the FKM nonlinear material constants table."""
         self._all_constants = pd.DataFrame({
             "Steel": {
                 # general values and values for P_RAM
@@ -140,25 +159,29 @@ class FKMNLConstants:
         })
 
     def for_material_group(self, assessment_parameters):
-        """
-        Retrieve the constants for one of the three material groups that are defined in FKM nonlinear.
-
-        .. note::
-
-            The constants for all material groups can be accessed as
-            ``pylife.strength.fkm_nonlinear.constants.all_constants``.
+        """Return constants for the selected FKM material group.
 
         Parameters
         ----------
-        assessment_parameters : pandas Series
-            A Series with at least the item ``MatGroupFKM``, which has to be one of
-            ``Steel``, ``SteelCast``, ``Al_wrought``.
+        assessment_parameters : pandas.Series
+            Assessment parameters containing ``MatGroupFKM``.  Built-in values are
+            ``'Steel'``, ``'SteelCast'``, and ``'Al_wrought'``; custom material
+            names are accepted after registration with :meth:`add_custom_material`.
 
         Returns
         -------
-        pandas Series
-            All constants that are defined by FKM nonlinear for the given material group.
+        pandas.Series
+            Constants for the selected material group.  The series contains Young's
+            modulus ``E`` in MPa, cyclic and Wöhler coefficients, roughness
+            constants, support constants, and aliases
+            ``f_25percent_material_woehler_RAM`` and
+            ``f_25percent_material_woehler_RAJ`` used by the parameter calculations.
 
+        Notes
+        -----
+        The built-in table follows the FKM nonlinear guideline 2019 tables for
+        ``P_RAM`` and ``P_RAJ``.  Some ``P_RAJ`` entries contain later corrections
+        noted in the source comments.
         """
         # select set of constants according to given material group
         assert "MatGroupFKM" in assessment_parameters
@@ -176,24 +199,25 @@ class FKMNLConstants:
         return resulting_constants
 
     def add_custom_material(self, material_group_name, material_constants):
-        """Add a custom material to the global FKMNL constants.
+        """Add a custom material group to the constants table.
 
-
-        Paramters
-        ---------
+        Parameters
+        ----------
         material_group_name : str
-            The name of the custom material
+            Name of the custom material group to register.
+        material_constants : pandas.Series or dict
+            Constants for the custom material.  Use the same keys as returned by
+            :meth:`to_pandas` for a built-in material group.
 
-        material_constants : pd.Series | dict
-            The constants for the custom material
-
-        Return
-        ------
-        self
+        Returns
+        -------
+        FKMNLConstants
+            Singleton instance with the custom material added.
 
         Raises
         ------
-        ValueError if the material already exists.
+        ValueError
+            Raised if ``material_group_name`` already exists.
         """
         if material_group_name in self._all_constants:
             raise ValueError(f"Material `{material_group_name}` already exists.")
@@ -208,5 +232,12 @@ class FKMNLConstants:
         return self._all_constants[material_group_name].copy()
 
     def to_pandas(self):
-        """Optiain a copy of all material constants."""
+        """Return all material constants as a pandas object.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Copy of the complete constants table with constants in the index and
+            material groups in the columns.
+        """
         return self._all_constants.copy()

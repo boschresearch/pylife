@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,12 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Report missing optional PyMC dependencies for Bayesian analysis."""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 
 class Bayesian:
-    """Dummy class to raise a meaningful exception when pymc is not available."""
+    """Raise an installation hint when Bayesian analysis is unavailable.
+
+    Parameters
+    ----------
+    _ : object
+        Ignored argument accepted for compatibility with the Bayesian analyzer
+        constructor.
+
+    Raises
+    ------
+    ImportError
+        Always raised with the optional dependency installation hint.
+    """
 
     def __init__(self, _):
         raise ImportError("pymc and dependencies are not installed. "

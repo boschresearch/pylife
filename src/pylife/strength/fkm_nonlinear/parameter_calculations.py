@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,6 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+r"""Derive FKM nonlinear assessment parameters from user inputs.
+
+This module implements the material-group dependent formulas used by the
+FKM nonlinear guideline for cyclic material data, material and component
+Wöhler curves, roughness factors, nonlocal support factors, and statistical
+failure-probability factors.  The functions take a
+:class:`pandas.Series` of assessment parameters, add derived keys to a copy,
+and return that copy for use by
+``pylife.strength.fkm_nonlinear.assessment_nonlinear_standard``.
+"""
 __author__ = "Benjamin Maier"
 __maintainer__ = __author__
 
@@ -42,33 +52,26 @@ from pylife.strength.fkm_nonlinear.constants import FKMNLConstants
 
 
 def calculate_cyclic_assessment_parameters(assessment_parameters_):
-    """Calculate the values of :math:`n', K'`, and :math:`E`, used to
-    describe the cyclic material behavior (Sec. 2.5.3 of FKM nonlinear).
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_cyclic_assessment_parameters(assessment_parameters)
+    r"""Calculate cyclic Ramberg-Osgood material parameters.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * ``MatGroupFKM``: Which material group, one of ``Steel``, ``SteelCast``, ``Al_wrought``
-        * ``R_m``: The ultimate tensile strength of the material, :math:`R_m`.
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing ``MatGroupFKM`` and ultimate tensile
+        strength ``R_m`` in MPa.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with Young's modulus ``E`` in MPa,
+        cyclic hardening exponent ``n_prime``, and cyclic hardening coefficient
+        ``K_prime`` in MPa added.
 
-        * ``E``: Young's modulus, constant estimated according to the material group
-        * ``n_prime``: parameter for the Ramberg-Osgood material law
-        * ``K_prime``: parameter for the Ramberg-Osgood material law
-
+    Notes
+    -----
+    Implements FKM nonlinear guideline Section 2.5.3, in particular equation
+    (2.5-13).  ``E`` and ``n_prime`` are taken from the material group table,
+    while ``K_prime`` is estimated from ``R_m``.
     """
     assessment_parameters = assessment_parameters_.copy()
     assert "R_m" in assessment_parameters
@@ -90,35 +93,27 @@ def calculate_cyclic_assessment_parameters(assessment_parameters_):
 
 
 def calculate_material_woehler_parameters_P_RAM(assessment_parameters_):
-    """Calculate the parameters of the material damage Woehler curve for the P_RAM damage parameter
-    (Sec. 2.5.5 of FKM nonlinear).
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_material_woehler_parameters_P_RAM(assessment_parameters)
+    r"""Calculate material Wöhler parameters for the ``P_RAM`` path.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * ``MatGroupFKM``: Which material group, one of ``Steel``, ``SteelCast``, ``Al_wrought``
-        * ``R_m``: The ultimate tensile strength of the material, :math:`R_m`.
-        * ``P_A``: The failure probability
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing ``MatGroupFKM``, ultimate tensile
+        strength ``R_m`` in MPa, and failure probability ``P_A`` as a
+        dimensionless probability.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with ``P_RAM_Z_WS`` at
+        ``N = 1e3`` cycles, fatigue limit ``P_RAM_D_WS``, first slope ``d_1``,
+        and second slope ``d_2`` of the material damage Wöhler curve added.
 
-        * ``P_RAM_Z_WS``: First sampling point ("knee") of the material damage Woehler curve at N=1e3
-        * ``P_RAM_D_WS``: Damage threshold for infinite life, the second "knee" of the material damage Woehler curve
-        * ``d_1``: first slope of the material damage Woehler curve
-        * ``d_2``: second slope of the material damage Woehler curve
-
+    Notes
+    -----
+    Implements FKM nonlinear guideline Section 2.5.5, equations (2.5-22) and
+    (2.5-23).  For ``P_A`` values other than ``0.5`` the curve is shifted by
+    the material-group dependent 2.5 % factor from the guideline table.
     """
     assessment_parameters = assessment_parameters_.copy()
 
@@ -165,34 +160,27 @@ def calculate_material_woehler_parameters_P_RAM(assessment_parameters_):
 
 
 def calculate_material_woehler_parameters_P_RAJ(assessment_parameters_):
-    """Calculate the parameters of the material damage Woehler curve for the P_RAJ damage parameter
-    (Sec. 2.9.4 of FKM nonlinear).
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_material_woehler_parameters_P_RAJ(assessment_parameters)
+    r"""Calculate material Wöhler parameters for the ``P_RAJ`` path.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * ``MatGroupFKM``: Which material group, one of ``Steel``, ``SteelCast``, ``Al_wrought``
-        * ``R_m``: The ultimate tensile strength of the material, :math:`R_m`.
-        * ``P_A``: The failure probability
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing ``MatGroupFKM``, ultimate tensile
+        strength ``R_m`` in MPa, and failure probability ``P_A`` as a
+        dimensionless probability.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with ``P_RAJ_Z_WS`` at ``N = 1``
+        cycle, fatigue limit ``P_RAJ_D_WS``, and material curve slope
+        ``d_RAJ`` added.
 
-        * ``P_RAJ_Z_WS``: First sampling point of the material damage Woehler curve for N=1 (not N=1e3 as for P_RAM!)
-        * ``P_RAJ_D_WS``: Damage threshold for infinite life, the "knee" of the material damage Woehler curve
-        * ``d_RAJ``: slope of the material damage Woehler curve
-
+    Notes
+    -----
+    Implements FKM nonlinear guideline Sections 2.8.5 and 2.9.4, equations
+    (2.8-20), (2.8-21), and (2.9-12).  The implementation uses the corrected
+    ``P_RAJ,D,WS`` relation where the printed equation (2.9-13) is ambiguous.
     """
     assessment_parameters = assessment_parameters_.copy()
 
@@ -239,37 +227,27 @@ def calculate_material_woehler_parameters_P_RAJ(assessment_parameters_):
 
 
 def calculate_roughness_material_woehler_parameters_P_RAM(assessment_parameters_):
-    """
-    For FKM nonlinear roughness & surface layer, calculate the additional parameters in the P_RAM Woehler curve
-    that model the dependency on the roughness. The resulting woehler curve is still the material woehler curve
-    but with roughness effects. The other assessment factors are yet missing.
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_roughness_material_woehler_parameters_P_RAM(assessment_parameters)
-        assessment_parameters = calculate_roughness_component_woehler_parameters_P_RAM(assessment_parameters)
+    r"""Calculate roughness-adjusted material parameters for ``P_RAM``.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * ``P_RAM_Z_WS``: First sampling point ("knee") of the material damage Woehler curve at N=1e3
-        * ``P_RAM_D_WS``: Damage threshold for infinite life, the second "knee" of the material damage Woehler curve
-        * ``d_2``: The second slope of the material damage Woehler curve without roughness effect
-        * ``K_RP``: The roughness factor K_R,P
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing ``P_RAM_Z_WS``, ``P_RAM_D_WS``,
+        material slope ``d_2``, and roughness factor ``K_RP``.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with roughness-adjusted fatigue limit
+        ``P_RAM_D_WS_rau``, adjusted second slope ``d2_RAM_rau``, and the
+        check value ``d2_RAM_rau_alternative`` added.
 
-        * ``P_RAM_D_WS_rau``: Damage threshold for infinite life, the lower "knee" of the material damage Woehler curve
-        * ``d2_RAM_rau``: second slope of the material damage Woehler curve, adjusted by roughness factor K_R,P
-
+    Notes
+    -----
+    Implements the roughness and surface-layer extension to FKM nonlinear
+    Section 2.5.6.  The fatigue-limit ordinate is multiplied by ``K_RP`` and
+    the second finite-life slope is recomputed so that the original transition
+    cycle number remains unchanged.
     """
     assessment_parameters = assessment_parameters_.copy()
 
@@ -299,38 +277,26 @@ def calculate_roughness_material_woehler_parameters_P_RAM(assessment_parameters_
 
 
 def calculate_roughness_material_woehler_parameters_P_RAJ(assessment_parameters_):
-    """
-    For FKM nonlinear roughness & surface layer, calculate the additional parameters in the P_RAJ Woehler curve
-    that model the dependency on the roughness. The resulting woehler curve is still the material woehler curve
-    but with roughness effects. The other assessment factors are yet missing.
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_roughness_material_woehler_parameters_P_RAJ(assessment_parameters)
-        assessment_parameters = calculate_roughness_component_woehler_parameters_P_RAJ(assessment_parameters)
+    r"""Calculate roughness-adjusted material parameters for ``P_RAJ``.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * ``P_RAJ_Z_WS``: Point at N=1 of the material damage Woehler curve (not N=1e3 as for P_RAM!)
-        * ``P_RAJ_D_WS``: Damage threshold for infinite life, the second "knee" of the material damage Woehler curve
-        * ``d_RAJ``: The slope of the material damage Woehler curve without roughness effect
-        * ``K_RP``: The roughness factor K_R,P
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing ``P_RAJ_Z_WS``, ``P_RAJ_D_WS``,
+        material slope ``d_RAJ``, and roughness factor ``K_RP``.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with ``P_RAJ_Z_1e3``,
+        roughness-adjusted fatigue limit ``P_RAJ_D_WS_rau``, adjusted slope
+        ``d_RAJ_2_rau``, and the check value ``d_RAJ_2_rau_alternative`` added.
 
-        * ``P_RAJ_Z_1e3``: The upper "knee" of the material damage Woehler curve at N=1e3.
-        * ``P_RAJ_D_WS_rau``: Damage threshold for infinite life, the lower "knee" of the material damage Woehler curve
-        * ``d_RAJ_2_rau``: The second slope of the material damage Woehler curve adjusted by roughness factor K_R,P
-
+    Notes
+    -----
+    Implements the roughness and surface-layer extension to FKM nonlinear
+    Sections 2.8.6 and 2.9.6.  The ``P_RAJ`` roughness correction acts with
+    ``K_RP ** 2`` because ``P_RAJ`` is an energy-like damage parameter.
     """
     assessment_parameters = assessment_parameters_.copy()
 
@@ -354,49 +320,29 @@ def calculate_roughness_material_woehler_parameters_P_RAJ(assessment_parameters_
 
 
 def calculate_roughness_component_woehler_parameters_P_RAM(assessment_parameters_, include_n_P):
-    """Calculate the component woehler curve from the material woehler curve
-    (Sec. 2.5.6 of FKM nonlinear), but with the special roughness consideration
-    described in the extension surface layer & roughness.
-    This involves multiplying the appropriate factors to the point P_RAM_Z_WS and P_RAM_D_WS_rau
-    in the material woehler curve to obtain the points P_RAM_Z and P_RAM_D in the component Woehler curve.
-
-    The "appropriate factors" consist of ``gamma_M`` which relates to the failure probability and optionally
-    ``n_P``, which describes the supporting effect of the notch (fracture mechanical number and statistic number).
-    The roughness has already been incorporated during `calculate_roughness_material_woehler_parameters_P_RAM`.
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_roughness_parameter(assessment_parameters)
-        assessment_parameters = calculate_roughness_material_woehler_parameters_P_RAM(assessment_parameters)
-        assessment_parameters = calculate_nonlocal_parameters(assessment_parameters)    # include this line if include_n_P is True
-        assessment_parameters = calculate_failure_probability_factor_P_RAM(assessment_parameters)
-        assessment_parameters = calculate_roughness_component_woehler_parameters_P_RAM(assessment_parameters, True)
+    r"""Calculate roughness-adjusted component parameters for ``P_RAM``.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * ``gamma_M_RAM``: The factor for the standard deviation of the capacity to withstand stresses of the component.
-        * ``n_P``: The factor for nonlocal effects, can be computed by ``calculate_nonlocal_parameters``.
-            This is only needed if ``include_n_P`` is `True`.
-        * ``P_RAM_Z_WS``: The point at N=1e3 in the material Woehler curve.
-        * ``P_RAM_D_WS_rau``: The point in the material Woehler curve.
-
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing ``gamma_M_RAM``, ``P_RAM_Z_WS``,
+        ``P_RAM_D_WS_rau``, and optionally nonlocal support factor ``n_P``.
     include_n_P : bool
-        Whether the supporting effect of the notch should be included, i.e., the factor ``n_P`` should be used.
+        Whether to include ``n_P`` in the component curve shift.  Set to
+        ``True`` for the surface point with notch support and ``False`` when the
+        roughness extension shall omit that support factor.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with component curve knee
+        ``P_RAM_Z`` and component fatigue limit ``P_RAM_D`` added.
 
-        * ``P_RAM_Z``: The "Zeitfestigkeit" point in the component Woehler curve.
-        * ``P_RAM_D``: The "Dauerfestigkeit" point in the component Woehler curve, i.e., the fatigue strength limit, the P_RAM value below which we have infinite life
-
+    Notes
+    -----
+    Implements FKM nonlinear Section 2.5.6 together with the roughness and
+    surface-layer extension.  The material curve ordinates are divided by the
+    material safety factor ``gamma_M_RAM`` and optionally multiplied by ``n_P``.
     """
     assessment_parameters = assessment_parameters_.copy()
 
@@ -420,50 +366,31 @@ def calculate_roughness_component_woehler_parameters_P_RAM(assessment_parameters
 
 
 def calculate_roughness_component_woehler_parameters_P_RAJ(assessment_parameters_, include_n_P):
-    """Calculate the component woehler curve from the material woehler curve
-    (Sec. 2.8.6 of FKM nonlinear), but with the special roughness consideration
-    described in the extension surface layer & roughness.
-    This involves multiplying the appropriate factors to the points P_RAJ_Z_WS
-    and P_RAJ_D_WS_rau in the material woehler curve to obtain the
-    points P_RAJ_Z and P_RAJ_D in the component Woehler curve.
-
-    The "appropriate factors" consist of ``gamma_M`` which relates to the failure probability and optionally
-    ``n_P``, which describes the supporting effect of the notch (fracture mechanical number and statistic number).
-    The roughness has already been incorporated during `calculate_roughness_material_woehler_parameters_P_RAJ`.
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_roughness_parameter(assessment_parameters)
-        assessment_parameters = calculate_roughness_material_woehler_parameters_P_RAJ(assessment_parameters)
-        assessment_parameters = calculate_nonlocal_parameters(assessment_parameters)    # include this line if include_n_P is True
-        assessment_parameters = calculate_failure_probability_factor_P_RAJ(assessment_parameters)
-        assessment_parameters = calculate_roughness_component_woehler_parameters_P_RAJ(assessment_parameters, True)
+    r"""Calculate roughness-adjusted component parameters for ``P_RAJ``.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * ``gamma_M_RAJ``: The factor for the standard deviation of the capacity to withstand stresses of the component.
-        * ``n_P``: The factor for nonlocal effects, can be computed by ``calculate_nonlocal_parameters``.
-            This is only needed if ``include_n_P`` is `True`.
-        * ``P_RAJ_Z_WS``: The point at N=1 in the material Woehler curve (note that for P_RAJ it is not N=1e3 as for P_RAM!)
-        * ``P_RAJ_D_WS_rau``: The threshold for infinite life in the material Woehler curve.
-
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing ``gamma_M_RAJ``, ``P_RAJ_Z_WS``,
+        ``P_RAJ_D_WS_rau``, ``P_RAJ_Z_1e3``, and optionally nonlocal support
+        factor ``n_P``.
     include_n_P : bool
-        Whether the supporting effect of the notch should be included, i.e., the factor ``n_P`` should be used.
+        Whether to include ``n_P`` in the component curve shift.  Set to
+        ``True`` for the surface point with notch support and ``False`` when the
+        roughness extension shall omit that support factor.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with ``P_RAJ_Z``, shifted
+        ``P_RAJ_Z_1e3``, initial fatigue limit ``P_RAJ_D_0``, and component
+        fatigue limit ``P_RAJ_D`` added.
 
-        * ``P_RAJ_Z``: The first point in the component Woehler curve at N=1 (not N=1e3 as for P_RAM!).
-        * ``P_RAJ_D_0`` and ``P_RAJ_D``: The infinite life threshold of the component Woehler curve.
-
+    Notes
+    -----
+    Implements FKM nonlinear Sections 2.8.6 and 2.9.6 together with the
+    roughness and surface-layer extension.  ``n_P`` enters squared for
+    ``P_RAJ`` because this damage parameter is energy based.
     """
     assessment_parameters = assessment_parameters_.copy()
 
@@ -494,40 +421,29 @@ def calculate_roughness_component_woehler_parameters_P_RAJ(assessment_parameters
 
 
 def calculate_nonlocal_parameters(assessment_parameters_):
-    """Calculate the factors for the nonlocal effects on the component lifetime.
-     (Sec. 2.5.6.1 of FKM nonlinear). This includes the statistic factor and the
-     fracture mechanics factor.
-
-     The calculation procedure is the same for P_RAM and P_RAJ damage parameters.
-     For P_RAJ, the equivalent formulas are presented in chapter 2.8.6.1 of FKM nonlinear.
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_nonlocal_parameters(assessment_parameters)
+    r"""Calculate nonlocal notch support factors.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * ``MatGroupFKM``: Which material group, one of ``Steel``, ``SteelCast``, ``Al_wrought``
-        * ``A_ref``: Reference surface area of the highly loaded area, usually set to 500 [mm^2].
-        * ``A_sigma``: Surface area of the highly loaded area of the component (in [mm^2]).
-        * ``R_m``: The ultimate tensile strength of the material, :math:`R_m`.
-        * ``G``: Relative stress gradient [mm]
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing ``MatGroupFKM``, reference highly
+        stressed surface ``A_ref`` in mm², component highly stressed surface
+        ``A_sigma`` in mm², relative stress gradient ``G`` in 1/mm, and ultimate
+        tensile strength ``R_m`` in MPa.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with statistical support factor
+        ``n_st``, unclipped fracture-mechanical support factor ``n_bm_``,
+        clipped fracture-mechanical support factor ``n_bm``, and total support
+        factor ``n_P`` added.
 
-        * ``n_st``: The statistic factor (de: Statistische Stützzahl)
-        * ``n_bm``: The fracture mechanic factor (de: bruchmechanische Stützzahl)
-        * ``n_P``: The total material factor as the product of ``n_st`` and ``n_bm`` (de: werkstoffmechanische Stützzahl)
-
+    Notes
+    -----
+    Implements FKM nonlinear Section 2.5.6.1, equations (2.5-27) to (2.5-32).
+    The same factors are used by the ``P_RAM`` and ``P_RAJ`` assessment paths;
+    for ``P_RAJ`` the corresponding formulas are stated in Section 2.8.6.1.
     """
     assessment_parameters = assessment_parameters_.copy()
 
@@ -560,36 +476,26 @@ def calculate_nonlocal_parameters(assessment_parameters_):
 
 
 def calculate_roughness_parameter(assessment_parameters_):
-    """Calculate the roughness factor K_R,P (Sec. 2.5.6.2 of FKM nonlinear).
-
-    If the factor assessment_parameters["K_RP"] is already set, this function does nothing.
-
-    The calculation is the same for P_RAM and P_RAJ damage parameters.
-    For P_RAJ, the equivalent formulas are presented in chapter 2.8.6.2 of FKM nonlinear.
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_roughness_parameter(assessment_parameters)
+    r"""Calculate the roughness factor ``K_RP``.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * ``MatGroupFKM``: Which material group, one of ``Steel``, ``SteelCast``, ``Al_wrought``
-        * ``R_m``: The ultimate tensile strength of the material, :math:`R_m`.
-        * ``R_z``: Only if K_RP is not yet given: The surface roughness of the component, :math:`R_z`.
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing ``MatGroupFKM`` and ultimate tensile
+        strength ``R_m`` in MPa.  If ``K_RP`` is absent, roughness ``R_z`` in µm
+        is also required.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with roughness factor ``K_RP`` added,
+        or the unchanged copy when ``K_RP`` was already supplied.
 
-        * ``K_RP``: The roughness factor K_R,P.
-
+    Notes
+    -----
+    Implements FKM nonlinear Section 2.5.6.2, equation (2.5-37).  For the
+    ``P_RAJ`` path the corresponding formulas are stated in Section 2.8.6.2.
+    A roughness of ``R_z <= 1`` µm gives ``K_RP = 1``.
     """
     assessment_parameters = assessment_parameters_.copy()
 
@@ -616,21 +522,35 @@ def calculate_roughness_parameter(assessment_parameters_):
 
 
 def compute_beta(P_A):
-    """Calculates the beta parameter ("damage index"),
-    which is an intermediate value for the lifetime assessment factor gamma_M.
-    Note that the FKM nonlinear guideline does not list the formula for beta,
-    they assume that the beta value is known.
+    r"""Calculate the reliability index ``beta`` from a failure probability.
 
     Parameters
     ----------
     P_A : float
-        Failure probability for the assessment
+        Failure probability for the assessment as a dimensionless probability.
 
     Returns
     -------
     float
-        The parameter beta.
+        Reliability index ``beta`` corresponding to ``P_A`` for a standard
+        normal distribution.
 
+    Raises
+    ------
+    RuntimeError
+        Raised if the numerical root search does not converge.
+
+    Notes
+    -----
+    The FKM nonlinear guideline uses ``beta`` in the material safety factor but
+    does not provide this conversion formula.  This helper solves
+    ``Phi(-beta) = P_A`` for the standard normal distribution.
+
+    Examples
+    --------
+    >>> from pylife.strength.fkm_nonlinear.parameter_calculations import compute_beta
+    >>> round(float(abs(compute_beta(0.5))), 6)
+    0.0
     """
     sigma = 1
     result = scipy.optimize.root(lambda x: abs(scipy.stats.norm.cdf(x, 0, sigma)-P_A), x0=-0.6, tol=1e-10)
@@ -643,34 +563,26 @@ def compute_beta(P_A):
 
 
 def calculate_failure_probability_factor_P_RAM(assessment_parameters_):
-    """Calculate the factor for the failure probability of the component, i.e., the factor
-    for the standard deviation of the capacity to withstand stresses of the component.
-    This calculation is for use with the P_RAM damage parameter.
-
-    If assessment_parameters.beta is set, the safety factor gamma_M for the capacity to withstand stresses of the component (de: Beanspruchbarkeit)
-    is computed from the damage index ``beta``. Otherwise, it is derived from the failure probability assessment_parameters.P_A
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_failure_probability_factor_P_RAM(assessment_parameters)
+    r"""Calculate the material safety factor for ``P_RAM``.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * Either the failure probability, ``P_A``, or the damage index, ``beta``.
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing failure probability ``P_A`` or an
+        already computed reliability index ``beta``.  ``P_A = 0.5`` disables the
+        safety-factor shift and yields ``gamma_M_RAM = 1``.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with reliability index ``beta`` when
+        needed and material safety factor ``gamma_M_RAM`` added.
 
-        * ``gamma_M_RAM``: The factor for the standard deviation of the capacity to withstand stresses of the component.
-
+    Notes
+    -----
+    Implements FKM nonlinear Section 2.5.6.3, equation (2.5-38).  The guideline
+    clips ``gamma_M_RAM`` to at least ``1.1`` except for the explicit
+    ``P_A = 0.5`` no-statistics case used for experiment-like assessments.
     """
     assessment_parameters = assessment_parameters_.copy()
 
@@ -694,34 +606,26 @@ def calculate_failure_probability_factor_P_RAM(assessment_parameters_):
 
 
 def calculate_failure_probability_factor_P_RAJ(assessment_parameters_):
-    """Calculate the factor for the failure probability of the component, i.e., the factor
-    for the standard deviation of the capacity to withstand stresses of the component.
-    This calculation is for use with the P_RAJ damage parameter.
-
-    If assessment_parameters.beta is set, the safety factor gamma_M for the capacity to withstand stresses of the component (de: Beanspruchbarkeit)
-    is computed from the damage index ``beta``. Otherwise, it is derived from the failure probability assessment_parameters.P_A
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_failure_probability_factor_P_RAJ(assessment_parameters)
+    r"""Calculate the material safety factor for ``P_RAJ``.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * Either the failure probability, ``P_A``, or the damage index, ``beta``.
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing failure probability ``P_A`` or an
+        already computed reliability index ``beta``.  ``P_A = 0.5`` disables the
+        safety-factor shift and yields ``gamma_M_RAJ = 1``.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with reliability index ``beta`` when
+        needed and material safety factor ``gamma_M_RAJ`` added.
 
-        * ``gamma_M_RAJ``: The factor for the standard deviation of the capacity to withstand stresses of the component.
-
+    Notes
+    -----
+    Implements FKM nonlinear Section 2.8.6.3, equation (2.8-38).  The guideline
+    clips ``gamma_M_RAJ`` to at least ``1.2`` except for the explicit
+    ``P_A = 0.5`` no-statistics case used for experiment-like assessments.
     """
     assessment_parameters = assessment_parameters_.copy()
 
@@ -745,46 +649,27 @@ def calculate_failure_probability_factor_P_RAJ(assessment_parameters_):
 
 
 def calculate_component_woehler_parameters_P_RAM(assessment_parameters_):
-    """Calculate the component woehler curve from the material woehler curve
-    (Sec. 2.5.6 of FKM nonlinear). This involves multiplying the appropriate
-    factors to the point P_RAM_Z_WS in the material woehler curve to obtain the
-    point P_RAM_Z in the component Woehler curve.
-
-    If assessment_parameters.beta is set, the safety factor gamma_M for the capacity to withstand stresses of the component (de: Beanspruchbarkeit)
-    is computed from the damage index ``beta``. Otherwise, it is derived from the failure probability assessment_parameters.P_A
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_material_woehler_parameters_P_RAM(assessment_parameters)
-        assessment_parameters = calculate_nonlocal_parameters(assessment_parameters)
-        assessment_parameters = calculate_roughness_parameter(assessment_parameters)
-        assessment_parameters = calculate_failure_probability_factor_P_RAM(assessment_parameters)
-        assessment_parameters = calculate_component_woehler_parameters_P_RAM(assessment_parameters)
+    r"""Calculate component Wöhler parameters for the ``P_RAM`` path.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * ``gamma_M_RAM``: The factor for the standard deviation of the capacity to withstand stresses of the component.
-        * ``n_P``: The factor for nonlocal effects, can be computed by ``calculate_nonlocal_parameters``.
-        * ``K_RP``: The roughness factor K_R,P.
-        * ``P_RAM_Z_WS``: The point for N=1e3 in the material Woehler curve.
-        * ``P_RAM_D_WS``: The threshold for infinite life in the material Woehler curve.
-        * Either the failure probability, ``P_A``, or the damage index, ``beta``.
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing ``gamma_M_RAM``, support factor
+        ``n_P``, roughness factor ``K_RP``, material knee ``P_RAM_Z_WS``, and
+        material fatigue limit ``P_RAM_D_WS``.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with component shift factor
+        ``f_RAM``, component knee ``P_RAM_Z``, and component fatigue limit
+        ``P_RAM_D`` added.
 
-        * ``f_RAM``: The factor to map between component and material Woehler curves.
-        * ``P_RAM_Z``: The "Zeitfestigkeit" point in the component Woehler curve.
-        * ``P_RAM_D``: The "Dauerfestigkeit" point in the component Woehler curve, i.e., the fatigue strength limit, the P_RAM value below which we have infinite life
-
+    Notes
+    -----
+    Implements FKM nonlinear Section 2.5.6, equations (2.5-24) and (2.5-25),
+    and the fatigue-limit ordinate used by equation (2.6-88).  ``f_RAM`` maps
+    the material Wöhler curve to the assessed component.
     """
     assessment_parameters = assessment_parameters_.copy()
 
@@ -806,46 +691,27 @@ def calculate_component_woehler_parameters_P_RAM(assessment_parameters_):
 
 
 def calculate_component_woehler_parameters_P_RAJ(assessment_parameters_):
-    """Calculate the component woehler curve from the material woehler curve
-    (Sec. 2.8.6 of FKM nonlinear). This involves multiplying the appropriate
-    factors to the points P_RAJ_Z_WS and P_RAJ_D_WS in the material woehler curve to obtain the
-    points P_RAJ_Z and P_RAJ_D in the component Woehler curve.
-
-    If assessment_parameters.beta is set, the safety factor gamma_M for the capacity to withstand stresses of the component (de: Beanspruchbarkeit)
-    is computed from the damage index ``beta``. Otherwise, it is derived from the failure probability assessment_parameters.P_A
-
-    The calculated values will be set in a copy of the input series. The intended
-    use is as follows:
-
-    .. code::
-
-        assessment_parameters = calculate_material_woehler_parameters_P_RAJ(assessment_parameters)
-        assessment_parameters = calculate_nonlocal_parameters(assessment_parameters)
-        assessment_parameters = calculate_roughness_parameter(assessment_parameters)
-        assessment_parameters = calculate_failure_probability_factor_P_RAJ(assessment_parameters)
-        assessment_parameters = calculate_component_woehler_parameters_P_RAJ(assessment_parameters)
+    r"""Calculate component Wöhler parameters for the ``P_RAJ`` path.
 
     Parameters
     ----------
-    assessment_parameters : pandas Series
-        The named material parameters. This Series has to include at least the following values:
-
-        * ``gamma_M_RAJ``: The factor for the standard deviation of the capacity to withstand stresses of the component.
-        * ``n_P``: The factor for nonlocal effects, can be computed by ``calculate_nonlocal_parameters``.
-        * ``K_RP``: The roughness factor K_R,P.
-        * ``P_RAJ_Z_WS``: The point at N=1 in the material Woehler curve.
-        * ``P_RAJ_D_WS``: The threshold for infinite life in the material Woehler curve.
-        * Either the failure probability, ``P_A``, or the damage index, ``beta``.
+    assessment_parameters_ : pandas.Series
+        Assessment parameters containing ``gamma_M_RAJ``, support factor
+        ``n_P``, roughness factor ``K_RP``, material start point
+        ``P_RAJ_Z_WS``, and material fatigue limit ``P_RAJ_D_WS``.
 
     Returns
     -------
-    pandas DataFrame
-        A copy of ``assessment_parameters`` with the following additional items set:
+    pandas.Series
+        Copy of ``assessment_parameters_`` with component shift factor
+        ``f_RAJ``, component start point ``P_RAJ_Z``, initial fatigue limit
+        ``P_RAJ_D_0``, and component fatigue limit ``P_RAJ_D`` added.
 
-        * ``f_RAJ``: The factor to map between component and material Woehler curves.
-        * ``P_RAJ_Z``: The first point in the component Woehler curve.
-        * ``P_RAJ_D_0`` and ``P_RAJ_D``: The infinite life threshold of the component Woehler curve.
-
+    Notes
+    -----
+    Implements FKM nonlinear Sections 2.8.6 and 2.9.6, equations (2.8-22) to
+    (2.8-25) and (2.9-24) to (2.9-27).  ``n_P`` and ``K_RP`` enter squared for
+    ``P_RAJ`` because this damage parameter is energy based.
     """
     assessment_parameters = assessment_parameters_.copy()
 

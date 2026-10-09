@@ -1,3 +1,4 @@
+**********************************
 pyLife's variable name conventions
 **********************************
 
@@ -19,6 +20,12 @@ Out of these considerations we decided that in pyLife for physical quantities
 the variable names as described in this document are *mandatory*.  For physical
 quantities not described in this document, you can either use an expressive
 variable name or you can document a symbol in your module documentation.
+
+.. note::
+
+   This page states the naming *rules* for contributors.  If you are looking
+   for the meaning of a symbol such as ``SD`` or ``k_1``, see the
+   :doc:`glossary`.
 
 
 General rules

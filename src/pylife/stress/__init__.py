@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -13,6 +13,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Provide stress signals and fatigue-load stress utilities.
+
+The package contains pandas signal accessors for tensor-valued stresses,
+equivalent-stress calculations, time-domain and frequency-domain stress
+signals, load collectives, and rainflow counting.  Use it to transform
+mechanical stress results, usually given in MPa, into representations used by
+fatigue assessment workflows.
+"""
 
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__

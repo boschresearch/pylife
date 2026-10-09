@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 - for information on the respective copyright owner
+# Copyright (c) 2020-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Define VMAP result-location helpers used by the VMAP importer."""
+
 __author__ = "Gyöngyvér Kiss"
 __maintainer__ = __author__
 
@@ -21,6 +23,16 @@ from enum import Enum
 
 
 class VariableLocations(Enum):
+    """Enumerate VMAP result locations used by pyLife column mappings.
+
+    VMAP variables can be stored at different finite-element locations.  The
+    numeric values are the VMAP location codes used by the importer.
+
+    Parameters
+    ----------
+    *values : tuple
+        Internal enumeration values supplied by :class:`enum.Enum`.
+    """
     NODE = 2
     ELEMENT_NODAL = 6
 

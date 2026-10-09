@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,27 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Meanstress transformation
-=========================
+"""Provide mean stress transformations for load collectives and histograms.
 
-Meanstress transformation is used to take the influence of the meanstress of a
-load hysteresis into account.  The fatigue of a cyclically loaded component is
-not only influenced by the amplitude but also by the mean stress.  The usual
-way to take this into account is to compute a substitute amplitude that has the
-same fatigue result for the known mean stress.  The mean stress sensitivity
-is usually defined by a haigh diagram, depending on the R-value regime.
+Mean stress transformations convert a cyclic load with stress amplitude
+``S_a`` and mean stress ``S_m`` to an equivalent amplitude at a target stress
+ratio ``R_goal``. The equivalent cycle is intended to produce the same fatigue
+assessment result in an S-N curve calculation.
 
-In pyLife we have the class :class:`~pylife.strength.meanstress.HaighDiagram`
-that lets you define an arbitrary haigh diagram, i.e. a mean stress sensitivity
-for each interval of `R`.  There are also convenience functions
-:class:`~pylife.strength.meanstress.HaighDiagram.fkm_goodman` and
-:class:`~pylife.strength.meanstress.HaighDiagram.five_segment` that lets you
-define the more common haigh diagrams more easily.
+The module represents mean stress sensitivity by a Haigh diagram: each stress
+ratio interval ``R = S_min / S_max`` is assigned a slope ``M``. Convenience
+constructors implement the FKM-Goodman and five-segment diagrams, while
+pandas accessors apply the transformation to load collectives and rainflow
+histograms.
 
-* FKM Goodman
-* Five Segment Correction
-
+See Also
+--------
+pylife.strength.meanstress.HaighDiagram : Store piecewise mean stress sensitivities.
+pylife.strength.meanstress.MeanstressTransformCollective : Transform load collectives.
+pylife.strength.meanstress.MeanstressTransformMatrix : Transform load histograms.
 """
 
 __author__ = "Johannes Mueller, Lena Rapp"
@@ -52,24 +49,71 @@ import pylife.stress.collective as CL
 
 @pd.api.extensions.register_series_accessor("haigh_diagram")
 class HaighDiagram(PylifeSignal):
-    """Model for a Haigh diagram in order to perform meanstress transformations.
+    r"""Represent a piecewise Haigh diagram for mean stress correction.
 
-    A Haigh diagram a set of meanstress sensitivity slopes $M$ that is changing
-    with the R-values.  The values of the ```pd.Series`` represents that slopes
-    $M$ and the `pd.IntervalIndex` represents the R-ranges.
+    A Haigh diagram assigns a mean stress sensitivity ``M`` to intervals of
+    the stress ratio ``R``. In pyLife it is stored as a
+    :class:`pandas.Series` whose values are dimensionless sensitivities and
+    whose ``R`` index level is a :class:`pandas.IntervalIndex`. The diagram is
+    used to transform stress cycles from their actual ``R`` value to a target
+    ``R_goal``.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.Series
+        Series containing mean stress sensitivities ``M`` indexed by the
+        supplied ``R`` intervals. Additional index levels may identify several
+        diagrams.
+
+    See Also
+    --------
+    pylife.strength.meanstress.HaighDiagram.fkm_goodman : Create an FKM-Goodman diagram.
+    pylife.strength.meanstress.HaighDiagram.five_segment : Create a five-segment diagram.
+    pylife.strength.meanstress.HaighDiagram.transform : Transform a load collective.
+
+    Notes
+    -----
+    For one segment with sensitivity ``M`` the transformation keeps the damage
+    equivalent quantity ``S_a + M S_m`` constant. With
+
+    .. math::
+
+        S_m = S_a\,\frac{1 + R}{1 - R},
+
+    an amplitude transformed to ``R_goal`` is obtained from
+
+    .. math::
+
+        S_{a,goal} =
+        \frac{(1 - R_{goal})(S_a + M S_m)}
+             {1 - R_{goal} + M(1 + R_{goal})}.
+
+    For ``R_goal = -\infty`` the implemented limiting form is
+
+    .. math::
+
+        S_{a,goal} = \frac{S_a + M S_m}{1 - M}.
     """
 
     @classmethod
     def from_dict(cls, segments_dict):
-        """Create a Haigh diagram from a dict.
+        """Create a Haigh diagram from interval boundaries and sensitivities.
 
         Parameters
         ----------
         segments_dict : dict
-            dict resolving the R-value intervals to the meanstress slope
+            Mapping from ``(left, right)`` stress-ratio interval tuples to
+            dimensionless mean stress sensitivities ``M``.
 
-        Example
+        Returns
         -------
+        pylife.strength.meanstress.HaighDiagram
+            Haigh diagram accessor wrapping a :class:`pandas.Series` indexed by
+            the supplied ``R`` intervals.
+
+        Examples
+        --------
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> HaighDiagram.from_dict({
         ...    (1.0, np.inf): 0.0,
         ...    (-np.inf, 0.0): 0.5,
@@ -80,8 +124,6 @@ class HaighDiagram(PylifeSignal):
         (-inf, 0.0]    0.500
         (0.0, 1.0]     0.167
         dtype: float64
-
-        sets up a FKM Goodman like Haigh diagram.
         """
         vals = np.array(list(segments_dict.values()))
         idx = pd.IntervalIndex.from_tuples(list(segments_dict.keys()), name="R")
@@ -89,26 +131,47 @@ class HaighDiagram(PylifeSignal):
 
     @classmethod
     def fkm_goodman(cls, haigh_fkm_goodman):
-        """Create a Haigh diagram according to FKM Goodman.
+        r"""Create an FKM-Goodman Haigh diagram.
 
         Parameters
         ----------
-        haigh_fkm_goodman : pd.Series or pd.DataFrame
-            a series containing one or a dataframe containing multiple values for
-            `M` and optionally `M2`.
+        haigh_fkm_goodman : pandas.Series or pandas.DataFrame
+            Mean stress sensitivity data. It must contain ``M`` for
+            ``-inf < R <= 0`` and may contain ``M2`` for ``0 < R <= 1``. If
+            ``M2`` is missing, ``M / 3`` is used.
+
+        Returns
+        -------
+        pylife.strength.meanstress.HaighDiagram
+            Haigh diagram with segments ``(1, inf]``, ``(-inf, 0]`` and
+            ``(0, 1]``.
+
+        Limitations
+        -----------
+        The FKM-Goodman correction implemented here assumes the FKM linear
+        guideline piecewise slopes: ``M`` for alternating to pulsating
+        compression/tension cycles, ``M2`` for tensile mean stresses up to
+        ``R = 1``, and ``0`` beyond ``R = 1``. Use :meth:`five_segment` when
+        material-specific transition ratios ``R12`` and ``R23`` are available.
 
         Notes
         -----
+        The implemented slopes are
 
-        The Haigh diagram according to FKM Goodman comes with the slope ``M``
-        which is valid between ``R==-inf`` and ``R==0``.  Beyond ``R==0`` the slope
-        is ``M2` if ``M2`` is given or ``M/3`` if not.
+        .. math::
+
+            M(R) =
+            \begin{cases}
+            0, & 1 < R \\
+            M, & -\infty < R \le 0 \\
+            M_2, & 0 < R \le 1.
+            \end{cases}
 
         Examples
         --------
+        Create a diagram with default ``M2``.
 
-        A FKM Goodman diagram with default ``M2``
-
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> HaighDiagram.fkm_goodman(pd.Series({"M": 0.5})).to_pandas()
         R
         (1.0, inf]     0.000000
@@ -116,8 +179,9 @@ class HaighDiagram(PylifeSignal):
         (0.0, 1.0]     0.166667
         dtype: float64
 
-        A FKM Goodman diagram with manual ``M2``
+        Create a diagram with a manual ``M2``.
 
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> HaighDiagram.fkm_goodman(pd.Series({"M": 0.5, "M2": 0.2})).to_pandas()
         R
         (1.0, inf]     0.0
@@ -125,6 +189,7 @@ class HaighDiagram(PylifeSignal):
         (0.0, 1.0]     0.2
         dtype: float64
 
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> collective = pd.DataFrame(
         ...     {
         ...         "range": [600.0, 300.0, 500.0],
@@ -170,26 +235,41 @@ class HaighDiagram(PylifeSignal):
 
     @classmethod
     def five_segment(cls, five_segment_haigh_diagram):
-        """Create a five segment slope Haigh diagram.
+        r"""Create a five-segment Haigh diagram.
 
         Parameters
         ----------
-        five_segment_haigh_diagram : :class:`pandas.Series` or :class:`pandas.DataFrame`
-            The five segment meanstress slope data.
+        five_segment_haigh_diagram : pandas.Series or pandas.DataFrame
+            Five-segment mean stress data containing dimensionless
+            sensitivities ``M0`` through ``M4`` and transition stress ratios
+            ``R12`` and ``R23``.
+
+        Returns
+        -------
+        pylife.strength.meanstress.HaighDiagram
+            Haigh diagram with five stress-ratio segments.
 
         Notes
         -----
-        ``five_segment_hagih_diagram`` has to provide the following keys:
-            * ``M0``: the mean stress sensitivity between ``R==-inf`` and ``R==0``
-            * ``M1``: the mean stress sensitivity between ``R==0`` and ``R==R12``
-            * ``M2``: the mean stress sensitivity betwenn ``R==R12`` and ``R==R23``
-            * ``M3``: the mean stress sensitivity between ``R==R23`` and ``R==1``
-            * ``M4``: the mean stress sensitivity beyond ``R==1``
-            * ``R12``: R-value between ``M1`` and ``M2``
-            * ``R23``: R-value between ``M2`` and ``M3``
+        The five-segment diagram defines
+
+        .. math::
+
+            M(R) =
+            \begin{cases}
+            M_4, & 1 < R \\
+            M_0, & -\infty < R \le 0 \\
+            M_1, & 0 < R \le R_{12} \\
+            M_2, & R_{12} < R \le R_{23} \\
+            M_3, & R_{23} < R \le 1.
+            \end{cases}
+
+        ``R12`` and ``R23`` are dimensionless transition ratios and must
+        satisfy the physical ordering used by the selected material model.
 
         Examples
         --------
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> haigh = HaighDiagram.five_segment(
         ...    pd.Series(
         ...        {"M0": 0.5, "M1": 0.25, "M2": 0.125, "M3": 1.0, "M4": -2.0, "R12": 0.2, "R23": 0.8}
@@ -204,12 +284,18 @@ class HaighDiagram(PylifeSignal):
         (0.8, 1.0]     1.000
         dtype: float64
 
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> collective = pd.DataFrame(
         ...     {
         ...         "range": [600.0, 300.0, 500.0],
         ...         "mean": [400.0, -150.0, 0.0],
         ...         "cycles": [1.0, 10.0, 100.0],
         ...     }
+        ... )
+        >>> haigh = HaighDiagram.five_segment(
+        ...    pd.Series(
+        ...        {"M0": 0.5, "M1": 0.25, "M2": 0.125, "M3": 1.0, "M4": -2.0, "R12": 0.2, "R23": 0.8}
+        ...    )
         ... )
         >>> haigh.transform(collective, 0.0)
                 range        mean  cycles
@@ -267,28 +353,35 @@ class HaighDiagram(PylifeSignal):
         return cls(haigh)
 
     def transform(self, collective, R_goal):
-        """Transform a load collective to defined R-value.
+        """Transform a load collective to a target stress ratio.
 
         Parameters
         ----------
-        collective : pd.DataFrame
-            The load collective data to transform containing either `range` and
-            `mean` or `from` and `to` columns to describe the load cycles. All other
-            columns e.g. `cycles` are copied to the result.
-
+        collective : pandas.DataFrame
+            Load collective to transform. It must contain either ``range`` and
+            ``mean`` columns or ``from`` and ``to`` columns. Ranges are stress
+            ranges in MPa or another consistent stress unit; means are mean
+            stresses in the same unit. Additional columns, for example
+            ``cycles``, are copied.
         R_goal : float
-            The target R-value for the transformation.
+            Target stress ratio ``R = S_min / S_max``, dimensionless.
 
         Returns
         -------
-        pd.DataFrame
-            DataFrame with columns:
-            - 'range': transformed amplitude range
-            - 'mean': transformed mean value
-            - 'cycles': copied unchanged from the input if present
+        pandas.DataFrame
+            Transformed collective with columns ``range`` for stress range,
+            ``mean`` for mean stress, and all non-load columns copied from the
+            input.
+
+        Notes
+        -----
+        Each cycle is moved segment by segment across the Haigh diagram until
+        it reaches ``R_goal``. The result uses stress ranges, so the
+        transformed range is ``2 * S_a``.
 
         Examples
         --------
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> collective = pd.DataFrame(
         ...     {
         ...         "from": [300.0, -150.0, -250.0],
@@ -302,6 +395,7 @@ class HaighDiagram(PylifeSignal):
         1  200.000000  100.000000    10.0
         2  333.333333  166.666667   100.0
 
+        >>> from pylife.strength.meanstress import HaighDiagram
         >>> collective = pd.DataFrame(
         ...     {
         ...         "range": [600.0, 300.0, 500.0],
@@ -498,39 +592,42 @@ class _SegmentTransformer:
 
 
 def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
-    r"""Estimate the mean stress sensitivity from two `FiniteLifeCurve` objects for the same amount of cycles `N_c`.
-
-    The formula for calculation is taken from: "Betriebsfestigkeit", Haibach, 3. Auflage 2006
-
-    Formula (2.1-24):
-
-    .. math::
-        M_{\sigma} = {S_a}^{R=-1}(N_c) / {S_a}^{R=0}(N_c) - 1
-
-    Alternatively the mean stress sensitivity is calculated based on both SD values
-    (if N_c is not given).
+    r"""Estimate mean stress sensitivity from two S-N curves.
 
     Parameters
     ----------
-    sn_curve_R0: pylife.strength.sn_curve.FiniteLifeCurve
-        Instance of FiniteLifeCurve for R == 0
-    sn_curve_Rn1: pylife.strength.sn_curve.FiniteLifeCurve
-        Instance of FiniteLifeCurve for R == -1
-    N_c: float, (default=np.inf)
-        Amount of cycles where the amplitudes should be compared.
-        If N_c is higher than a fatigue transition point (ND) for the SN-Curves, SD is taken.
-        If N_c is None, SD values are taken as stress amplitudes instead.
+    sn_curve_R0 : pylife.materiallaws.WoehlerCurve
+        Wöhler curve accessor for stress ratio ``R = 0``.
+    sn_curve_Rn1 : pylife.materiallaws.WoehlerCurve
+        Wöhler curve accessor for stress ratio ``R = -1``.
+    N_c : float, optional
+        Number of cycles at which the amplitudes are compared. If ``N_c`` is
+        greater than or equal to the knee point ``ND`` of a curve, its ``SD``
+        value is used. Default is ``numpy.inf``.
 
     Returns
     -------
     float
-        Mean stress sensitivity M_sigma
+        Mean stress sensitivity ``M_sigma``, dimensionless.
 
     Raises
     ------
     ValueError
-        if the resulting M_sigma doesn't lie in the range from 0 to 1 a ValueError is raised, as this value would
-        suggest higher strength with additional loads.
+        Raised if the resulting sensitivity is outside the physically
+        plausible interval ``[0, 1]``.
+
+    Notes
+    -----
+    Following Haibach [Haibach-Meanstress]_, the sensitivity is estimated as
+
+    .. math::
+
+        M_{\sigma} = \frac{S_a^{R=-1}(N_c)}{S_a^{R=0}(N_c)} - 1.
+
+    References
+    ----------
+    .. [Haibach-Meanstress] E. Haibach, "Betriebsfestigkeit", Springer-Verlag,
+       2006, p. 21.
     """
     S_a_R0 = (
         sn_curve_R0.woehler.basquin_load(N_c)
@@ -553,23 +650,44 @@ def experimental_mean_stress_sensitivity(sn_curve_R0, sn_curve_Rn1, N_c=np.inf):
 
 @pd.api.extensions.register_dataframe_accessor("meanstress_transform")
 class MeanstressTransformCollective(CL.LoadCollective):
-    """Meanstress transformer class for a load collective."""
+    """Transform counted load collectives to a target stress ratio.
+
+    The accessor is registered as ``.meanstress_transform`` on
+    :class:`pandas.DataFrame` load collectives. The input data must satisfy the
+    :mod:`pylife.stress.collective` load collective contract and provide
+    either ``range`` and ``mean`` columns or ``from`` and ``to`` columns.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.DataFrame
+        Load collective data passed by the pandas accessor machinery.
+
+    See Also
+    --------
+    pylife.strength.meanstress.HaighDiagram : Represent the correction diagram.
+    pylife.strength.meanstress.MeanstressTransformMatrix : Transform rainflow histograms.
+    """
 
     def fkm_goodman(self, goodman, R_goal):
-        """ Perform a FKM Goodman transformation on a load collective
+        """Apply the FKM-Goodman transformation to a load collective.
 
         Parameters
         ----------
-        goodman: pd.Series or pd.DataFrame
-           The meanstress sensitivity data needs `M` and optionally `M2`
-
-        R_goal: float
-           The R-value to transform to
+        goodman : pandas.Series or pandas.DataFrame
+            Mean stress sensitivity data containing ``M`` and optionally
+            ``M2``.
+        R_goal : float
+            Target stress ratio ``R = S_min / S_max``, dimensionless.
 
         Returns
         -------
-        transformed_collective: LoadCollective
-            The transformed load collective
+        pylife.stress.collective.LoadCollective
+            Transformed load collective accessor. Stress amplitudes and mean
+            stresses use the same unit as the input.
+
+        See Also
+        --------
+        pylife.strength.meanstress.HaighDiagram.fkm_goodman : Create the underlying diagram.
 
         Examples
         --------
@@ -590,22 +708,26 @@ class MeanstressTransformCollective(CL.LoadCollective):
         return res.load_collective
 
     def five_segment(self, five_segment, R_goal):
-        """ Perform a Five segment transformation on a load collective
+        """Apply the five-segment transformation to a load collective.
 
         Parameters
         ----------
-        five_segment: pd.Series or pd.DataFrame
-           The meanstress sensitivities and R transition values (see :meth:`HaighDiagram.five_segment`)
-
-        R_goal: float
-           The R-value to transform to
+        five_segment : pandas.Series or pandas.DataFrame
+            Mean stress sensitivities ``M0`` through ``M4`` and transition
+            ratios ``R12`` and ``R23``.
+        R_goal : float
+            Target stress ratio ``R = S_min / S_max``, dimensionless.
 
         Returns
         -------
-        transformed_collective: LoadCollective
+        pylife.stress.collective.LoadCollective
             The transformed load collective. After the meanstress transformation,
             the resulting ``(range, mean)`` interval bins may no longer be
             continuous.
+
+        See Also
+        --------
+        pylife.strength.meanstress.HaighDiagram.five_segment : Create the underlying diagram.
 
         Examples
         --------
@@ -631,7 +753,6 @@ class MeanstressTransformCollective(CL.LoadCollective):
         1     50.000000
         2    166.666667
         Name: meanstress, dtype: float64
-
         """
         hd = HaighDiagram.five_segment(five_segment)
         res = hd.transform(self._obj, R_goal)
@@ -640,7 +761,23 @@ class MeanstressTransformCollective(CL.LoadCollective):
 
 @pd.api.extensions.register_series_accessor("meanstress_transform")
 class MeanstressTransformMatrix(CL.LoadHistogram):
-    """Meanstress transformer class for a load histogram."""
+    """Transform rainflow histograms to a target stress ratio.
+
+    The accessor is registered as ``.meanstress_transform`` on
+    :class:`pandas.Series` load histograms. Histograms may be indexed by
+    ``from`` and ``to`` interval bins or by ``range`` and ``mean`` interval
+    bins.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.Series
+        Load histogram data passed by the pandas accessor machinery.
+
+    See Also
+    --------
+    pylife.strength.meanstress.HaighDiagram : Represent the correction diagram.
+    pylife.strength.meanstress.MeanstressTransformCollective : Transform load collectives.
+    """
 
     def _validate(self):
         super()._validate()
@@ -665,29 +802,31 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
             )
 
     def fkm_goodman(self, goodman, R_goal):
-        """ Perform a FKM Goodman transformation on a load histogram
+        """Apply the FKM-Goodman transformation to a load histogram.
 
         Parameters
         ----------
-        goodman: pd.Series or pd.DataFrame
-           The meanstress sensitivity data needs `M` and optionally `M2`.
-
-        R_goal: float
-           The R-value to transform to
+        goodman : pandas.Series or pandas.DataFrame
+            Mean stress sensitivity data containing ``M`` and optionally
+            ``M2``.
+        R_goal : float
+            Target stress ratio ``R = S_min / S_max``, dimensionless.
 
         Returns
         -------
-        transformed_histogram: LoadHistogram
-            The transformed load histogram. After the meanstress transformation,
-            the resulting ``(range, mean)`` interval bins may no longer be
-            continuous.
+        pylife.stress.collective.LoadHistogram
+            Transformed load histogram accessor. The resulting ``range`` and
+            ``mean`` interval bins may no longer be continuous.
 
-        Notes
-        -----
-        If continuous bins are required afterwards, e.g. for visualization, the
-        transformed histogram can optionally be rebinned. Be aware that such a
-        rebinning is a post-processing step for presentation purposes and may
-        reduce the accuracy of the transformed histogram.
+        Warnings
+        --------
+        The transformed interval bins are geometrically correct for the
+        transformed corner points. Rebin only as a later visualization step
+        because rebinning may change the numerical damage result.
+
+        See Also
+        --------
+        pylife.strength.meanstress.HaighDiagram.fkm_goodman : Create the underlying diagram.
 
         Examples
         --------
@@ -719,29 +858,31 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
         return self._perform_transformation(transformer, R_goal)
 
     def five_segment(self, five_segment, R_goal):
-        """ Perform a Five segment transformation on a load histogram
+        """Apply the five-segment transformation to a load histogram.
 
         Parameters
         ----------
-        five_segment: pd.Series or pd.DataFrame
-           The meanstress sensitivities and R transition values (see :meth:`HaighDiagram.five_segment`)
-
-        R_goal: float
-           The R-value to transform to
+        five_segment : pandas.Series or pandas.DataFrame
+            Mean stress sensitivities ``M0`` through ``M4`` and transition
+            ratios ``R12`` and ``R23``.
+        R_goal : float
+            Target stress ratio ``R = S_min / S_max``, dimensionless.
 
         Returns
         -------
-        transformed_histogram: LoadHistogram
-            The transformed load histogram. After the meanstress transformation,
-            the resulting ``(range, mean)`` interval bins may no longer be
-            continuous.
+        pylife.stress.collective.LoadHistogram
+            Transformed load histogram accessor. The resulting ``range`` and
+            ``mean`` interval bins may no longer be continuous.
 
-        Notes
-        -----
-        If continuous bins are required afterwards, e.g. for visualization, the
-        transformed histogram can optionally be rebinned. Be aware that such a
-        rebinning is a post-processing step for presentation purposes and may
-        reduce the accuracy of the transformed histogram.
+        Warnings
+        --------
+        The transformed interval bins are geometrically correct for the
+        transformed corner points. Rebin only as a later visualization step
+        because rebinning may change the numerical damage result.
+
+        See Also
+        --------
+        pylife.strength.meanstress.HaighDiagram.five_segment : Create the underlying diagram.
 
         Examples
         --------
@@ -839,6 +980,30 @@ class MeanstressTransformMatrix(CL.LoadHistogram):
 
 
 def fkm_goodman(amplitude, meanstress, M, M2, R_goal):
+    """Transform amplitudes with the FKM-Goodman mean stress correction.
+
+    Parameters
+    ----------
+    amplitude : array_like
+        Stress amplitudes in MPa or another consistent stress unit.
+    meanstress : array_like
+        Mean stresses in the same unit as ``amplitude``.
+    M : float
+        Mean stress sensitivity for ``-inf < R <= 0``, dimensionless.
+    M2 : float
+        Mean stress sensitivity for ``0 < R <= 1``, dimensionless.
+    R_goal : float
+        Target stress ratio ``R = S_min / S_max``, dimensionless.
+
+    Returns
+    -------
+    numpy.ndarray
+        Transformed stress amplitudes in the same unit as ``amplitude``.
+
+    See Also
+    --------
+    pylife.strength.meanstress.HaighDiagram.fkm_goodman : Create an FKM-Goodman diagram.
+    """
     cycles = pd.DataFrame({"range": 2.0 * amplitude, "mean": meanstress})
 
     haigh_fkm_goodman = pd.Series({"M": M, "M2": M2})
@@ -851,21 +1016,39 @@ def fkm_goodman(amplitude, meanstress, M, M2, R_goal):
 def five_segment_correction(
     amplitude, meanstress, M0, M1, M2, M3, M4, R12, R23, R_goal
 ):
-    """Performs a mean stress transformation to R_goal according to the
-        Five Segment Mean Stress Correction
+    """Transform amplitudes with the five-segment mean stress correction.
 
-    :param Sa: the stress amplitude
-    :param Sm: the mean stress
-    :param Rgoal: the R-value to transform to
-    :param M: the mean stress sensitivity between R=-inf and R=0
-    :param M1: the mean stress sensitivity between R=0 and R=R12
-    :param M2: the mean stress sensitivity betwenn R=R12 and R=R23
-    :param M3: the mean stress sensitivity between R=R23 and R=1
-    :param M4: the mean stress sensitivity beyond R=1
-    :param R12: R-value between M1 and M2
-    :param R23: R-value between M2 and M3
+    Parameters
+    ----------
+    amplitude : array_like
+        Stress amplitudes in MPa or another consistent stress unit.
+    meanstress : array_like
+        Mean stresses in the same unit as ``amplitude``.
+    M0 : float
+        Mean stress sensitivity for ``-inf < R <= 0``, dimensionless.
+    M1 : float
+        Mean stress sensitivity for ``0 < R <= R12``, dimensionless.
+    M2 : float
+        Mean stress sensitivity for ``R12 < R <= R23``, dimensionless.
+    M3 : float
+        Mean stress sensitivity for ``R23 < R <= 1``, dimensionless.
+    M4 : float
+        Mean stress sensitivity for ``1 < R``, dimensionless.
+    R12 : float
+        Transition stress ratio between ``M1`` and ``M2``, dimensionless.
+    R23 : float
+        Transition stress ratio between ``M2`` and ``M3``, dimensionless.
+    R_goal : float
+        Target stress ratio ``R = S_min / S_max``, dimensionless.
 
-    :returns: the transformed stress range
+    Returns
+    -------
+    numpy.ndarray
+        Transformed stress amplitudes in the same unit as ``amplitude``.
+
+    See Also
+    --------
+    pylife.strength.meanstress.HaighDiagram.five_segment : Create a five-segment diagram.
     """
 
     cycles = pd.DataFrame({"range": 2.0 * amplitude, "mean": meanstress})

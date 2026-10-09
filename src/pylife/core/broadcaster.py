@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,6 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Align pyLife signals with their operands.
+
+This module provides :class:`Broadcaster`, the mechanism that lets pyLife
+combine two numerical objects -- scalars, :class:`pandas.Series` and
+:class:`pandas.DataFrame` -- whose indices do not necessarily match.  It is
+the foundation of all arithmetic between a pyLife signal and a parameter,
+for example between a load collective and a material parameter that varies
+over a finite element mesh.
+"""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
@@ -23,28 +33,30 @@ import pandas as pd
 
 
 class Broadcaster:
-    """The Broadcaster to align pyLife signals to operands.
-
-    Parameters
-    ----------
-    pandas_obj : :class:`pandas.Series` or :class:`pandas.DataFrame`
-       the object of the ``Broadcaster``
-
-
-    In most cases the ``Broadcaster`` class is not used directly.  The
-    functionality is in most cases used by the derived class
-    :class:`~pylife.PylifeSignal`.
+    """Align a pandas object with an operand of a different index.
 
     The purpose of the ``Broadcaster`` is to take two numerical objects and
     return two objects of the same numerical data with an aligned index.  That
     means that mathematical operations using the two objects as operands can be
     implemented using numpy's broadcasting functionality.
 
-    See method :meth:`~pylife.Broadcaster.broadcast` documentation for details.
+    In most cases the ``Broadcaster`` class is not used directly.  Its
+    functionality is inherited by :class:`~pylife.PylifeSignal`, from which
+    all pyLife signal accessors are derived.
 
-    The broadcasting is done in the following ways:
+    Parameters
+    ----------
+    pandas_obj : pandas.Series or pandas.DataFrame
+        The object to broadcast operands to.
 
-    ::
+    See Also
+    --------
+    broadcast : Align an operand with the object of ``self``.
+    pylife.PylifeSignal : The signal base class using the ``Broadcaster``.
+
+    Notes
+    -----
+    The broadcasting is done in the following ways::
 
         object                 parameter              returned object         returned parameter
 
@@ -56,7 +68,6 @@ class Broadcaster:
         | bar  | 2.0 |                                | bar  | 2.0 |
         |------|-----|                                |------|-----|
 
-
         DataFrame              Scalar                 DataFrame               Series
         |------|-----|-----|                          |------|-----|-----|    |------|-----|
         | idx  | foo | bar |                          | idx  | foo | bar |    | idx  |     |
@@ -65,7 +76,6 @@ class Broadcaster:
         | 1    | 1.0 | 2.0 |                          | 1    | 1.0 | 2.0 |    | 1    | 5.0 |
         | ...  | ... | ... |                          | ...  | ... | ... |    | ...  | ... |
         |------|-----|-----|                          |------|-----|-----|    |------|-----|
-
 
         Series                 Series/DataFrame       DataFrame               Series/DataFrame
         |------|-----|         |------|-----|         |------|-----|-----|    |------|-----|
@@ -76,7 +86,6 @@ class Broadcaster:
         |------|-----|         | ...  | ... |         | ...  | ... | ... |    | ...  | ... |
                                |------|-----|         |------|-----|-----|    |------|-----|
 
-
         Series/DataFrame       Series/DataFrame       Series/DataFrame        Series/DataFrame
         |------|-----|         |------|-----|         |------|-----|          |------|-----|
         | xidx |     |         | xidx |     |         | xidx |     |          | xidx |     |
@@ -85,7 +94,6 @@ class Broadcaster:
         | bar  | 2.0 |         | bar  | 6.0 |         | bar  | 2.0 |          | bar  | 6.0 |
         |------|-----|         |------|-----|         | tau  | nan |          | tau  | 5.0 |
                                                       |------|-----|          |------|-----|
-
 
         Series/DataFrame       Series/DataFrame       Series/DataFrame        Series/DataFrame
         |------|-----|         |------|-----|         |------|------|-----|   |------|------|-----|
@@ -96,8 +104,6 @@ class Broadcaster:
         |------|-----|         |------|-----|         | bar  | tau  | 2.0 |   | bar  | tau  | 5.0 |
                                                       |      | chi  | 2.0 |   |      | chi  | 6.0 |
                                                       |------|------|-----|   |------|------|-----|
-
-
     """
 
     def __init__(self, pandas_obj):
@@ -108,19 +114,25 @@ class Broadcaster:
 
         Parameters
         ----------
-
-        parameters : scalar, numpy array or pandas object
-            The parameter to broadcast to
-
+        parameter : scalar, numpy.ndarray, pandas.Series or pandas.DataFrame
+            The operand to align with the object of ``self``.
+        droplevel : list of str, optional
+            Names of index levels that are dropped from the returned
+            ``parameter`` before it is returned.  Use it when a parameter
+            must not be resolved along those levels, e.g. when a material
+            parameter is constant over all load steps.  Default is ``None``,
+            which keeps all levels.
 
         Returns
         -------
-        parameter, object : index aligned numerical objects
-
+        parameter : scalar, pandas.Series or pandas.DataFrame
+            The broadcast operand, index aligned with ``obj``.
+        obj : pandas.Series or pandas.DataFrame
+            The broadcast object of ``self``, index aligned with
+            ``parameter``.
 
         Examples
         --------
-
         The behavior of the Broadcaster is best illustrated by examples:
 
         .. jupyter-execute::
@@ -147,7 +159,6 @@ class Broadcaster:
 
               obj
 
-
         * Broadcasting :class:`pandas.DataFrame` to a scalar results in a
           :class:`pandas.DataFrame` and a :class:`pandas.Series`.
 
@@ -168,7 +179,6 @@ class Broadcaster:
           .. jupyter-execute::
 
               obj
-
 
         * Broadcasting :class:`pandas.DataFrame` to a a :class:`pandas.Series`
           results in a :class:`pandas.DataFrame` and a :class:`pandas.Series`,
@@ -193,7 +203,6 @@ class Broadcaster:
           .. jupyter-execute::
 
               obj
-
         """
         droplevel = droplevel or []
 

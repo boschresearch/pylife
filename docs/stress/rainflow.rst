@@ -1,8 +1,8 @@
+***********************
 The ``rainflow`` module
-#######################
+***********************
 
 .. automodule:: pylife.stress.rainflow
-
 
 
 API Documentation
@@ -39,7 +39,6 @@ Utility functions
    :maxdepth: 1
 
 .. autofunction:: pylife.stress.rainflow.find_turns
-
 
 
 Compatibility

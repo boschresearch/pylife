@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -13,65 +13,41 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-'''Helper to process mesh based data
+"""Process coordinate-based mesh data stored in pandas objects.
 
-Data that is distributed over a geometrical body, e.g. a stress tensor
-distribution on a component, is usually transported via a mesh. The
-meshes are a list of items (e.g. nodes or elements of a FEM mesh),
-each being described by the geometrical coordinates and the local data
-values, like for example the local stress tensor data.
+Mesh data describe quantities distributed over a geometrical body, for
+example stress in MPa on finite-element nodes.  A plain mesh is any
+:class:`pandas.DataFrame` with coordinate columns ``x`` and ``y`` and
+optionally ``z``.  A full finite-element mesh additionally carries a
+:class:`pandas.MultiIndex` with the levels ``element_id`` and ``node_id`` so
+that node-element connectivity is known.
 
-In a plain mesh (see :class:`PlainMesh`) there is no further
-relation between the items is known, whereas a complete FEM mesh (see
-:class:`Mesh`) there is also information on the connectivity
-of the nodes and elements.
+The module registers the ``plain_mesh`` and ``mesh`` DataFrame accessors used
+by mesh algorithms throughout pyLife.  Coordinates are expected in mm.
+
+See Also
+--------
+pylife.mesh.meshsignal.PlainMesh : Access point-cloud coordinates without
+    connectivity.
+pylife.mesh.meshsignal.Mesh : Access node-element connectivity in finite-
+    element meshes.
 
 Examples
 --------
-Read in a mesh from a vmap file:
+Create a connected triangular mesh and read its coordinate columns.
 
->>> from pylife.vmap import VMAPImport
->>> df = (
-...     VMAPImport('demos/plate_with_hole.vmap')
-...     .make_mesh('1', 'STATE-2')
-...     .join_coordinates()
-...     .join_variable('STRESS_CAUCHY')
-...     .join_variable('DISPLACEMENT')
-...     .to_frame()
+>>> import pandas as pd
+>>> index = pd.MultiIndex.from_tuples(
+...     [(1, 10), (1, 11), (1, 12)], names=["element_id", "node_id"]
 ... )
->>> df.head()
-                            x         y    z  ...        dx        dy   dz
-element_id node_id                            ...
-1          1734     14.897208  5.269875  0.0  ...  0.005345  0.000015  0.0
-           1582     14.555333  5.355806  0.0  ...  0.005285  0.000003  0.0
-           1596     14.630658  4.908741  0.0  ...  0.005376  0.000019  0.0
-           4923     14.726271  5.312840  0.0  ...  0.005315  0.000009  0.0
-           4924     14.592996  5.132274  0.0  ...  0.005326  0.000013  0.0
-<BLANKLINE>
-[5 rows x 12 columns]
-
-Get the coordinates of the mesh.
-
->>> df.plain_mesh.coordinates.head()
-                            x         y    z
+>>> mesh = pd.DataFrame({"x": [0.0, 1.0, 0.0], "y": [0.0, 0.0, 1.0]}, index=index)
+>>> mesh.mesh.coordinates
+                       x    y
 element_id node_id
-1          1734     14.897208  5.269875  0.0
-           1582     14.555333  5.355806  0.0
-           1596     14.630658  4.908741  0.0
-           4923     14.726271  5.312840  0.0
-           4924     14.592996  5.132274  0.0
-
-Now the same with a 2D mesh:
-
->>> df.drop(columns=['z']).plain_mesh.coordinates.head()
-                            x         y
-element_id node_id
-1          1734     14.897208  5.269875
-           1582     14.555333  5.355806
-           1596     14.630658  4.908741
-           4923     14.726271  5.312840
-           4924     14.592996  5.132274
-'''
+1          10       0.0  0.0
+           11       1.0  0.0
+           12       0.0  1.0
+"""
 
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
@@ -83,25 +59,42 @@ from pylife import PylifeSignal
 
 @pd.api.extensions.register_dataframe_accessor("plain_mesh")
 class PlainMesh(PylifeSignal):
-    '''DataFrame accessor to access plain 2D and 3D mesh data, i.e. without connectivity
+    """Access plain 2D and 3D point-cloud mesh data.
+
+    A plain mesh represents independent points with coordinates in mm.  It
+    does not encode element connectivity; therefore the DataFrame index is
+    preserved but not interpreted by the accessor.
+
+    Signal contract:
+
+    * ``x`` : Coordinate in mm along the global x-axis.
+    * ``y`` : Coordinate in mm along the global y-axis.
+    * ``z`` : Optional coordinate in mm along the global z-axis.  If missing,
+      the mesh is treated as two-dimensional.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.DataFrame
+        DataFrame carrying the coordinate columns.  The index may be any
+        pandas index and is preserved by returned objects.
 
     Raises
     ------
     AttributeError
-        if at least one of the columns `x`, `y` is missing
+        If at least one of the columns ``x`` or ``y`` is missing.
+
+    See Also
+    --------
+    pylife.mesh.meshsignal.Mesh : Access meshes with node-element
+        connectivity.
+    pandas.api.extensions.register_dataframe_accessor : Register pandas
+        DataFrame accessors.
 
     Notes
     -----
-    The PlainMesh describes meshes whose only geometrical
-    information is the coordinates of the nodes or elements. Unlike
-    :class:`Mesh` they don't know about connectivity, not even
-    about elements and nodes.
-
-    See also
-    --------
-    :class:`Mesh`: accesses meshes with connectivity information
-    :func:`pandas.api.extensions.register_dataframe_accessor()`: concept of DataFrame accessors
-    '''
+    If column ``z`` exists but all values are equal, the mesh is considered
+    two-dimensional for :attr:`dimensions`.
+    """
     def _validate(self):
         self._coord_keys = ['x', 'y']
         self.fail_if_key_missing(self._coord_keys)
@@ -111,11 +104,19 @@ class PlainMesh(PylifeSignal):
 
     @property
     def dimensions(self):
-        """The dimensions of the mesh (2 for 2D and 3 for 3D)
+        """Return the spatial dimension of the mesh.
 
-        Note
-        ----
-        If all the coordinates in z-direction are equal the mesh is considered 2D.
+        Returns
+        -------
+        int
+            Spatial dimension, either ``2`` for a planar mesh or ``3`` for a
+            mesh with varying ``z`` coordinates.  Coordinates are interpreted
+            in mm.
+
+        Notes
+        -----
+        If column ``z`` is missing or all values in column ``z`` are equal,
+        the mesh is considered two-dimensional.
         """
         if self._cached_dimensions is not None:
             return self._cached_dimensions
@@ -129,52 +130,74 @@ class PlainMesh(PylifeSignal):
 
     @property
     def coordinates(self):
-        '''Returns the coordinate colums of the accessed DataFrame
+        """Return the coordinate columns of the accessed DataFrame.
 
         Returns
         -------
-        coordinates : pandas.DataFrame
-            The coordinates `x`, `y` and if 3D `z` of the accessed mesh
-        '''
+        pandas.DataFrame
+            Coordinate columns ``x`` and ``y`` and, for three-dimensional
+            meshes, ``z``.  Values are coordinates in mm and the returned
+            DataFrame carries the same index as the accessed object.
+        """
         return self._obj[self._coord_keys]
 
 
 @pd.api.extensions.register_dataframe_accessor("mesh")
 class Mesh(PlainMesh):
 
-    '''DataFrame accessor to access FEM mesh data (2D and 3D)
+    """Access connected finite-element mesh data.
+
+    A connected mesh stores one row per node occurrence in an element.  The
+    DataFrame must have coordinate columns ``x`` and ``y`` in mm and may have
+    ``z`` for three-dimensional meshes.  Its index must contain the levels
+    ``element_id`` and ``node_id``; together they identify a unique row.
+
+    Signal contract:
+
+    * ``element_id`` : Index level identifying the finite element.
+    * ``node_id`` : Index level identifying the node used by the element.
+    * ``x`` : Coordinate in mm along the global x-axis.
+    * ``y`` : Coordinate in mm along the global y-axis.
+    * ``z`` : Optional coordinate in mm along the global z-axis.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.DataFrame
+        DataFrame with a :class:`pandas.MultiIndex` containing ``element_id``
+        and ``node_id`` and with coordinate columns in mm.
 
     Raises
     ------
     AttributeError
-        if at least one of the columns `x`, `y` is missing
+        If at least one of the columns ``x`` or ``y`` is missing.
     AttributeError
-        if the index of the DataFrame is not a two level MultiIndex
-        with the names `node_id` and `element_id`
+        If the index of the DataFrame does not contain the levels ``node_id``
+        and ``element_id``.
+
+    See Also
+    --------
+    pylife.mesh.meshsignal.PlainMesh : Access meshes without connectivity
+        information.
+    pandas.api.extensions.register_dataframe_accessor : Register pandas
+        DataFrame accessors.
 
     Notes
     -----
-    The Mesh describes how we expect FEM data to look like. It
-    consists of nodes identified by `node_id` and elements identified
-    by `element_id`. A node playing a role in several elements and an
-    element consists of several nodes. So in the DataFrame a `node_id`
-    can appear multiple times (for each element, the node is playing a
-    role in). Likewise each `element_id` appears multiple times (for
-    each node the element consists of).
-
-    The combination `node_id`:`element_id` however, is unique. So the
-    table is indexed by a :class:`pandas.MultiIndex` with the level
-    names `node_id`, `element_id`.
-
-    See also
-    --------
-    :class:`PlainMesh`: accesses meshes without connectivity information
-    :func:`pandas.api.extensions.register_dataframe_accessor()`: concept of DataFrame accessors
+    A node can occur in several elements, and each element contains several
+    nodes.  The combination of ``element_id`` and ``node_id`` is expected to
+    be unique.  pyLife functions preserve this full mesh index unless a
+    method explicitly returns node-averaged data indexed only by ``node_id``.
 
     Examples
     --------
-    For an example see :mod:`hotspot`.
-    '''
+    >>> import pandas as pd
+    >>> index = pd.MultiIndex.from_tuples(
+    ...     [(1, 10), (1, 11), (1, 12)], names=["element_id", "node_id"]
+    ... )
+    >>> mesh = pd.DataFrame({"x": [0.0, 1.0, 0.0], "y": [0.0, 0.0, 1.0]}, index=index)
+    >>> mesh.mesh.connectivity.loc[1].tolist()
+    [10, 11, 12]
+    """
     def _validate(self):
         super()._validate()
         self._cached_element_groups = None
@@ -186,47 +209,53 @@ class Mesh(PlainMesh):
 
     @property
     def connectivity(self):
-        """The connectivity of the mesh."""
-        return self._element_groups['node_id'].apply(np.hstack)
-
-    def vtk_data(self):
-        """Make VTK data structure easily plot the mesh with pyVista.
+        """Return the node connectivity of each element.
 
         Returns
         -------
-        cells : ndarray
+        pandas.Series
+            Series indexed by ``element_id``.  Each value is a
+            :class:`numpy.ndarray` with the ``node_id`` values that define the
+            element connectivity.
+        """
+        return self._element_groups['node_id'].apply(np.hstack)
+
+    def vtk_data(self):
+        """Create VTK arrays for plotting the mesh with pyVista.
+
+        Returns
+        -------
+        cells : numpy.ndarray
             The location of the cells describing the points in a way
-            ``pyVista.UnstructuredGrid()`` needs it
-        cell_types : ndarray
-            The VTK code for the cell types (see https://github.com/Kitware/VTK/blob/master/Common/DataModel/vtkCellType.h)
-        points : ndarray
-            The coordinates of the cell points
+            ``pyVista.UnstructuredGrid`` expects it.
+        cell_types : numpy.ndarray
+            The VTK element type codes for the cells.
+        points : numpy.ndarray
+            Coordinates in mm of the cell points.  Rows are sorted by
+            ``node_id`` and columns are ``x``, ``y`` and, for 3D meshes,
+            ``z``.
 
         Notes
         -----
-        This is a convenience function to easily plot a 3D mesh with
-        pyVista. It prepares a data structure which can be passed to
-        ``pyVista.UnstructuredGrid()``
+        This is a convenience method for visualization.  It prepares data that
+        can be passed as ``pv.UnstructuredGrid(*mesh.mesh.vtk_data())``.  For
+        quadratic elements, only the first-order corner nodes are used because
+        the VTK element codes selected here describe first-order geometry.
 
-        Example
-        -------
-        .. code-block:: python
-
-            import pyvista as pv
-            from pylife.vmap import VMAPImport
-            df = (
-                VMAPImport('demos/plate_with_hole.vmap')
-                .make_mesh('1', 'STATE-2')
-                .join_coordinates()
-                .join_variable('STRESS_CAUCHY')
-                .to_frame()
-            )
-            grid = pv.UnstructuredGrid(*df.mesh.vtk_data())
-            plotter = pv.Plotter(window_size=[1920, 1080])
-            plotter.add_mesh(grid, scalars=df.groupby('element_id')['S11'].mean().to_numpy())
-            plotter.show()
-
-        Note the `*` that needs to be added when calling ``pv.UnstructuredGrid()``.
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> index = pd.MultiIndex.from_tuples(
+        ...     [(1, 10), (1, 11), (1, 12)], names=["element_id", "node_id"]
+        ... )
+        >>> mesh = pd.DataFrame({"x": [0.0, 1.0, 0.0], "y": [0.0, 0.0, 1.0]}, index=index)
+        >>> cells, cell_types, points = mesh.mesh.vtk_data()
+        >>> cells.tolist()
+        [3, 0, 1, 2]
+        >>> cell_types.tolist()
+        [5]
+        >>> points.tolist()
+        [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]
         """
         def choose_element_types_dict():
             return self._element_types_3d if self.dimensions == 3 else self._element_types_2d

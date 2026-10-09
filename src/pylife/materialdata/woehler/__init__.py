@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,27 +14,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A module for Wöhler curve fatigue data analysis
+"""Evaluate Wöhler fatigue tests and return Wöhler curve parameters.
 
-Overview
-========
+Load fatigue test data into the :attr:`pandas.DataFrame.fatigue_data` accessor,
+which validates the mandatory ``load``, ``cycles``, and ``fracture`` columns.
+Then evaluate the data with one of the analyzers exported by this package:
+``Elementary``, ``Probit``, ``MaxLikeInf``, or ``MaxLikeFull``.  The analyzers
+return a :class:`pandas.Series` with Wöhler curve parameters such as ``SD``,
+``ND``, ``k_1``, ``TN``, and ``TS``.  That series can be used directly with
+:class:`pylife.materiallaws.WoehlerCurve`.
 
-:class:`FatigueData` is a signal accessor class to handle fatigue data from a
-Wöhler test.  They can be analyzed by several analyzers according to your choice
+See Also
+--------
+pylife.materialdata.woehler.FatigueData : Validate measured Wöhler test data.
+pylife.materialdata.woehler.Elementary : Estimate the finite-life parameters.
+pylife.materialdata.woehler.Probit : Estimate endurance-limit parameters with the Probit method.
+pylife.materialdata.woehler.MaxLikeInf : Estimate endurance-limit parameters by maximum likelihood.
+pylife.materialdata.woehler.MaxLikeFull : Estimate all Wöhler parameters by maximum likelihood.
+pylife.materiallaws.WoehlerCurve : Use evaluated parameters for fatigue assessment.
 
-* :class:`Elementary` only treats the finite zone of the fatigue data and
-  calculates the slope and the scatter in lifetime direction.  It is the base
-  class for all other analyzers
-
-* :class:`Probit` calculates parameters not calculated by :class:`Elementary`
-  using the Probit method.
-
-* :class:`MaxLikeInf` calculates parameters not calculated by :class:`Elementary`
-  using the maximum likelihood method.
-
-* :class:`MaxLikeFull` calculates all parameters using the maximum likelihood
-  method.  The result from :class:`Elementary` is used as start values.
-
+Notes
+-----
+Wöhler tests, also called SN tests, record whether a specimen fractured or
+survived as a runout at a prescribed load level and cycle count.  The
+parameters follow DIN 50100 terminology: ``SD`` is the endurance limit load at
+the knee point, ``ND`` is the cycle number at the knee point, ``k_1`` is the
+finite-life slope, ``TN`` is the scatter in cycle direction, and ``TS`` is the
+scatter in load direction.
 """
 
 __author__ = "Johannes Mueller"

@@ -34,6 +34,10 @@ jobs:
         uv pip install "./tools/odbclient"
     - name: Build docs
       run: uv run sphinx-build -W -b html docs _build/html
+    - name: Validate docstring style (numpydoc)
+      run: uv run python docs/validate_docstrings.py --baseline docs/docstring_baseline.txt --min-coverage 100
+    - name: Run docstring examples
+      run: uv run pytest --doctest-modules src/pylife -q
     - name: Upload docs
       uses: actions/upload-artifact@v7
       with:

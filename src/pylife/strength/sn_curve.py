@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -13,6 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Provide deprecated finite-life S-N curve helper classes.
+
+The classes in this module predate :class:`pylife.materiallaws.WoehlerCurve`
+and :class:`pylife.strength.fatigue.Fatigue`. They remain available for
+compatibility and delegate their calculations to the modern accessors.
+"""
 
 __author__ = "Cedric Philip Wagner"
 __maintainer__ = "Johannes Mueller"
@@ -32,7 +39,23 @@ warnings.warn(
 )
 
 class FiniteLifeBase:
-    """Base class for SN curve calculations - either in logarithmic or regular scale"""
+    """Provide shared state for deprecated finite-life S-N curve helpers.
+
+    Parameters
+    ----------
+    k_1 : float
+        Wöhler slope in the finite-life region, dimensionless.
+    SD_50 : float
+        Stress or load amplitude at the knee point for ``50 %`` failure
+        probability, in MPa or another consistent unit.
+    ND_50 : float
+        Number of cycles at the knee point for ``50 %`` failure probability.
+
+    Warnings
+    --------
+    This class is deprecated. Use :class:`pylife.materiallaws.WoehlerCurve`
+    and :class:`pylife.strength.fatigue.Fatigue` instead.
+    """
 
     def __init__(self, k_1, SD_50, ND_50):
         warnings.warn(DeprecationWarning("FiniteLifeBase and derived classes are deperecated. "
@@ -45,27 +68,47 @@ class FiniteLifeBase:
 
     @property
     def k_1(self):
+        """Return the finite-life Wöhler slope.
+
+        Returns
+        -------
+        float
+            Wöhler slope ``k_1``, dimensionless.
+        """
         return self._wc.k_1
 
 
 class FiniteLifeLine(FiniteLifeBase):
-    """Sample points on the finite life line - either N or S (LOGARITHMIC SCALE)
-
-    The formula for calculation is taken from
-    "Betriebsfestigkeit", Haibach, 3. Auflage 2006
-
-    Notes
-    -----
-    In contrast to the case
+    r"""Represent a deprecated logarithmic finite-life S-N line.
 
     Parameters
     ----------
     k : float
-        slope of the SN-curve
+        Wöhler slope in the finite-life region, dimensionless.
     SD_50 : float
-        lower stress limit in the finite life region
+        Stress or load amplitude at the knee point for ``50 %`` failure
+        probability, in MPa or another consistent unit.
     ND_50 : float
-        number of cycles at stress SD_50
+        Number of cycles at the knee point for ``50 %`` failure probability.
+
+    Warnings
+    --------
+    This class is deprecated. Use :class:`pylife.materiallaws.WoehlerCurve`
+    and :class:`pylife.strength.fatigue.Fatigue` instead.
+
+    Notes
+    -----
+    Following Haibach [Haibach-SNCurve]_, the finite-life branch follows the
+    Basquin relation
+
+    .. math::
+
+        S_a = S_D \left(\frac{N_D}{N}\right)^{1/k_1}.
+
+    References
+    ----------
+    .. [Haibach-SNCurve] E. Haibach, "Betriebsfestigkeit", Springer-Verlag,
+       2006.
     """
 
     def __init__(self, k, SD_50, ND_50):
@@ -73,92 +116,126 @@ class FiniteLifeLine(FiniteLifeBase):
 
 
 class FiniteLifeCurve(FiniteLifeBase):
-    """Sample points on the finite life curve - either N or S (NOT logarithmic scale)
-
-    The formula for calculation is taken from
-    "Betriebsfestigkeit", Haibach, 3. Auflage 2006
-
-    **Consider:** load collective and life curve have to be consistent:
-
-        * range vs range
-        * amplitude vs amplitude
+    r"""Represent a deprecated finite-life S-N curve in linear scale.
 
     Parameters
     ----------
-    k : float
-        slope of the SN-curve
+    k_1 : float
+        Wöhler slope in the finite-life region, dimensionless.
     SD_50 : float
-        lower stress limit in the finite life region
+        Stress or load amplitude at the knee point for ``50 %`` failure
+        probability, in MPa or another consistent unit.
     ND_50 : float
-        number of cycles at stress SD_50
+        Number of cycles at the knee point for ``50 %`` failure probability.
+
+    Warnings
+    --------
+    This class is deprecated. Use :class:`pylife.materiallaws.WoehlerCurve`
+    and :class:`pylife.strength.fatigue.Fatigue` instead.
+
+    Notes
+    -----
+    Use either stress amplitudes consistently or stress ranges consistently for
+    the curve and for load collectives. Following Haibach
+    [Haibach-FiniteLifeCurve]_, the Basquin relation is
+
+    .. math::
+
+        N = N_D \left(\frac{S_D}{S_a}\right)^{k_1}.
+
+    References
+    ----------
+    .. [Haibach-FiniteLifeCurve] E. Haibach, "Betriebsfestigkeit",
+       Springer-Verlag, 2006.
     """
     def __init__(self, k_1, SD_50, ND_50):
         super().__init__(k_1, SD_50, ND_50)
 
     def calc_S(self, N, ignore_limits=True):
-        """Calculate stress S for a given number of cycles N
+        r"""Calculate the finite-life stress amplitude for a cycle count.
 
         Parameters
         ----------
-        N : float
-            number of cycles
-        ignore_limits : boolean
-            ignores the upper limit of the number of cycles
-            generally it should be smaller than ND_50 (=the limit of the finite life region)
-            but some special evaluation methods (e.g. according to marquardt2004) require
-            extrapolation to estimate an equivalent stress
+        N : float or array_like
+            Number of cycles.
+        ignore_limits : bool, optional
+            Retained for compatibility. The implementation delegates to
+            :meth:`pylife.materiallaws.WoehlerCurve.basquin_load` and does not
+            enforce finite-life limits. Default is ``True``.
 
         Returns
         -------
-        S : float
-            stress corresponding to the given number of cycles (point on the SN-curve)
+        float or numpy.ndarray
+            Stress or load amplitude corresponding to ``N``, in the same unit
+            as ``SD_50``.
+
+        Notes
+        -----
+        The returned amplitude follows
+
+        .. math::
+
+            S_a = S_D \left(\frac{N_D}{N}\right)^{1/k_1}.
         """
         return self._wc.woehler.basquin_load(N)
 
     def calc_N(self, S, ignore_limits=False):
-        """Calculate number of cycles N for a given stress S
+        r"""Calculate the finite-life cycle count for a stress amplitude.
 
         Parameters
         ----------
-        S : array like
-            Stress (point(s) on the SN-curve)
-        ignore_limits : boolean
-            ignores the upper limit of the number of cycles
-            generally it should be smaller than ND_50 (=the limit of the finite life region)
-            but some special evaluation methods (e.g. according to marquardt2004) require
-            extrapolation to estimate an equivalent stress
+        S : float or array_like
+            Stress or load amplitude in the same unit as ``SD_50``.
+        ignore_limits : bool, optional
+            Retained for compatibility. The implementation delegates to
+            :meth:`pylife.materiallaws.WoehlerCurve.basquin_cycles` and does
+            not enforce finite-life limits. Default is ``False``.
 
         Returns
         -------
-        N : array like
-            number of cycles corresponding to the given stress value (point on the SN-curve)
+        float or numpy.ndarray
+            Number of cycles corresponding to ``S``.
+
+        Notes
+        -----
+        The returned cycle count follows
+
+        .. math::
+
+            N = N_D \left(\frac{S_D}{S_a}\right)^{k_1}.
         """
         return self._wc.woehler.basquin_cycles(S)
 
     def calc_damage(self, loads, method="elementar", index_name="range"):
-        """Calculate the damage based on the methods
-         * Miner elementar (k_2 = k)
-         * Miner Haibach (k_2 = 2k-1)
-         * Miner original (k_2 = -inf)
-
-        **Consider:** load collective and life curve have to be consistent:
-
-        * range vs range
-        * amplitude vs amplitude
+        """Calculate Miner damage for a load histogram.
 
         Parameters
         ----------
-        loads : pandas series histogram
-            loads (index is the load, column the cycles)
-        method : str
-         * 'elementar': Miner elementar (k_2 = k)
-         * 'MinerHaibach': Miner Haibach (k_2 = 2k-1)
-         * 'original': Miner original (k_2 = -inf)
+        loads : pandas.Series
+            Load histogram whose index contains a load level, named ``range``
+            by default, and whose values are cycle counts. The load level must
+            be a stress range if the S-N curve is defined by ranges, or an
+            amplitude if the S-N curve is defined by amplitudes.
+        method : {'elementar', 'MinerHaibach', 'original'}, optional
+            Damage accumulation hypothesis. ``'elementar'`` sets
+            ``k_2 = k_1``, ``'MinerHaibach'`` sets ``k_2 = 2 * k_1 - 1``, and
+            ``'original'`` leaves the endurance branch horizontal. Default is
+            ``'elementar'``.
+        index_name : str, optional
+            Name of the load-level index in ``loads``. It is temporarily
+            mapped to ``'range'`` for the load collective accessor. Default is
+            ``'range'``.
 
         Returns
         -------
-        damage : pd.DataFrame
-            damage for every load horizont based on the load collective and the method
+        pandas.Series
+            Damage contribution for each load histogram bin, dimensionless.
+
+        Warnings
+        --------
+        This compatibility method uses the modern ``.fatigue`` and
+        ``.load_collective`` accessors internally. New code should call those
+        accessors directly.
         """
         estimator = self._wc.fatigue
 

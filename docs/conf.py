@@ -31,6 +31,13 @@ if 'DISPLAY' not in os.environ and not sys.platform.startswith('win'):
 
 os.environ['PYDEVD_DISABLE_FILE_VALIDATION'] = "1"
 
+# Let all kernel managers (nbsphinx, jupyter_sphinx, nbconvert) provision CurveZMQ keys.
+# This avoids "[IPKernelApp] WARNING | Kernel is running over TCP without encryption".
+# Older jupyter_client versions don't have this trait, so we skip it there.
+from jupyter_client.manager import KernelManager as _KernelManager
+if hasattr(_KernelManager, 'transport_encryption'):
+    _KernelManager.transport_encryption.default_value = 'auto'
+
 ipython_dir = os.path.join(__projectdir__, "_build", "ipythondir")
 os.environ['IPYTHONDIR'] = ipython_dir
 
@@ -67,43 +74,6 @@ if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.starts
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
-# -- Run sphinx-apidoc -------------------------------------------------------
-# This hack is necessary since RTD does not issue `sphinx-apidoc` before running
-# `sphinx-build -b html . _build/html`. See Issue:
-# https://github.com/rtfd/readthedocs.org/issues/1139
-# DON'T FORGET: Check the box "Install your project inside a virtualenv using
-# setup.py install" in the RTD Advanced Settings.
-# Additionally it helps us to avoid running apidoc manually
-
-# try:  # for Sphinx >= 1.7
-#     from sphinx.ext import apidoc
-# except ImportError:
-#     from sphinx import apidoc
-
-# output_dir = os.path.join(__location__, "api")
-# module_dir = os.path.join(__location__, "../src/pylife")
-# try:
-#     shutil.rmtree(output_dir)
-# except FileNotFoundError:
-#     pass
-
-# try:
-#     import sphinx
-
-#     cmd_line_template = (
-#         "sphinx-apidoc --implicit-namespaces -f -o {outputdir} {moduledir}"
-#     )
-#     cmd_line = cmd_line_template.format(outputdir=output_dir, moduledir=module_dir)
-
-#     args = cmd_line.split(" ")
-#     if tuple(sphinx.__version__.split(".")) >= ("1", "7"):
-#         # This is a rudimentary parse_version to avoid external dependencies
-#         args = args[1:]
-
-#     apidoc.main(args)
-# except Exception as e:
-#     print("Running `sphinx-apidoc` failed!\n{}".format(e))
-
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -122,6 +92,8 @@ extensions = [
     "sphinx.ext.ifconfig",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
+    "sphinx_design",
+    "sphinx_copybutton",
     "myst_parser",
     'nbsphinx',
     'nbsphinx_link',
@@ -129,6 +101,22 @@ extensions = [
 ]
 
 napoleon_custom_sections = ["Limitations"]
+
+# -- sphinx.ext.doctest ------------------------------------------------------
+# Examples are executed with an empty namespace, unlike the doctests collected
+# by ``pytest --doctest-modules``, which see the globals of their module.  The
+# aliases below are the ones numpy, scipy and pandas assume as universally
+# known, so examples do not have to repeat them.  Everything else must be
+# imported by the example itself.
+doctest_global_setup = """
+import numpy as np
+import pandas as pd
+"""
+
+# -- sphinx-copybutton -------------------------------------------------------
+# Strip prompts so users can copy doctest examples and shell commands verbatim.
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
 
 todo_include_todos = True
 
@@ -150,7 +138,7 @@ master_doc = "index"
 
 # General information about the project.
 project = u'pyLife'
-copyright = u'2017 – 2023, pyLife Developer Team'
+copyright = u'2017 – 2026, pyLife Developer Team'
 author = u'pyLife Developer Team'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -174,7 +162,7 @@ release = ""  # Is set by calling `setup.py docs`
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["build", "Thumbs.db", ".DS_Store", ".venv", "_build", "**.ipynb_checkpoints", "**/kt1.rst"]
+exclude_patterns = ["build", "Thumbs.db", ".DS_Store", ".venv", "_build", "**.ipynb_checkpoints", "**/kt1.rst", "docstring_baseline.txt"]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 # default_role = None
@@ -203,8 +191,34 @@ pygments_style = "sphinx"
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-html_theme = "sphinx_rtd_theme"
+# a list of builtin themes.  We use the same theme as numpy and scipy so that
+# users moving between the scientific Python projects find a familiar layout.
+html_theme = "pydata_sphinx_theme"
+html_logo = "_static/images/pyLife_logo_no_elefant.png"
+
+html_theme_options = {
+    "show_nav_level": 1,
+    "github_url": "https://github.com/boschresearch/pylife",
+    "collapse_navigation": True,
+    "show_prev_next": False,
+    "navigation_with_keys": False,
+    "header_links_before_dropdown": 6,
+    "icon_links": [
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/pylife/",
+            "icon": "fa-solid fa-box",
+        },
+    ],
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
+    "secondary_sidebar_items": ["page-toc", "sourcelink"],
+}
+
+# The landing page is a full width overview page without a sidebar, as on the
+# numpy and scipy front pages.
+html_sidebars = {
+    "index": [],
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
@@ -228,7 +242,7 @@ else:
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-# html_favicon = None
+html_favicon = "_static/favicon.ico"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -237,7 +251,6 @@ html_static_path = ["_static"]
 
 html_css_files = [
     'css/custom.css',
-    'css/fix-rtd-property.css'  # workaround readthedocs/sphinx_rtd_theme#1301
 ]
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,

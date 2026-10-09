@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,21 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-There are two ways to deal with a load collective.
+"""Represent load collectives as explicit loops or binned histograms.
 
-* :class:`~pylife.stress.LoadCollective` lets you keep every load hysteresis in
-  and then calculate the amplitude, meanstress and damage for each and every
-  hyteresis indivudually.
+Use :class:`pylife.stress.collective.LoadCollective` when every rainflow loop
+shall remain available as an individual row.  Use
+:class:`pylife.stress.collective.LoadHistogram` when cycles are already binned
+in load range and mean load classes or in ``from`` and ``to`` classes.
 
-* :class:`~pylife.stress.LoadHistogram` keeps the load information in a binned
-  histogram.  That means that not each and every hystresis is stored
-  individually but there are bin classes for the load levels the hysteresis is
-  originating from and one for the levels the hysteresis is open.
-
-This :doc:`tutorial </tutorials/load_collective>` shows the difference and how
-to use the two.
-
+Both accessors expose the same engineering quantities: load amplitude, load
+range, mean load, upper and lower turning load, stress ratio ``R``, and number
+of cycles.  The tutorial at ``docs/tutorials/load_collective.rst`` explains the
+trade-off between retaining every loop and aggregating cycles into histogram
+classes.
 """
 
 __author__ = "Johannes Mueller"

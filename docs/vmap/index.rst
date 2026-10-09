@@ -1,5 +1,6 @@
+*************************
 VMAP interface for pyLife
-=========================
+*************************
 
 `VMAP <https://www.vmap.eu.com/>`_ *is a vendor-neutral standard
 for CAE data storage to enhance interoperability in virtual
@@ -15,3 +16,9 @@ only features relevant for pyLife's addressed real life use cases are
 or will be implemented. Probably there are features missing, that are
 important for some valid use cases. In that case please file a feature
 request at https://github.com/boschresearch/pylife/issues
+
+.. toctree::
+   :maxdepth: 1
+
+   vmap_import
+   vmap_export

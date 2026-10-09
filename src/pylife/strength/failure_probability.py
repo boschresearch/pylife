@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Provide failure probability calculations for log-normal strength data.
+
+The module contains :class:`FailureProbability`, a small helper that combines
+a log-normal strength distribution with deterministic, log-normal, or
+arbitrary load distributions.
+"""
+
 __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
@@ -23,97 +30,88 @@ import scipy.integrate as integrate
 
 
 class FailureProbability:
-    '''Strength representation to calculate failure probabilities
+    r"""Represent a log-normal strength distribution for failure probability.
 
-    The strength is represented as a log normal distribution of
-    strength_median and strength_std.
-
-    Failure probabilities can be calculated for a given load or load
-    distribution.
+    Failure is assumed to occur when load exceeds strength. All deterministic
+    load and strength medians use the same physical unit, for example MPa.
 
     Parameters
     ----------
-    strength_median : array_like, shape (N, )
-        The median value of the strength
-    strength_std : array_like, shape (N, )
-        The standard deviation of the strength
+    strength_median : array_like
+        Median strength value in MPa or another consistent load unit.
+    strength_std : array_like
+        Standard deviation of the base-10 logarithm of strength,
+        dimensionless.
 
-    Note
-    ----
-    We assume that the load and the strength are statistically
-    distributed values. In case the load is higher than the strength
-    we get failure. So if we consider a quantile of our load
-    distribution of a probability p_load, the probability of failure
-    due to a load of this quantile is p_load times the probability
-    that the strength lies within this quantile or below.
+    Notes
+    -----
+    For a load probability density ``f_L`` and a strength cumulative
+    distribution ``F_S``, the total failure probability is
 
-    So in order to calculate the total failure probability, we need to
-    integrate the load's pdf times the strength' cdf from -inf to +inf.
+    .. math::
 
-    '''
+        P_f = \int_{-\infty}^{\infty} f_L(x) F_S(x)\,dx.
+
+    The implementation stores strengths in base-10 logarithmic space.
+    """
 
     def __init__(self, strength_median, strength_std):
         self.s_50 = np.log10(strength_median)
         self.s_std = strength_std
 
     def pf_simple_load(self, load):
-        '''Failure probability for a simple load value
+        r"""Calculate failure probability for a deterministic load.
 
         Parameters
         ----------
-        load : array_like, shape (N,) consistent with class parameters
-            The load of for which the failure probability is
-            calculated.
+        load : array_like
+            Deterministic load value in the same unit as ``strength_median``.
 
         Returns
         -------
-        failure probability : numpy.ndarray or float
+        numpy.ndarray or float
+            Failure probability, dimensionless.
 
         Notes
         -----
-        This is the case of a non statistical load. So failure occurs
-        if the strength is below the given load, i.e. the strength'
-        cdf at the load.
-        '''
+        For a non-random load ``L`` the probability of failure is the strength
+        cumulative distribution evaluated at that load:
+
+        .. math::
+
+            P_f = F_S(\log_{10}(L)).
+        """
         return norm.cdf(np.log10(load), loc=self.s_50, scale=self.s_std)
 
     def pf_norm_load(self, load_median, load_std, lower_limit=None, upper_limit=None):
-        '''Failure probability for a log normal distributed load
+        """Calculate failure probability for a log-normal load distribution.
 
         Parameters
         ----------
-        load_median : array_like, shape (N,) consistent with class parameters
-            The median of the load distribution for which the failure
-            probability is calculated.
-        load_std : array_like, shape (N,) consistent with class parameters
-            The standard deviation of the load distribution
-        lower_limit : float, optional
-            The lower limit of the integration, default None
-        upper_limit : float, optional
-            The upper limit of the integration, default None
+        load_median : array_like
+            Median load value in the same unit as ``strength_median``.
+        load_std : array_like
+            Standard deviation of the base-10 logarithm of load, dimensionless.
+        lower_limit : float or None, optional
+            Lower integration limit in load units. If ``None``, use a
+            logarithmic bound of ``-16 * load_std`` around the median.
+            Default is ``None``.
+        upper_limit : float or None, optional
+            Upper integration limit in load units. If ``None``, use a
+            logarithmic bound of ``16 * load_std`` around the median. Default
+            is ``None``.
 
         Returns
         -------
-        failure probability : numpy.ndarray or float
+        numpy.ndarray or float
+            Failure probability, dimensionless.
 
         Notes
         -----
-
-        The log normal distribution of the load is determined by the
-        load parameters. Only load distribution between
-        ``lower_limit`` and ``upper_limit`` is considered.
-
-        For small values for ``load_std`` this function gives the same
-        result as ``pf_simple_load``.
-
-        Note
-        ----
-        The load and strength distributions are transformed in a way,
-        that the median of the load distribution is zero. This
-        guarantees that in any case we can provide a set of relevant
-        points to take into account for the integration.
-
-        '''
+        The load and strength distributions are shifted into logarithmic space
+        with the load median at zero before numerical integration. For very
+        small ``load_std`` the result approaches :meth:`pf_simple_load`.
+        """
         lm = np.log10(load_median)
 
         sc = load_std
@@ -134,20 +132,31 @@ class FailureProbability:
         return q1
 
     def pf_arbitrary_load(self, load_values, load_pdf):
-        ''' Calculates the failure probability for an arbitrary load
+        """Calculate failure probability for an arbitrary load distribution.
 
         Parameters
         ----------
-        load_values : array_like, shape (N,)
-            The load values of the load distribution
-        load_pdf : array_like, shape (N, )
-            The probability density values for the ``load_value`` values to
-            occur
+        load_values : numpy.ndarray
+            Load support points in base-10 logarithmic units.
+        load_pdf : numpy.ndarray
+            Probability density values corresponding to ``load_values``.
 
         Returns
         -------
-        failure probability : numpy.ndarray or float
-        '''
+        numpy.ndarray or float
+            Failure probability, dimensionless.
+
+        Raises
+        ------
+        ValueError
+            Raised if ``load_values`` and ``load_pdf`` do not have the same
+            shape.
+
+        Notes
+        -----
+        The integral of load density times strength cumulative distribution is
+        approximated with the trapezoidal rule.
+        """
         if load_values.shape != load_pdf.shape:
             raise ValueError("Load values and pdf must have same dimensions.")
 

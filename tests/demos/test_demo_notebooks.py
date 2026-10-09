@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -17,11 +17,20 @@
 import os
 import pytest
 import unittest.mock as mock
-from testbook import testbook
+from testbook import testbook as _testbook
+from traitlets.config import Config
 from IPython.core.profiledir import ProfileDir
 
 
 pytestmark = pytest.mark.demos
+
+_KERNEL_CONFIG = Config({'KernelManager': {'transport_encryption': 'auto'}})
+
+
+def notebook_test(*args, **kwargs):
+    # Let the kernel manager provision CurveZMQ keys, which silences the
+    # "[IPKernelApp] WARNING | Kernel is running over TCP without encryption" message.
+    return _testbook(*args, config=_KERNEL_CONFIG, **kwargs)
 
 
 @pytest.fixture(autouse=True, scope='session')
@@ -37,7 +46,7 @@ def change_workingdir_dir(monkeypatch):
     monkeypatch.chdir('demos')
 
 
-@testbook('demos/hotspot_beam.ipynb')
+@notebook_test('demos/hotspot_beam.ipynb')
 def test_hotspot_beam(tb):
     with tb.patch('pyvista.Plotter'):
         tb.execute()
@@ -62,7 +71,7 @@ def test_hotspot_beam(tb):
     )
 
 
-@testbook('demos/local_stress_with_FE.ipynb')
+@notebook_test('demos/local_stress_with_FE.ipynb')
 def test_local_stress_with_fe(tb):
     with tb.patch('pyvista.Plotter'):
         tb.execute()
@@ -70,7 +79,7 @@ def test_local_stress_with_fe(tb):
     tb.inject("np.testing.assert_approx_equal(damage.max(), 0.0023, significant=2)")
 
 
-@testbook('demos/psd_optimizer.ipynb', execute=True)
+@notebook_test('demos/psd_optimizer.ipynb', execute=True)
 def test_psd_optimizer(tb):
     tb.inject(
         """
@@ -82,7 +91,7 @@ def test_psd_optimizer(tb):
     )
 
 
-@testbook('demos/ramberg_osgood.ipynb', execute=True)
+@notebook_test('demos/ramberg_osgood.ipynb', execute=True)
 def test_ramberg_osgood(tb):
     tb.inject(
         """
@@ -92,7 +101,7 @@ def test_ramberg_osgood(tb):
     )
 
 
-@testbook('demos/time_series_handling.ipynb', execute=True, timeout=600)
+@notebook_test('demos/time_series_handling.ipynb', execute=True, timeout=600)
 def test_time_series_handling(tb):
     tb.inject(
         """
@@ -102,11 +111,11 @@ def test_time_series_handling(tb):
     )
 
 
-@testbook('demos/lifetime_calc.ipynb')
+@notebook_test('demos/lifetime_calc.ipynb')
 def test_lifetime_calc(tb):
 
     # execute the time_series_handling.ipynb notebook to create the rf_dict variable
-    with testbook('../demos/time_series_handling.ipynb') as tb0:
+    with notebook_test('../demos/time_series_handling.ipynb') as tb0:
         tb0.execute()
 
     with tb.patch('pyvista.Plotter'):
@@ -119,7 +128,7 @@ def test_lifetime_calc(tb):
     )
 
 
-@testbook('demos/fkm_nonlinear/fkm_nonlinear.ipynb')
+@notebook_test('demos/fkm_nonlinear/fkm_nonlinear.ipynb')
 def test_fkm_nonlinear(tb):
     tb.execute()
 
@@ -130,7 +139,7 @@ def test_fkm_nonlinear(tb):
     )
 
 
-@testbook('demos/fkm_nonlinear/fkm_nonlinear_full.ipynb')
+@notebook_test('demos/fkm_nonlinear/fkm_nonlinear_full.ipynb')
 def test_fkm_nonlinear_full(tb):
     tb.execute()
 

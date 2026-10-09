@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 - for information on the respective copyright owner
+# Copyright (c) 2019-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository
 # https://github.com/boschresearch/pylife
 #
@@ -14,6 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Estimate spatial gradients of nodal quantities on finite-element meshes.
+
+The module provides the ``gradient`` DataFrame accessor, which differentiates
+a scalar nodal field, e.g. a stress in MPa, with respect to the mesh
+coordinates.  It is typically used to quantify stress gradients for
+notch-sensitive fatigue assessments.
+"""
+
 __author__ = "Mustapha Kassem, Benjamin Maier"
 __maintainer__ = "Johannes Mueller"
 
@@ -26,29 +34,55 @@ from .meshsignal import Mesh
 
 @pd.api.extensions.register_dataframe_accessor('gradient')
 class Gradient(Mesh):
-    '''Computes the gradient of a value in a triangular 3D mesh
+    r"""Estimate nodal gradients from neighboring mesh nodes.
 
-    Accesses a `mesh` registered in :mod:`meshsignal`
+    The ``gradient`` accessor works on a pyLife finite-element mesh and
+    computes derivatives of a scalar nodal quantity, for example stress in
+    MPa.  The result is node-averaged and indexed only by ``node_id``.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.DataFrame
+        Mesh DataFrame with coordinate columns ``x``, ``y`` and ``z`` in mm,
+        a scalar value column, and a :class:`pandas.MultiIndex` containing
+        ``element_id`` and ``node_id``.
 
     Raises
     ------
     AttributeError
-        if at least one of the columns `x`, `y` is missing
+        If at least one of the coordinate columns ``x`` or ``y`` is missing.
     AttributeError
-        if the index of the DataFrame is not a two level MultiIndex
-        with the names `node_id` and `element_id`
+        If the index of the DataFrame does not contain the levels ``node_id``
+        and ``element_id``.
 
+    See Also
+    --------
+    pylife.mesh.gradient.Gradient3D : Compute element-shape based gradients
+        for tetrahedral and hexahedral 3D elements.
+    pylife.mesh.meshsignal.Mesh : Define the finite-element mesh signal
+        contract.
 
     Notes
     -----
+    For every node, pyLife collects all directly connected neighboring nodes
+    and fits a local plane to the scalar field by least squares:
 
-    The gradient is calculated by fitting a plane into the nodes of
-    each coordinate and the neighbor nodes using least square fitting.
+    .. math::
 
-    The method is described in a `thread on stackoverflow`_.
+        v(\Delta x, \Delta y, \Delta z) \approx
+        v_0 + \nabla v \cdot
+        \begin{bmatrix}\Delta x & \Delta y & \Delta z\end{bmatrix}^T
 
-    .. _thread on stackoverflow:  https://math.stackexchange.com/questions/2627946/how-to-approximate-numerically-the-gradient-of-the-function-on-a-triangular-mesh#answer-2632616
-    '''
+    If ``value_key`` contains stress in MPa and coordinates are in mm, the
+    returned gradient components have the unit MPa/mm.  The approach follows
+    the least-squares gradient reconstruction described in [MeshGrad-LSQ]_.
+
+    References
+    ----------
+    .. [MeshGrad-LSQ] "How to approximate numerically the gradient of the
+       function on a triangular mesh", Mathematics Stack Exchange,
+       https://math.stackexchange.com/a/2632616.
+    """
     def _find_neighbor(self):
         self.neighbors = {}
 
@@ -75,20 +109,23 @@ class Gradient(Mesh):
             self.lst_sqr_grad_dz[node] = dz
 
     def gradient_of(self, value_key):
-        ''' returns the gradient
+        """Calculate the gradient of a scalar mesh value.
 
         Parameters
         ----------
         value_key : str
-            The key of the value that forms the gradient. Needs to be found in ``df``
+            Name of the column containing the scalar values.  If the column
+            contains stress in MPa and coordinates are in mm, the returned
+            gradient is given in MPa/mm.
 
         Returns
         -------
-        gradient : pd.DataFrame
-            A table describing the gradient indexed by ``node_id``.
-            The keys for the components of the gradients are
-            ``['d{value_key}_dx', 'd{value_key}_dy', 'd{value_key}_dz']``.
-        '''
+        pandas.DataFrame
+            Gradient components indexed by ``node_id``.  The columns are
+            ``d{value_key}_dx``, ``d{value_key}_dy`` and
+            ``d{value_key}_dz`` and carry the unit of ``value_key`` divided
+            by mm.
+        """
         self.value_key = value_key
 
         self.nodes_id = np.unique(self._obj.index.get_level_values('node_id'))
@@ -107,48 +144,66 @@ class Gradient(Mesh):
 
 @pd.api.extensions.register_dataframe_accessor('gradient_3D')
 class Gradient3D(Mesh):
-    '''Computes the gradient of a value in a 3D mesh that was imported from Ansys or Abaqus.
+    r"""Calculate element-shape based gradients for 3D solid elements.
 
-    Accesses a `mesh` registered in :mod:`meshsignal`. The accessor for this type of computation
-    is `gradient_3D`. Example usage:
+    The ``gradient_3D`` accessor computes derivatives of a scalar nodal
+    quantity on tetrahedral and hexahedral solid elements.  This is a key
+    preprocessing step for stress-gradient based FKM support-factor inputs:
+    stress in MPa on coordinates in mm produces gradients in MPa/mm.
 
-    .. code::
-
-        # given a mesh in `pylife_mesh` with column `mises`, compute the gradient
-        gradient = pylife_mesh.gradient_3D.gradient_of('mises')
-
-        # add the results back in the mesh
-        pylife_mesh = pylife_mesh.join(grad)
-
-    More specifically, the elements in the mesh must be either tetrahedral/simplex or hexahedral elements
-    and the order of the nodes per element matters. Linear tetrahedral elements have 4 nodes,
-    linear hexahedral elements have 8 nodes. Alternatively, quadratic elements may be used
-    with 16 (20) or 10 nodes, respectively. In such a case only the first 4 or 8 nodes are considered
-    for the gradient computation. The result contains zeros for all following nodes.
-
-    This is consistent with the node numbering in Ansys/Abaqus, where the first 8 nodes
-    of a quadratic hex elements are the same as the respective linear hex elements,
-    the same applies for the first 4 nodes of a quadratic simplex element which are the
-    same as in the linear simplex element.
-
-    This class detects the type of element (tetrahedral or hexahedral) according to the number of
-    nodes of each element and uses the according formula. It also works for mixed meshes that contain
-    both tetrahedral and hexahedral elements.
-
-    Note that this gradient computation only works for 3D elements and considers the node order.
-    The other gradient computation accessible via `gradient` also works for 2D elements and
-    disregards the order of the nodes. However, it is slower and less accurate for tetrahedral
-    elements.
-
+    Parameters
+    ----------
+    pandas_obj : pandas.DataFrame
+        Mesh DataFrame with coordinate columns ``x``, ``y`` and ``z`` in mm,
+        a scalar value column, and a :class:`pandas.MultiIndex` containing
+        ``element_id`` and ``node_id``.  Rows within each element must be in
+        the node order exported by Ansys or Abaqus.
 
     Raises
     ------
     AttributeError
-        if at least one of the columns `x`, `y`, `z` is missing
+        If at least one of the coordinate columns ``x`` or ``y`` is missing.
     AttributeError
-        if the index of the DataFrame is not a two level MultiIndex
-        with the names `node_id` and `element_id`
-    '''
+        If the index of the DataFrame does not contain the levels ``node_id``
+        and ``element_id``.
+
+    Warns
+    -----
+    UserWarning
+        If an element contains a number of nodes that is not recognized as a
+        supported tetrahedral or hexahedral 3D element.
+
+    See Also
+    --------
+    pylife.mesh.gradient.Gradient : Estimate gradients from neighboring nodes
+        without relying on element node order.
+    pylife.mesh.surface.Surface3D : Determine surface nodes and normal vectors
+        used together with stress gradients in FKM assessments.
+
+    Notes
+    -----
+    Linear tetrahedral elements with 4 nodes and hexahedral elements with
+    8 nodes are evaluated with their finite-element shape functions.  Quadratic
+    tetrahedral elements with 10 nodes and hexahedral elements with 16 or
+    20 nodes are accepted, but only their first-order corner nodes contribute
+    to the gradient.  Additional midside nodes receive zero gradient values in
+    the per-element computation and are dropped if a duplicated ``node_id``
+    already occurred earlier.
+
+    For a scalar field ``v`` and shape functions ``N_a``, the gradient is
+    evaluated as
+
+    .. math::
+
+        \nabla v = \sum_a v_a \nabla N_a
+
+    after mapping derivatives from the reference element to coordinates in mm.
+    Mixed tetrahedral and hexahedral meshes are supported.
+
+    This accessor only supports 3D solid elements.  It assumes Ansys/Abaqus
+    node ordering inside each ``element_id`` group and does not average
+    gradients across duplicated ``node_id`` rows; the first occurrence is kept.
+    """
 
     def _initialize_ansatz_function_derivative_hexahedral(self):
 
@@ -357,20 +412,23 @@ class Gradient3D(Mesh):
         return df
 
     def gradient_of(self, value_key):
-        ''' returns the gradient
+        """Calculate the 3D gradient of a scalar mesh value.
 
         Parameters
         ----------
         value_key : str
-            The key of the value that forms the gradient. Needs to be found in ``df``
+            Name of the column containing the scalar values.  If the column
+            contains stress in MPa and coordinates are in mm, the returned
+            gradient is given in MPa/mm.
 
         Returns
         -------
-        gradient : pd.DataFrame
-            A table describing the gradient indexed by ``node_id``.
-            The keys for the components of the gradients are
-            ``['d{value_key}_dx', 'd{value_key}_dy', 'd{value_key}_dz']``.
-        '''
+        pandas.DataFrame
+            Gradient components indexed by ``node_id``.  The columns are
+            ``d{value_key}_dx``, ``d{value_key}_dy`` and
+            ``d{value_key}_dz`` and carry the unit of ``value_key`` divided
+            by mm.
+        """
         self.value_key = value_key
 
         assert "x" in self._obj
