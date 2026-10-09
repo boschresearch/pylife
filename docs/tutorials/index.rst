@@ -23,6 +23,7 @@ computer, you can use `MyBinder
    :maxdepth: 1
 
    woehler_curve
+   rainflow
    load_collective
    stress-strength
    import_mesh_vmap
