@@ -163,7 +163,7 @@ class VMAPImport:
         return self._geometry_sets(geometry, 'elsets').keys()
 
     def nodes(self, geometry):
-        """Return node coordinates for a geometry.
+        """Retrieve the node positions.
 
         Parameters
         ----------

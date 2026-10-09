@@ -14,12 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-
-Equivalent Stresses
-===================
-
-Library to calculate the equivalent stress values of a FEM stress tensor.
+"""Calculate equivalent stress values of a FEM stress tensor.
 
 By now the following calculation methods are implemented:
 
@@ -33,7 +28,6 @@ By now the following calculation methods are implemented:
 * Tresca
 * Signed Tresca, sign from trace
 * Signed Tresca, sign from absolute maximum principal stress
-
 """
 
 __author__ = "Johannes Mueller, Vivien Le Baube et. al."
@@ -49,17 +43,17 @@ def eigenval(s11, s22, s33, s12, s13, s23):
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
-    s12: array_like
+    s12 : array_like
         Component 12 of 3D tensor.
-    s13: array_like
+    s13 : array_like
         Component 13 of 3D tensor.
-    s23: array_like
+    s23 : array_like
         Component 23 of 3D tensor.
 
     Returns
@@ -80,11 +74,11 @@ def _sign_trace(s11, s22, s33):
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
 
     Returns
@@ -107,22 +101,23 @@ def _sign_trace(s11, s22, s33):
 
 
 def _sign_abs_max_principal(s11, s22, s33, s12, s13, s23):
-    """Calculate sign of absolute maximum principal stress. Sign of 0 is set to
-     1.
+    """Calculate sign of absolute maximum principal stress.
+
+    Sign of 0 is set to 1.
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
-    s12: array_like
+    s12 : array_like
         Component 12 of 3D tensor.
-    s13: array_like
+    s13 : array_like
         Component 13 of 3D tensor.
-    s23: array_like
+    s23 : array_like
         Component 23 of 3D tensor.
 
     Returns
@@ -146,17 +141,17 @@ def tresca(s11, s22, s33, s12, s13, s23):
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
-    s12: array_like
+    s12 : array_like
         Component 12 of 3D tensor.
-    s13: array_like
+    s13 : array_like
         Component 13 of 3D tensor.
-    s23: array_like
+    s23 : array_like
         Component 23 of 3D tensor.
 
     Returns
@@ -173,22 +168,23 @@ def tresca(s11, s22, s33, s12, s13, s23):
 
 
 def signed_tresca_trace(s11, s22, s33, s12, s13, s23):
-    """Calculate equivalent stress according to Tresca, signed with the sign
-    of the trace (i.e s11 + s22 + s33).
+    """Calculate Tresca equivalent stress signed by the trace.
+
+    The sign is that of the trace (i.e s11 + s22 + s33).
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
-    s12: array_like
+    s12 : array_like
         Component 12 of 3D tensor.
-    s13: array_like
+    s13 : array_like
         Component 13 of 3D tensor.
-    s23: array_like
+    s23 : array_like
         Component 23 of 3D tensor.
 
     Returns
@@ -200,22 +196,23 @@ def signed_tresca_trace(s11, s22, s33, s12, s13, s23):
 
 
 def signed_tresca_abs_max_principal(s11, s22, s33, s12, s13, s23):
-    """Calculate equivalent stress according to Tresca, signed with the sign
-    of the absolute maximum principal stress.
+    """Calculate Tresca equivalent stress signed by the principal stress.
+
+    The sign is that of the absolute maximum principal stress.
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
-    s12: array_like
+    s12 : array_like
         Component 12 of 3D tensor.
-    s13: array_like
+    s13 : array_like
         Component 13 of 3D tensor.
-    s23: array_like
+    s23 : array_like
         Component 23 of 3D tensor.
 
     Returns
@@ -227,22 +224,23 @@ def signed_tresca_abs_max_principal(s11, s22, s33, s12, s13, s23):
 
 
 def abs_max_principal(s11, s22, s33, s12, s13, s23):
-    """Calculate absolute maximum principal stress (maximum of absolute
-    eigenvalues with corresponding sign).
+    """Calculate absolute maximum principal stress.
+
+    This is the maximum of the absolute eigenvalues with corresponding sign.
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
-    s12: array_like
+    s12 : array_like
         Component 12 of 3D tensor.
-    s13: array_like
+    s13 : array_like
         Component 13 of 3D tensor.
-    s23: array_like
+    s23 : array_like
         Component 23 of 3D tensor.
 
     Returns
@@ -263,17 +261,17 @@ def principals(s11, s22, s33, s12, s13, s23):
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
-    s12: array_like
+    s12 : array_like
         Component 12 of 3D tensor.
-    s13: array_like
+    s13 : array_like
         Component 13 of 3D tensor.
-    s23: array_like
+    s23 : array_like
         Component 23 of 3D tensor.
 
     Returns
@@ -289,17 +287,17 @@ def max_principal(s11, s22, s33, s12, s13, s23):
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
-    s12: array_like
+    s12 : array_like
         Component 12 of 3D tensor.
-    s13: array_like
+    s13 : array_like
         Component 13 of 3D tensor.
-    s23: array_like
+    s23 : array_like
         Component 23 of 3D tensor.
 
     Returns
@@ -316,17 +314,17 @@ def min_principal(s11, s22, s33, s12, s13, s23):
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
-    s12: array_like
+    s12 : array_like
         Component 12 of 3D tensor.
-    s13: array_like
+    s13 : array_like
         Component 13 of 3D tensor.
-    s23: array_like
+    s23 : array_like
         Component 23 of 3D tensor.
 
     Returns
@@ -343,17 +341,17 @@ def mises(s11, s22, s33, s12, s13, s23):
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
-    s12: array_like
+    s12 : array_like
         Component 12 of 3D tensor.
-    s13: array_like
+    s13 : array_like
         Component 13 of 3D tensor.
-    s23: array_like
+    s23 : array_like
         Component 23 of 3D tensor.
 
     Returns
@@ -383,22 +381,23 @@ def mises(s11, s22, s33, s12, s13, s23):
 
 
 def signed_mises_trace(s11, s22, s33, s12, s13, s23):
-    """Calculate equivalent stress according to von Mises, signed with the sign
-    of the trace (i.e s11 + s22 + s33).
+    """Calculate von Mises equivalent stress signed by the trace.
+
+    The sign is that of the trace (i.e s11 + s22 + s33).
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
-    s12: array_like
+    s12 : array_like
         Component 12 of 3D tensor.
-    s13: array_like
+    s13 : array_like
         Component 13 of 3D tensor.
-    s23: array_like
+    s23 : array_like
         Component 23 of 3D tensor.
 
     Returns
@@ -410,22 +409,23 @@ def signed_mises_trace(s11, s22, s33, s12, s13, s23):
 
 
 def signed_mises_abs_max_principal(s11, s22, s33, s12, s13, s23):
-    """Calculate equivalent stress according to von Mises, signed with the sign
-    of the absolute maximum principal stress.
+    """Calculate von Mises equivalent stress signed by the principal stress.
+
+    The sign is that of the absolute maximum principal stress.
 
     Parameters
     ----------
-    s11: array_like
+    s11 : array_like
         Component 11 of 3D tensor.
-    s22: array_like
+    s22 : array_like
         Component 22 of 3D tensor.
-    s33: array_like
+    s33 : array_like
         Component 33 of 3D tensor.
-    s12: array_like
+    s12 : array_like
         Component 12 of 3D tensor.
-    s13: array_like
+    s13 : array_like
         Component 13 of 3D tensor.
-    s23: array_like
+    s23 : array_like
         Component 23 of 3D tensor.
 
     Returns
@@ -438,7 +438,23 @@ def signed_mises_abs_max_principal(s11, s22, s33, s12, s13, s23):
 
 @pd.api.extensions.register_dataframe_accessor("equistress")
 class StressTensorEquistress(stresssignal.StressTensorVoigt):
+    """Accessor for equivalent stresses of a Voigt stress tensor.
+
+    Parameters
+    ----------
+    pandas_obj : pandas.DataFrame
+        The Voigt stress tensor with the columns ``S11``, ``S22``, ``S33``,
+        ``S12``, ``S13``, ``S23``.
+    """
+
     def tresca(self):
+        """Calculate the Tresca equivalent stress.
+
+        Returns
+        -------
+        pandas.Series
+            The equivalent stress for each row.
+        """
         return pd.Series(tresca(s11=self._obj['S11'].to_numpy(),
                                 s22=self._obj['S22'].to_numpy(),
                                 s33=self._obj['S33'].to_numpy(),
@@ -448,6 +464,13 @@ class StressTensorEquistress(stresssignal.StressTensorVoigt):
                          name='tresca', index=self._obj.index)
 
     def signed_tresca_trace(self):
+        """Calculate the trace-signed Tresca equivalent stress.
+
+        Returns
+        -------
+        pandas.Series
+            The equivalent stress for each row.
+        """
         return pd.Series(signed_tresca_trace(s11=self._obj['S11'].to_numpy(),
                                              s22=self._obj['S22'].to_numpy(),
                                              s33=self._obj['S33'].to_numpy(),
@@ -457,6 +480,13 @@ class StressTensorEquistress(stresssignal.StressTensorVoigt):
                          name='signed_tresca_trace', index=self._obj.index)
 
     def signed_tresca_abs_max_principal(self):
+        """Calculate the principal-signed Tresca equivalent stress.
+
+        Returns
+        -------
+        pandas.Series
+            The equivalent stress for each row.
+        """
         return pd.Series(signed_tresca_abs_max_principal(s11=self._obj['S11'].to_numpy(),
                                                          s22=self._obj['S22'].to_numpy(),
                                                          s33=self._obj['S33'].to_numpy(),
@@ -466,6 +496,13 @@ class StressTensorEquistress(stresssignal.StressTensorVoigt):
                          name='signed_tresca_abs_max_principal', index=self._obj.index)
 
     def principals(self):
+        """Calculate the principal stresses.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The principal stresses for each row.
+        """
         all_princ = eigenval(s11=self._obj['S11'].to_numpy(),   # ascending order (numpy.eigvalsh)
                              s22=self._obj['S22'].to_numpy(),
                              s33=self._obj['S33'].to_numpy(),
@@ -478,6 +515,13 @@ class StressTensorEquistress(stresssignal.StressTensorVoigt):
                              index=self._obj.index)
 
     def abs_max_principal(self):
+        """Calculate the absolute maximum principal stress.
+
+        Returns
+        -------
+        pandas.Series
+            The absolute maximum principal stress for each row.
+        """
         return pd.Series(abs_max_principal(s11=self._obj['S11'].to_numpy(),
                                            s22=self._obj['S22'].to_numpy(),
                                            s33=self._obj['S33'].to_numpy(),
@@ -487,6 +531,13 @@ class StressTensorEquistress(stresssignal.StressTensorVoigt):
                          name='abs_max_principal', index=self._obj.index)
 
     def max_principal(self):
+        """Calculate the maximum principal stress.
+
+        Returns
+        -------
+        pandas.Series
+            The maximum principal stress for each row.
+        """
         return pd.Series(max_principal(s11=self._obj['S11'].to_numpy(),
                                        s22=self._obj['S22'].to_numpy(),
                                        s33=self._obj['S33'].to_numpy(),
@@ -496,6 +547,13 @@ class StressTensorEquistress(stresssignal.StressTensorVoigt):
                          name='max_principal', index=self._obj.index)
 
     def min_principal(self):
+        """Calculate the minimum principal stress.
+
+        Returns
+        -------
+        pandas.Series
+            The minimum principal stress for each row.
+        """
         return pd.Series(min_principal(s11=self._obj['S11'].to_numpy(),
                                        s22=self._obj['S22'].to_numpy(),
                                        s33=self._obj['S33'].to_numpy(),
@@ -505,6 +563,13 @@ class StressTensorEquistress(stresssignal.StressTensorVoigt):
                          name='min_principal', index=self._obj.index)
 
     def mises(self):
+        """Calculate the von Mises equivalent stress.
+
+        Returns
+        -------
+        pandas.Series
+            The equivalent stress for each row.
+        """
         return pd.Series(mises(s11=self._obj['S11'].to_numpy(),
                                s22=self._obj['S22'].to_numpy(),
                                s33=self._obj['S33'].to_numpy(),
@@ -514,6 +579,13 @@ class StressTensorEquistress(stresssignal.StressTensorVoigt):
                          name='mises', index=self._obj.index)
 
     def signed_mises_trace(self):
+        """Calculate the trace-signed von Mises equivalent stress.
+
+        Returns
+        -------
+        pandas.Series
+            The equivalent stress for each row.
+        """
         return pd.Series(signed_mises_trace(s11=self._obj['S11'].to_numpy(),
                                             s22=self._obj['S22'].to_numpy(),
                                             s33=self._obj['S33'].to_numpy(),
@@ -523,6 +595,13 @@ class StressTensorEquistress(stresssignal.StressTensorVoigt):
                          name='signed_mises_trace', index=self._obj.index)
 
     def signed_mises_abs_max_principal(self):
+        """Calculate the principal-signed von Mises equivalent stress.
+
+        Returns
+        -------
+        pandas.Series
+            The equivalent stress for each row.
+        """
         return pd.Series(signed_mises_abs_max_principal(s11=self._obj['S11'].to_numpy(),
                                                         s22=self._obj['S22'].to_numpy(),
                                                         s33=self._obj['S33'].to_numpy(),

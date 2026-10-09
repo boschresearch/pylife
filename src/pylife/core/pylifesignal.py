@@ -268,12 +268,12 @@ class PylifeSignal(Broadcaster):
         return self._obj
 
 
-def register_method(cls, method_name):
+def register_method(signal_class, method_name):
     """Register a method to a class derived from :class:`PylifeSignal`.
 
     Parameters
     ----------
-    cls : class
+    signal_class : class
         The class the method is registered to.
     method_name : str
         The name under which the method becomes available.
@@ -282,7 +282,7 @@ def register_method(cls, method_name):
     -------
     callable
         A decorator that registers the decorated function as
-        ``method_name`` of ``cls`` and returns it unchanged.
+        ``method_name`` of ``signal_class`` and returns it unchanged.
 
     Raises
     ------
@@ -321,4 +321,4 @@ def register_method(cls, method_name):
         0  0.0
         1  0.0
     """
-    return cls._register_method(method_name)
+    return signal_class._register_method(method_name)
