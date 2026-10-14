@@ -46,3 +46,30 @@ def benchmarker():
         return elapsed
 
     return the_benchmarker
+
+
+@pytest.fixture
+def benchmarker_meanstress():
+    def the_benchmarker_meanstress(mean_value,amplitude,R_goal,M,meanstress_goodman_python,meanstress_fkm_cython):
+
+        tic = time.perf_counter()
+        amplitude_corr = meanstress_goodman_python(
+        np.array(amplitude), np.array(mean_value), M=M, M2=M / 3, R_goal=R_goal
+    )
+        toc = time.perf_counter()
+        elapsed1 = toc - tic
+
+        print(f"Processing Meanstress in Python took {elapsed1:0.4f} seconds")
+
+        tic = time.perf_counter()
+        amplitude_corr2 = meanstress_fkm_cython(
+        np.array(amplitude), np.array(mean_value), M=M, M2=M / 3, R_goal=R_goal
+    )
+        toc = time.perf_counter()
+        elapsed2 = toc - tic
+
+        print(f"Processing Meanstress in Cython took {elapsed2:0.4f} seconds")
+
+        return elapsed1, elapsed2
+
+    return the_benchmarker_meanstress
