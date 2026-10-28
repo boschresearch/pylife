@@ -10,6 +10,8 @@ In this file noteworthy changes of new releases of pyLife are documented since
 * No longer use `setuptools.pkg_resources` in odbserver for python-3.x.
 * Wrap `map()` objects used as `pytest.mark.parametrize()` argvalues in `list()`
   to avoid the `PytestRemovedIn10Warning` deprecation in pytest 9.1
+* Fix `utils.histogram.rebin_histogram()` returning an object dtype series with
+  `nan_default=True` for empty target bins with pandas-3.1.
 
 ### Improvments
 
