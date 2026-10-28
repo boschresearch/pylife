@@ -356,12 +356,9 @@ def _do_rebin_histogram(histogram, binning, default_value):
         rebinned = pd.Series(0.0, index=binning)
     else:
         hist = histogram.to_frame().dropna()
-        rebinned = binning.to_series().apply(aggregate_hist)
+        rebinned = pd.Series([aggregate_hist(interval) for interval in binning], index=binning, dtype=np.float64)
 
-    rebinned.name = histogram.name
-    rebinned.index.name = histogram.index.name
-
-    return rebinned
+    return rebinned.rename(histogram.name).rename_axis(histogram.index.name)
 
 
 def _fail_if_binning_invalid(binning):
