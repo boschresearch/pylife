@@ -73,6 +73,8 @@ class WoehlerCurve(PylifeSignal):
 
     def _validate(self):
         self.fail_if_key_missing(['k_1', 'ND', 'SD'])
+        if isinstance(self._obj, pd.Series) and pd.api.types.is_integer_dtype(self._obj):
+            self._obj = self._obj.astype(np.float64)
         self._k_2 = self._obj.get('k_2', np.inf)
 
         self._TN = self._obj.get('TN', None)

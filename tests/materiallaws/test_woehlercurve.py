@@ -18,6 +18,7 @@ __author__ = "Johannes Mueller"
 __maintainer__ = __author__
 
 import pytest
+import warnings
 import numpy as np
 import pandas as pd
 
@@ -43,6 +44,15 @@ def test_woehler_accessor(wc_data):
         wc_miss = wc.drop(key)
         with pytest.raises(AttributeError):
             wc_miss.woehler
+
+
+def test_woehler_integer_parameters_no_warning():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        wc = WoehlerCurve.from_parameters(ND=10**6, k_1=6, SD=200)
+
+    assert wc.TN == 1.0
+    assert wc.k_2 == np.inf
 
 
 def test_woehler_transform_probability():
