@@ -171,10 +171,10 @@ class Surface3D(Mesh):
             .pipe(lambda df: df.assign(E=self._solid_angle(df)))
         )
 
-        max_E = df0.groupby(["element_id", "node_id_n0"]).max()["E"]
+        max_E = df0.groupby(["element_id", "node_id_n0"]).max()["E"].rename("E_max")
 
         df1 = (
-            df0.join(max_E, on=["element_id", "node_id_n0"], how="left", rsuffix="_max")
+            df0.join(max_E, on=["element_id", "node_id_n0"], how="left")
             .query("E == E_max")
             .groupby(["element_id", "node_id_n0"])
             .first()
