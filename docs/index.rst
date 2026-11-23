@@ -80,14 +80,14 @@ What pyLife can do for you
       New to pyLife?  Install the package and run your first damage
       calculation.  This is the place to start.
 
-      +++
+      .. card-footer::
 
-      .. button-ref:: getting_started
-         :ref-type: doc
-         :color: primary
-         :expand:
+         .. button-ref:: getting_started
+            :ref-type: doc
+            :color: primary
+            :expand:
 
-         Get started
+            Get started
 
    .. grid-item-card:: Learn
       :shadow: md
@@ -96,14 +96,14 @@ What pyLife can do for you
       building blocks: Wöhler curves, load collectives and the FKM nonlinear
       assessment.
 
-      +++
+      .. card-footer::
 
-      .. button-ref:: learn
-         :ref-type: doc
-         :color: primary
-         :expand:
+         .. button-ref:: learn
+            :ref-type: doc
+            :color: primary
+            :expand:
 
-         Learn pyLife
+            Learn pyLife
 
    .. grid-item-card:: Reference
       :shadow: md
@@ -112,14 +112,14 @@ What pyLife can do for you
       pyLife, including parameters, return values and the underlying
       engineering standards.
 
-      +++
+      .. card-footer::
 
-      .. button-ref:: reference
-         :ref-type: doc
-         :color: primary
-         :expand:
+         .. button-ref:: reference
+            :ref-type: doc
+            :color: primary
+            :expand:
 
-         To the reference
+            To the reference
 
    .. grid-item-card:: Contributing
       :shadow: md
@@ -128,14 +128,14 @@ What pyLife can do for you
       science, education and industry.  Find out how to report issues and
       submit improvements.
 
-      +++
+      .. card-footer::
 
-      .. button-ref:: contributing
-         :ref-type: doc
-         :color: primary
-         :expand:
+         .. button-ref:: contributing
+            :ref-type: doc
+            :color: primary
+            :expand:
 
-         To the contributor guide
+            To the contributor guide
 
 
 .. grid:: 1 1 1 1
@@ -148,14 +148,14 @@ What pyLife can do for you
 
       Some meta information about pyLife like changelogs, authors and license.
 
-      +++
+      .. card-footer::
 
-      .. button-ref:: about
-         :ref-type: doc
-         :color: secondary
-         :expand:
+         .. button-ref:: about
+            :ref-type: doc
+            :color: secondary
+            :expand:
 
-         To about pylife
+            To about pylife
 
 Try it without installing
 =========================
