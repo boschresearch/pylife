@@ -25,6 +25,16 @@ import numpy.testing as testing
 import pylife.strength.fkm_load_distribution
 
 
+def test_load_distribution_normal_does_not_modify_parameters():
+    load_sequence = pd.Series([100, -200, 100, -250, 200, 0, 200, -200])
+    assessment_parameters = pd.Series({"P_A": 1e-5, "P_L": 50, "s_L": 10})
+    expected = assessment_parameters.copy()
+
+    load_sequence.fkm_safety_normal_from_stddev.gamma_L(assessment_parameters)
+
+    pd.testing.assert_series_equal(assessment_parameters, expected)
+
+
 @pytest.mark.parametrize('P_A, resulting_gamma_L, result', [
     (1e-5,   1.11956,  [111.956, -223.912,  111.956, -279.89, 223.912, 0., 223.912, -223.912]),
     (7.2e-5, 1.1064,   [110.64, -221.28,  110.64, -276.6, 221.28, 0., 221.28, -221.28]),

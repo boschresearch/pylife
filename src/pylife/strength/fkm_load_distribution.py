@@ -324,10 +324,9 @@ class FKMLoadDistributionNormal(FKMLoadSequence):
             alpha_L = 0.7 * beta * input_parameters.s_L
 
         # eq. 2.3-5
-        if "max_load_independently_for_nodes" not in input_parameters:
-            input_parameters["max_load_independently_for_nodes"] = False
+        max_load_independently_for_nodes = input_parameters.get("max_load_independently_for_nodes", False)
 
-        L_max = self.maximum_absolute_load(input_parameters.max_load_independently_for_nodes)
+        L_max = self.maximum_absolute_load(max_load_independently_for_nodes)
 
         gamma_L = (L_max + alpha_L) / L_max
 
