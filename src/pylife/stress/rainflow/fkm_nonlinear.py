@@ -902,9 +902,7 @@ class FKMNonlinearDetector(RFG.AbstractDetector):
 
         history["load_segment"] = np.arange(len(history), dtype=np.int64)
 
-        history.set_index(HISTORY_INDEX_LEVELS, inplace=True)
-
-        return history
+        return history.set_index(HISTORY_INDEX_LEVELS)
 
     def interpolated_stress_strain_data(
             self,

@@ -521,9 +521,7 @@ def _polyfit_gridpoints(grid_points, prep_roll, order=3, verbose=False, n_gridpo
     poly_gridpoints.index = poly_gridpoints["time"]
 
     # %% smooth the gaps with polynomial values
-    poly_gridpoints.interpolate(method="polynomial", order=order, inplace=True)
-
-    return poly_gridpoints
+    return poly_gridpoints.interpolate(method="polynomial", order=order)
 
 
 def clean_timeseries(

@@ -226,7 +226,7 @@ class Broadcaster:
 
         df = self._broadcasted_dataframe(parameter)
         if isinstance(parameter, pd.Series):
-            return parameter, df.set_index(parameter.index, inplace=True)
+            return parameter, df.set_index(parameter.index)
 
         return pd.Series(prm), df
 

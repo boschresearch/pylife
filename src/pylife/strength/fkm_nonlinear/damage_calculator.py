@@ -157,7 +157,7 @@ class DamageCalculatorPRAM:
 
         # remove any given index of fatigue_strength_limit which results from the assessment_parameters.G parameter
         if isinstance(fatigue_strength_limit, pd.Series):
-            fatigue_strength_limit.reset_index(drop=True, inplace=True)
+            fatigue_strength_limit = fatigue_strength_limit.reset_index(drop=True)
 
         result = self.P_RAM_max <= fatigue_strength_limit
         return result.squeeze()

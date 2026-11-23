@@ -245,13 +245,12 @@ class FiniteLifeCurve(FiniteLifeBase):
             estimator = estimator.miner_haibach()
 
         if index_name != "range":
-            loads = loads.copy()
             names = ["range" if name == index_name else name for name in loads.index.names]
-            loads.index.set_names(names, inplace=True)
+            loads = loads.rename_axis(index=names)
 
         damage = estimator.damage(loads.load_collective)
         if index_name != "range":
             names = [index_name if name == "range" else name for name in loads.index.names]
-            damage.index.set_names(names, inplace=True)
+            damage = damage.rename_axis(index=names)
 
         return damage

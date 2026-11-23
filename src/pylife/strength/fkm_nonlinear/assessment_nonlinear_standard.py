@@ -287,10 +287,20 @@ def _compute_component_woehler_curves(assessment_parameters):
     component_woehler_curve_P_RAM = component_woehler_curve_parameters.woehler_P_RAM
 
     # Wöhler curve for P_RAJ
+    assessment_parameters = _drop_gradient_index(assessment_parameters, ["P_RAJ_Z", "P_RAJ_D_0"])
     component_woehler_curve_parameters = assessment_parameters[["P_RAJ_Z", "P_RAJ_D_0", "d_RAJ"]]
     component_woehler_curve_P_RAJ = component_woehler_curve_parameters.woehler_P_RAJ
 
     return assessment_parameters, component_woehler_curve_P_RAM, component_woehler_curve_P_RAJ
+
+
+def _drop_gradient_index(assessment_parameters, keys):
+    """Remove the index of vectorized parameters resulting from the ``G`` parameter."""
+    assessment_parameters = assessment_parameters.copy()
+    for key in keys:
+        if isinstance(assessment_parameters[key], pd.Series):
+            assessment_parameters[key] = assessment_parameters[key].reset_index(drop=True)
+    return assessment_parameters
 
 
 def _compute_hcm_RAM(assessment_parameters, scaled_load_sequence):

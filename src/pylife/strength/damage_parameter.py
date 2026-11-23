@@ -138,7 +138,7 @@ class P_RAM:
                                                      * self._assessment_parameters.E), 0.0)
 
         # delete temporary columns
-        self._collective.drop(columns = ["discriminant", "k"], inplace=True)
+        self._collective = self._collective.drop(columns=["discriminant", "k"])
 
 
 class P_RAJ:
@@ -252,10 +252,10 @@ class P_RAJ:
 
         # remove any given index of f_RAM which results from the assessment_parameters.G parameter
         if isinstance(self._P_RAJ_Z, pd.Series):
-            self._P_RAJ_Z.reset_index(drop=True, inplace=True)
+            self._P_RAJ_Z = self._P_RAJ_Z.reset_index(drop=True)
 
         if isinstance(self._P_RAJ_D_0, pd.Series):
-            self._P_RAJ_D_0.reset_index(drop=True, inplace=True)
+            self._P_RAJ_D_0 = self._P_RAJ_D_0.reset_index(drop=True)
 
         self._compute_values()
 
@@ -282,8 +282,6 @@ class P_RAJ:
         self._compute_crack_opening_loop()
         # continue on p.133 (pdf)
 
-        # delete temporary columns
-        #self._collective.drop(columns = ["A_0", "A_1", "A_2", "A_3"], inplace=True)
 
     def _compute_S_open(self):
         """Compute the crack-opening stress ``S_open`` in MPa."""
@@ -322,7 +320,7 @@ class P_RAJ:
         self._collective["S_open"] = self._collective.S_max * self._collective.S_open_factor
 
         # remove temporary columns
-        self._collective.drop(columns=["A_0", "A_1", "A_2", "A_3", "S_open_factor"], inplace=True)
+        self._collective = self._collective.drop(columns=["A_0", "A_1", "A_2", "A_3", "S_open_factor"])
 
     def _calculate_P_RAJ(self, delta_S_eff, delta_epsilon_eff):
         """Calculate ``P_RAJ`` from effective stress and strain ranges."""
@@ -346,7 +344,7 @@ class P_RAJ:
 
         # short initial crack length a0
         # standard calculation according to eq. (2.8-58), (2.9-120)
-        a_0 = (a_end**(1-m) - (1-m) * C * self._component_woehler_curve_P_RAJ.P_RAJ_Z ** m) ** (1 / (1-m))
+        a_0 = (a_end**(1-m) - (1-m) * C * self._P_RAJ_Z ** m) ** (1 / (1-m))
 
         self._assessment_parameters.a_0 = a_0
 
@@ -355,7 +353,7 @@ class P_RAJ:
 
         # eq. (2.9-116)
         denominator = ((a_end**(1-m) - a_0**(1-m)) * D_akt + a_0**(1-m)) ** (1/(1-m)) \
-                        + delta_J_eff_th/self._component_woehler_curve_P_RAJ.fatigue_strength_limit - a_0
+                        + delta_J_eff_th/self._P_RAJ_D_0 - a_0
 
         # update fatigue limit P_RAJ_D
         P_RAJ_D = delta_J_eff_th * 1 / denominator
@@ -450,13 +448,13 @@ class P_RAJ:
             condition_1 = group.epsilon_max < epsilon_open_alt
 
             # set case_name = "1"
-            case_name.mask(condition_1, other="1", inplace=True)
+            case_name = case_name.mask(condition_1, other="1")
 
             # set epsilon_open = epsilon_open_alt
-            epsilon_open.mask(condition_1, other=epsilon_open_alt, inplace=True)
+            epsilon_open = epsilon_open.mask(condition_1, other=epsilon_open_alt)
 
             # set is_damage_in_current_hysteresis = False
-            is_damage_in_current_hysteresis.mask(condition_1, other=False, inplace=True)
+            is_damage_in_current_hysteresis = is_damage_in_current_hysteresis.mask(condition_1, other=False)
 
             # ---------------------------------------
             # case 2 (a and b)
@@ -465,14 +463,14 @@ class P_RAJ:
                 | (epsilon_min_alt_SP > group.epsilon_min_LF))
 
             # set case_name = "2"
-            case_name.mask(condition_2, other="2", inplace=True)
+            case_name = case_name.mask(condition_2, other="2")
 
             # set epsilon_open = row.epsilon_open_ein
-            epsilon_open.mask(condition_2, other=group.epsilon_open_ein, inplace=True)
+            epsilon_open = epsilon_open.mask(condition_2, other=group.epsilon_open_ein)
 
             # update values as described after eq. (2.9-102)
-            epsilon_min_alt_SP.mask(condition_2, other=group.epsilon_min_LF, inplace=True)
-            epsilon_max_alt_SP.mask(condition_2, other=group.epsilon_max_LF, inplace=True)
+            epsilon_min_alt_SP = epsilon_min_alt_SP.mask(condition_2, other=group.epsilon_min_LF)
+            epsilon_max_alt_SP = epsilon_max_alt_SP.mask(condition_2, other=group.epsilon_max_LF)
 
             # ---------------------------------------
             # case 3
@@ -481,10 +479,10 @@ class P_RAJ:
                 & (group.epsilon_open_ein >= epsilon_open_alt)
 
             # set case_name = "3"
-            case_name.mask(condition_3, other="3", inplace=True)
+            case_name = case_name.mask(condition_3, other="3")
 
             # set epsilon_open = epsilon_open_alt
-            epsilon_open.mask(condition_3, other=epsilon_open_alt, inplace=True)
+            epsilon_open = epsilon_open.mask(condition_3, other=epsilon_open_alt)
 
             # ---------------------------------------
             # case 4
@@ -493,26 +491,26 @@ class P_RAJ:
                 & (group.epsilon_open_ein < epsilon_open_alt)
 
             # set case_name = "4"
-            case_name.mask(condition_4, other="4", inplace=True)
+            case_name = case_name.mask(condition_4, other="4")
 
             # case 4a
             # if row.S_a >= 0.4 * self._assessment_parameters.S_F:
             condition_4a = condition_4 & (group.S_a >= 0.4 * self._assessment_parameters.S_F)
 
             # set epsilon_open = row.epsilon_open_ein
-            epsilon_open.mask(condition_4a, other=group.epsilon_open_ein, inplace=True)
+            epsilon_open = epsilon_open.mask(condition_4a, other=group.epsilon_open_ein)
 
             # case 4b
             condition_4b = condition_4 & (group.S_a < 0.4 * self._assessment_parameters.S_F)
 
             # set epsilon_open = epsilon_open_alt
-            epsilon_open.mask(condition_4b, other=epsilon_open_alt, inplace=True)
+            epsilon_open = epsilon_open.mask(condition_4b, other=epsilon_open_alt)
 
             # ---------------------------------------
             # update epsilon_min_alt_SP and epsilon_max_alt_SP, as described in eq. (2.9-91), (2.9-92)
             condition = case_name.isin(["1", "3", "4"])
-            epsilon_min_alt_SP.mask(condition, other=np.minimum(epsilon_min_alt_SP, group.epsilon_min), inplace=True)
-            epsilon_max_alt_SP.mask(condition, other=np.maximum(epsilon_max_alt_SP, group.epsilon_max), inplace=True)
+            epsilon_min_alt_SP = epsilon_min_alt_SP.mask(condition, other=np.minimum(epsilon_min_alt_SP, group.epsilon_min))
+            epsilon_max_alt_SP = epsilon_max_alt_SP.mask(condition, other=np.maximum(epsilon_max_alt_SP, group.epsilon_max))
 
             # set value of epsilon_open
             group.epsilon_open = epsilon_open.to_numpy()
@@ -558,7 +556,7 @@ class P_RAJ:
             S_close = group.apply(optimize, axis="columns")
 
             # set S_close = S_min for epsilon_open < epsilon_min
-            S_close.mask(epsilon_open < group.epsilon_min, other=group.S_min, inplace=True)
+            S_close = S_close.mask(epsilon_open < group.epsilon_min, other=group.S_min)
 
             # eq. (2.9-108)
             delta_S_eff = group.S_max - S_close
@@ -619,11 +617,13 @@ class P_RAJ:
             # only if the crack opening strain is larger than the minimum strain of the hysteresis
             # for N = inf, epsilon_open_alt does not change (then, exp(0)=1, epsilon_open_alt=epsilon_open_alt)
 
-            epsilon_open_alt.mask(condition,
-                                  other=group.epsilon_open_ein - (group.epsilon_open_ein - epsilon_open_alt) * np.exp(-15 / N), inplace=True)
+            epsilon_open_alt = epsilon_open_alt.mask(
+                condition,
+                other=group.epsilon_open_ein - (group.epsilon_open_ein - epsilon_open_alt) * np.exp(-15 / N),
+            )
 
             # for the other cases 1,2, and 4:
-            epsilon_open_alt.mask(case_name.isin(["1", "2", "4"]), other=epsilon_open, inplace=True)
+            epsilon_open_alt = epsilon_open_alt.mask(case_name.isin(["1", "2", "4"]), other=epsilon_open)
 
             # store the value of epsilon_open_alt after it has been updated
             self._collective.loc[self._collective.index.get_level_values("hysteresis_index")==index,"epsilon_open_alt"] = epsilon_open_alt.to_numpy()
